@@ -15,6 +15,7 @@ import {
 	GEMINI_ENDPOINT_CAPABILITIES,
 	MINIMAX_ENDPOINT_CAPABILITIES,
 	VOLCENGINE_ENDPOINT_CAPABILITIES,
+	ELEVENLABS_ENDPOINT_CAPABILITIES,
 	OPENAI_ENDPOINT_CAPABILITIES,
 	listConfiguredCapabilities,
 	parseProviderEndpoints,
@@ -489,6 +490,15 @@ export function factorChipClassForValue(n: number, kind: RouteFactorKind): strin
 		: `${FACTOR_CHIP_BASE} bg-emerald-100 text-emerald-900 ring-emerald-300/90`;
 }
 
+/** Provider factor chip: neutral at ×1; otherwise distinguish active and inactive values. */
+export function providerFactorChipClass(n: number, active: boolean): string {
+	if (!Number.isFinite(n) || n < 0) return `${FACTOR_CHIP_BASE} bg-rose-100 text-rose-950 ring-rose-300/90`;
+	if (n === 1) return `${FACTOR_CHIP_BASE} bg-zinc-100 text-zinc-700 ring-zinc-200/90`;
+	return active
+		? `${FACTOR_CHIP_BASE} bg-violet-100 text-violet-900 ring-violet-300/90`
+		: `${FACTOR_CHIP_BASE} bg-zinc-100 text-zinc-500 ring-zinc-200/90 opacity-80`;
+}
+
 /** Base factors only; schedule windows may change the effective relationship. */
 export function hasBasePricingInversion(charged: number, metered: number): boolean {
 	return (
@@ -934,6 +944,7 @@ export const CAPABILITIES_BY_PROTOCOL: Record<string, readonly ProviderEndpointC
 	dashscope: DASHSCOPE_ENDPOINT_CAPABILITIES,
 	minimax: MINIMAX_ENDPOINT_CAPABILITIES,
 	volcengine: VOLCENGINE_ENDPOINT_CAPABILITIES,
+	elevenlabs: ELEVENLABS_ENDPOINT_CAPABILITIES,
 };
 
 /** 向量专属 public operation：非向量模型的候选需排除。 */

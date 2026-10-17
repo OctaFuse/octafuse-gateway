@@ -8,7 +8,7 @@ export const PROVIDER_QUOTA_EXHAUSTED_PERCENT = 100;
 
 export type ProviderQuotaState = 'ok' | 'low' | 'exhausted' | 'unknown';
 
-export type ProviderQuotaWindowUnit = 'tokens' | 'requests' | 'currency' | 'percent';
+export type ProviderQuotaWindowUnit = 'tokens' | 'requests' | 'currency' | 'percent' | 'credits';
 
 export type ProviderQuotaBalance = {
 	currency: string;

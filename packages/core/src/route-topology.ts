@@ -12,11 +12,26 @@ export {
 	DASHSCOPE_FILE_TRANSCRIPTION_PATH,
 	DASHSCOPE_MULTIMODAL_GENERATION_PATH,
 	DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
+	DASHSCOPE_REALTIME_INFERENCE_PATH,
+	DASHSCOPE_REALTIME_SESSION_PATH,
 	DASHSCOPE_TASKS_PATH,
+	LEGACY_DASHSCOPE_FILE_TRANSCRIPTION_PATH,
+	LEGACY_DASHSCOPE_MULTIMODAL_GENERATION_PATH,
+	LEGACY_DASHSCOPE_REALTIME_PATH,
+	LEGACY_DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
+	LEGACY_DASHSCOPE_TASKS_PATH,
+	LEGACY_MINIMAX_IMAGE_GENERATION_PATH,
+	LEGACY_MINIMAX_SPEECH_TO_TEXT_PATH,
+	LEGACY_MINIMAX_T2A_PATH,
+	LEGACY_VOLCENGINE_IMAGE_GENERATIONS_PATH,
 	MINIMAX_IMAGE_GENERATION_PATH,
 	MINIMAX_SPEECH_TO_TEXT_PATH,
 	MINIMAX_T2A_PATH,
 	VOLCENGINE_IMAGE_GENERATIONS_PATH,
+	ELEVENLABS_TEXT_TO_SPEECH_PATH,
+	ELEVENLABS_SPEECH_TO_TEXT_PATH,
+	ELEVENLABS_TEXT_TO_SPEECH_REALTIME_PATH,
+	ELEVENLABS_SPEECH_TO_TEXT_REALTIME_PATH,
 	PASSTHROUGH_ROUTE_ADAPTER,
 	ROUTE_ADAPTER_MAPPINGS,
 	ROUTE_ADAPTERS,
@@ -63,16 +78,29 @@ export const REQUEST_OPERATIONS_BY_PROTOCOL = {
 		"images.generations.multimodal",
 	],
 	/**
-	 * 公开入口：`POST /v1/minimax/speech_to_text`、`POST /v1/minimax/t2a_v2`、
-	 * `POST /v1/minimax/image_generation`。adapter 都是 passthrough。
+	 * 公开入口：`POST /minimax/v1/speech_to_text`、`POST /minimax/v1/t2a_v2`、
+	 * `POST /minimax/v1/image_generation`（旧 `/v1/minimax/*` 仍作别名）。adapter 都是 passthrough。
 	 * `audio.speech` 同时覆盖非流式 JSON 和 `stream: true` 的 SSE。
 	 */
 	minimax: ['audio.transcriptions', 'audio.speech', 'images.generations'],
 	/**
-	 * 公开入口：`POST /v1/volcengine/images/generations`。
+	 * 公开入口：`POST /volcengine/api/v3/images/generations`（旧 `/v1/volcengine/images/generations` 仍作别名）。
 	 * 非流式 JSON 与 `stream: true` 的 SSE 共用这条路径，adapter 是 passthrough。
 	 */
 	volcengine: ['images.generations'],
+	/**
+	 * 公开入口：`POST /elevenlabs/v1/text-to-speech/:voice_id[/stream][/with-timestamps]`、
+	 * `POST /elevenlabs/v1/speech-to-text`；WebSocket：
+	 * `GET /elevenlabs/v1/text-to-speech/:voice_id/stream-input`、`GET /elevenlabs/v1/speech-to-text/realtime`
+	 * （升级前用 query `model_id` 选路由）。adapter 都是 passthrough。
+	 * TTS 四种 HTTP 变体共用 `audio.speech`。
+	 */
+	elevenlabs: [
+		'audio.transcriptions',
+		'audio.transcriptions.realtime',
+		'audio.speech',
+		'audio.speech.realtime',
+	],
 } as const satisfies Record<UpstreamProtocol, readonly string[]>;
 
 export type RequestOperation =

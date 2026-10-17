@@ -174,7 +174,7 @@ function emptyRoute(protocol: UpstreamProtocol): RouteResult {
 function logProviderSwitchAlert(route: RouteResult, classification: UpstreamFailureClassification, status?: number): void {
 	if (!classification.alertOnKeySwitch) return;
 	console.warn(
-		`[Gateway Proxy] provider auth issue, trying next provider providerId=${route.providerId} status=${status ?? 'fetch_error'}`
+		`[Gateway Proxy] provider auth or quota issue, trying next provider providerId=${route.providerId} status=${status ?? 'fetch_error'}`
 	);
 }
 

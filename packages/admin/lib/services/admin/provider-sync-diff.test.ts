@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { GeminiUpstreamAuthScheme } from '@octafuse/core/gemini-upstream-url';
-import { listStaticProviderImportPresets } from '@/lib/provider-import-preset';
+import { listStaticProviderImportPresets, providerImportStoredFields } from '@/lib/provider-import-preset';
 import { buildProviderSyncPatch, diffProviderAgainstPreset } from '@/lib/provider-sync-diff';
 
 const preset = {
@@ -222,6 +222,24 @@ describe('diffProviderAgainstPreset', () => {
 				[],
 				row.name
 			);
+			for (const locale of ['en', 'zh'] as const) {
+				const stored = providerImportStoredFields(row, locale);
+				assert.deepEqual(
+					diffProviderAgainstPreset(
+						{ description: stored.description, endpoints: row.endpoints },
+						{ description: stored.description, endpoints: row.endpoints }
+					),
+					[],
+					`${row.name} ${locale}`
+				);
+				const other = providerImportStoredFields(row, locale === 'zh' ? 'en' : 'zh');
+				if (!other.description || other.description === stored.description) continue;
+				const drifted = diffProviderAgainstPreset(
+					{ description: other.description, endpoints: row.endpoints },
+					{ description: stored.description, endpoints: row.endpoints }
+				);
+				assert.equal(drifted[0]?.key, 'description', `${row.name} ${locale} other language`);
+			}
 		}
 	});
 });

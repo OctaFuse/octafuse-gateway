@@ -5,8 +5,10 @@
  * - `Kimi Code (Coding API)` 的云端用量接口没有稳定公开契约
  * - ZenMux、xAI、OpenAI、Anthropic 的余额接口要另一把管理密钥
  */
+import { commandCodeQuotaAdapter } from './adapters/commandcode';
 import { deepinfraQuotaAdapter } from './adapters/deepinfra';
 import { deepseekQuotaAdapter } from './adapters/deepseek';
+import { elevenLabsQuotaAdapter } from './adapters/elevenlabs';
 import { zaiCodingPlanQuotaAdapter, zhipuCodingPlanQuotaAdapter } from './adapters/glm-coding-plan';
 import { minimaxQuotaAdapter } from './adapters/minimax';
 import { moonshotQuotaAdapter } from './adapters/moonshot';
@@ -29,6 +31,8 @@ export const PROVIDER_QUOTA_ADAPTER_BY_KIND: Readonly<Record<string, ProviderQuo
 	StepFun: stepfunQuotaAdapter,
 	'Vercel AI Gateway': vercelQuotaAdapter,
 	'OpenCode Go': opencodeGoQuotaAdapter,
+	'Command Code': commandCodeQuotaAdapter,
+	ElevenLabs: elevenLabsQuotaAdapter,
 	MiniMax: minimaxQuotaAdapter,
 	'Zhipu GLM (Coding Plan)': zhipuCodingPlanQuotaAdapter,
 	'Z.AI GLM (Coding Plan)': zaiCodingPlanQuotaAdapter,

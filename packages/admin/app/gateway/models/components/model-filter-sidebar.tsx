@@ -1,11 +1,15 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { CatalogViewToggle, type CatalogView } from '../../components/catalog-view-toggle';
 import { FilterRow, FilterSegmented, FilterSelect } from '../../components/filter-controls';
 import { getModelVendorLabel } from '@/lib/model-vendor';
 import { ALL_VENDORS_KEY, type ModelLifecycleFilter, type ModelListKindFilter } from '../types';
 
 type Props = {
+	view: CatalogView;
+	onViewChange: (view: CatalogView) => void;
+	filteredCount: number;
 	modelCount: number;
 	hasActiveFilter: boolean;
 	isAllVendors: boolean;
@@ -25,6 +29,9 @@ type Props = {
 
 export function ModelFilterSidebar(props: Props) {
 	const {
+		view,
+		onViewChange,
+		filteredCount,
 		modelCount,
 		hasActiveFilter,
 		isAllVendors,
@@ -43,14 +50,17 @@ export function ModelFilterSidebar(props: Props) {
 
 	const t = useTranslations('models.filter');
 	const tFilter = useTranslations('filter');
-
-	if (modelCount === 0) return null;
+	const tCommon = useTranslations('common');
 
 	const vendorTotal = modelsByVendor.reduce((n, [, items]) => n + items.length, 0);
 
 	return (
-		<section className="mb-5 sm:mb-6" aria-label={t('title')}>
-			<div className="grid grid-cols-2 gap-3 rounded-lg border border-gray-200 bg-white p-3 md:hidden">
+		<section className="mb-5 space-y-3 rounded-xl border border-slate-200 bg-white p-4" aria-label={t('title')}>
+			<div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+				<span className="text-xs tabular-nums text-slate-500">{tCommon('showing', { filtered: filteredCount, total: modelCount })}</span>
+				<CatalogViewToggle value={view} onChange={onViewChange} />
+			</div>
+			<div className="grid grid-cols-2 gap-3 md:hidden">
 				<label className="min-w-0 text-xs text-gray-500">
 					{t('kind')}
 					<select value={selectedKind} onChange={(event) => onSelectKind(event.target.value as ModelListKindFilter)} className="mt-1 min-h-11 w-full min-w-0 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900">
@@ -79,7 +89,7 @@ export function ModelFilterSidebar(props: Props) {
 				</label>
 				{hasActiveFilter && <button type="button" onClick={onClearFilter} className="col-span-2 min-h-9 text-left text-xs font-medium text-blue-600">{tFilter('clear')}</button>}
 			</div>
-			<div className="hidden items-start gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3 md:flex">
+			<div className="hidden items-center gap-4 md:flex">
 				<FilterRow className="min-w-0 flex-1">
 					<FilterSegmented
 						label={t('kind')}

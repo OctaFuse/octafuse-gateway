@@ -103,6 +103,8 @@ export function UpstreamProtocolBrandIcon({
 			? t("minimax")
 			: p === "volcengine"
 			? t("volcengine")
+			: p === "elevenlabs"
+			? t("elevenlabs")
 			: t("protocolUnknown", { protocol });
 	const iconCls = size === "compact" ? "h-3.5 w-3.5" : "h-4 w-4";
 
@@ -166,6 +168,21 @@ export function UpstreamProtocolBrandIcon({
 			<span className="inline-flex" title={label}>
 				<img
 					src={vendorIconAssets.volcengine}
+					alt=""
+					width={24}
+					height={24}
+					className={`${iconCls} shrink-0 block max-w-none`}
+					draggable={false}
+				/>
+				<span className="sr-only">{label}</span>
+			</span>
+		);
+	}
+	if (p === "elevenlabs") {
+		return (
+			<span className="inline-flex" title={label}>
+				<img
+					src={vendorIconAssets.elevenlabs}
 					alt=""
 					width={24}
 					height={24}

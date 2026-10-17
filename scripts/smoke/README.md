@@ -62,6 +62,16 @@ GATEWAY_API_KEY=sk-... GATEWAY_REALTIME_PCM=./speech.pcm npx tsx scripts/smoke/t
 
 可选 `GATEWAY_MASTER_URL` + `GATEWAY_MASTER_KEY` 核对请求日志里 `billing_kind=audio_per_second` 且状态为成功。脚本结束时不带 Close 码关闭套接字，用于回归 Node 运行时的保留码记账。
 
+### ElevenLabs 实时 WebSocket（需真实上游）
+
+`test-elevenlabs-realtime.ts` **不进 CI**。覆盖 `/elevenlabs/v1/text-to-speech/{voice_id}/stream-input` 与 `/elevenlabs/v1/speech-to-text/realtime`（不含 multi-stream-input）。需要已启动的代理服务和对应实时路由；TTS 只需 `GATEWAY_ELEVENLABS_VOICE_ID`，STT 需要 16 kHz / 16 bit / 单声道裸 PCM。两项都不设时跳过：
+
+```bash
+GATEWAY_API_KEY=sk-... GATEWAY_ELEVENLABS_VOICE_ID=<voice_id> GATEWAY_REALTIME_PCM=./speech.pcm npx tsx scripts/smoke/test-elevenlabs-realtime.ts
+```
+
+可选 `GATEWAY_MASTER_URL` + `GATEWAY_MASTER_KEY` 核对请求日志（TTS `audio_per_character`、STT `audio_per_second`）。实时会话的用量由网关按客户端发出的文本字符 / 音频字节估算，需与 ElevenLabs 控制台对账。
+
 ## 说明
 
 `test-postgres-core-routes` 名称中的 “postgres” 为历史遗留：脚本对 **任意** `DATABASE_DRIVER` 下的 Node 网关同样适用（见 `test-node-core-routes.ts` 内 `smokeLabel()`）。

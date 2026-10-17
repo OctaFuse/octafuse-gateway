@@ -30,6 +30,8 @@ export type PresetCatalogRow = {
 	tier_count: number;
 	/** Short cell label (USD/CNY branch per `BILLING_CURRENCY`). */
 	pricing_label: string | null;
+	/** False when the billing-currency catalog branch is missing; such rows cannot be imported. */
+	pricing_available: boolean;
 	pricing_preview: string | null;
 	/** Model release date `YYYY-MM-DD`. */
 	released: string | null;

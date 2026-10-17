@@ -11,6 +11,7 @@ import {
 import { useLocale, useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
 import { formatProviderAccountLabel, providerKindDisplayLabel } from '@/lib/provider-kind';
+import type { CatalogView } from '../../components/catalog-view-toggle';
 import type { GatewayProvider, ProviderKeyStatusKind } from '../types';
 import {
 	getProviderKeyStatus,
@@ -21,6 +22,7 @@ import { ProviderProtocolIcon } from './provider-protocol-icon';
 import { ProviderQuotaButton } from './provider-quota-popover';
 
 type ProviderCardProps = {
+	view?: CatalogView;
 	provider: GatewayProvider;
 	copiedId: string | null;
 	statusTogglingId: string | null;
@@ -67,6 +69,7 @@ function routeUsageClass(routesCount: number, activeRoutesCount: number): string
 
 export function ProviderCard(props: ProviderCardProps) {
 	const {
+		view = 'cards',
 		provider,
 		copiedId,
 		statusTogglingId,
@@ -76,6 +79,7 @@ export function ProviderCard(props: ProviderCardProps) {
 		onReviewOfficialUpdate,
 	} = props;
 
+	const isList = view === 'list';
 	const t = useTranslations('providers.card');
 	const tKind = useTranslations('providers.kind');
 	const tCommon = useTranslations('common');
@@ -118,18 +122,19 @@ export function ProviderCard(props: ProviderCardProps) {
 
 	return (
 		<article
-			className={`group relative flex min-w-0 flex-col gap-3 rounded-xl border p-4 shadow-sm transition-[border-color,box-shadow] hover:shadow-md ${CARD_SHELL[keyStatus]}`}
+			role={isList ? 'listitem' : undefined}
+			className={`group relative min-w-0 gap-3 p-4 transition-[border-color,box-shadow] ${CARD_SHELL[keyStatus]} ${isList ? 'grid sm:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.7fr)_minmax(0,1.7fr)_minmax(0,1.1fr)] xl:items-center xl:gap-4 hover:ring-1 hover:ring-inset hover:ring-blue-200' : 'flex flex-col rounded-xl border shadow-sm hover:shadow-md'}`}
 			data-provider-status={isActive ? 'active' : 'disabled'}
 		>
 			<button
 				type="button"
 				onClick={() => onEdit(provider)}
-				className="absolute inset-0 z-0 cursor-pointer rounded-xl bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+				className={`absolute inset-0 z-0 cursor-pointer bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${isList ? '' : 'rounded-xl'}`}
 				title={t('editProvider', { name: accountTitle })}
 				aria-label={t('editProvider', { name: accountTitle })}
 			/>
 
-			<div className="pointer-events-none relative z-10 flex min-h-[2.625rem] items-start gap-3">
+			<div className={`pointer-events-none relative z-10 flex min-h-[2.625rem] gap-3 ${isList ? 'items-center' : 'items-start'}`}>
 				<VendorIcon
 					vendor={provider.vendor_key}
 					iconKey={provider.icon_key}
@@ -193,7 +198,7 @@ export function ProviderCard(props: ProviderCardProps) {
 			</div>
 
 			<div
-				className="pointer-events-none relative z-10 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5"
+				className={`pointer-events-none relative z-10 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5 ${isList ? 'sm:justify-end xl:justify-start' : ''}`}
 				title={routeTitle}
 			>
 				<ShareIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
@@ -208,7 +213,7 @@ export function ProviderCard(props: ProviderCardProps) {
 				) : null}
 			</div>
 
-			<div className="pointer-events-none relative z-10 min-w-0 flex-1">
+			<div className={`pointer-events-none relative z-10 min-w-0 ${isList ? '' : 'flex-1'}`}>
 				{protocols.length > 0 ? (
 					<div className="flex flex-wrap gap-1.5">
 						{protocols.map((protocol) => {
@@ -260,7 +265,7 @@ export function ProviderCard(props: ProviderCardProps) {
 				)}
 			</div>
 
-			<div className={`pointer-events-none relative z-10 -mx-4 -mb-4 mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-b-xl border-t px-4 py-2 ${CARD_FOOTER[keyStatus]}`}>
+			<div className={`pointer-events-none relative z-10 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 ${isList ? 'sm:justify-end xl:justify-start' : `-mx-4 -mb-4 mt-1 rounded-b-xl border-t px-4 py-2 ${CARD_FOOTER[keyStatus]}`}`}>
 				<div className="flex min-w-0 items-center gap-2">
 					<span
 						className={`inline-flex min-w-0 items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium ring-1 ring-inset ${STATUS_BADGE[keyStatus]}`}

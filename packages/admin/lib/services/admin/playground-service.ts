@@ -45,6 +45,20 @@ import {
 	fillMiniMaxSpeechDefaults,
 } from '@octafuse/core/minimax-openai';
 import {
+	ELEVENLABS_ASR_DROPPED_FORM_KEYS,
+	ElevenLabsOpenAiClientError,
+	assertElevenLabsAsrNotWebhook,
+	buildElevenLabsTtsRequestFromOpenAi,
+	resolveElevenLabsAsrMapping,
+	splitElevenLabsTtsQuery,
+} from '@octafuse/core/elevenlabs-openai';
+import {
+	ELEVENLABS_TTS_VARIANTS,
+	elevenLabsTtsVariantSuffix,
+	isValidElevenLabsVoiceId,
+	type ElevenLabsTtsVariant,
+} from '@octafuse/core/elevenlabs-native';
+import {
 	VolcengineOpenAiClientError,
 	buildVolcengineImageBodyFromOpenAi,
 } from '@octafuse/core/volcengine-openai';
@@ -1045,9 +1059,10 @@ export async function invokePlaygroundUpstream(
 		isAudioKind(route.modelKind) &&
 		route.upstreamProtocol !== 'openai' &&
 		route.upstreamProtocol !== 'dashscope' &&
-		route.upstreamProtocol !== 'minimax'
+		route.upstreamProtocol !== 'minimax' &&
+		route.upstreamProtocol !== 'elevenlabs'
 	) {
-		throw badRequest('Audio models require upstream_protocol=openai, dashscope, or minimax.');
+		throw badRequest('Audio models require upstream_protocol=openai, dashscope, minimax, or elevenlabs.');
 	}
 
 	const imageOperation: ImageOperation | null =
@@ -1532,6 +1547,171 @@ export async function invokePlaygroundUpstream(
 					adapter: route.adapter,
 					response_format: responseFormat || undefined,
 					language,
+					file: `${collected.file.filename} (${collected.file.bytes.byteLength} bytes, ${collected.file.mimeType})`,
+				},
+				null,
+				2,
+			);
+			break;
+		}
+		case 'elevenlabs': {
+			if (!isAudioKind(route.modelKind)) {
+				throw badRequest('ElevenLabs Playground routes must use an audio catalog model');
+			}
+			const passthrough = route.adapter === 'passthrough';
+			if (route.upstreamOperation === 'audio.speech') {
+				if (!passthrough && route.adapter !== 'elevenlabs-tts') {
+					throw badRequest(`Playground does not support ElevenLabs audio adapter ${JSON.stringify(route.adapter)}`);
+				}
+				let voiceId: string;
+				let pathSuffix: string;
+				let query: Record<string, string>;
+				let upstreamBody: Record<string, unknown>;
+				try {
+					if (passthrough) {
+						// 原生透传：voice_id、variant、output_format 等路径 / query 参数从 body 里取出，其余原样作为 JSON body。
+						const { voice_id, variant, output_format, ...rest } = merged;
+						voiceId = typeof voice_id === 'string' ? voice_id.trim() : '';
+						if (!isValidElevenLabsVoiceId(voiceId)) {
+							throw badRequest('ElevenLabs speech requires body.voice_id (the ElevenLabs voice ID)');
+						}
+						const variantName = typeof variant === 'string' && variant.trim() ? variant.trim() : 'speech';
+						if (!(ELEVENLABS_TTS_VARIANTS as readonly string[]).includes(variantName)) {
+							throw badRequest(`body.variant must be one of ${ELEVENLABS_TTS_VARIANTS.join(', ')}`);
+						}
+						pathSuffix = elevenLabsTtsVariantSuffix(variantName as ElevenLabsTtsVariant);
+						const split = splitElevenLabsTtsQuery(rest);
+						query = {
+							...split.query,
+							...(typeof output_format === 'string' && output_format.trim()
+								? { output_format: output_format.trim() }
+								: {}),
+						};
+						upstreamBody = { ...split.body, model_id: route.providerModelName };
+					} else {
+						const built = buildElevenLabsTtsRequestFromOpenAi({
+							model: route.providerModelName,
+							text: typeof userBody.input === 'string' ? userBody.input : '',
+							voiceId:
+								typeof userBody.voice === 'string'
+									? userBody.voice.trim()
+									: userBody.voice != null && typeof userBody.voice === 'object' && !Array.isArray(userBody.voice)
+										? String((userBody.voice as Record<string, unknown>).id ?? '').trim()
+										: '',
+							responseFormat: typeof userBody.response_format === 'string' ? userBody.response_format : 'mp3',
+							speed: userBody.speed == null ? 1 : Number(userBody.speed),
+							stream: userBody.stream_format === 'sse',
+							instructions: typeof userBody.instructions === 'string' ? userBody.instructions : undefined,
+						});
+						const split = splitElevenLabsTtsQuery(
+							applyPlaygroundUpstreamBody({
+								route,
+								built: built.body,
+								extras: playgroundExtraFields(userBody, AUDIO_SPEECH_KNOWN_KEYS),
+							}),
+						);
+						voiceId = built.voiceId;
+						pathSuffix = built.pathSuffix;
+						query = { ...split.query, ...built.query };
+						upstreamBody = { ...split.body, model_id: route.providerModelName };
+					}
+				} catch (error) {
+					if (error instanceof ElevenLabsOpenAiClientError) throw badRequest(error.message);
+					throw error;
+				}
+				try {
+					const resolved = new URL(
+						resolveUpstreamEndpoint('elevenlabs', 'audio.speech', route.providerEndpoints, {
+							providerId: route.providerId,
+							voiceId,
+						}),
+					);
+					resolved.pathname = resolved.pathname.replace(/\/+$/, '') + pathSuffix;
+					for (const [key, value] of Object.entries(query)) resolved.searchParams.set(key, value);
+					url = resolved.toString();
+				} catch (e) {
+					throw badRequest(e instanceof Error ? e.message : 'Failed to resolve ElevenLabs upstream URL');
+				}
+				headers = {
+					'Content-Type': 'application/json',
+					'xi-api-key': route.providerApiKey,
+				};
+				fetchBody = JSON.stringify(upstreamBody);
+				upstreamWireBodyJson = fetchBody;
+				break;
+			}
+			if (route.upstreamOperation !== 'audio.transcriptions') {
+				throw badRequest('ElevenLabs Playground routes support audio.transcriptions or audio.speech');
+			}
+			if (!passthrough && route.adapter !== 'elevenlabs-asr-file') {
+				throw badRequest(`Playground does not support ElevenLabs audio adapter ${JSON.stringify(route.adapter)}`);
+			}
+			const collected = collectAudioFileFromBody(merged);
+			if (!collected.ok) throw badRequest(collected.error);
+			try {
+				assertElevenLabsAsrNotWebhook(merged.webhook);
+			} catch (error) {
+				if (error instanceof ElevenLabsOpenAiClientError) throw badRequest(error.message);
+				throw error;
+			}
+			try {
+				url = resolveUpstreamEndpoint('elevenlabs', 'audio.transcriptions', route.providerEndpoints, {
+					providerId: route.providerId,
+				});
+			} catch (e) {
+				throw badRequest(e instanceof Error ? e.message : 'Failed to resolve ElevenLabs transcription URL');
+			}
+			const mapped = passthrough
+				? null
+				: resolveElevenLabsAsrMapping(
+						typeof merged.response_format === 'string' ? merged.response_format : undefined,
+					);
+			const language =
+				typeof merged.language_code === 'string'
+					? merged.language_code.trim()
+					: typeof merged.language === 'string'
+						? merged.language.trim()
+						: '';
+			const fd = new FormData();
+			fd.append('model_id', route.providerModelName);
+			const skipped = new Set<string>([
+				'model',
+				'model_id',
+				'file',
+				'audio',
+				'file_name',
+				'filename',
+				'webhook',
+				...(passthrough
+					? ['language']
+					: ['timestamps_granularity', 'language_code', ...ELEVENLABS_ASR_DROPPED_FORM_KEYS]),
+			]);
+			for (const [key, value] of Object.entries(merged)) {
+				if (skipped.has(key)) continue;
+				if (typeof value === 'string' && value.startsWith('data:')) continue;
+				appendOptionalFormString(fd, key, value);
+				if (typeof value === 'boolean') fd.append(key, String(value));
+			}
+			if (!passthrough) {
+				if (language) fd.append('language_code', language);
+				fd.append('timestamps_granularity', mapped!.timestampsGranularity);
+				if (mapped!.diarize) fd.set('diarize', 'true');
+			}
+			const copy = collected.file.bytes.buffer.slice(
+				collected.file.bytes.byteOffset,
+				collected.file.bytes.byteOffset + collected.file.bytes.byteLength,
+			) as ArrayBuffer;
+			const file = new File([copy], collected.file.filename, { type: collected.file.mimeType });
+			fd.append('file', file, collected.file.filename);
+			headers = { 'xi-api-key': route.providerApiKey };
+			fetchBody = fd;
+			upstreamWireBodyJson = JSON.stringify(
+				{
+					__playground_multipart: true,
+					operation: 'audio.transcriptions',
+					model_id: route.providerModelName,
+					adapter: route.adapter,
+					language_code: language || undefined,
 					file: `${collected.file.filename} (${collected.file.bytes.byteLength} bytes, ${collected.file.mimeType})`,
 				},
 				null,

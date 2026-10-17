@@ -80,6 +80,8 @@ function protocolFormFromConfig(cfg: ProtocolEndpointsConfig | undefined): Proto
 	form.audio_transcriptions_multimodal = eps['audio.transcriptions.multimodal'] ?? '';
 	form.audio_transcriptions_tasks = eps['audio.transcriptions.tasks'] ?? '';
 	form.audio_speech = eps['audio.speech'] ?? '';
+	form.audio_speech_realtime = eps['audio.speech.realtime'] ?? '';
+	form.audio_transcriptions_realtime = eps['audio.transcriptions.realtime'] ?? '';
 	form.audio_speech_multimodal = eps['audio.speech.multimodal'] ?? '';
 	form.audio_realtime_inference = eps['audio.realtime.inference'] ?? '';
 	form.audio_realtime_session = eps['audio.realtime.session'] ?? '';
@@ -135,6 +137,7 @@ export function providerToFormData(
 		dashscope: protocolFormFromConfig(map.dashscope),
 		minimax: protocolFormFromConfig(map.minimax),
 		volcengine: protocolFormFromConfig(map.volcengine),
+		elevenlabs: protocolFormFromConfig(map.elevenlabs),
 	};
 }
 
@@ -180,6 +183,17 @@ function configFromProtocolForm(
 	} else if (protocol === "volcengine") {
 		if (form.images_generations.trim()) {
 			endpoints["images.generations"] = form.images_generations.trim();
+		}
+	} else if (protocol === "elevenlabs") {
+		if (form.audio_transcriptions.trim()) {
+			endpoints["audio.transcriptions"] = form.audio_transcriptions.trim();
+		}
+		if (form.audio_transcriptions_realtime.trim()) {
+			endpoints["audio.transcriptions.realtime"] = form.audio_transcriptions_realtime.trim();
+		}
+		if (form.audio_speech.trim()) endpoints["audio.speech"] = form.audio_speech.trim();
+		if (form.audio_speech_realtime.trim()) {
+			endpoints["audio.speech.realtime"] = form.audio_speech_realtime.trim();
 		}
 	} else {
 		if (form.images_generations_multimodal.trim()) {
@@ -235,12 +249,14 @@ export function formDataToEndpointsMap(
 	const dashscope = configFromProtocolForm("dashscope", form.dashscope);
 	const minimax = configFromProtocolForm("minimax", form.minimax);
 	const volcengine = configFromProtocolForm("volcengine", form.volcengine);
+	const elevenlabs = configFromProtocolForm("elevenlabs", form.elevenlabs);
 	if (openai) map.openai = openai;
 	if (anthropic) map.anthropic = anthropic;
 	if (gemini) map.gemini = gemini;
 	if (dashscope) map.dashscope = dashscope;
 	if (minimax) map.minimax = minimax;
 	if (volcengine) map.volcengine = volcengine;
+	if (elevenlabs) map.elevenlabs = elevenlabs;
 	return map;
 }
 
@@ -269,10 +285,13 @@ export function getProviderProtocolSummaries(
 					action: key === 'gemini' ? 'generateContent' : undefined,
 					// 异步任务 URL 必须保留任务占位符，供应商卡片才能展示完整端点。
 					taskId: key === 'dashscope' ? '{task_id}' : undefined,
+					// ElevenLabs 文本转语音的音色是路径参数，卡片上保留占位符。
+					voiceId: key === 'elevenlabs' ? '{voice_id}' : undefined,
 					providerId: provider.id,
 				})
 					.replace(/%7Bmodel%7D/gi, '{model}')
 					.replace(/%7Btask_id%7D/gi, '{task_id}')
+					.replace(/%7Bvoice_id%7D/gi, '{voice_id}')
 					.replace(/:generateContent$/i, ':{action}');
 				const override =
 					Boolean(config.endpoints?.[capability]) ||
@@ -307,6 +326,7 @@ export function getProviderProtocolSummaries(
 	appendProtocol("dashscope", "DashScope");
 	appendProtocol("minimax", "MiniMax");
 	appendProtocol("volcengine", "Volcengine");
+	appendProtocol("elevenlabs", "ElevenLabs");
 	return rows;
 }
 
@@ -391,6 +411,14 @@ export function protocolFormHasOverrides(
 		);
 	}
 	if (protocol === "volcengine") return !!form.images_generations.trim();
+	if (protocol === "elevenlabs") {
+		return !!(
+			form.audio_transcriptions.trim() ||
+			form.audio_transcriptions_realtime.trim() ||
+			form.audio_speech.trim() ||
+			form.audio_speech_realtime.trim()
+		);
+	}
 	return !!(
 		form.images_generations_multimodal.trim() ||
 		form.audio_transcriptions.trim() ||

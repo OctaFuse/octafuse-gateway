@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { CheckIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import type { ServerSummary } from '../mcp-types';
@@ -22,6 +22,8 @@ const CODE =
 	'overflow-auto whitespace-pre rounded-lg bg-slate-950 p-4 font-mono text-xs leading-6 text-slate-100';
 
 function readSavedProxyUrl(): string {
+	// 弹窗只在客户端交互后渲染；服务端渲染时没有 window，返回空串。
+	if (typeof window === 'undefined') return '';
 	try {
 		const saved = localStorage.getItem(MCP_CATALOG_PROXY_STORAGE) || localStorage.getItem(SIMULATOR_PROXY_STORAGE);
 		if (saved && mcpProxyBaseUrl(saved)) return saved;
@@ -47,14 +49,10 @@ export function McpConnectGuideModal({
 }) {
 	const t = useTranslations('mcp.connectGuide');
 	const common = useTranslations('common');
-	const [baseUrl, setBaseUrl] = useState('');
+	const [baseUrl, setBaseUrl] = useState(readSavedProxyUrl);
 	const [slug, setSlug] = useState(initialSlug);
 	const [client, setClient] = useState<McpConnectClient>('cursor');
 	const [copied, setCopied] = useState<'ok' | 'failed' | null>(null);
-
-	useEffect(() => {
-		setBaseUrl(readSavedProxyUrl());
-	}, []);
 
 	const normalized = mcpProxyBaseUrl(baseUrl);
 	const urlInvalid = baseUrl.trim() !== '' && normalized == null;

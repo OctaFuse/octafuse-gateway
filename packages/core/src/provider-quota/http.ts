@@ -34,16 +34,28 @@ function assertQuotaUrl(ctx: ProviderQuotaFetchContext, url: URL, sameOrigin: bo
 	}
 }
 
-async function requestQuotaJson(ctx: ProviderQuotaFetchContext, url: URL): Promise<unknown> {
+export type ProviderQuotaHttpOptions = {
+	/** 默认带 `Authorization: Bearer`。ElevenLabs 只用 `xi-api-key`。 */
+	authorization?: 'bearer' | 'none';
+	headers?: Record<string, string>;
+};
+
+async function requestQuotaJson(
+	ctx: ProviderQuotaFetchContext,
+	url: URL,
+	options?: ProviderQuotaHttpOptions,
+): Promise<unknown> {
+	const headers: Record<string, string> = {
+		Accept: 'application/json',
+		...(options?.authorization === 'none' ? {} : { Authorization: `Bearer ${ctx.apiKey}` }),
+		...options?.headers,
+	};
 
 	let response: Response;
 	try {
 		response = await ctx.fetchImpl(url, {
 			method: 'GET',
-			headers: {
-				Authorization: `Bearer ${ctx.apiKey}`,
-				Accept: 'application/json',
-			},
+			headers,
 			redirect: 'error',
 			signal: ctx.signal,
 		});
@@ -68,13 +80,14 @@ async function requestQuotaJson(ctx: ProviderQuotaFetchContext, url: URL): Promi
 export async function fetchProviderQuotaJson(
 	ctx: ProviderQuotaFetchContext,
 	path: string,
+	options?: ProviderQuotaHttpOptions,
 ): Promise<unknown> {
 	if (!path.startsWith('/') || path.startsWith('//')) {
 		throw new ProviderQuotaParseError('Quota path must be a relative path');
 	}
 	const url = new URL(path, new URL(ctx.origin).origin);
 	assertQuotaUrl(ctx, url, true);
-	return requestQuotaJson(ctx, url);
+	return requestQuotaJson(ctx, url, options);
 }
 
 /**

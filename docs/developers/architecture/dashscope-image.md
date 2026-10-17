@@ -17,7 +17,7 @@
 | request protocol | operation | 入口 | 说明 |
 | ---------------- | --------- | ---- | ---- |
 | `openai` | `images.generations` | `POST /v1/images/generations` | 文生图与 JSON `image` 图生图；与 Seedream 约定一致 |
-| `dashscope` | `images.generations.multimodal` | `POST /v1/dashscope/services/aigc/multimodal-generation/generation` | 原生生图透传。返回 DashScope JSON，不下载图片、不改写成 OpenAI `{data:[{url}]}` |
+| `dashscope` | `images.generations.multimodal` | `POST /dashscope/api/v1/services/aigc/multimodal-generation/generation` | 原生生图透传。返回 DashScope JSON，不下载图片、不改写成 OpenAI `{data:[{url}]}` |
 
 本阶段不做 `POST /v1/images/edits`。生图透传按返回里的图片张数计费，不从模型名猜测尺寸档。
 

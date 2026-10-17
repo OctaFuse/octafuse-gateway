@@ -8,8 +8,11 @@ import { createAdaptorServer } from '@hono/node-server';
 import type { IncomingMessage } from 'node:http';
 import { pathToFileURL } from 'node:url';
 import { createProxyApp } from '../app';
+import { isRealtimeUpgradePath } from '@octafuse/core/realtime-protocol';
 import {
+	createNodeDashScopeDeferredRuntime,
 	createNodeDashScopeRealtimeDispatch,
+	createNodeElevenLabsRealtimeDispatch,
 	createNodeWebSocketServer,
 	type NodeWebSocket,
 } from './node-realtime';
@@ -71,7 +74,11 @@ function printNodeStartupBanner(
 		`  Anthropic      POST ${base}/v1/messages`,
 		`  Gemini         POST ${base}/v1beta/models/{model}:generateContent`,
 		`  Web search     POST ${base}/v1/tools/web-search`,
-		`  DashScope WS   GET  ${base}/v1/dashscope/realtime`,
+		`  DashScope WS   GET  ${base}/dashscope/api-ws/v1/inference`,
+		`  DashScope WS   GET  ${base}/dashscope/api-ws/v1/realtime?model=`,
+		`  DashScope WS   GET  ${base}/v1/dashscope/realtime（旧别名）`,
+		`  ElevenLabs WS  GET  ${base}/elevenlabs/v1/text-to-speech/{voice_id}/stream-input?model_id=`,
+		`  ElevenLabs WS  GET  ${base}/elevenlabs/v1/speech-to-text/realtime?model_id=`,
 		'',
 		`  数据库         ${dbLineLabel}  ${redactedUrl}`,
 		`  DATABASE_DRIVER ${dbDriver}`,
@@ -116,7 +123,7 @@ export async function startNodeServer(port = Number(process.env.PORT ?? 8787)): 
 			request.url ?? '/',
 			`http://${request.headers.host ?? '127.0.0.1'}`
 		).pathname;
-		if (pathname !== '/v1/dashscope/realtime') {
+		if (!isRealtimeUpgradePath(pathname)) {
 			socket.destroy();
 			return;
 		}
@@ -127,6 +134,16 @@ export async function startNodeServer(port = Number(process.env.PORT ?? 8787)): 
 		});
 	});
 	server.listen(port);
+}
+
+/**
+ * 路由拒绝了已接受的升级：先恢复读取再关闭。升级后下游处于暂停读状态，
+ * 不恢复的话收不到对端的 Close 回包，关闭握手要等到 ws 的 30 秒超时才结束。
+ */
+function closeRejectedUpgrade(client: NodeWebSocket, code: number, message: string): void {
+	if (client.readyState === 3) return;
+	client.resume();
+	client.close(code, message.slice(0, 123));
 }
 
 async function handleNodeRealtimeUpgrade(
@@ -148,16 +165,19 @@ async function handleNodeRealtimeUpgrade(
 	try {
 		const response = await app.fetch(fetchRequest, {
 			NODE_REALTIME_DISPATCH: createNodeDashScopeRealtimeDispatch(client),
+			NODE_ELEVENLABS_REALTIME_DISPATCH: createNodeElevenLabsRealtimeDispatch(client),
+			// 延迟连接入口（inference）按需调用，此时才开始订阅下游帧。
+			NODE_REALTIME_DEFERRED: () => createNodeDashScopeDeferredRuntime(client),
 		});
 		if (response.headers.get('x-octafuse-realtime-upgrade') === '1') {
 			client.resume();
 			return;
 		}
 		const message = (await response.clone().text()).trim() || `HTTP ${response.status}`;
-		if (client.readyState !== 3) client.close(1008, message.slice(0, 123));
+		closeRejectedUpgrade(client, 1008, message);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
-		if (client.readyState !== 3) client.close(1011, message.slice(0, 123));
+		closeRejectedUpgrade(client, 1011, message);
 	}
 }
 

@@ -795,6 +795,32 @@
 		}
 	},
 	{
+		"name": "ElevenLabs",
+		"vendor_key": "elevenlabs",
+		"endpoints": {
+			"elevenlabs": {
+				"base": "https://api.elevenlabs.io/v1"
+			}
+		},
+		"description": "ElevenLabs on api.elevenlabs.io: native file transcription (Scribe, POST /v1/speech-to-text) and text-to-speech (POST /v1/text-to-speech/{voice_id}) on elevenlabs.base. No openai.base, so OpenAI Audio is served through the elevenlabs-tts and elevenlabs-asr-file adapters. EU data residency uses api.eu.residency.elevenlabs.io.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "ElevenLabs",
+					"description": "ElevenLabs 官方 API，支持原生文件转写（Scribe）与文本转语音，并可通过适配器提供 OpenAI 兼容的 /v1/audio/* 入口。"
+				},
+				"en": {
+					"name": "ElevenLabs",
+					"description": "ElevenLabs official API with native file transcription (Scribe) and text-to-speech, plus OpenAI-compatible /v1/audio/* through adapters."
+				}
+			},
+			"links": {
+				"platform": "https://elevenlabs.io/app",
+				"api_keys": "https://elevenlabs.io/app/developers/api-keys"
+			}
+		}
+	},
+	{
 		"name": "OpenAI",
 		"vendor_key": "openai",
 		"endpoints": {
@@ -1593,23 +1619,24 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.commandcode.ai/provider/v1/chat/completions"
+					"chat": "https://api.commandcode.ai/provider/v1/chat/completions",
+					"responses": "https://api.commandcode.ai/provider/v1/responses"
 				}
 			},
 			"anthropic": {
 				"base": "https://api.commandcode.ai/provider"
 			}
 		},
-		"description": "Command Code Provider API: OpenAI chat/completions for GPT/open-source/Gemini-shaped models; Anthropic Messages for Claude (root appends /v1/messages). Sending a Claude model to /chat/completions (or the reverse) returns 400. Optional ZDR header x-cmd-zdr is not configured by this template. See commandcode.ai/docs/provider.",
+		"description": "Command Code Provider API: OpenAI chat/completions and responses for GPT/open-source/Gemini-shaped models; Anthropic Messages for Claude (root appends /v1/messages). Sending a Claude model to /chat/completions or /responses (or the reverse) returns 400. The typesafe/jev decision endpoint /provider/v1/systemone is not part of this template. Optional ZDR header x-cmd-zdr is not configured. See commandcode.ai/docs/provider.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "Command Code",
-					"description": "Command Code Provider API，按模型分别使用 OpenAI Chat Completions 或 Anthropic Messages。"
+					"description": "Command Code Provider API。OpenAI 与开源模型走 Chat Completions 和 Responses，Claude 走 Anthropic Messages。"
 				},
 				"en": {
 					"name": "Command Code",
-					"description": "Command Code Provider API with OpenAI Chat Completions and Anthropic Messages, split by model family."
+					"description": "Command Code Provider API. OpenAI and open models use Chat Completions and Responses; Claude uses Anthropic Messages."
 				}
 			},
 			"links": {

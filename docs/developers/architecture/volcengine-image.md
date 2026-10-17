@@ -19,7 +19,7 @@
 | 客户端路径 | 路由 | 行为 |
 | ---------- | ---- | ---- |
 | `POST /v1/images/generations` | 请求 `openai` / `images.generations`，上游 `volcengine` / `images.generations`，适配器 `volcengine-image` | OpenAI SDK 入口，只返回 JSON。`n=1` 不带组图字段；`n` 为 2–15 时打开组图并把 `max_images` 设为 `n`。5.0 pro / flash 的 `n>1` 直接返回 400 |
-| `POST /v1/volcengine/images/generations` | 请求与上游都是 `volcengine` / `images.generations`，适配器 `passthrough` | 原生透传，只替换 `model`。非流式 JSON 与 `stream: true` 的 SSE 原样返回，组图字段和单张失败（`data[].error`）都保留 |
+| `POST /volcengine/api/v3/images/generations` | 请求与上游都是 `volcengine` / `images.generations`，适配器 `passthrough` | 原生透传，只替换 `model`。非流式 JSON 与 `stream: true` 的 SSE 原样返回，组图字段和单张失败（`data[].error`）都保留 |
 
 Seedream 没有 OpenAI 形态的 `/images/edits`。图生图和多图融合都走 generations，在 JSON 里传 `image`（URL、data URL 或数组），不要用 multipart `/v1/images/edits`。
 
@@ -101,7 +101,7 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 原生透传（流式和方舟原文字段走这条）：
 
 ```bash
-curl -sS "$GATEWAY_URL/v1/volcengine/images/generations" \
+curl -sS "$GATEWAY_URL/volcengine/api/v3/images/generations" \
   -H "Authorization: Bearer $USER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"doubao-seedream-5-0","prompt":"海边灯塔水彩封面","size":"2K","watermark":false,"stream":false}'

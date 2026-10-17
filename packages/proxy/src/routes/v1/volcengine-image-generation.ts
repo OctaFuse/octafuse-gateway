@@ -1,6 +1,6 @@
 /**
  * 火山方舟 / BytePlus Seedream 生图透传。
- * `POST /v1/volcengine/images/generations`
+ * `POST /volcengine/api/v3/images/generations`
  * 请求和响应保持方舟原文，只替换 model。非流式 JSON 与 `stream: true` SSE 共用。
  * 按 `usage.generated_images`（或 SSE 成功事件）计 per_image。
  */

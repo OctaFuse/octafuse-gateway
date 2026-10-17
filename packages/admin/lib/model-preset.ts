@@ -8,12 +8,12 @@
  * 命名约定：
  * - `<vendor>.json` — LLM（`modalities.output` 以 `text` 为主，含多模态「看图」LLM）
  * - `<vendor>-image.json` — 纯文生图（`modalities.output` 含 `image`）
- * - `<vendor>-audio.json` — 语音转写 ASR（`pricing.audio_billing_mode: per_second | token`）
+ * - `<vendor>-audio.json` — 语音转写 ASR 与语音合成 TTS（`pricing.audio_billing_mode: per_second | token | per_character`）
  * - `<vendor>-embedding.json` — 向量模型（`modalities.output` 为 `embedding`；仅按输入 token 计费，output / cache 价为 0 / null）
  * - `aliyun.json` 另含 DashScope ASR/TTS，便于从同一个官方厂商目录一起导入供应商与音频模型。
  *
  * 各预设内 **`pricing.usd`** 与 D1 导出 `data/remote/.../data-remote-table-models-*.sql` 中 `pricing_profile` 一致（美元口径）；
- * **`pricing.cny`**：国内厂商以中国区官方/Postgres 价为准；海外厂商（openai / anthropic / google / xai 等）按 **USD × 7** 换算占位。
+ * **`pricing.cny`**：有官方人民币标价的（国内厂商，以中国区官方/Postgres 价为准）取官方价；没有的（海外厂商，如 openai / anthropic / google / xai / elevenlabs 等）一律按 **USD × 7** 换算占位，不使用实时汇率，且不得留空（测试会拦截）。
  * 导入时按当前 `BILLING_CURRENCY` 选用 `usd` / `cny` **整段**写入 `pricing_profile`（含可选 `schedule` 官方时段，不只 `tiers`）。
  * DeepSeek V4 / V4.1 目录价为空闲价；`schedule` 为北京时间工作日高峰 09:00–12:00、14:00–18:00、`factor` 2。命中按 `BUSINESS_TIMEZONE` 墙钟，中国区请设 `Asia/Shanghai`。
  * Google Gemini 目录价为 Standard 标准价，不含限时导入价、Batch、Flex。Flash 3.7 / 3.8 写入 $1.50 / $7.50，而不是 2026-12-31 前的 $0.75 / $3.75。
@@ -25,8 +25,8 @@
  * Claude Opus 5.5 目录价为 $4 / $20；缓存读取 $0.20，`cache_write_price` 取 5 分钟写入 $5（1 小时写入 $8 不单列）。
  * Grok 4.7 目录价与 Grok 4.6 相同（200K 阶梯，$2 / $6 与 $4 / $12）。不含仅 Cursor / Grok Build 提供的 Fast 双倍价。官方未公布文本输出上限，`max_tokens` 沿用同系 128000。
  * Xiaomi MiMo-V2.6 目录价为实时推理刊例（USD / CNY 分源）。Pro 与 Flash 的批量推理半价不写入 preset；UltraSpeed 无批量推理。缓存写入官网标明限时免费，`cache_write_price` 保持 null。
- * 面向 Catalog 的英文摘要与中英文展示文案均与模型预设共同维护：
- * `description` 写入现有 `models.description`，`i18n` 仅供静态 Catalog 展示，不增加数据库字段。
+ * 面向 Catalog 的英文摘要与中英文展示文案均与模型预设共同维护。
+ * 导入时按界面语言把 `i18n.zh` 或 `i18n.en` 写入现有 `models.description`（中文用 `zh`，其余语言用 `en`），不增加数据库字段。
  *
  * 合并顺序：与下方 import 列表一致（尚未录入价目的厂商保留 `[]` 占位文件；image 文件紧挨同 vendor 的 LLM 之后）。
  */
@@ -40,6 +40,7 @@ import bytedancePresets from './model-presets/bytedance.json';
 import bytedanceImagePresets from './model-presets/bytedance-image.json';
 import coherePresets from './model-presets/cohere.json';
 import deepseekPresets from './model-presets/deepseek.json';
+import elevenlabsAudioPresets from './model-presets/elevenlabs-audio.json';
 import googlePresets from './model-presets/google.json';
 import googleImagePresets from './model-presets/google-image.json';
 import googleEmbeddingPresets from './model-presets/google-embedding.json';
@@ -71,9 +72,9 @@ export type StaticModelPresetModalities = {
 export type StaticModelPresetRow = {
 	id: string;
 	display_name?: string | null;
-	/** English import fallback written to the existing models.description column. */
+	/** English catalog summary. Import uses this when the Admin locale is not Chinese. */
 	description?: string | null;
-	/** Localized Catalog display copy; not persisted as a separate database field. */
+	/** Localized catalog summaries written to `models.description` on import. */
 	i18n?: {
 		en: string;
 		zh: string;
@@ -105,6 +106,7 @@ const STATIC_MODEL_PRESETS_BY_VENDOR = [
 	bytedanceImagePresets,
 	coherePresets,
 	deepseekPresets,
+	elevenlabsAudioPresets,
 	googlePresets,
 	googleImagePresets,
 	googleEmbeddingPresets,
@@ -145,6 +147,22 @@ export function getStaticModelPresetRetired(modelId: string): string | null {
 		}
 	}
 	return retiredByModelId.get(modelId.trim()) ?? null;
+}
+
+/** 中文界面写入中文目录文案，其余界面（含未传语言）写入英文。与导入弹窗的取值一致。 */
+export function catalogCopyLanguage(locale: string | null | undefined): 'zh' | 'en' {
+	return String(locale ?? '').trim().toLowerCase().startsWith('zh') ? 'zh' : 'en';
+}
+
+/** 导入写入 `models.description` 的文案。中文缺省时回退英文。 */
+export function modelPresetDescriptionForLocale(
+	preset: Pick<StaticModelPresetRow, 'description' | 'i18n'>,
+	locale: string | null | undefined
+): string | null {
+	const zh = preset.i18n?.zh?.trim() ?? '';
+	const en = preset.i18n?.en?.trim() || preset.description?.trim() || '';
+	if (catalogCopyLanguage(locale) === 'zh' && zh) return zh;
+	return en || null;
 }
 
 /** Returns the `usd` / `cny` object as-is, including optional catalog `schedule`. */

@@ -30,8 +30,17 @@ import {
 	defaultAudioInputModeForDashScopeOperation,
 	isDashScopeRealtimeOperation,
 	openDashScopeRealtimeClient,
-	stopDashScopeRealtimeClient,
 } from '@/lib/dashscope-realtime-client';
+import {
+	defaultAudioInputModeForElevenLabsOperation,
+	elevenLabsRealtimeAudioBlob,
+	elevenLabsRealtimeOutputFormat,
+	extractElevenLabsRealtimeTranscript,
+	isElevenLabsRealtimeOperation,
+	openElevenLabsRealtimeClient,
+	prepareElevenLabsRealtimeRequest,
+	stopRealtimeClient,
+} from '@/lib/elevenlabs-realtime-client';
 import { miniMaxSpeechObjectUrl } from '@/lib/minimax-speech-preview';
 import { readApiJson } from '@/lib/api-json';
 import type { AdminModelRow } from '@/lib/services/admin/types';
@@ -148,6 +157,13 @@ export function usePlaygroundPageState() {
 					| 'audio.speech.realtime.inference')
 			: null;
 
+	const selectedElevenLabsRealtimeOperation =
+		selectedIsAudio &&
+		selected?.upstream_protocol === 'elevenlabs' &&
+		isElevenLabsRealtimeOperation(selected?.upstream_operation)
+			? selected.upstream_operation
+			: null;
+
 	const selectedImageUpstreamProtocol = normalizeProtocol(selected?.upstream_protocol ?? 'openai');
 	const imageSendBlocked =
 		selectedIsImage &&
@@ -162,11 +178,15 @@ export function usePlaygroundPageState() {
 		selectedIsAudio &&
 		selectedAudioUpstreamProtocol !== 'openai' &&
 		selectedAudioUpstreamProtocol !== 'dashscope' &&
-		selectedAudioUpstreamProtocol !== 'minimax';
+		selectedAudioUpstreamProtocol !== 'minimax' &&
+		selectedAudioUpstreamProtocol !== 'elevenlabs';
 	const selectedAudioUsesDashScope = selectedIsAudio && selectedAudioUpstreamProtocol === 'dashscope';
 	const selectedUsesDashScopeRealtime = selectedDashScopeRealtimeOperation != null;
+	const selectedUsesElevenLabsRealtime = selectedElevenLabsRealtimeOperation != null;
+	const selectedUsesRealtime = selectedUsesDashScopeRealtime || selectedUsesElevenLabsRealtime;
 	const selectedCanUseMicrophone =
-		selectedDashScopeRealtimeOperation?.startsWith('audio.transcriptions.realtime.') ?? false;
+		(selectedDashScopeRealtimeOperation?.startsWith('audio.transcriptions.realtime.') ?? false) ||
+		selectedElevenLabsRealtimeOperation === 'audio.transcriptions.realtime';
 	const selectedNeedsAudioFile =
 		selectedIsAudioTranscription &&
 		selected?.adapter !== 'dashscope-asr-file-async' &&
@@ -229,10 +249,16 @@ export function usePlaygroundPageState() {
 
 	const { mergedReasoningDisplay, mergedBodyDisplay } = useMemo(() => {
 		const hasRaw = responseText.trim().length > 0;
-		if (selectedUsesDashScopeRealtime) {
+		if (selectedUsesRealtime) {
+			// ElevenLabs 实时转写：直接展示还原后的转写文本（已提交句子 + 未提交 partial）。
+			const transcript =
+				selectedElevenLabsRealtimeOperation === 'audio.transcriptions.realtime'
+					? extractElevenLabsRealtimeTranscript(responseText)
+					: '';
 			return {
 				mergedReasoningDisplay: '',
 				mergedBodyDisplay:
+					transcript ||
 					mergedAssistantParts.body ||
 					responseText.trim() ||
 					(sending ? t('realtimeWaitingTaskStarted') : ''),
@@ -250,7 +276,14 @@ export function usePlaygroundPageState() {
 			mergedReasoningDisplay: reasoningDisplay,
 			mergedBodyDisplay: bodyDisplay,
 		};
-	}, [mergedAssistantParts, responseText, sending, selectedUsesDashScopeRealtime, t]);
+	}, [
+		mergedAssistantParts,
+		responseText,
+		sending,
+		selectedUsesRealtime,
+		selectedElevenLabsRealtimeOperation,
+		t,
+	]);
 
 	const kindCounts = useMemo(() => {
 		const counts = emptyModelKindCounts();
@@ -446,7 +479,11 @@ export function usePlaygroundPageState() {
 		setImageOperation('generations');
 		setEditFiles([]);
 		setAudioFile(null);
-		setAudioInputMode(defaultAudioInputModeForDashScopeOperation(r.upstream_operation));
+		setAudioInputMode(
+			r.upstream_protocol === 'elevenlabs'
+				? defaultAudioInputModeForElevenLabsOperation(r.upstream_operation)
+				: defaultAudioInputModeForDashScopeOperation(r.upstream_operation),
+		);
 		setAudioPreviewUrl(null);
 		realtimeAudioChunksRef.current = [];
 		if (!bodyDirtyRef.current) {
@@ -503,7 +540,7 @@ export function usePlaygroundPageState() {
 		setInterrupted(true);
 		abortRef.current?.abort();
 		if (realtimeRef.current) {
-			stopDashScopeRealtimeClient(realtimeRef.current);
+			stopRealtimeClient(realtimeRef.current);
 			realtimeRef.current = null;
 		}
 		if (!abortRef.current) setSending(false);
@@ -553,13 +590,15 @@ export function usePlaygroundPageState() {
 		}
 
 		const proto = normalizeProtocol(selected.upstream_protocol);
-		const isRealtime = selectedDashScopeRealtimeOperation != null;
+		const realtimeOperation = selectedDashScopeRealtimeOperation ?? selectedElevenLabsRealtimeOperation;
+		const isRealtime = realtimeOperation != null;
 		const useAudio =
 			selectedIsAudio &&
 			!isRealtime &&
 			(selectedAudioUpstreamProtocol === 'openai' ||
 				selectedAudioUpstreamProtocol === 'dashscope' ||
-				selectedAudioUpstreamProtocol === 'minimax');
+				selectedAudioUpstreamProtocol === 'minimax' ||
+				selectedAudioUpstreamProtocol === 'elevenlabs');
 		const useImages =
 			selectedIsImage &&
 			!selectedIsAudio &&
@@ -571,7 +610,7 @@ export function usePlaygroundPageState() {
 			: undefined;
 
 		if (isRealtime) {
-			if (selectedDashScopeRealtimeOperation.startsWith('audio.transcriptions') && selectedNeedsAudioFile) {
+			if (realtimeOperation.startsWith('audio.transcriptions') && selectedNeedsAudioFile) {
 				const validated = validateAudioTranscriptionFile(audioFile);
 				if (!validated.ok) {
 					setBodyError(validated.error);
@@ -613,7 +652,7 @@ export function usePlaygroundPageState() {
 
 		abortRef.current?.abort();
 		if (realtimeRef.current) {
-			stopDashScopeRealtimeClient(realtimeRef.current);
+			stopRealtimeClient(realtimeRef.current);
 			realtimeRef.current = null;
 		}
 
@@ -632,7 +671,88 @@ export function usePlaygroundPageState() {
 		setResponseTab('merged');
 
 		setResponseProtocol(proto);
-		if (isRealtime) {
+		if (selectedElevenLabsRealtimeOperation != null) {
+			const startedAt = performance.now();
+			const waitingText = t('realtimeWaitingElevenLabs');
+			try {
+				const prepared = prepareElevenLabsRealtimeRequest(selectedElevenLabsRealtimeOperation, bodyObj);
+				const realtimeUrl = `${window.location.origin}/api/admin/playground/realtime?${new URLSearchParams({
+					routeId: selected.id,
+					operation: selectedElevenLabsRealtimeOperation,
+					...(prepared.voiceId ? { voice_id: prepared.voiceId } : {}),
+					...prepared.query,
+				}).toString()}`;
+				const outputFormat = elevenLabsRealtimeOutputFormat(prepared);
+				// 上游 model_id 由路由的供应商模型名决定，这里展示将要发送的 query 与帧。
+				const realtimePreview = previewPlaygroundMergedBody({
+					bodyText: JSON.stringify(bodyObj),
+					customParams: selected.custom_params,
+					upstreamProtocol: selected.upstream_protocol,
+					upstreamOperation: selected.upstream_operation,
+					providerModelName: selected.provider_model_name,
+				});
+				setLastSentWireBody(realtimePreview.status === 'preview' ? realtimePreview.json : JSON.stringify(bodyObj, null, 2));
+				setLastSentInputSnapshot(requestFingerprint);
+				setResponseText(waitingText);
+				const socket = openElevenLabsRealtimeClient({
+					url: realtimeUrl,
+					operation: selectedElevenLabsRealtimeOperation,
+					body: bodyObj,
+					audioInput: selectedCanUseMicrophone ? audioInputMode : 'file',
+					audioFile: selectedNeedsAudioFile ? audioFile : undefined,
+					onOpen: () => {
+						setResponseMeta({
+							status: 101,
+							latencyMs: String(Math.round(performance.now() - startedAt)),
+							upstreamUrl: previewUpstreamUrl,
+							contentType: 'application/x-ndjson',
+						});
+						setResponseText(waitingText);
+					},
+					onMessage: (message) =>
+						setResponseText((previous) =>
+							!previous || previous === waitingText ? message : `${previous}\n${message}`,
+						),
+					onAudioChunk: (chunk) => {
+						realtimeAudioChunksRef.current.push(chunk);
+					},
+					onError: (error) =>
+						setBodyError(error instanceof Error ? error.message : t('realtimeTransportError')),
+					onClose: (event) => {
+						if (!selectedIsAudioTranscription && realtimeAudioChunksRef.current.length > 0) {
+							const blob = elevenLabsRealtimeAudioBlob(realtimeAudioChunksRef.current, outputFormat);
+							setAudioPreviewUrl(URL.createObjectURL(blob));
+							realtimeAudioChunksRef.current = [];
+						}
+						setSending(false);
+						realtimeRef.current = null;
+						setResponseMeta(
+							(previous) =>
+								previous ?? {
+									status: 101,
+									latencyMs: String(Math.round(performance.now() - startedAt)),
+									upstreamUrl: previewUpstreamUrl,
+									contentType: 'application/x-ndjson',
+								},
+						);
+						if (event.code !== 1000 || event.reason) {
+							setBodyError(
+								t('realtimeClosed', {
+									code: String(event.code),
+									reason: event.reason ? `: ${event.reason}` : '',
+								}),
+							);
+						}
+					},
+				});
+				realtimeRef.current = socket;
+			} catch (error) {
+				setSending(false);
+				setBodyError(error instanceof Error ? error.message : tCommon('requestFailed'));
+			}
+			return;
+		}
+		if (selectedDashScopeRealtimeOperation != null) {
 			const realtimeUrl = `${window.location.origin}/api/admin/playground/realtime?${new URLSearchParams({
 				routeId: selected.id,
 				operation: selectedDashScopeRealtimeOperation,
@@ -643,6 +763,7 @@ export function usePlaygroundPageState() {
 				bodyText: JSON.stringify(bodyObj),
 				customParams: selected.custom_params,
 				upstreamProtocol: selected.upstream_protocol,
+				upstreamOperation: selected.upstream_operation,
 				providerModelName: selected.provider_model_name,
 			});
 			setLastSentWireBody(
@@ -941,6 +1062,8 @@ export function usePlaygroundPageState() {
 		audioSendBlocked,
 		selectedAudioUsesDashScope,
 		selectedUsesDashScopeRealtime,
+		selectedUsesElevenLabsRealtime,
+		selectedUsesRealtime,
 		selectedCanUseMicrophone,
 		selectedNeedsAudioFile,
 		selectedDashScopeRealtimeOperation,

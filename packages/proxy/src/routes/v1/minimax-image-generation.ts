@@ -1,6 +1,6 @@
 /**
  * MiniMax 文生图 / 图生图透传。
- * `POST /v1/minimax/image_generation`
+ * `POST /minimax/v1/image_generation`
  * 请求和响应保持 MiniMax 原文，只替换 model。按成功图片数计 per_image。
  */
 import { isImageGenerationModel, type GatewayRepositories } from '@octafuse/core';

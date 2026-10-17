@@ -393,6 +393,88 @@ describe('listConfiguredCapabilities', () => {
 		]);
 	});
 
+	it('derives ElevenLabs endpoints from the API base and fills voice_id', () => {
+		const endpoints = { elevenlabs: { base: 'https://api.elevenlabs.io/v1' } };
+		assert.equal(
+			resolveUpstreamEndpoint('elevenlabs', 'audio.transcriptions', endpoints),
+			'https://api.elevenlabs.io/v1/speech-to-text'
+		);
+		assert.equal(
+			resolveUpstreamEndpoint('elevenlabs', 'audio.speech', endpoints, { voiceId: 'abc 1' }),
+			'https://api.elevenlabs.io/v1/text-to-speech/abc%201'
+		);
+		assert.throws(() => resolveUpstreamEndpoint('elevenlabs', 'audio.speech', endpoints));
+		assert.deepEqual(listConfiguredCapabilities(endpoints, 'elevenlabs'), [
+			'audio.transcriptions',
+			'audio.transcriptions.realtime',
+			'audio.speech',
+			'audio.speech.realtime',
+		]);
+	});
+
+	it('derives ElevenLabs WebSocket endpoints from the API base', () => {
+		const endpoints = { elevenlabs: { base: 'https://api.elevenlabs.io/v1' } };
+		assert.equal(
+			resolveUpstreamEndpoint('elevenlabs', 'audio.transcriptions.realtime', endpoints),
+			'wss://api.elevenlabs.io/v1/speech-to-text/realtime'
+		);
+		assert.equal(
+			resolveUpstreamEndpoint('elevenlabs', 'audio.speech.realtime', endpoints, { voiceId: 'abc 1' }),
+			'wss://api.elevenlabs.io/v1/text-to-speech/abc%201/stream-input'
+		);
+		assert.throws(() => resolveUpstreamEndpoint('elevenlabs', 'audio.speech.realtime', endpoints));
+	});
+
+	it('validates explicit ElevenLabs realtime templates', () => {
+		assert.throws(() =>
+			validateAndNormalizeProviderEndpoints({
+				elevenlabs: {
+					endpoints: {
+						'audio.speech.realtime': 'wss://api.elevenlabs.io/v1/text-to-speech/x/stream-input',
+					},
+				},
+			})
+		);
+		assert.throws(() =>
+			validateAndNormalizeProviderEndpoints({
+				elevenlabs: {
+					endpoints: { 'audio.transcriptions.realtime': 'https://api.elevenlabs.io/v1/speech-to-text/realtime' },
+				},
+			})
+		);
+		const ok = validateAndNormalizeProviderEndpoints({
+			elevenlabs: {
+				endpoints: {
+					'audio.speech.realtime': 'wss://api.eu.residency.elevenlabs.io/v1/text-to-speech/{voice_id}/stream-input',
+					'audio.transcriptions.realtime': 'wss://api.eu.residency.elevenlabs.io/v1/speech-to-text/realtime',
+				},
+			},
+		});
+		assert.equal(
+			resolveUpstreamEndpoint('elevenlabs', 'audio.speech.realtime', ok, { voiceId: 'v1' }),
+			'wss://api.eu.residency.elevenlabs.io/v1/text-to-speech/v1/stream-input'
+		);
+	});
+
+	it('requires {voice_id} in an explicit ElevenLabs speech template', () => {
+		assert.throws(() =>
+			validateAndNormalizeProviderEndpoints({
+				elevenlabs: { endpoints: { 'audio.speech': 'https://api.eu.residency.elevenlabs.io/v1/text-to-speech' } },
+			})
+		);
+		const ok = validateAndNormalizeProviderEndpoints({
+			elevenlabs: {
+				endpoints: {
+					'audio.speech': 'https://api.eu.residency.elevenlabs.io/v1/text-to-speech/{voice_id}',
+				},
+			},
+		});
+		assert.equal(
+			resolveUpstreamEndpoint('elevenlabs', 'audio.speech', ok, { voiceId: 'v1' }),
+			'https://api.eu.residency.elevenlabs.io/v1/text-to-speech/v1'
+		);
+	});
+
 	it('derives Volcengine images/generations from the Ark API base', () => {
 		const endpoints = {
 			volcengine: { base: 'https://ark.cn-beijing.volces.com/api/v3' },

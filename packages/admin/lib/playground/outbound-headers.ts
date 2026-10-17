@@ -1,6 +1,6 @@
 /** 调试台上游出站请求头：脱敏、响应头编解码。 */
 
-const SECRET_HEADER_NAMES = new Set(['authorization', 'x-api-key', 'x-goog-api-key']);
+const SECRET_HEADER_NAMES = new Set(['authorization', 'x-api-key', 'xi-api-key', 'x-goog-api-key']);
 
 export function redactPlaygroundOutboundHeaderValue(name: string, value: string): string {
 	if (!SECRET_HEADER_NAMES.has(name.toLowerCase())) return value;

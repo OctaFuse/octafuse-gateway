@@ -12,6 +12,7 @@ import {
 	MINIMAX_SPEECH_TO_TEXT_PATH,
 	MINIMAX_T2A_PATH,
 } from '@octafuse/core/route-topology';
+import { ELEVENLABS_SPEECH_TO_TEXT_PATH, ELEVENLABS_TEXT_TO_SPEECH_PATH } from '@octafuse/core/adapters/registry';
 import { MODEL_KINDS, type ModelKind } from '@octafuse/core/db/model-kind';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
@@ -44,7 +45,7 @@ export function isAudioKind(kind: string): kind is 'asr' | 'tts' {
 export const DEFAULT_KIND_FILTER: ModelKindFilter = 'llm';
 export const DEFAULT_INVOKE_KIND: InvokeKind = 'llm';
 
-export type SimulatorProtocol = 'openai' | 'anthropic' | 'gemini' | 'dashscope' | 'minimax' | 'volcengine';
+export type SimulatorProtocol = 'openai' | 'anthropic' | 'gemini' | 'dashscope' | 'minimax' | 'volcengine' | 'elevenlabs';
 export type GeminiContentAction = 'generateContent' | 'streamGenerateContent';
 export type GeminiEmbedAction = 'embedContent' | 'batchEmbedContents';
 export type AudioOperation = 'transcriptions' | 'speech';
@@ -193,6 +194,9 @@ export function resolveProxyPathForModelInvoke(input: {
 		const speech = input.kind === 'tts';
 		if (protocol === 'dashscope' && !speech) {
 			return DASHSCOPE_MULTIMODAL_GENERATION_PATH;
+		}
+		if (protocol === 'elevenlabs') {
+			return speech ? ELEVENLABS_TEXT_TO_SPEECH_PATH : ELEVENLABS_SPEECH_TO_TEXT_PATH;
 		}
 		if (protocol === 'minimax') {
 			return speech ? MINIMAX_T2A_PATH : MINIMAX_SPEECH_TO_TEXT_PATH;

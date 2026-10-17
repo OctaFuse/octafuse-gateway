@@ -3,7 +3,7 @@
  *
  * 纯函数：只做结构化比对，不读库、不依赖运行时。比对对象只有两类，因为 `kind` 之外
  * 只有这两类是导入时「拷贝」入库的：
- * - `description`
+ * - `description`（官方值是当前界面语言的目录摘要；另一种语言的介绍算差异）
  * - `endpoints`，以协议为单位（`endpoints.<protocol>`）
  *
  * 不比对：`name`（用户别名）、`api_key`、`status`；图标 / 链接 / 展示名由 `kind` 运行时解析，不会过期。
@@ -339,6 +339,8 @@ export type ProviderSyncReport = {
 };
 
 export type ProviderSyncApplyBody = {
+	/** 与检查时相同。采用官方介绍时写入这一语言的目录摘要。 */
+	locale?: string;
 	items: Array<{ provider_id: string; fields: string[] }>;
 };
 

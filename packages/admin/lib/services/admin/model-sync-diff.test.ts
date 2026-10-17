@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { buildModelSyncPatch, diffModelAgainstPreset } from '@/lib/model-sync-diff';
-import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/model-preset';
+import {
+	listStaticModelPresets,
+	modelPresetDescriptionForLocale,
+	pickPresetPricingRawForBillingCurrency,
+} from '@/lib/model-preset';
 import { coerceModelPricingProfileInput } from '@/lib/services/admin/pricing-input';
 
 const pricing = (input: number, output: number) =>
@@ -95,29 +99,47 @@ describe('diffModelAgainstPreset', () => {
 	it('treats every bundled preset as in sync with a row built the way import builds it', () => {
 		for (const row of listStaticModelPresets()) {
 			const pricingProfile = coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(row, 'USD'));
-			const model = {
-				display_name: row.display_name ?? null,
-				vendor: row.vendor ?? null,
-				context_window: row.context_window ?? null,
-				max_tokens: row.max_tokens ?? 8192,
-				description: row.description ?? row.i18n?.en ?? null,
-				released_at: row.released ?? null,
-				input_modalities: row.modalities ? JSON.stringify(row.modalities.input) : null,
-				output_modalities: row.modalities ? JSON.stringify(row.modalities.output) : null,
-				pricing_profile: pricingProfile,
-			};
-			const fields = diffModelAgainstPreset(model, {
-				display_name: row.display_name ?? null,
-				vendor: row.vendor ?? null,
-				context_window: row.context_window ?? null,
-				max_tokens: row.max_tokens ?? null,
-				description: row.description ?? row.i18n?.en ?? null,
-				released: row.released ?? null,
-				input_modalities: row.modalities?.input ?? null,
-				output_modalities: row.modalities?.output ?? null,
-				pricing_profile: pricingProfile,
-			});
-			assert.deepEqual(fields, [], row.id);
+			for (const locale of ['en', 'zh'] as const) {
+				const description = modelPresetDescriptionForLocale(row, locale);
+				const model = {
+					display_name: row.display_name ?? null,
+					vendor: row.vendor ?? null,
+					context_window: row.context_window ?? null,
+					max_tokens: row.max_tokens ?? 8192,
+					description,
+					released_at: row.released ?? null,
+					input_modalities: row.modalities ? JSON.stringify(row.modalities.input) : null,
+					output_modalities: row.modalities ? JSON.stringify(row.modalities.output) : null,
+					pricing_profile: pricingProfile,
+				};
+				const fields = diffModelAgainstPreset(model, {
+					display_name: row.display_name ?? null,
+					vendor: row.vendor ?? null,
+					context_window: row.context_window ?? null,
+					max_tokens: row.max_tokens ?? null,
+					description,
+					released: row.released ?? null,
+					input_modalities: row.modalities?.input ?? null,
+					output_modalities: row.modalities?.output ?? null,
+					pricing_profile: pricingProfile,
+				});
+				assert.deepEqual(fields, [], `${row.id} ${locale}`);
+
+				const other = modelPresetDescriptionForLocale(row, locale === 'zh' ? 'en' : 'zh');
+				if (!other || other === description) continue;
+				const drifted = diffModelAgainstPreset(
+					{ ...model, description: other },
+					{
+						display_name: row.display_name ?? null,
+						description,
+					}
+				);
+				assert.deepEqual(
+					drifted.map((field) => field.key),
+					['description'],
+					`${row.id} ${locale} other language`
+				);
+			}
 		}
 	});
 });

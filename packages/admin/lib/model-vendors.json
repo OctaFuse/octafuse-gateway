@@ -11,6 +11,7 @@
   { "key": "commandcode", "label": "Command Code" },
   { "key": "deepinfra", "label": "DeepInfra" },
   { "key": "deepseek", "label": "DeepSeek" },
+  { "key": "elevenlabs", "label": "ElevenLabs" },
   { "key": "fireworks", "label": "Fireworks AI" },
   { "key": "google", "label": "Google" },
   { "key": "groq", "label": "Groq" },

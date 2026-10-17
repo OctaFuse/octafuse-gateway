@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { IncomingMessage } from 'node:http';
 import type { PlaygroundResolvedRoute } from './services/admin/playground-service';
-import { connectPlaygroundDashScopeRealtime } from './services/admin/playground-realtime-service';
+import {
+	connectPlaygroundDashScopeRealtime,
+	connectPlaygroundElevenLabsRealtime,
+} from './services/admin/playground-realtime-service';
 import { AdminServiceError } from './services/admin/errors';
 import {
 	createPlaygroundNodeRealtimeDispatch,
@@ -303,5 +306,96 @@ describe('connectPlaygroundDashScopeRealtime runtime selection', () => {
 		assert.equal(normalizePlaygroundWebSocketCloseCode(1005), 1000);
 		assert.equal(normalizePlaygroundWebSocketCloseCode(1006), 1000);
 		assert.equal(normalizePlaygroundWebSocketCloseCode(1011), 1011);
+	});
+});
+
+describe('connectPlaygroundElevenLabsRealtime', () => {
+	const elevenRoute = (overrides: Partial<PlaygroundResolvedRoute> = {}) =>
+		route({
+			upstreamProtocol: 'elevenlabs',
+			upstreamOperation: 'audio.transcriptions.realtime',
+			providerEndpoints: { elevenlabs: { base: 'https://api.elevenlabs.io/v1' } },
+			providerId: 'elevenlabs',
+			providerModelName: 'scribe_v2_realtime',
+			...overrides,
+		});
+
+	it('authenticates with xi-api-key and injects model_id while stripping credentials from the query', async () => {
+		const client = new FakeSocket();
+		let upstreamUrl = '';
+		let headers: Record<string, string> = {};
+		const WebSocketCtor = function (url: string, init: { headers: Record<string, string> }): NodeWebSocket {
+			upstreamUrl = url;
+			headers = init.headers;
+			const upstream = new FakeSocket();
+			queueMicrotask(() => upstream.emitOpen());
+			return upstream;
+		} as unknown as NodeWebSocketConstructor;
+		const dispatch = createPlaygroundNodeRealtimeDispatch(client, WebSocketCtor);
+		const result = await connectPlaygroundElevenLabsRealtime(
+			elevenRoute(),
+			'audio.transcriptions.realtime',
+			{ query: { audio_format: 'pcm_16000', model_id: 'gateway-model', 'xi-api-key': 'leak' } },
+			undefined,
+			{ nodeDispatch: dispatch },
+		);
+		const parsed = new URL(upstreamUrl);
+		assert.equal(parsed.protocol, 'wss:');
+		assert.equal(parsed.pathname, '/v1/speech-to-text/realtime');
+		assert.equal(parsed.searchParams.get('model_id'), 'scribe_v2_realtime');
+		assert.equal(parsed.searchParams.get('audio_format'), 'pcm_16000');
+		assert.equal(parsed.searchParams.has('xi-api-key'), false);
+		assert.equal(headers['xi-api-key'], 'secret');
+		assert.equal(headers.Authorization, undefined);
+		assert.equal(result.response.headers.get('x-octafuse-realtime-protocol'), 'elevenlabs-playground');
+	});
+
+	it('forwards an upstream first frame that arrives before the bridge subscribes', async () => {
+		const client = new FakeSocket();
+		const WebSocketCtor = function (): NodeWebSocket {
+			const upstream = new FakeSocket();
+			queueMicrotask(() => {
+				upstream.emitOpen();
+				// 与 `ws` 在同一包里先发 session_started 一致：open 之后同步到达，早于 promise 回调。
+				upstream.emitUpstreamMessage(JSON.stringify({ message_type: 'session_started' }), false);
+			});
+			return upstream;
+		} as unknown as NodeWebSocketConstructor;
+		const dispatch = createPlaygroundNodeRealtimeDispatch(client, WebSocketCtor);
+		await connectPlaygroundElevenLabsRealtime(
+			elevenRoute(),
+			'audio.transcriptions.realtime',
+			{ query: { audio_format: 'pcm_16000' } },
+			undefined,
+			{ nodeDispatch: dispatch },
+		);
+		assert.equal(client.sent.length, 1);
+		assert.equal(JSON.parse(String(client.sent[0])).message_type, 'session_started');
+	});
+
+	it('requires a voice id for realtime speech and a matching upstream operation', async () => {
+		const nodeDispatch = async () => new Response(null, { status: 200 });
+		await assert.rejects(
+			() =>
+				connectPlaygroundElevenLabsRealtime(
+					elevenRoute({ upstreamOperation: 'audio.speech.realtime' }),
+					'audio.speech.realtime',
+					{},
+					undefined,
+					{ nodeDispatch },
+				),
+			(error: unknown) => (error as AdminServiceError).status === 400,
+		);
+		await assert.rejects(
+			() =>
+				connectPlaygroundElevenLabsRealtime(
+					elevenRoute({ upstreamOperation: 'audio.speech.realtime' }),
+					'audio.transcriptions.realtime',
+					{},
+					undefined,
+					{ nodeDispatch },
+				),
+			(error: unknown) => (error as AdminServiceError).status === 400,
+		);
 	});
 });

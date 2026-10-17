@@ -102,6 +102,7 @@ adminProvidersRoutes.post("/import", async (c) => {
 		const data: AdminProvidersImportOutput =
 			await importProvidersFromStaticPresetsService(repos, {
 				ids: Array.isArray(body.ids) ? body.ids : [],
+				locale: typeof body.locale === 'string' ? body.locale : undefined,
 			});
 		const parts = [`created ${data.created}`];
 		if (data.failed.length) {
@@ -123,7 +124,7 @@ adminProvidersRoutes.post("/import", async (c) => {
 adminProvidersRoutes.get("/sync/diff", async (c) => {
 	try {
 		const repos = c.get("repositories");
-		const data = await getProviderSyncReportService(repos);
+		const data = await getProviderSyncReportService(repos, c.req.query("locale"));
 		return c.json(normalizeApiTimeFields({ success: true, data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, "Failed to compute provider sync diff");

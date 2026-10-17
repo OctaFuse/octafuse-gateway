@@ -573,6 +573,79 @@ describe('playground-utils', () => {
 		assert.equal(body.model, 'glm-5.3-upstream');
 	});
 
+	it('previewPlaygroundMergedBody shows ElevenLabs realtime TTS query and frames instead of a generic body', () => {
+		const result = previewPlaygroundMergedBody({
+			bodyText: JSON.stringify({
+				voice_id: 'JBFqnCBsd6RMkjVDRZzb',
+				output_format: 'mp3_44100_128',
+				text: 'hello',
+				voice_settings: { stability: 0.5 },
+			}),
+			upstreamProtocol: 'elevenlabs',
+			upstreamOperation: 'audio.speech.realtime',
+			providerModelName: 'eleven_flash_v2_5',
+		});
+		assert.equal(result.status, 'preview');
+		const body = JSON.parse(result.json) as Record<string, unknown>;
+		assert.equal(body.model, undefined);
+		assert.deepEqual(body.query, { output_format: 'mp3_44100_128', model_id: 'eleven_flash_v2_5' });
+		assert.equal(body.voice_id, 'JBFqnCBsd6RMkjVDRZzb');
+		assert.deepEqual(body.first_frame, { text: ' ', voice_settings: { stability: 0.5 } });
+		assert.equal(body.text, 'hello');
+	});
+
+	it('previewPlaygroundMergedBody shows ElevenLabs realtime ASR as query only', () => {
+		const result = previewPlaygroundMergedBody({
+			bodyText: JSON.stringify({ commit_strategy: 'vad', audio_format: 'pcm_8000' }),
+			upstreamProtocol: 'elevenlabs',
+			upstreamOperation: 'audio.transcriptions.realtime',
+			providerModelName: 'scribe_v2_realtime',
+		});
+		assert.equal(result.status, 'preview');
+		const body = JSON.parse(result.json) as Record<string, unknown>;
+		assert.deepEqual(body, {
+			query: { commit_strategy: 'vad', audio_format: 'pcm_16000', model_id: 'scribe_v2_realtime' },
+		});
+	});
+
+	it('previewPlaygroundMergedBody flags an ElevenLabs realtime TTS body without voice_id as invalid', () => {
+		const result = previewPlaygroundMergedBody({
+			bodyText: JSON.stringify({ text: 'hello' }),
+			upstreamProtocol: 'elevenlabs',
+			upstreamOperation: 'audio.speech.realtime',
+		});
+		assert.equal(result.status, 'invalid');
+	});
+
+	it('previewPlaygroundMergedBody injects the DashScope run-task model into payload, not the top level', () => {
+		const result = previewPlaygroundMergedBody({
+			bodyText: JSON.stringify({
+				header: { action: 'run-task', task_id: 't1' },
+				payload: { task: 'asr', model: '<auto>', parameters: { format: 'pcm' } },
+			}),
+			customParams: JSON.stringify({ payload: { parameters: { semantic_punctuation_enabled: true } } }),
+			upstreamProtocol: 'dashscope',
+			upstreamOperation: 'audio.transcriptions.realtime.inference',
+			providerModelName: 'paraformer-realtime-v2',
+		});
+		assert.equal(result.status, 'preview');
+		const body = JSON.parse(result.json) as { model?: string; payload: { model: string; parameters: Record<string, unknown> } };
+		assert.equal(body.model, undefined);
+		assert.equal(body.payload.model, 'paraformer-realtime-v2');
+		assert.equal(body.payload.parameters.semantic_punctuation_enabled, true);
+	});
+
+	it('previewPlaygroundMergedBody leaves DashScope session.update model to the URL', () => {
+		const result = previewPlaygroundMergedBody({
+			bodyText: JSON.stringify({ type: 'session.update', session: { sample_rate: 16000 } }),
+			upstreamProtocol: 'dashscope',
+			upstreamOperation: 'audio.transcriptions.realtime.session',
+			providerModelName: 'qwen3-asr-flash-realtime',
+		});
+		assert.equal(result.status, 'preview');
+		assert.equal((JSON.parse(result.json) as { model?: string }).model, undefined);
+	});
+
 	it('previewPlaygroundMergedBody deep-merges nested custom_params objects', () => {
 		const result = previewPlaygroundMergedBody({
 			bodyText: JSON.stringify({ parameters: { temperature: 0.2 } }),
@@ -682,6 +755,14 @@ describe('playground-utils', () => {
 		);
 		const tagged = rows.find((row) => row.name === 'x');
 		assert.equal(tagged?.value, '1');
+	});
+
+	it('previewPlaygroundOutboundHeaderRows uses xi-api-key for ElevenLabs', () => {
+		const rows = previewPlaygroundOutboundHeaderRows({ upstreamProtocol: 'elevenlabs' });
+		assert.deepEqual(
+			rows.map((row) => row.name).sort(),
+			['Content-Type', 'xi-api-key'],
+		);
 	});
 
 	it('previewPlaygroundOutboundHeaderRows prefers sent headers and still tags extras', () => {

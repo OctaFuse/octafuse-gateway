@@ -31,15 +31,15 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
     - Anthropic 端点：`POST /v1/messages`
     - Google Gemini 端点：`POST /v1beta/models/{model}:generateContent`（含 `streamGenerateContent`）
     - DashScope 原生端点：
-      - 同步多模态（ASR、Qwen-TTS、生图）：`POST /v1/dashscope/services/aigc/multimodal-generation/generation`
-      - 语音合成：`POST /v1/dashscope/services/audio/tts/SpeechSynthesizer`
-      - 异步文件转写：`POST /v1/dashscope/services/audio/asr/transcription`、`GET /v1/dashscope/tasks/{taskId}`
-      - 实时音频：`GET /v1/dashscope/realtime`
+      - 同步多模态（ASR、Qwen-TTS、生图）：`POST /dashscope/api/v1/services/aigc/multimodal-generation/generation`
+      - 语音合成：`POST /dashscope/api/v1/services/audio/tts/SpeechSynthesizer`
+      - 异步文件转写：`POST /dashscope/api/v1/services/audio/asr/transcription`、`GET /dashscope/api/v1/tasks/{taskId}`
+      - 实时音频：`GET /dashscope/api-ws/v1/inference`（run-task）/ `GET /dashscope/api-ws/v1/realtime?model=`（Qwen-Realtime 会话）
     - MiniMax 原生端点：
-      - 文件转写：`POST /v1/minimax/speech_to_text`
-      - 语音合成：`POST /v1/minimax/t2a_v2`
-      - 生图：`POST /v1/minimax/image_generation`
-    - 火山方舟原生端点（Seedream 生图）：`POST /v1/volcengine/images/generations`
+      - 文件转写：`POST /minimax/v1/speech_to_text`
+      - 语音合成：`POST /minimax/v1/t2a_v2`
+      - 生图：`POST /minimax/v1/image_generation`
+    - 火山方舟原生端点（Seedream 生图）：`POST /volcengine/api/v3/images/generations`
 4. 协议适配与转换：可在路由中选择客户端与上游的协议转换关系，让应用继续使用熟悉的调用方式接入不同供应商。例如，可直接用 OpenAI 图片接口调用阿里云百炼的千问 / 万相、火山方舟的 Seedream 和 MiniMax 图像模型，或用 OpenAI 语音接口调用百炼与 MiniMax 的语音识别和语音合成。
 5. 智能体工具接入：通过 `/v1/tools/*` 统一接入各种供 Agent 使用的工具，并提供日志、计费、成本管控，以方便 Agent 同时从 Gateway 接入模型和工具。当前预置工具如下：
     - 联网搜索（`POST /v1/tools/web-search`）：博查、Tavily、阿里云 CleverSee、腾讯云联网搜索 WSA

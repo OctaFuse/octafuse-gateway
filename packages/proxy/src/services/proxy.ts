@@ -38,6 +38,13 @@ import type {
 	MiniMaxJsonPassthroughOperation,
 	MiniMaxJsonPassthroughOptions,
 } from "./egress/minimax-json-passthrough";
+import {
+	dispatchElevenLabsSttPassthrough,
+	dispatchElevenLabsTtsPassthrough,
+	type ElevenLabsPassthroughOptions,
+	type ElevenLabsSttPassthroughRequest,
+	type ElevenLabsTtsPassthroughRequest,
+} from "./egress/elevenlabs-passthrough";
 import type { VolcengineJsonPassthroughOptions } from "./egress/volcengine-json-passthrough";
 import type {
 	GeminiImageAction,
@@ -52,6 +59,13 @@ import {
 	type DashScopeRealtimeDispatchOptions,
 	type DashScopeRealtimeOperation,
 } from "./egress/dashscope-realtime-driver";
+import {
+	dispatchElevenLabsRealtime,
+	type ElevenLabsRealtimeDispatchOptions,
+	type ElevenLabsRealtimeParams,
+} from "./egress/elevenlabs-realtime-driver";
+import type { RealtimeSocket } from "./egress/dashscope-realtime-socket";
+import type { RealtimeUpstreamConnect } from "./egress/dashscope-realtime-session";
 import { dispatchAnthropicRoute } from "./egress/anthropic-driver";
 import { dispatchGeminiRoute } from "./egress/gemini-driver";
 import { dispatchOpenAiEmbeddingsRoute } from "./egress/openai-embeddings-driver";
@@ -63,6 +77,7 @@ import {
 	failoverDispatch,
 	type FailoverDispatchOptions,
 	type ProxyDispatchMeta,
+	type ProxyFailoverResult,
 } from './failover-dispatch';
 import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
 import type { StickyTraceSnapshot } from './provider-sticky-routing';
@@ -161,6 +176,8 @@ export type AudioSpeechProxyOptions = FailoverDispatchOptions &
 	AudioSpeechDispatchOptions;
 export type DashScopeRealtimeProxyOptions = FailoverDispatchOptions &
 	DashScopeRealtimeDispatchOptions;
+export type ElevenLabsRealtimeProxyOptions = FailoverDispatchOptions &
+	ElevenLabsRealtimeDispatchOptions;
 
 /**
  * 代理 OpenAI Chat Completions：外层 provider 优先级 + 层内 route strategy failover。
@@ -307,7 +324,7 @@ export async function proxyAudioTranscriptions(
 	return failoverDispatch(
 		repos,
 		routes,
-		["openai", "dashscope", "minimax"],
+		["openai", "dashscope", "minimax", "elevenlabs"],
 		(
 			route,
 			signal,
@@ -338,7 +355,7 @@ export async function proxyAudioSpeech(
 	return failoverDispatch(
 		repos,
 		routes,
-		["openai", "dashscope", "minimax"],
+		["openai", "dashscope", "minimax", "elevenlabs"],
 		(
 			route,
 			signal,
@@ -538,6 +555,54 @@ export async function proxyMiniMaxAsrPassthrough(
 	);
 }
 
+/** 代理 ElevenLabs 原生文本转语音透传（四种变体共用 `audio.speech`）。 */
+export async function proxyElevenLabsTtsPassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	request: ElevenLabsTtsPassthroughRequest,
+	requestSignal?: AbortSignal,
+	options?: AudioTranscriptionProxyOptions & { elevenLabs?: ElevenLabsPassthroughOptions }
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"elevenlabs",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchElevenLabsTtsPassthrough(route, request, signal, timing, attempt, options?.elevenLabs),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 ElevenLabs 原生语音转文字透传（multipart，不转 OpenAI transcriptions）。 */
+export async function proxyElevenLabsSttPassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	request: ElevenLabsSttPassthroughRequest,
+	requestSignal?: AbortSignal,
+	options?: AudioTranscriptionProxyOptions & { elevenLabs?: ElevenLabsPassthroughOptions }
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"elevenlabs",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchElevenLabsSttPassthrough(route, request, signal, timing, attempt, options?.elevenLabs),
+		requestSignal,
+		options
+	);
+}
+
 /** 代理 DashScope 原生实时音频 WebSocket，建连失败时按普通路由规则切换供应商。 */
 export async function proxyDashScopeRealtime(
 	repos: GatewayRepositories,
@@ -567,6 +632,82 @@ export async function proxyDashScopeRealtime(
 		requestSignal,
 		options
 	);
+}
+
+/** 代理 ElevenLabs 原生实时 WebSocket（TTS stream-input / 实时转写），建连失败时按普通路由规则切换供应商。 */
+export async function proxyElevenLabsRealtime(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	params: ElevenLabsRealtimeParams,
+	requestSignal?: AbortSignal,
+	options?: ElevenLabsRealtimeProxyOptions
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"elevenlabs",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) => dispatchElevenLabsRealtime(route, params, signal, timing, attempt, options),
+		requestSignal,
+		options
+	);
+}
+
+/**
+ * 延迟连接版本（DashScope inference 新入口）：下游已升级，这里只负责选路由并连上游（含 failover）。
+ * 成功时返回已连上的上游 socket，由调用方交给会话桥接；桥接结束后用 `finishUsage` 回填用量。
+ */
+export async function proxyDashScopeRealtimeDeferred(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	operation: DashScopeRealtimeOperation,
+	connectUpstream: RealtimeUpstreamConnect,
+	requestSignal?: AbortSignal,
+	options?: FailoverDispatchOptions
+): Promise<{
+	result: ProxyFailoverResult;
+	upstream: RealtimeSocket | null;
+	finishUsage: (usage: UsageFromStream) => void;
+}> {
+	const opened: { socket: RealtimeSocket | null } = { socket: null };
+	let finishUsage: (usage: UsageFromStream) => void = () => undefined;
+	const usagePromise = new Promise<UsageFromStream>((resolve) => {
+		finishUsage = resolve;
+	});
+	const result = await failoverDispatch(
+		repos,
+		routes,
+		"dashscope",
+		async (
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) => {
+			const connected = await connectUpstream(route, operation, signal, timing, attempt);
+			if ("response" in connected) {
+				return {
+					response: connected.response,
+					usagePromise: Promise.resolve(EMPTY_USAGE),
+					upstreamRequestId: connected.requestId,
+				};
+			}
+			opened.socket = connected.socket;
+			// 下游已经升级，这里用 200 仅表示“上游已连上”，供 failover 判定成功。
+			return {
+				response: new Response(null, { status: 200 }),
+				usagePromise,
+				upstreamRequestId: connected.requestId,
+			};
+		},
+		requestSignal,
+		options
+	);
+	return { result, upstream: opened.socket, finishUsage };
 }
 
 /**

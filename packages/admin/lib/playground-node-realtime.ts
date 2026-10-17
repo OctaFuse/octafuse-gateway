@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 import type { IncomingMessage } from 'node:http';
 import { applyRouteExtraHeaders, resolveProviderUpstreamSecret } from '@octafuse/core';
 import type {
-	PlaygroundDashScopeRealtimeOperation,
+	PlaygroundRealtimeOperation,
 	PlaygroundRealtimeNodeDispatch,
 } from '@/lib/services/admin/playground-realtime-service';
 import { rewritePlaygroundRealtimeClientMessage } from '@/lib/services/admin/playground-realtime-service';
@@ -84,17 +84,42 @@ function closeSocket(socket: NodeWebSocket, code = 1000, reason = ''): void {
 	}
 }
 
+/** DashScope 用 Bearer，ElevenLabs 用 `xi-api-key`。 */
+function upstreamAuthHeaders(route: PlaygroundResolvedRoute, secret: string): Record<string, string> {
+	return route.upstreamProtocol === 'elevenlabs'
+		? { 'xi-api-key': secret }
+		: { Authorization: `Bearer ${secret}` };
+}
+
+type EarlyUpstreamMessages = {
+	/** 停止缓冲并返回已缓冲的帧。 */
+	drain(): Array<{ data: Buffer; isBinary: boolean }>;
+};
+
+function createEarlyUpstreamMessages(upstream: NodeWebSocket): EarlyUpstreamMessages {
+	const buffered: Array<{ data: Buffer; isBinary: boolean }> = [];
+	const listener = (data: Buffer, isBinary: boolean) => {
+		buffered.push({ data, isBinary });
+	};
+	upstream.on('message', listener);
+	return {
+		drain() {
+			upstream.off('message', listener);
+			return buffered.splice(0);
+		},
+	};
+}
+
 async function connectUpstream(
 	upstreamUrl: string,
-	providerApiKey: string,
+	route: PlaygroundResolvedRoute,
 	signal: AbortSignal | undefined,
 	WebSocketCtor: NodeWebSocketConstructor,
-	handshakeTimeoutMs: number,
-	customParams: Record<string, unknown> | null
-): Promise<{ socket: NodeWebSocket } | { response: Response }> {
-	const { secret } = await resolveProviderUpstreamSecret(providerApiKey);
+	handshakeTimeoutMs: number
+): Promise<{ socket: NodeWebSocket; early: EarlyUpstreamMessages } | { response: Response }> {
+	const { secret } = await resolveProviderUpstreamSecret(route.providerApiKey);
 	const upstream = new WebSocketCtor(upstreamUrl, {
-		headers: applyRouteExtraHeaders({ Authorization: `Bearer ${secret}` }, customParams),
+		headers: applyRouteExtraHeaders(upstreamAuthHeaders(route, secret), route.customParams),
 		handshakeTimeout: handshakeTimeoutMs,
 	});
 	let settled = false;
@@ -124,7 +149,11 @@ async function connectUpstream(
 			if (settled) return;
 			settled = true;
 			cleanup();
-			resolve({ socket: upstream });
+			// 握手响应与上游首帧（如 ElevenLabs 的 session_started）常在同一个 TCP 包里，
+			// `ws` 会在 nextTick 里先把它们发出来，早于 promise 回调里挂的监听器。
+			// 因此在 open 的同一同步段里先挂一个缓冲监听，之后由调用方回放。
+			const early = createEarlyUpstreamMessages(upstream);
+			resolve({ socket: upstream, early });
 		};
 		const onUnexpectedResponse = (_request: IncomingMessage, response: IncomingMessage) => {
 			if (settled) return;
@@ -154,11 +183,11 @@ async function connectUpstream(
 	});
 }
 
-function nodeRealtimeResponse(socket: NodeWebSocket): Response {
+function nodeRealtimeResponse(socket: NodeWebSocket, route: PlaygroundResolvedRoute): Response {
 	const response = new Response(null, {
 		status: 200,
 		headers: {
-			'X-Octafuse-Realtime-Protocol': 'dashscope-playground',
+			'X-Octafuse-Realtime-Protocol': `${route.upstreamProtocol}-playground`,
 			'X-Octafuse-Realtime-Upgrade': '1',
 		},
 	});
@@ -174,7 +203,7 @@ export function createPlaygroundNodeRealtimeDispatch(
 	const handshakeTimeoutMs = options?.handshakeTimeoutMs ?? PLAYGROUND_UPSTREAM_HANDSHAKE_TIMEOUT_MS;
 	return (
 		route: PlaygroundResolvedRoute,
-		operation: PlaygroundDashScopeRealtimeOperation,
+		operation: PlaygroundRealtimeOperation,
 		requestSignal: AbortSignal | undefined,
 		upstreamUrl: string
 	): Promise<Response> =>
@@ -249,11 +278,10 @@ export function createPlaygroundNodeRealtimeDispatch(
 
 			void connectUpstream(
 				upstreamUrl,
-				route.providerApiKey,
+				route,
 				requestSignal,
 				WebSocketCtor,
-				handshakeTimeoutMs,
-				route.customParams
+				handshakeTimeoutMs
 			)
 				.then((opened) => {
 					if ('response' in opened) {
@@ -272,11 +300,12 @@ export function createPlaygroundNodeRealtimeDispatch(
 					upstream.on('message', onUpstreamMessage);
 					upstream.on('close', onUpstreamClose);
 					upstream.on('error', onUpstreamError);
+					for (const early of opened.early.drain()) onUpstreamMessage(early.data, early.isBinary);
 					requestSignal?.removeEventListener('abort', onAbort);
 					for (const pending of pendingMessages.splice(0)) {
 						sendToUpstream(pending.data, pending.isBinary);
 					}
-					resolve(nodeRealtimeResponse(client));
+					resolve(nodeRealtimeResponse(client, route));
 				})
 				.catch((error) => {
 					cleanupClient();

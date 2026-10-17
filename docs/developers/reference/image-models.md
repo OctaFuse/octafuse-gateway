@@ -24,9 +24,9 @@
 | 同上 | 同上 | `minimax` / `images.generations` | `minimax-image` | [MiniMax](../architecture/minimax-image.md) |
 | 同上 | 同上 | `gemini` / `models.generate` | `gemini-image` | [Gemini](../architecture/gemini-image.md#openai-入口gemini-image) |
 | `POST /v1/images/edits`（multipart） | `openai` / `images.edits` | `openai` / `images.edits` | `passthrough` | 只有 OpenAI GPT Image 可用 |
-| `POST /v1/volcengine/images/generations` | `volcengine` / `images.generations` | 同左 | `passthrough` | [火山方舟](../architecture/volcengine-image.md) |
-| `POST /v1/dashscope/services/aigc/multimodal-generation/generation` | `dashscope` / `images.generations.multimodal` | 同左 | `passthrough` | [DashScope](../architecture/dashscope-image.md) |
-| `POST /v1/minimax/image_generation` | `minimax` / `images.generations` | 同左 | `passthrough` | [MiniMax](../architecture/minimax-image.md) |
+| `POST /volcengine/api/v3/images/generations` | `volcengine` / `images.generations` | 同左 | `passthrough` | [火山方舟](../architecture/volcengine-image.md) |
+| `POST /dashscope/api/v1/services/aigc/multimodal-generation/generation` | `dashscope` / `images.generations.multimodal` | 同左 | `passthrough` | [DashScope](../architecture/dashscope-image.md) |
+| `POST /minimax/v1/image_generation` | `minimax` / `images.generations` | 同左 | `passthrough` | [MiniMax](../architecture/minimax-image.md) |
 | `POST /v1beta/models/{model}:generateContent`（及 `streamGenerateContent`） | `gemini` / `models.generate` | 同左 | `passthrough` | [Gemini](../architecture/gemini-image.md) |
 
 失败转移复用 `failoverDispatch`。混合协议的路由池会把同一份请求交给每条路由的适配器各自转换。

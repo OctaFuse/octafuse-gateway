@@ -52,7 +52,8 @@ const PROTOCOL_TABS: Array<{
 		| "geminiOptional"
 		| "dashscopeOptional"
 		| "minimaxOptional"
-		| "volcengineOptional";
+		| "volcengineOptional"
+		| "elevenlabsOptional";
 }> = [
 	{ key: "openai", labelKey: "openaiOptional" },
 	{ key: "anthropic", labelKey: "anthropicOptional" },
@@ -60,6 +61,7 @@ const PROTOCOL_TABS: Array<{
 	{ key: "dashscope", labelKey: "dashscopeOptional" },
 	{ key: "minimax", labelKey: "minimaxOptional" },
 	{ key: "volcengine", labelKey: "volcengineOptional" },
+	{ key: "elevenlabs", labelKey: "elevenlabsOptional" },
 ];
 
 type DashScopeOverrideField =
@@ -92,6 +94,8 @@ function ProtocolFields(props: {
 		audioTranscriptionsMultimodal: string;
 		audioTranscriptionsTasks: string;
 		audioSpeech: string;
+		audioSpeechRealtime: string;
+		audioTranscriptionsRealtime: string;
 		audioSpeechMultimodal: string;
 		audioRealtimeInference: string;
 		audioRealtimeSession: string;
@@ -108,6 +112,9 @@ function ProtocolFields(props: {
 	minimaxSpeechHint?: string;
 	minimaxImageHint?: string;
 	volcengineImageHint?: string;
+	elevenlabsTranscriptionHint?: string;
+	elevenlabsSpeechHint?: string;
+	elevenlabsRealtimeHints?: { speech: string; transcription: string };
 	authLabels?: {
 		label: string;
 		auto: string;
@@ -131,6 +138,9 @@ function ProtocolFields(props: {
 		minimaxSpeechHint,
 		minimaxImageHint,
 		volcengineImageHint,
+		elevenlabsTranscriptionHint,
+		elevenlabsSpeechHint,
+		elevenlabsRealtimeHints,
 		authLabels,
 		onChange,
 	} = props;
@@ -448,6 +458,79 @@ function ProtocolFields(props: {
 								) : null}
 							</div>
 						) : null}
+						{protocol === "elevenlabs" ? (
+							<>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.audioTranscriptions}
+									</label>
+									<input
+										type="url"
+										value={form.audio_transcriptions}
+										onChange={(e) =>
+											onChange({ ...form, audio_transcriptions: e.target.value })
+										}
+										className={inputClass}
+										autoComplete="off"
+									/>
+									{elevenlabsTranscriptionHint ? (
+										<p className="mt-1 text-xs text-gray-500">{elevenlabsTranscriptionHint}</p>
+									) : null}
+								</div>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.audioSpeech}
+									</label>
+									<input
+										type="url"
+										value={form.audio_speech}
+										onChange={(e) => onChange({ ...form, audio_speech: e.target.value })}
+										className={inputClass}
+										placeholder="https://…/text-to-speech/{voice_id}"
+										autoComplete="off"
+									/>
+									{elevenlabsSpeechHint ? (
+										<p className="mt-1 text-xs text-gray-500">{elevenlabsSpeechHint}</p>
+									) : null}
+								</div>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.audioTranscriptionsRealtime}
+									</label>
+									<input
+										type="url"
+										value={form.audio_transcriptions_realtime}
+										onChange={(e) =>
+											onChange({ ...form, audio_transcriptions_realtime: e.target.value })
+										}
+										className={inputClass}
+										placeholder="wss://…/speech-to-text/realtime"
+										autoComplete="off"
+									/>
+									{elevenlabsRealtimeHints ? (
+										<p className="mt-1 text-xs text-gray-500">{elevenlabsRealtimeHints.transcription}</p>
+									) : null}
+								</div>
+								<div>
+									<label className="mb-1 block text-xs text-gray-600">
+										{capLabels.audioSpeechRealtime}
+									</label>
+									<input
+										type="url"
+										value={form.audio_speech_realtime}
+										onChange={(e) =>
+											onChange({ ...form, audio_speech_realtime: e.target.value })
+										}
+										className={inputClass}
+										placeholder="wss://…/text-to-speech/{voice_id}/stream-input"
+										autoComplete="off"
+									/>
+									{elevenlabsRealtimeHints ? (
+										<p className="mt-1 text-xs text-gray-500">{elevenlabsRealtimeHints.speech}</p>
+									) : null}
+								</div>
+							</>
+						) : null}
 						{protocol === "dashscope" ? (
 							<>
 								{(
@@ -569,6 +652,8 @@ export function ProviderModal(props: ProviderModalProps) {
 		audioTranscriptionsMultimodal: t('capAudioTranscriptionsMultimodal'),
 		audioTranscriptionsTasks: t('capAudioTranscriptionsTasks'),
 		audioSpeech: t('capAudioSpeech'),
+		audioSpeechRealtime: t('capAudioSpeechRealtime'),
+		audioTranscriptionsRealtime: t('capAudioTranscriptionsRealtime'),
 		audioSpeechMultimodal: t('capAudioSpeechMultimodal'),
 		audioRealtimeInference: t('capAudioRealtimeInference'),
 		audioRealtimeSession: t('capAudioRealtimeSession'),
@@ -584,6 +669,12 @@ export function ProviderModal(props: ProviderModalProps) {
 	const minimaxSpeechHint = t("capHintMiniMaxAudioSpeech");
 	const minimaxImageHint = t("capHintMiniMaxImagesGenerations");
 	const volcengineImageHint = t("capHintVolcengineImagesGenerations");
+	const elevenlabsTranscriptionHint = t("capHintElevenLabsAudioTranscriptions");
+	const elevenlabsSpeechHint = t("capHintElevenLabsAudioSpeech");
+	const elevenlabsRealtimeHints = {
+		speech: t("capHintElevenLabsAudioSpeechRealtime"),
+		transcription: t("capHintElevenLabsAudioTranscriptionsRealtime"),
+	};
 	const dashscopeCapHints: Record<DashScopeOverrideField, string> = {
 		images_generations_multimodal: t('capHintImagesGenerationsMultimodal'),
 		audio_transcriptions: t('capHintAudioTranscriptions'),
@@ -942,6 +1033,22 @@ export function ProviderModal(props: ProviderModalProps) {
 										capLabels={capLabels}
 										volcengineImageHint={volcengineImageHint}
 										onChange={(volcengine) => onFormChange({ ...formData, volcengine })}
+									/>
+								) : null}
+								{endpointTab === "elevenlabs" ? (
+									<ProtocolFields
+										baseUrlLabel={t("baseUrl")}
+										basePlaceholder={t("elevenlabsPlaceholder")}
+										baseHint={t("elevenlabsHint")}
+										form={formData.elevenlabs}
+										protocol="elevenlabs"
+										advancedToggle={t("advancedToggle")}
+										advancedHint={t("advancedHintElevenlabs")}
+										capLabels={capLabels}
+										elevenlabsTranscriptionHint={elevenlabsTranscriptionHint}
+										elevenlabsSpeechHint={elevenlabsSpeechHint}
+										elevenlabsRealtimeHints={elevenlabsRealtimeHints}
+										onChange={(elevenlabs) => onFormChange({ ...formData, elevenlabs })}
 									/>
 								) : null}
 							</div>

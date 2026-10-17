@@ -3,6 +3,9 @@ import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import {
 	AUDIO_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	ELEVENLABS_OPENAI_SPEECH_BODY_TEMPLATE,
+	ELEVENLABS_SPEECH_BODY_TEMPLATE,
+	ELEVENLABS_TRANSCRIPTIONS_BODY_TEMPLATE,
 	MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE,
 	MINIMAX_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE,
@@ -27,6 +30,10 @@ import {
 	isDashScopeRealtimeOperation,
 	type DashScopeRealtimeOperation,
 } from '@/lib/dashscope-realtime-client';
+import {
+	buildElevenLabsRealtimeTemplate,
+	isElevenLabsRealtimeOperation,
+} from '@/lib/elevenlabs-realtime-client';
 import type { AdminKeyListItem, AdminModelRow, RouteListRow } from './types';
 
 export const LS_PROXY = 'octafuse.simulator.proxyBaseUrl';
@@ -66,6 +73,7 @@ export const BODY_TEMPLATES: Record<SimulatorProtocol, string> = {
 }`,
 	dashscope: '{}',
 	minimax: AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	elevenlabs: ELEVENLABS_TRANSCRIPTIONS_BODY_TEMPLATE,
 	volcengine: VOLCENGINE_IMAGE_BODY_TEMPLATE,
 };
 
@@ -121,6 +129,7 @@ export function bodyTemplateForSelection(
 	if (audioOperation && protocol === 'openai') {
 		if (audioOperation === 'speech' && providerModelName) {
 			if (/^speech-/i.test(providerModelName.trim())) return MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE;
+			if (/^eleven_/i.test(providerModelName.trim())) return ELEVENLABS_OPENAI_SPEECH_BODY_TEMPLATE;
 			// OpenAI surface 可能映射到 DashScope；模板音色必须匹配实际供应商模型。
 			return buildDashScopeSpeechBodyTemplate(providerModelName);
 		}
@@ -131,6 +140,12 @@ export function bodyTemplateForSelection(
 	}
 	if (audioOperation && protocol === 'minimax') {
 		return audioOperation === 'speech' ? MINIMAX_SPEECH_BODY_TEMPLATE : AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
+	}
+	if (audioOperation && protocol === 'elevenlabs') {
+		if (realtimeOperation && isElevenLabsRealtimeOperation(realtimeOperation)) {
+			return buildElevenLabsRealtimeTemplate(realtimeOperation);
+		}
+		return audioOperation === 'speech' ? ELEVENLABS_SPEECH_BODY_TEMPLATE : ELEVENLABS_TRANSCRIPTIONS_BODY_TEMPLATE;
 	}
 	if (audioOperation && protocol === 'dashscope') {
 		if (realtimeOperation === 'audio.speech' || realtimeOperation === 'audio.speech.stream') {
@@ -233,6 +248,24 @@ const DASHSCOPE_HTTP_AUDIO_OPERATIONS = [
 	'audio.speech.stream',
 	'audio.speech.multimodal',
 ] as const;
+
+/** 模拟器可选的 ElevenLabs 音频入口：HTTP 透传 + 实时 WSS（按路由 surface 是否命中决定）。 */
+export function listElevenLabsAudioClientOperations(
+	routes: RouteListRow[],
+	modelId: string,
+	routeGroup: string,
+	audioOperation: AudioOperation,
+): readonly string[] {
+	const httpOperation = audioOperation === 'speech' ? 'audio.speech' : 'audio.transcriptions';
+	const realtimeOperation = audioOperation === 'speech' ? 'audio.speech.realtime' : 'audio.transcriptions.realtime';
+	const found: string[] = [];
+	for (const operation of [httpOperation, realtimeOperation]) {
+		if (filterMatchingActiveRoutes(routes, modelId, routeGroup, 'elevenlabs', operation).length > 0) {
+			found.push(operation);
+		}
+	}
+	return found;
+}
 
 /** 模拟器可选的 DashScope 音频入口：HTTP 透传 + 实时 WSS。 */
 export function listDashScopeAudioClientOperations(
@@ -353,6 +386,7 @@ export const SIMULATOR_PROTOCOL_ORDER: readonly SimulatorProtocol[] = [
 	'dashscope',
 	'minimax',
 	'volcengine',
+	'elevenlabs',
 ];
 
 export type SimulatorClientSurfaceOptions = {

@@ -192,6 +192,27 @@ export function describePlaygroundUpstreamUrl(input: {
 					target,
 				};
 			}
+			case "elevenlabs": {
+				const operation = upstreamOperation?.trim() || "audio.transcriptions";
+				const capability =
+					operation === "audio.speech" || operation === "audio.speech.realtime"
+						? operation
+						: operation === "audio.transcriptions.realtime"
+							? "audio.transcriptions.realtime"
+							: operation === "audio.transcriptions" || operation === "*"
+								? "audio.transcriptions"
+								: null;
+				target = capability ? `${protocol}/${capability}` : null;
+				if (!capability) return { url: null, target };
+				return {
+					// 音色是路径参数，预览里保留占位符。
+					url: resolveUpstreamEndpoint(protocol, capability, providerEndpoints, {
+						providerId: provider.id,
+						voiceId: "{voice_id}",
+					}).replace(/%7Bvoice_id%7D/gi, "{voice_id}"),
+					target,
+				};
+			}
 			case "dashscope": {
 				const rawOperation = upstreamOperation?.trim() ?? "";
 				const operation = rawOperation.endsWith(".realtime.inference")

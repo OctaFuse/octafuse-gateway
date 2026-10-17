@@ -4,6 +4,19 @@
  */
 import { applyGeminiStreamQueryParams } from "@octafuse/core/gemini-upstream-url";
 import { requestSurfacePath } from "@octafuse/core/adapters/registry";
+import {
+	DASHSCOPE_REALTIME_INFERENCE_PATH,
+	DASHSCOPE_REALTIME_SESSION_PATH,
+	ELEVENLABS_SPEECH_TO_TEXT_REALTIME_PATH,
+	ELEVENLABS_TEXT_TO_SPEECH_REALTIME_PATH,
+} from "@octafuse/core/route-topology";
+import {
+	ELEVENLABS_TTS_VARIANTS,
+	elevenLabsTtsVariantSuffix,
+	isValidElevenLabsVoiceId,
+	type ElevenLabsTtsVariant,
+} from "@octafuse/core/elevenlabs-native";
+import { splitElevenLabsTtsQuery } from "@octafuse/core/elevenlabs-openai";
 import { openaiEditImageFormField, type ImageOperation } from "@/lib/image-generations";
 import {
 	parseGatewayToolId,
@@ -74,19 +87,78 @@ export type BuildSimulatorRequestResult = {
 	multipartSummary?: string;
 };
 
-/** 构造 DashScope 原生实时入口的浏览器 WebSocket URL（鉴权在子协议中完成）。 */
+/**
+ * 构造 DashScope 原生实时入口的浏览器 WebSocket URL（鉴权在子协议中完成），路径与官方一致：
+ * - inference（run-task）：`/dashscope/api-ws/v1/inference`，不带查询参数，模型写在 run-task 的 `payload.model`；
+ * - session：`/dashscope/api-ws/v1/realtime?model=`，升级前按模型选路由。
+ */
 export function buildSimulatorDashScopeRealtimeUrl(input: {
 	baseUrl: string;
 	modelForRouting: string;
 	operation: string;
 }): string {
 	const base = stripTrailingSlash(input.baseUrl.trim());
-	const url = new URL(`${base}/v1/dashscope/realtime`);
+	const isInference = input.operation.endsWith(".inference");
+	const url = new URL(
+		`${base}${isInference ? DASHSCOPE_REALTIME_INFERENCE_PATH : DASHSCOPE_REALTIME_SESSION_PATH}`
+	);
 	if (url.protocol === "http:") url.protocol = "ws:";
 	if (url.protocol === "https:") url.protocol = "wss:";
-	url.searchParams.set("model", input.modelForRouting);
-	url.searchParams.set("operation", input.operation);
+	if (!isInference) url.searchParams.set("model", input.modelForRouting);
 	return url.toString();
+}
+
+/**
+ * 构造 ElevenLabs 原生实时入口的浏览器 WebSocket URL，路径与官方一致：
+ * - 实时转写：`/elevenlabs/v1/speech-to-text/realtime?model_id=`
+ * - 语音合成：`/elevenlabs/v1/text-to-speech/{voice_id}/stream-input?model_id=`
+ * 模型在 query 的 `model_id`，升级前按它选路由；鉴权走 Sec-WebSocket-Protocol。
+ * `query` 不应包含 `model_id`，由 `modelForRouting` 写入。
+ */
+export function buildSimulatorElevenLabsRealtimeUrl(input: {
+	baseUrl: string;
+	modelForRouting: string;
+	operation: string;
+	voiceId?: string;
+	query?: Record<string, string>;
+}): string {
+	const base = stripTrailingSlash(input.baseUrl.trim());
+	const isSpeech = input.operation === "audio.speech.realtime";
+	if (isSpeech && !isValidElevenLabsVoiceId(input.voiceId ?? "")) {
+		throw new Error("ElevenLabs speech requires body.voice_id");
+	}
+	const path = isSpeech
+		? ELEVENLABS_TEXT_TO_SPEECH_REALTIME_PATH.replace(
+				"{voice_id}",
+				encodeURIComponent(input.voiceId ?? "")
+			)
+		: ELEVENLABS_SPEECH_TO_TEXT_REALTIME_PATH;
+	const url = new URL(`${base}${path}`);
+	if (url.protocol === "http:") url.protocol = "ws:";
+	if (url.protocol === "https:") url.protocol = "wss:";
+	for (const [key, value] of Object.entries(input.query ?? {})) {
+		if (key === "model_id") continue;
+		url.searchParams.set(key, value);
+	}
+	url.searchParams.set("model_id", input.modelForRouting);
+	return url.toString();
+}
+
+/**
+ * inference（run-task）入口按帧里的 `payload.model` 选路由：
+ * 把 Gateway 模型 ID 写进 run-task；其它 operation（session）原样返回。
+ */
+export function withDashScopeRunTaskModel(
+	body: Record<string, unknown>,
+	operation: string,
+	modelForRouting: string
+): Record<string, unknown> {
+	if (!operation.endsWith(".inference")) return body;
+	const payload =
+		body.payload != null && typeof body.payload === "object" && !Array.isArray(body.payload)
+			? (body.payload as Record<string, unknown>)
+			: {};
+	return { ...body, payload: { ...payload, model: modelForRouting } };
 }
 
 function stripTrailingSlash(u: string): string {
@@ -364,6 +436,67 @@ export function buildSimulatorRequest(
 					Authorization: auth,
 				},
 				bodyText: JSON.stringify(merged),
+			};
+		}
+		case "elevenlabs": {
+			if (kind === "tts") {
+				// 原生入口：voice_id / variant 进路径，output_format 等进 query，其余作为 JSON body。
+				const { voice_id, variant, output_format, ...rest } = input.body;
+				const voiceId = typeof voice_id === "string" ? voice_id.trim() : "";
+				if (!isValidElevenLabsVoiceId(voiceId)) {
+					throw new Error("ElevenLabs speech requires body.voice_id");
+				}
+				const variantName = typeof variant === "string" && variant.trim() ? variant.trim() : "speech";
+				if (!(ELEVENLABS_TTS_VARIANTS as readonly string[]).includes(variantName)) {
+					throw new Error(`body.variant must be one of ${ELEVENLABS_TTS_VARIANTS.join(", ")}`);
+				}
+				const split = splitElevenLabsTtsQuery(rest);
+				const basePath = resolveProxyPathForModelInvoke({ kind: "tts", protocol: "elevenlabs" }).replace(
+					"{voice_id}",
+					encodeURIComponent(voiceId)
+				);
+				const query: Record<string, string> = { ...split.query };
+				if (typeof output_format === "string" && output_format.trim()) query.output_format = output_format.trim();
+				const qs = new URLSearchParams(query).toString();
+				return {
+					url: `${base}${basePath}${elevenLabsTtsVariantSuffix(variantName as ElevenLabsTtsVariant)}${qs ? `?${qs}` : ""}`,
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: auth,
+					},
+					bodyText: JSON.stringify({ ...split.body, model_id: input.modelForRouting }),
+				};
+			}
+			if (kind !== "asr") {
+				throw new Error("ElevenLabs simulator supports speech-to-text and text-to-speech");
+			}
+			const file = input.audioFile ?? null;
+			const fd = new FormData();
+			fd.append("model_id", input.modelForRouting);
+			const skip = new Set(["model", "model_id", "file", "audio", "file_name", "filename"]);
+			const fieldParts = ["model_id", "file"];
+			for (const [key, value] of Object.entries(input.body)) {
+				if (skip.has(key)) continue;
+				if (typeof value === "boolean") {
+					fd.append(key, String(value));
+					fieldParts.push(key);
+					continue;
+				}
+				appendOptionalFormField(fd, key, value);
+				if (value != null && String(value).trim() !== "") fieldParts.push(key);
+			}
+			if (file) fd.append("file", file, file.name || "audio.wav");
+			return {
+				url: `${base}${resolveProxyPathForModelInvoke({ kind: "asr", protocol: "elevenlabs" })}`,
+				headers: {
+					Authorization: auth,
+				},
+				bodyText: "",
+				formData: fd,
+				multipartSummary: [
+					`multipart/form-data fields: ${fieldParts.join(", ")}`,
+					file ? `file: ${file.name || "audio.wav"} (${file.size} bytes)` : "file: (none selected yet — required before Send)",
+				].join("\n"),
 			};
 		}
 		case "minimax": {

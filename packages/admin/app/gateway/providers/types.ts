@@ -79,6 +79,10 @@ export type ProtocolEndpointForm = {
 	audio_transcriptions_multimodal: string;
 	audio_transcriptions_tasks: string;
 	audio_speech: string;
+	/** ElevenLabs `audio.speech.realtime`（`wss://…/text-to-speech/{voice_id}/stream-input`）。 */
+	audio_speech_realtime: string;
+	/** ElevenLabs `audio.transcriptions.realtime`（`wss://…/speech-to-text/realtime`）。 */
+	audio_transcriptions_realtime: string;
 	audio_speech_multimodal: string;
 	audio_realtime_inference: string;
 	audio_realtime_session: string;
@@ -114,6 +118,7 @@ export type ProviderFormData = {
 	dashscope: ProtocolEndpointForm;
 	minimax: ProtocolEndpointForm;
 	volcengine: ProtocolEndpointForm;
+	elevenlabs: ProtocolEndpointForm;
 	description: string;
 };
 
@@ -134,6 +139,8 @@ export const EMPTY_PROTOCOL_FORM: ProtocolEndpointForm = {
 	audio_transcriptions_multimodal: '',
 	audio_transcriptions_tasks: '',
 	audio_speech: '',
+	audio_speech_realtime: '',
+	audio_transcriptions_realtime: '',
 	audio_speech_multimodal: '',
 	audio_realtime_inference: '',
 	audio_realtime_session: '',
@@ -160,6 +167,7 @@ export const EMPTY_PROVIDER_FORM: ProviderFormData = {
 	dashscope: { ...EMPTY_PROTOCOL_FORM },
 	minimax: { ...EMPTY_PROTOCOL_FORM },
 	volcengine: { ...EMPTY_PROTOCOL_FORM },
+	elevenlabs: { ...EMPTY_PROTOCOL_FORM },
 	description: '',
 };
 
@@ -178,7 +186,8 @@ export type ProviderListFilter =
 	| 'gemini'
 	| 'dashscope'
 	| 'minimax'
-	| 'volcengine';
+	| 'volcengine'
+	| 'elevenlabs';
 
 export const DEFAULT_PROVIDER_LIST_FILTER: ProviderListFilter = 'all';
 
@@ -195,6 +204,7 @@ export const PROVIDER_LIST_FILTERS: readonly ProviderListFilter[] = [
 	'dashscope',
 	'minimax',
 	'volcengine',
+	'elevenlabs',
 ] as const;
 
 export function parseProviderListFilterParam(raw: string | null): ProviderListFilter {

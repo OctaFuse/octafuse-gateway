@@ -50,6 +50,7 @@ function emptyFilterCounts(): Record<ProviderListFilter, number> {
 		dashscope: 0,
 		minimax: 0,
 		volcengine: 0,
+		elevenlabs: 0,
 	};
 }
 
@@ -365,7 +366,7 @@ export function useProvidersPageState() {
 		}
 		setImportSubmitting(true);
 		try {
-			const result = await importProviderPresets(ids);
+			const result = await importProviderPresets(ids, locale);
 			if (result.success) {
 				const { created, failed } = result.data;
 				const failN = failed.length;
@@ -388,7 +389,7 @@ export function useProvidersPageState() {
 		} finally {
 			setImportSubmitting(false);
 		}
-	}, [importSelected, notify, refreshProviders, tImport]);
+	}, [importSelected, locale, notify, refreshProviders, tImport]);
 
 	const handleSave = useCallback(async () => {
 		if (!editingProvider && !formData.api_key.trim()) {

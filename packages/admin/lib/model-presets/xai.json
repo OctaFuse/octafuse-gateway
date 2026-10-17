@@ -28,6 +28,24 @@
 						"cache_write_price": null
 					}
 				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 7,
+						"output_price": 14,
+						"cache_read_price": 1.4,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 14,
+						"output_price": 28,
+						"cache_read_price": 2.8,
+						"cache_write_price": null
+					}
+				]
 			}
 		},
 		"modalities": {
@@ -66,6 +84,24 @@
 						"input_price": 2.5,
 						"output_price": 5,
 						"cache_read_price": 0.4,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 8.75,
+						"output_price": 17.5,
+						"cache_read_price": 1.4,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 17.5,
+						"output_price": 35,
+						"cache_read_price": 2.8,
 						"cache_write_price": null
 					}
 				]
@@ -108,6 +144,24 @@
 						"input_price": 2.5,
 						"output_price": 5,
 						"cache_read_price": 0.4,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 8.75,
+						"output_price": 17.5,
+						"cache_read_price": 1.4,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 17.5,
+						"output_price": 35,
+						"cache_read_price": 2.8,
 						"cache_write_price": null
 					}
 				]

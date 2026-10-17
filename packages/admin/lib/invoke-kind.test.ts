@@ -24,7 +24,7 @@ describe('invoke-kind asr / tts', () => {
 		assert.equal(resolveOpenaiUpstreamCapability({ kind: 'tts' }), 'audio.speech');
 		assert.equal(resolveProxyPathForModelInvoke({ kind: 'asr', protocol: 'openai' }), '/v1/audio/transcriptions');
 		assert.equal(resolveProxyPathForModelInvoke({ kind: 'tts', protocol: 'openai' }), '/v1/audio/speech');
-		assert.equal(resolveProxyPathForModelInvoke({ kind: 'tts', protocol: 'minimax' }), '/v1/minimax/t2a_v2');
+		assert.equal(resolveProxyPathForModelInvoke({ kind: 'tts', protocol: 'minimax' }), '/minimax/v1/t2a_v2');
 	});
 });
 

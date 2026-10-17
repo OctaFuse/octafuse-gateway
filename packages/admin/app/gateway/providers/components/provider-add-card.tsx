@@ -4,17 +4,18 @@ import { ArrowDownTrayIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 
 type ProviderAddCardProps = {
+	compact?: boolean;
 	onImport: () => void;
 	onCreate: () => void;
 };
 
 export function ProviderAddCard(props: ProviderAddCardProps) {
-	const { onImport, onCreate } = props;
+	const { onImport, onCreate, compact = false } = props;
 	const t = useTranslations('providers.addCard');
 	const tCommon = useTranslations('common');
 
 	return (
-		<article className="flex h-full min-h-[12rem] flex-col justify-between rounded-xl border border-dashed border-blue-200 bg-blue-50/40 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50/70">
+		<article className={`flex rounded-xl border border-dashed border-blue-200 bg-blue-50/40 p-4 transition-colors hover:border-blue-300 hover:bg-blue-50/70 ${compact ? 'mb-3 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between' : 'h-full min-h-[12rem] flex-col justify-between'}`}>
 			<div className="flex items-center gap-2.5">
 				<span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
 					<PlusIcon className="h-5 w-5" aria-hidden />
@@ -24,7 +25,7 @@ export function ProviderAddCard(props: ProviderAddCardProps) {
 					<p className="mt-1 text-xs leading-5 text-blue-800/70">{t('subtitle')}</p>
 				</div>
 			</div>
-			<div className="mt-3 grid grid-cols-2 gap-2">
+			<div className={`grid shrink-0 grid-cols-2 gap-2 ${compact ? 'sm:min-w-56' : 'mt-3'}`}>
 				<button
 					type="button"
 					onClick={onImport}

@@ -1,6 +1,19 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import assert from 'node:assert/strict';
+import { afterEach, describe, it, mock } from 'node:test';
 import type { RouteResult } from '../model-router';
 import { dispatchGeminiRoute } from './gemini-driver';
+
+// 用 node:test 的 mock 替代原 vitest 的 vi.fn / vi.stubGlobal。
+const originalFetch = globalThis.fetch;
+const vi = {
+	fn: <T extends (...args: never[]) => unknown>(impl: T) => mock.fn(impl),
+	stubGlobal: (_name: 'fetch', value: unknown) => {
+		globalThis.fetch = value as typeof fetch;
+	},
+	unstubAllGlobals: () => {
+		globalThis.fetch = originalFetch;
+	},
+};
 
 function minimalRoute(overrides: Partial<RouteResult>): RouteResult {
 	return {
@@ -34,10 +47,10 @@ describe('dispatchGeminiRoute upstream auth', () => {
 
 		await dispatchGeminiRoute(minimalRoute({}), {}, 'generateContent', '');
 
-		const [calledUrl, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+		const [calledUrl, init] = fetchMock.mock.calls[0].arguments as unknown as [string, RequestInit];
 		const u = new URL(calledUrl);
-		expect(u.searchParams.get('key')).toBe('provider-key');
-		expect((init.headers as Record<string, string>).Authorization).toBeUndefined();
+		assert.equal(u.searchParams.get('key'), 'provider-key');
+		assert.equal((init.headers as Record<string, string>).Authorization, undefined);
 	});
 
 	it('uses models.generate family template with wire action', async () => {
@@ -59,10 +72,10 @@ describe('dispatchGeminiRoute upstream auth', () => {
 			''
 		);
 
-		const [calledUrl] = fetchMock.mock.calls[0] as [string, RequestInit];
+		const [calledUrl] = fetchMock.mock.calls[0].arguments as unknown as [string, RequestInit];
 		const u = new URL(calledUrl);
-		expect(u.pathname).toBe('/v1/models/gemini-2.5-flash:streamGenerateContent');
-		expect(u.searchParams.get('alt')).toBe('sse');
+		assert.equal(u.pathname, '/v1/models/gemini-2.5-flash:streamGenerateContent');
+		assert.equal(u.searchParams.get('alt'), 'sse');
 	});
 
 	it('uses Authorization Bearer for qnaigc bypass upstream', async () => {
@@ -84,14 +97,14 @@ describe('dispatchGeminiRoute upstream auth', () => {
 			''
 		);
 
-		const [calledUrl, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+		const [calledUrl, init] = fetchMock.mock.calls[0].arguments as unknown as [string, RequestInit];
 		const u = new URL(calledUrl);
-		expect(u.pathname).toBe('/bypass/vertex/v1/models/gemini-2.5-flash:generateContent');
-		expect(calledUrl).toBe(
+		assert.equal(u.pathname, '/bypass/vertex/v1/models/gemini-2.5-flash:generateContent');
+		assert.equal(calledUrl, 
 			'https://api.qnaigc.com/bypass/vertex/v1/models/gemini-2.5-flash:generateContent'
 		);
-		expect(u.searchParams.has('key')).toBe(false);
-		expect((init.headers as Record<string, string>).Authorization).toBe('Bearer bearer-token');
+		assert.equal(u.searchParams.has('key'), false);
+		assert.equal((init.headers as Record<string, string>).Authorization, 'Bearer bearer-token');
 	});
 
 	it('uses Authorization Bearer and alt=sse for modelink stream upstream', async () => {
@@ -113,11 +126,11 @@ describe('dispatchGeminiRoute upstream auth', () => {
 			''
 		);
 
-		const [calledUrl, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+		const [calledUrl, init] = fetchMock.mock.calls[0].arguments as unknown as [string, RequestInit];
 		const u = new URL(calledUrl);
-		expect(u.searchParams.has('key')).toBe(false);
-		expect(u.searchParams.get('alt')).toBe('sse');
-		expect((init.headers as Record<string, string>).Authorization).toBe('Bearer modelink-token');
+		assert.equal(u.searchParams.has('key'), false);
+		assert.equal(u.searchParams.get('alt'), 'sse');
+		assert.equal((init.headers as Record<string, string>).Authorization, 'Bearer modelink-token');
 	});
 });
 
@@ -144,9 +157,9 @@ describe('dispatchGeminiRoute upstream trace ids', () => {
 		vi.stubGlobal('fetch', fetchMock);
 
 		const result = await dispatchGeminiRoute(minimalRoute({}), {}, 'generateContent', '');
-		expect(result.upstreamRequestId).toBe('qiniu-req-abc');
+		assert.equal(result.upstreamRequestId, 'qiniu-req-abc');
 		const usage = await result.usagePromise;
-		expect(usage.upstreamMessageId).toBe('gemini-msg-1');
+		assert.equal(usage.upstreamMessageId, 'gemini-msg-1');
 	});
 
 	it('parses body requestId when proxy adds it', async () => {
@@ -165,9 +178,9 @@ describe('dispatchGeminiRoute upstream trace ids', () => {
 		vi.stubGlobal('fetch', fetchMock);
 
 		const result = await dispatchGeminiRoute(minimalRoute({}), {}, 'generateContent', '');
-		expect(result.upstreamRequestId).toBeNull();
+		assert.equal(result.upstreamRequestId, null);
 		const usage = await result.usagePromise;
-		expect(usage.upstreamMessageId).toBe('gemini-msg-2');
-		expect(usage.upstreamBodyRequestId).toBe('proxy-req-2');
+		assert.equal(usage.upstreamMessageId, 'gemini-msg-2');
+		assert.equal(usage.upstreamBodyRequestId, 'proxy-req-2');
 	});
 });

@@ -224,4 +224,9 @@ describe('Quick test response projection', () => {
 		assert.equal(preview(latest).body, 'Partial');
 		assert.equal(stream.locked, false);
 	});
+
+	it('extracts ElevenLabs speech-to-text top-level text as body', () => {
+		const raw = JSON.stringify({ language_code: 'eng', text: 'Hello world', words: [] });
+		assert.equal(previewPlaygroundResponse(raw, 'elevenlabs', 'application/json', true).body, 'Hello world');
+	});
 });

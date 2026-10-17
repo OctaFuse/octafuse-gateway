@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import {
 	classifyUpstreamFetchFailure,
 	classifyUpstreamHttpFailure,
@@ -6,25 +7,30 @@ import {
 
 describe('upstream-failure-classifier', () => {
 	it('retries on 429 with rate_limit circuit kind', () => {
-		expect(classifyUpstreamHttpFailure(429)).toEqual({ action: 'retry_key', failureKind: 'rate_limit' });
+		assert.deepEqual(classifyUpstreamHttpFailure(429), { action: 'retry_key', failureKind: 'rate_limit' });
 	});
 
 	it('retries on ordinary 5xx with server circuit kind', () => {
-		expect(classifyUpstreamHttpFailure(500)).toEqual({ action: 'retry_key', failureKind: 'server' });
-		expect(classifyUpstreamHttpFailure(503)).toEqual({ action: 'retry_key', failureKind: 'server' });
+		assert.deepEqual(classifyUpstreamHttpFailure(500), { action: 'retry_key', failureKind: 'server' });
+		assert.deepEqual(classifyUpstreamHttpFailure(503), { action: 'retry_key', failureKind: 'server' });
 	});
 
 	it('retries 524 without cross-request circuit kind', () => {
-		expect(classifyUpstreamHttpFailure(524)).toEqual({ action: 'retry_key' });
+		assert.deepEqual(classifyUpstreamHttpFailure(524), { action: 'retry_key' });
 	});
 
-	it('retries 401/403 with alert flag and auth kind', () => {
-		expect(classifyUpstreamHttpFailure(401)).toEqual({
+	it('retries 401/402/403 with alert flag and auth kind', () => {
+		assert.deepEqual(classifyUpstreamHttpFailure(402), {
 			action: 'retry_key',
 			alertOnKeySwitch: true,
 			failureKind: 'auth',
 		});
-		expect(classifyUpstreamHttpFailure(403)).toEqual({
+		assert.deepEqual(classifyUpstreamHttpFailure(401), {
+			action: 'retry_key',
+			alertOnKeySwitch: true,
+			failureKind: 'auth',
+		});
+		assert.deepEqual(classifyUpstreamHttpFailure(403), {
 			action: 'retry_key',
 			alertOnKeySwitch: true,
 			failureKind: 'auth',
@@ -32,11 +38,11 @@ describe('upstream-failure-classifier', () => {
 	});
 
 	it('fails immediately on client errors', () => {
-		expect(classifyUpstreamHttpFailure(400).action).toBe('fail_immediately');
-		expect(classifyUpstreamHttpFailure(404).action).toBe('fail_immediately');
+		assert.equal(classifyUpstreamHttpFailure(400).action, 'fail_immediately');
+		assert.equal(classifyUpstreamHttpFailure(404).action, 'fail_immediately');
 	});
 
 	it('classifies fetch failures as retry_key without circuit kind', () => {
-		expect(classifyUpstreamFetchFailure()).toEqual({ action: 'retry_key' });
+		assert.deepEqual(classifyUpstreamFetchFailure(), { action: 'retry_key' });
 	});
 });

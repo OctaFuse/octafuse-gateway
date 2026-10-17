@@ -16,5 +16,6 @@ export function ProviderProtocolIcon(props: { protocol: ProviderProtocolSummary[
 	if (props.protocol === 'gemini') return <GeminiEndpointIcon label={t('gemini')} className="h-4 w-4" />;
 	if (props.protocol === 'minimax') return <UpstreamProtocolBrandIcon protocol="minimax" size="default" />;
 	if (props.protocol === 'volcengine') return <UpstreamProtocolBrandIcon protocol="volcengine" size="default" />;
+	if (props.protocol === 'elevenlabs') return <UpstreamProtocolBrandIcon protocol="elevenlabs" size="default" />;
 	return <UpstreamProtocolBrandIcon protocol="dashscope" size="default" />;
 }

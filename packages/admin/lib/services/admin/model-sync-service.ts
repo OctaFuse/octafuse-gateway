@@ -14,6 +14,7 @@ import {
 } from '@octafuse/core/lib/billing-currency';
 import {
 	listStaticModelPresets,
+	modelPresetDescriptionForLocale,
 	pickPresetPricingRawForBillingCurrency,
 	type StaticModelPresetRow,
 } from '@/lib/model-preset';
@@ -36,10 +37,11 @@ async function readBillingCurrency(repos: GatewayRepositories): Promise<GatewayS
 	return tryParseGatewaySupportedBillingCurrencyInput(raw ?? '') ?? 'USD';
 }
 
-/** 目录项 → 比对输入；`description` 与导入时写入的取值一致。 */
+/** 目录项 → 比对输入。介绍取当前界面语言；采用官方时写回同一语言。 */
 function presetToSyncInput(
 	preset: StaticModelPresetRow,
-	billing: GatewaySupportedBillingCurrency
+	billing: GatewaySupportedBillingCurrency,
+	locale: string | null | undefined
 ): ModelSyncPresetInput {
 	let pricing: string | null = null;
 	try {
@@ -52,7 +54,7 @@ function presetToSyncInput(
 		vendor: preset.vendor ?? null,
 		context_window: preset.context_window ?? null,
 		max_tokens: preset.max_tokens ?? null,
-		description: preset.description ?? preset.i18n?.en ?? null,
+		description: modelPresetDescriptionForLocale(preset, locale),
 		released: preset.released ?? null,
 		input_modalities: preset.modalities?.input ?? null,
 		output_modalities: preset.modalities?.output ?? null,
@@ -69,7 +71,10 @@ function presetMap(): Map<string, StaticModelPresetRow> {
 }
 
 /** 差异报告：按厂商分组，只含与目录同 id 且有差异的模型。 */
-export async function getModelSyncReportService(repos: GatewayRepositories): Promise<ModelSyncReport> {
+export async function getModelSyncReportService(
+	repos: GatewayRepositories,
+	locale?: string | null
+): Promise<ModelSyncReport> {
 	const billing = await readBillingCurrency(repos);
 	const presets = presetMap();
 	const rows = await repos.models.listModelsWithRouteCounts();
@@ -79,7 +84,7 @@ export async function getModelSyncReportService(repos: GatewayRepositories): Pro
 	for (const row of rows) {
 		const preset = presets.get(row.id);
 		if (!preset) continue;
-		const fields = diffModelAgainstPreset(row, presetToSyncInput(preset, billing));
+		const fields = diffModelAgainstPreset(row, presetToSyncInput(preset, billing, locale));
 		if (fields.length === 0) continue;
 		modelsWithDiff += 1;
 
@@ -143,7 +148,7 @@ export async function applyModelSyncService(
 				skipped += 1;
 				continue;
 			}
-			const patch = buildModelSyncPatch(row, presetToSyncInput(preset, billing), fields);
+			const patch = buildModelSyncPatch(row, presetToSyncInput(preset, billing, body.locale), fields);
 			if (Object.keys(patch).length === 0) {
 				skipped += 1;
 				continue;

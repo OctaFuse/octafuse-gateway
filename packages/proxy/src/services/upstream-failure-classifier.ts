@@ -8,7 +8,7 @@ export type UpstreamFailureAction = 'retry_key' | 'fail_immediately';
 
 export type UpstreamFailureClassification = {
 	action: UpstreamFailureAction;
-	/** 401/403 等鉴权异常，切换 provider 但应记录告警 */
+	/** 401/402/403 等鉴权 / 额度异常，切换 provider 但应记录告警 */
 	alertOnKeySwitch?: boolean;
 	/** 有值时 dispatch 会写入 provider 熔断；524 / fetch 等瞬时错误不设此项 */
 	failureKind?: ProviderFailureKind;
@@ -30,7 +30,8 @@ export function classifyUpstreamHttpFailure(status: number): UpstreamFailureClas
 	if (status >= 500) {
 		return { action: 'retry_key', failureKind: 'server' };
 	}
-	if (status === 401 || status === 403) {
+	// 402：上游余额 / 额度用尽（MiniMax 1008、ElevenLabs quota_exceeded 改写而来），与 key 失效同属需人工处理的供应商侧故障。
+	if (status === 401 || status === 402 || status === 403) {
 		return { action: 'retry_key', alertOnKeySwitch: true, failureKind: 'auth' };
 	}
 	return { action: 'fail_immediately' };

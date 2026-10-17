@@ -44,11 +44,12 @@ export function StickyRefreshControl(props: Props) {
 			className="flex items-center gap-1.5"
 			title={disabled ? t('stickyRefreshEmptyHint') : t('stickyRefreshLabel')}
 		>
-			<label className="sr-only" htmlFor="routes-sticky-refresh-interval">
-				{t('stickyRefreshLabel')}
+			<label className="shrink-0 text-xs text-slate-500" htmlFor="routes-sticky-refresh-interval">
+				{t('stickyRefreshShortLabel')}
 			</label>
 			<select
 				id="routes-sticky-refresh-interval"
+				aria-label={t('stickyRefreshLabel')}
 				value={intervalMs === 'off' ? 'off' : String(intervalMs)}
 				disabled={disabled}
 				onChange={(e) => {

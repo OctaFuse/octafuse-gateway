@@ -30,6 +30,7 @@ const VENDOR_VISUALS: Record<string, IconVisual> = {
 	commandcode: { accent: '#111827' },
 	deepinfra: { url: vendorIconAssets.deepinfra, accent: '#0ea5e9' },
 	deepseek: { url: vendorIconAssets.deepseek, accent: '#4d6bfe' },
+	elevenlabs: { url: vendorIconAssets.elevenlabs, accent: '#111827' },
 	fireworks: { url: vendorIconAssets.fireworks, accent: '#ff5f56' },
 	google: { url: vendorIconAssets.google, accent: '#4285f4' },
 	groq: { url: vendorIconAssets.groq, accent: '#f55036' },

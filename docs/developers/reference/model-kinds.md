@@ -80,7 +80,7 @@ Kind 回答「它是什么模型」；Proxy 的音频入口还要回答「能不
 - 计费未就绪的模型即使按模态签名被判成 `asr` / `tts`，也不会被受理，避免没有定价却产生调用。
 - 两种失败给出不同的错误信息：「模型类型不符」与「缺少音频计费」。
 
-代码见 `packages/proxy/src/routes/v1/audio-model-guard.ts`，被 MiniMax T2A、DashScope 语音合成与文件转写入口使用。
+代码见 `packages/proxy/src/routes/v1/audio-model-guard.ts`，被 MiniMax T2A、ElevenLabs 语音合成与转写（含两条 WebSocket 入口）、DashScope 语音合成与文件转写入口使用。
 
 ## 管理后台里的 Kind
 

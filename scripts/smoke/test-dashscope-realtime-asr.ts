@@ -28,15 +28,15 @@ const GATEWAY_BASE_URL = (process.env.GATEWAY_BASE_URL ?? 'http://127.0.0.1:8787
 const GATEWAY_API_KEY = process.env.GATEWAY_API_KEY?.trim() ?? '';
 const MODEL = process.env.GATEWAY_REALTIME_MODEL?.trim() || 'qwen-audio-3.0-asr-flash-streaming';
 const PCM_PATH = process.env.GATEWAY_REALTIME_PCM?.trim() ?? '';
-const OPERATION = 'audio.transcriptions.realtime.inference';
 const CHUNK_BYTES = 3200;
 const CHUNK_INTERVAL_MS = 100;
 
 function wsUrl(httpBase: string): string {
 	const url = new URL(httpBase);
 	url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-	url.pathname = '/v1/dashscope/realtime';
-	url.search = `?model=${encodeURIComponent(MODEL)}&operation=${encodeURIComponent(OPERATION)}`;
+	// 与百炼官方一致：模型和任务写在 run-task 帧里，URL 不带 model / operation。
+	url.pathname = '/dashscope/api-ws/v1/inference';
+	url.search = '';
 	return url.toString();
 }
 
@@ -166,7 +166,7 @@ async function main(): Promise<void> {
 			task_group: 'audio',
 			task: 'asr',
 			function: 'recognition',
-			model: '<auto>',
+			model: MODEL,
 			parameters: { format: 'pcm', sample_rate: 16000 },
 			input: {},
 		},

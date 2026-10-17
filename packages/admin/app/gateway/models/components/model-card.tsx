@@ -7,8 +7,11 @@ import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { formatCatalogPricingTierRowsTooltip, getCatalogCardPricing } from '@/lib/pricing-ui';
 import { resolveModelKind, type ModelKind } from '@octafuse/core/db/model-kind';
 import { isModelRetiringSoon, resolveModelLifecycle } from '@/lib/model-lifecycle';
+import type { CatalogView } from '../../components/catalog-view-toggle';
 import { tagBadgeClass } from '../model-utils';
 import type { ModelListItem } from '../types';
+
+export const MODEL_LIST_COLUMNS = 'xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.6fr)]';
 
 function routeUsageClass(routesCount: number, activeRoutesCount: number): string {
 	if (routesCount <= 0) return 'text-slate-400';
@@ -25,13 +28,15 @@ function kindBadgeClass(kind: ModelKind): string {
 }
 
 export function ModelCard(props: {
+	view?: CatalogView;
 	model: ModelListItem;
 	billingCurrency: string;
 	onEdit: (model: ModelListItem) => void;
 	/** 点击「有官方更新」图标：打开同步面板并定位到该模型所属厂商。 */
 	onReviewOfficialUpdate?: (model: ModelListItem) => void;
 }) {
-	const { model, billingCurrency, onEdit, onReviewOfficialUpdate } = props;
+	const { model, billingCurrency, onEdit, onReviewOfficialUpdate, view = 'cards' } = props;
+	const isList = view === 'list';
 	const hasOfficialUpdate = Number(model.official_update_count ?? 0) > 0;
 	const t = useTranslations('models.card');
 	const displayName = model.display_name || model.id;
@@ -60,16 +65,33 @@ export function ModelCard(props: {
 			? [pricing.amount, pricing.unit].filter(Boolean).join(' ')
 			: pricingTooltip;
 
+	const tagBadges = tagShown.length > 0 ? (
+		<div className={`flex shrink-0 flex-wrap gap-1 ${isList ? 'min-w-0' : 'max-w-[40%] justify-end'}`} title={model.tags.join(' · ')}>
+			{tagShown.map((tag) => (
+				<span
+					key={tag}
+					className={`max-w-full break-words rounded px-1.5 py-0.5 text-[10px] font-medium ${tagBadgeClass(tag)}`}
+				>
+					{tag}
+				</span>
+			))}
+			{tagExtra > 0 ? <span className="self-center text-[10px] text-gray-400">+{tagExtra}</span> : null}
+		</div>
+	) : null;
+
 	return (
-		<article className={`group relative flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50/60${isRetired ? ' opacity-75' : ''}`}>
+		<article
+			role={isList ? 'listitem' : undefined}
+			className={`group relative min-w-0 gap-3 bg-white p-4 transition-colors hover:bg-slate-50/60 ${isList ? `grid sm:grid-cols-2 xl:items-center xl:gap-4 ${MODEL_LIST_COLUMNS}` : 'flex flex-col rounded-xl border border-slate-200 shadow-sm hover:border-slate-300'}${isRetired ? ' opacity-75' : ''}`}
+		>
 			<button
 				type="button"
 				onClick={() => void onEdit(model)}
-				className="absolute inset-0 z-0 cursor-pointer rounded-xl bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+				className={`absolute inset-0 z-0 cursor-pointer bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${isList ? '' : 'rounded-xl'}`}
 				aria-label={t('editModel', { name: displayName })}
 			/>
 
-			<div className="pointer-events-none relative z-10 flex items-start gap-2.5">
+			<div className={`pointer-events-none relative z-10 flex min-w-0 gap-2.5 ${isList ? 'items-center' : 'items-start'}`}>
 				<ModelVendorIcon vendor={model.vendor} size="default" className="shrink-0" />
 				<div className="min-w-0 flex-1">
 					<h3 className="truncate text-sm font-semibold leading-5 text-gray-900" title={displayName}>
@@ -97,22 +119,10 @@ export function ModelCard(props: {
 						/>
 					</button>
 				) : null}
-				{tagShown.length > 0 ? (
-					<div className="flex max-w-[40%] shrink-0 flex-wrap justify-end gap-1">
-						{tagShown.map((tag) => (
-							<span
-								key={tag}
-								className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${tagBadgeClass(tag)}`}
-							>
-								{tag}
-							</span>
-						))}
-						{tagExtra > 0 ? <span className="self-center text-[10px] text-gray-400">+{tagExtra}</span> : null}
-					</div>
-				) : null}
+				{!isList ? tagBadges : null}
 			</div>
 
-			<div className="pointer-events-none relative z-10 flex min-w-0 items-center gap-1.5">
+			<div className={`pointer-events-none relative z-10 flex min-w-0 items-center gap-1.5 ${isList ? 'flex-wrap' : ''}`}>
 				<span
 					className={`inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ${kindBadgeClass(kind)}`}
 				>
@@ -139,14 +149,14 @@ export function ModelCard(props: {
 					</span>
 				) : null}
 				{specs ? (
-					<span className="min-w-0 truncate text-[11px] tabular-nums text-gray-600" title={specs}>
+					<span className={`min-w-0 truncate text-[11px] tabular-nums text-gray-600 ${isList ? 'w-full' : ''}`} title={specs}>
 						{specs}
 					</span>
 				) : null}
 			</div>
 
-			<div className="pointer-events-none relative z-10 flex items-center justify-between gap-2">
-				<div className="flex min-w-0 items-baseline gap-1" title={pricingTitle}>
+			<div className={isList ? 'contents' : 'pointer-events-none relative z-10 flex items-center justify-between gap-2'}>
+				<div className={`pointer-events-none relative z-10 flex min-w-0 items-baseline gap-1 ${isList ? 'flex-wrap' : ''}`} title={pricingTitle}>
 					<span className="truncate text-xs font-semibold tabular-nums text-gray-900">
 						{pricing.amount}
 					</span>
@@ -160,7 +170,7 @@ export function ModelCard(props: {
 					) : null}
 				</div>
 				<span
-					className={`shrink-0 text-[11px] font-medium tabular-nums ${routeUsageClass(
+					className={`pointer-events-none relative z-10 text-[11px] font-medium tabular-nums ${isList ? 'min-w-0' : 'shrink-0'} ${routeUsageClass(
 						model.routes_count,
 						model.active_routes_count
 					)}`}
@@ -176,6 +186,11 @@ export function ModelCard(props: {
 					{t('activeRoutes', { count: model.active_routes_count })}
 				</span>
 			</div>
+			{isList ? (
+				<div className="pointer-events-none relative z-10 min-w-0 sm:col-span-2 xl:col-span-1">
+					{tagBadges ?? <span className="text-xs text-slate-400">{t('noTags')}</span>}
+				</div>
+			) : null}
 		</article>
 	);
 }

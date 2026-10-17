@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import {
 	applyGeminiStreamQueryParams,
 	buildGeminiUpstreamActionUrl,
@@ -9,85 +10,85 @@ import {
 
 describe('buildGeminiUpstreamActionUrl', () => {
 	it('rejects empty base URL', () => {
-		expect(() =>
+		assert.throws(() =>
 			buildGeminiUpstreamActionUrl('', 'gemini-2.5-pro', 'generateContent')
-		).toThrow(/base URL is empty/);
-		expect(() =>
+		, /base URL is empty/);
+		assert.throws(() =>
 			buildGeminiUpstreamActionUrl('   ', 'gemini-2.5-pro', 'generateContent')
-		).toThrow(/base URL is empty/);
+		, /base URL is empty/);
 	});
 
 	it('rejects bare host without path prefix', () => {
-		expect(() =>
+		assert.throws(() =>
 			buildGeminiUpstreamActionUrl(
 				'https://generativelanguage.googleapis.com',
 				'gemini-2.5-pro',
 				'streamGenerateContent'
 			)
-		).toThrow(/must include path prefix/);
-		expect(() =>
+		, /must include path prefix/);
+		assert.throws(() =>
 			buildGeminiUpstreamActionUrl(
 				'https://generativelanguage.googleapis.com/',
 				'gemini-2.5-pro',
 				'streamGenerateContent'
 			)
-		).toThrow(/must include path prefix/);
+		, /must include path prefix/);
 	});
 
 	it('developer API full prefix', () => {
-		expect(
+		assert.equal(
 			buildGeminiUpstreamActionUrl(
 				'https://generativelanguage.googleapis.com/v1beta/models',
 				'gemini-2.5-flash',
 				'generateContent'
 			)
-		).toBe(
+		, 
 			'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 		);
 	});
 
 	it('vertex express prefix', () => {
-		expect(
+		assert.equal(
 			buildGeminiUpstreamActionUrl(
 				'https://aiplatform.googleapis.com/v1/publishers/google/models',
 				'gemini-2.5-flash',
 				'streamGenerateContent'
 			)
-		).toBe(
+		, 
 			'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:streamGenerateContent'
 		);
 	});
 
 	it('trims trailing slash from base URL', () => {
-		expect(
+		assert.equal(
 			buildGeminiUpstreamActionUrl(
 				'https://generativelanguage.googleapis.com/v1beta/models/',
 				'gemini-2.5-flash',
 				'generateContent'
 			)
-		).toBe(
+		, 
 			'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 		);
 	});
 
 	it('encodes model name', () => {
-		expect(
+		assert.ok(
 			buildGeminiUpstreamActionUrl(
 				'https://generativelanguage.googleapis.com/v1beta/models',
 				'model/with/slash',
 				'generateContent'
 			)
-		).toContain('model%2Fwith%2Fslash');
+		.includes('model%2Fwith%2Fslash'));
 	});
 
 	it('collapses duplicate slashes in base path (qnaigc bypass/vertex)', () => {
-		expect(
+		assert.equal(
 			buildGeminiUpstreamActionUrl(
 				'https://api.qnaigc.com//bypass/vertex/v1/models',
 				'gemini-3.1-flash-lite-preview',
 				'streamGenerateContent'
 			)
-		).toBe(
+		, 
 			'https://api.qnaigc.com/bypass/vertex/v1/models/gemini-3.1-flash-lite-preview:streamGenerateContent'
 		);
 	});
@@ -99,7 +100,7 @@ describe('applyGeminiStreamQueryParams', () => {
 			'https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:streamGenerateContent?key=test'
 		);
 		applyGeminiStreamQueryParams(u, 'streamGenerateContent');
-		expect(u.searchParams.get('alt')).toBe('sse');
+		assert.equal(u.searchParams.get('alt'), 'sse');
 	});
 
 	it('overrides existing alt for streamGenerateContent', () => {
@@ -107,7 +108,7 @@ describe('applyGeminiStreamQueryParams', () => {
 			'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=json'
 		);
 		applyGeminiStreamQueryParams(u, 'streamGenerateContent');
-		expect(u.searchParams.get('alt')).toBe('sse');
+		assert.equal(u.searchParams.get('alt'), 'sse');
 	});
 
 	it('does not set alt for generateContent', () => {
@@ -115,27 +116,27 @@ describe('applyGeminiStreamQueryParams', () => {
 			'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=test'
 		);
 		applyGeminiStreamQueryParams(u, 'generateContent');
-		expect(u.searchParams.has('alt')).toBe(false);
+		assert.equal(u.searchParams.has('alt'), false);
 	});
 });
 
 describe('resolveGeminiUpstreamAuth', () => {
 	it('defaults to query-key when auth is omitted', () => {
-		expect(resolveGeminiUpstreamAuth()).toBe('query-key');
-		expect(resolveGeminiUpstreamAuth(null)).toBe('query-key');
+		assert.equal(resolveGeminiUpstreamAuth(), 'query-key');
+		assert.equal(resolveGeminiUpstreamAuth(null), 'query-key');
 	});
 
 	it('returns the configured scheme', () => {
-		expect(resolveGeminiUpstreamAuth('query-key')).toBe('query-key');
-		expect(resolveGeminiUpstreamAuth('bearer')).toBe('bearer');
+		assert.equal(resolveGeminiUpstreamAuth('query-key'), 'query-key');
+		assert.equal(resolveGeminiUpstreamAuth('bearer'), 'bearer');
 	});
 
 	it('normalizes trailing slash, host case, and duplicate slashes', () => {
-		expect(
+		assert.equal(
 			normalizeGeminiUpstreamBaseForAuthMatch(
 				'https://api.qnaigc.com//bypass/vertex/v1/models/'
 			)
-		).toBe('https://api.qnaigc.com/bypass/vertex/v1/models');
+		, 'https://api.qnaigc.com/bypass/vertex/v1/models');
 	});
 });
 
@@ -147,8 +148,8 @@ describe('prepareGeminiUpstreamFetch', () => {
 			action: 'generateContent',
 			apiKey: 'provider-key',
 		});
-		expect(url.searchParams.get('key')).toBe('provider-key');
-		expect(headers.Authorization).toBeUndefined();
+		assert.equal(url.searchParams.get('key'), 'provider-key');
+		assert.equal(headers.Authorization, undefined);
 	});
 
 	it('uses Authorization Bearer when auth is bearer', () => {
@@ -159,8 +160,8 @@ describe('prepareGeminiUpstreamFetch', () => {
 			apiKey: 'provider-token',
 			auth: 'bearer',
 		});
-		expect(url.searchParams.has('key')).toBe(false);
-		expect(headers.Authorization).toBe('Bearer provider-token');
+		assert.equal(url.searchParams.has('key'), false);
+		assert.equal(headers.Authorization, 'Bearer provider-token');
 	});
 
 	it('uses configured bearer on any host', () => {
@@ -171,8 +172,8 @@ describe('prepareGeminiUpstreamFetch', () => {
 			apiKey: 'zm-key',
 			auth: 'bearer',
 		});
-		expect(url.searchParams.has('key')).toBe(false);
-		expect(headers.Authorization).toBe('Bearer zm-key');
+		assert.equal(url.searchParams.has('key'), false);
+		assert.equal(headers.Authorization, 'Bearer zm-key');
 	});
 
 	it('sets alt=sse for streamGenerateContent on bearer upstream', () => {
@@ -183,7 +184,7 @@ describe('prepareGeminiUpstreamFetch', () => {
 			apiKey: 'provider-token',
 			auth: 'bearer',
 		});
-		expect(url.searchParams.get('alt')).toBe('sse');
-		expect(url.searchParams.has('key')).toBe(false);
+		assert.equal(url.searchParams.get('alt'), 'sse');
+		assert.equal(url.searchParams.has('key'), false);
 	});
 });

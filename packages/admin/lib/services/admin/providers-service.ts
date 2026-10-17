@@ -13,6 +13,7 @@ import {
 import { getProviderQuotaAdapter } from '@octafuse/core/provider-quota';
 import {
 	isKnownProviderKind,
+	providerImportStoredFields,
 	resolveStoredProviderPresentation,
 	listStaticProviderImportPresets,
 } from '@/lib/provider-import-preset';
@@ -229,11 +230,11 @@ export async function deleteProviderService(repos: GatewayRepositories, id: stri
 /**
  * 从 `lib/provider-import-presets.json` 按 **catalog 键**导入 Provider：
  * 写入占位 `PROVIDER_IMPORT_PENDING_API_KEY`，须在 Admin 中替换为真实密钥。
- * `kind` 写成模板英文名；同一类型下同名才追加 `(2)` 后缀。
+ * `kind` 写成模板英文名；显示名和介绍按 `locale` 取目录文案（中文 / 英文）。同一类型下同名才追加 `(2)` 后缀。
  */
 export async function importProvidersFromStaticPresetsService(
 	repos: GatewayRepositories,
-	input: { ids: string[] }
+	input: { ids: string[]; locale?: string | null }
 ): Promise<AdminProvidersImportOutput> {
 	const uniqueIds = [...new Set((input.ids ?? []).map((x) => String(x).trim()).filter((x) => x.length > 0))];
 	if (uniqueIds.length === 0) {
@@ -257,28 +258,28 @@ export async function importProvidersFromStaticPresetsService(
 				throw badRequest(`Unknown static preset catalog key: ${catalogKey}`);
 			}
 
-			const baseName = String(preset.name ?? '').trim();
-			if (!baseName) {
+			const stored = providerImportStoredFields(preset, input.locale);
+			if (!stored.kind) {
 				throw badRequest(`Static preset catalog key "${catalogKey}": missing name`);
 			}
 
 			let name: string;
 			try {
-				name = suggestUniqueProviderImportName(baseName, baseName, existingNameKindKeys);
+				name = suggestUniqueProviderImportName(stored.name, stored.kind, existingNameKindKeys);
 			} catch (error) {
 				throw badRequest(error instanceof Error ? error.message : 'Unable to allocate unique provider name');
 			}
 
 			await createProviderService(repos, {
 				name,
-				kind: baseName,
+				kind: stored.kind,
 				endpoints: preset.endpoints,
-				description: preset.description ?? null,
+				description: stored.description,
 				api_key: PROVIDER_IMPORT_PENDING_API_KEY,
 				status: 'active',
 			});
 
-			existingNameKindKeys.add(providerNameKindKey(name, baseName));
+			existingNameKindKeys.add(providerNameKindKey(name, stored.kind));
 			created++;
 		} catch (e) {
 			const message = e instanceof Error ? e.message : String(e);

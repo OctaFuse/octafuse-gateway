@@ -321,7 +321,7 @@ function finishSessionMessage(): string {
 }
 
 /** 会话接口要求把每个 PCM 分片包装成带 Base64 音频的 JSON 事件。 */
-function encodeBase64(bytes: Uint8Array): string {
+export function encodeBase64(bytes: Uint8Array): string {
 	let binary = '';
 	const chunkSize = 0x8000;
 	for (let offset = 0; offset < bytes.length; offset += chunkSize) {
@@ -368,7 +368,7 @@ export function audioBufferToPcm16(buffer: AudioBuffer): Uint8Array {
 	return encodePcm16(samples, buffer.sampleRate);
 }
 
-async function decodeAudioFileToPcm16(file: File): Promise<Uint8Array> {
+export async function decodeAudioFileToPcm16(file: File): Promise<Uint8Array> {
 	const bytes = new Uint8Array(await file.arrayBuffer());
 	if (shouldTreatAsRawPcmAudioFile(file)) return bytes;
 	if (typeof AudioContext === 'undefined') {

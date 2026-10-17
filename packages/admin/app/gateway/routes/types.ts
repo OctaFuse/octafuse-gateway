@@ -8,8 +8,8 @@ export type RouteListRow = GatewayModelRoute & {
 	provider_name?: string;
 };
 
-/** Per-model card density: topology shows full provider cards; summary collapses priority tiers. */
-export type RouteFlowDensity = 'summary' | 'topology';
+/** Provider presentation: topology cards or vertical provider rows. */
+export type RouteFlowDensity = 'topology' | 'list';
 
 /** Workspace layout: overview = all models on one surface flow; byModel = per-model topology. */
 export type RouteWorkspaceView = 'overview' | 'byModel';
@@ -229,6 +229,7 @@ export const PROTOCOL_DISPLAY_LABEL: Record<string, string> = {
 	dashscope: 'DashScope',
 	minimax: 'MiniMax',
 	volcengine: 'Volcengine',
+	elevenlabs: 'ElevenLabs',
 };
 
 export const ROUTE_GROUP_CARD_BADGE_CLASS = 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200';

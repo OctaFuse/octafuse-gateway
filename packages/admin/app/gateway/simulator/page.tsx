@@ -92,7 +92,7 @@ export default function SimulatorPage() {
 							routeGroup={s.routeGroup}
 							onRouteGroupChange={s.setRouteGroup}
 							routeGroupsForModel={s.routeGroupsForModel}
-							realtimeOperation={s.selectedDashScopeRealtimeOperation}
+							realtimeOperation={s.selectedRealtimeOperation}
 							realtimeOperationOptions={s.realtimeOperationOptions}
 							onRealtimeOperationChange={s.setDashScopeRealtimeOperation}
 							selectedModelIsAudio={s.selectedModelIsAudio}
@@ -151,19 +151,26 @@ export default function SimulatorPage() {
 								onEditFilesChange={s.setEditFiles}
 								showAudioTranscriptions={
 									s.selectedAudioOperation === 'transcriptions' &&
-									(s.protocol === 'openai' || s.protocol === 'dashscope' || s.protocol === 'minimax')
+									(s.protocol === 'openai' ||
+										s.protocol === 'dashscope' ||
+										s.protocol === 'minimax' ||
+										s.protocol === 'elevenlabs')
 								}
 								showAudioRealtimeMicrophone={s.selectedCanUseMicrophone}
 								audioInputMode={s.audioInputMode}
 								onAudioInputModeChange={s.setAudioInputMode}
 								showAudioSpeech={
 									s.selectedAudioOperation === 'speech' &&
-									(s.protocol === 'openai' || s.protocol === 'dashscope' || s.protocol === 'minimax')
+									(s.protocol === 'openai' ||
+										s.protocol === 'dashscope' ||
+										s.protocol === 'minimax' ||
+										s.protocol === 'elevenlabs')
 								}
 								showAudioRealtime={
-									s.protocol === 'dashscope' &&
 									s.selectedAudioOperation != null &&
-									(s.selectedDashScopeRealtimeOperation?.includes('.realtime.') ?? false)
+									((s.protocol === 'dashscope' &&
+										(s.selectedRealtimeOperation?.includes('.realtime.') ?? false)) ||
+										s.selectedElevenLabsRealtimeOperation != null)
 								}
 								audioFile={s.audioFile}
 								onAudioFileChange={s.setAudioFile}

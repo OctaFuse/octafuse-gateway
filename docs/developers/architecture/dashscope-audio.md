@@ -18,13 +18,14 @@
 | ---------------- | ------------------------------------------------- | ------------------------------- | ------------------------------------------------ |
 | `openai`         | `audio.transcriptions`                            | `POST /v1/audio/transcriptions` | 文件 ASR，保留现有 OpenAI multipart 契约；异步 filetrans 另填公网 `file_url` |
 | `openai`         | `audio.speech`                                    | `POST /v1/audio/speech`         | 一次性或 HTTP 流式 TTS                           |
-| `dashscope`      | `audio.transcriptions.multimodal`                 | `POST /v1/dashscope/services/aigc/multimodal-generation/generation` | DashScope 同步 ASR HTTP 透传，返回原生 JSON |
-| `dashscope`      | `audio.transcriptions.realtime.inference/session` | `GET /v1/dashscope/realtime`    | DashScope 原生实时 ASR；客户端事件保持原协议     |
-| `dashscope`      | `audio.speech` / `audio.speech.stream`            | `POST /v1/dashscope/services/audio/tts/SpeechSynthesizer` | SpeechSynthesizer 透传。`X-DashScope-SSE: enable` 为流式，响应不改写成 OpenAI 语音事件 |
-| `dashscope`      | `audio.speech.multimodal`                         | `POST /v1/dashscope/services/aigc/multimodal-generation/generation` | Qwen-TTS / MiniMax 多模态语音透传，按模型类型与同步 ASR、生图共用路径 |
-| `dashscope`      | `audio.transcriptions.async`                      | `POST /v1/dashscope/services/audio/asr/transcription`，`GET /v1/dashscope/tasks/{taskId}?model=` | 异步 filetrans 透传。提交立即返回任务 JSON；查询成功时按结果时长计费，响应仍是任务 JSON |
-| `dashscope`      | `audio.speech.realtime.inference`                 | `GET /v1/dashscope/realtime`    | Qwen-Audio-TTS/CosyVoice 原生实时增量 TTS；客户端事件保持原协议 |
-| `dashscope`      | `audio.speech.realtime.session`                   | `GET /v1/dashscope/realtime`    | Qwen-TTS-Realtime session 透传 |
+| `dashscope`      | `audio.transcriptions.multimodal`                 | `POST /dashscope/api/v1/services/aigc/multimodal-generation/generation` | DashScope 同步 ASR HTTP 透传，返回原生 JSON |
+| `dashscope`      | `audio.transcriptions.realtime.inference` | `GET /dashscope/api-ws/v1/inference` | DashScope 原生实时 ASR（run-task）；客户端事件保持原协议     |
+| `dashscope`      | `audio.transcriptions.realtime.session`           | `GET /dashscope/api-ws/v1/realtime?model=` | Qwen3-ASR-Realtime session 透传 |
+| `dashscope`      | `audio.speech` / `audio.speech.stream`            | `POST /dashscope/api/v1/services/audio/tts/SpeechSynthesizer` | SpeechSynthesizer 透传。`X-DashScope-SSE: enable` 为流式，响应不改写成 OpenAI 语音事件 |
+| `dashscope`      | `audio.speech.multimodal`                         | `POST /dashscope/api/v1/services/aigc/multimodal-generation/generation` | Qwen-TTS / MiniMax 多模态语音透传，按模型类型与同步 ASR、生图共用路径 |
+| `dashscope`      | `audio.transcriptions.async`                      | `POST /dashscope/api/v1/services/audio/asr/transcription`，`GET /dashscope/api/v1/tasks/{taskId}?model=` | 异步 filetrans 透传。提交立即返回任务 JSON；查询成功时按结果时长计费，响应仍是任务 JSON |
+| `dashscope`      | `audio.speech.realtime.inference`                 | `GET /dashscope/api-ws/v1/inference` | Qwen-Audio-TTS/CosyVoice 原生实时增量 TTS；客户端事件保持原协议 |
+| `dashscope`      | `audio.speech.realtime.session`                   | `GET /dashscope/api-ws/v1/realtime?model=` | Qwen-TTS-Realtime session 透传 |
 
 ### DashScope Upstream Target
 
@@ -105,9 +106,21 @@ API Key 继续使用现有 Provider key 存储；Workspace ID 不是密钥，可
 实时入口格式如下：
 
 ```text
-wss://<gateway>/v1/dashscope/realtime?model=<gateway-model>&operation=<operation>
+# run-task 协议：不带 model 参数，模型和任务在第一帧 run-task 里
+wss://<gateway>/dashscope/api-ws/v1/inference
+# Qwen-Realtime session：模型在查询参数里
+wss://<gateway>/dashscope/api-ws/v1/realtime?model=<gateway-model>
 Authorization: Bearer <gateway-api-key>
 ```
+
+路径与百炼官方一致（`/dashscope` 之后即官方的 `/api-ws/v1/...`）。内部 operation 不再暴露给客户端：
+
+- inference 入口：`payload.task` 为 `asr` 对应 `audio.transcriptions.realtime.inference`，`tts` 对应 `audio.speech.realtime.inference`；`payload.model` 是网关模型 ID（可带 `:group`）。
+- session 入口：由 `model` 的类型（ASR / TTS）决定 operation。
+
+**inference 的延迟连接。** run-task 协议里模型只出现在第一帧，所以 WebSocket 升级无法在升级前选路由。网关先接受下游连接，等到第一帧 `run-task`（10 秒内，缓冲上限 256 帧 / 8 MiB），再解析模型、按路由 failover 连上游，把已缓冲的帧按序回放后开始桥接。升级之后不能再回 HTTP 状态码，所有失败（缺少 `payload.model`、`payload.task` 不支持、模型或路由不存在、上游全部连接失败）都用 DashScope 的 `task-failed` 事件回报，然后以 `1000` 关闭；首帧不是 `run-task`、超时或缓冲溢出以 `1008` 关闭。同一连接上后续 `run-task` 若改了 `payload.model`，只回该任务 `task-failed`，不重连上游。
+
+**旧别名（TEMP(soloent)）。** `/v1/dashscope/realtime?model=&operation=` 仍然可用，供旧版 Agent 过渡；移除条件是用旧路径的 Agent 版本退出流通且外部调用方已迁移。
 
 当前调试台（Playground）与模拟器（Simulator）支持以下项：
 
@@ -126,7 +139,7 @@ Cloudflare Worker 使用 `WebSocketPair`，Node 代理服务与 Node 管理后�
 
 | 行为 | Cloudflare Workers | Node 代理服务 |
 | ---- | ------------------ | ------------- |
-| 下游握手缓冲 | `WebSocketPair` 会在 `accept()` 前排队客户端消息 | 握手由 `ws` 先完成，再异步鉴权与连上游。升级回调里立刻 `pause()` 底层读，等 `x-octafuse-realtime-upgrade` 后再 `resume()`，避免丢掉立刻发出的 `run-task` |
+| 下游握手缓冲 | `WebSocketPair` 会在 `accept()` 前排队客户端消息；inference 入口立即返回 101，会话在后台等 `run-task` | 握手由 `ws` 先完成，再异步鉴权。升级回调里立刻 `pause()` 底层读，等 `x-octafuse-realtime-upgrade` 后再 `resume()`，避免丢掉立刻发出的 `run-task`；inference 入口的连接监听在 `RealtimeSocket` 里排队，`run-task` 之后再连上游 |
 | Close 码 | 客户端不带状态码关闭时仍应记账 | 同左。`1005` / `1006` 等保留码不能写入 Close 帧，网关会规范化为 `1000` 后再转发，并保证用量记录不依赖关闭是否成功 |
 | 调试台 | 实时入口可用 | 调试台实时入口同样可用：自定义 Node HTTP 入口拦截 `/api/admin/playground/realtime`，用 `ws` 桥上游（不计费）。本地 `npm run dev:admin:node` 与 Docker `node packages/admin/node-server.mjs` 都走这条路径 |
 

@@ -10,10 +10,11 @@
 - DashScope 生图：[dashscope-image.md](./dashscope-image.md)
 - MiniMax 音频：[minimax-audio.md](./minimax-audio.md)
 - MiniMax 生图：[minimax-image.md](./minimax-image.md)
+- ElevenLabs 音频：[elevenlabs-audio.md](./elevenlabs-audio.md)
 - 火山方舟 Seedream 生图：[volcengine-image.md](./volcengine-image.md)
 - OpenAI 兼容生图透传：[openai-compatible-image.md](./openai-compatible-image.md)
 - Gemini 原生生图：[gemini-image.md](./gemini-image.md)
-- DashScope、MiniMax 与火山方舟官方能力覆盖与缺口：[native-provider-coverage.md](../reference/native-provider-coverage.md)
+- DashScope、MiniMax、ElevenLabs 与火山方舟官方能力覆盖与缺口：[native-provider-coverage.md](../reference/native-provider-coverage.md)
 
 ## 术语
 
@@ -57,7 +58,7 @@
    - 文本类（Chat / Messages / Responses / Gemini）写一份 `ProxyEndpointSpec`，交给 `runProxyPipeline`。计费口径与脱敏写在同一 `accounting` 对象上（`describeOutcome` + `requestBodyForLog` / `upstreamWireBodyForLog`）。
    - 图 / 音频类先复用 `loadProxyRouteSurface` 与 `buildProxyFailoverOptions`；计费仍走 `recordImageUsage` / `recordAudioUsage`。把它们迁入同一 `AccountingEvent` + sink 是后续增量，本阶段不改口径。
 6. **管理后台文案**：在 `packages/admin/messages/*.json` 增加 `adapterNames.<id>`，以及 `routes.modal.adapterGuides.<id>` 的 `purpose` 与 `mapping`。上游没有的能力用 `lossyFeatureNames`。
-7. **文档**：更新 [route-topology.md](./route-topology.md) 的 operation 表，以及本页相关说明。DashScope、MiniMax 与火山方舟的适配器同时更新 [能力覆盖表](../reference/native-provider-coverage.md)。
+7. **文档**：更新 [route-topology.md](./route-topology.md) 的 operation 表，以及本页相关说明。DashScope、MiniMax、ElevenLabs 与火山方舟的适配器同时更新 [能力覆盖表](../reference/native-provider-coverage.md)。
 
 不要同时改路由匹配语义、SSE 分帧、usage 计费口径与熔断分类。
 
@@ -79,7 +80,7 @@
 
 DashScope 语音合成的上游 `input` 是对象，OpenAI 的 `input` 是文本，客户端无法通过额外字段设置 `input.*`。这类参数写在路由 `custom_params`，或改走原生透传路由。
 
-原生透传路由（`/v1/minimax/*`、`/v1/dashscope/*`、`/v1/volcengine/*`）、实时 WebSocket 和异步任务入口不走这套合并。文本 Chat / Messages / Responses 本来就转发整个请求体。火山方舟生图透传由 `volcengine-json-passthrough` 驱动，只替换 `model`。OpenAI 入口的 `volcengine-image` 由 `volcengine-openai-driver` 转换后再发到同一个方舟端点。Gemini 图片模型与文本模型共用 `/v1beta/models/{model}:{action}`，由 `gemini-image-passthrough` 原样转发 generateContent 请求体。OpenAI 入口的 `gemini-image` 由 `gemini-openai-image-driver` 转成 generateContent，额外字段按 Gemini 原生结构合并，`contents` 与 `generationConfig.candidateCount` 合并后恢复。见 [Gemini 原生生图](./gemini-image.md)。
+原生透传路由（`/minimax/*`、`/dashscope/*`、`/volcengine/*`、`/elevenlabs/v1/*`）、实时 WebSocket 和异步任务入口不走这套合并。文本 Chat / Messages / Responses 本来就转发整个请求体。火山方舟生图透传由 `volcengine-json-passthrough` 驱动，只替换 `model`。OpenAI 入口的 `volcengine-image` 由 `volcengine-openai-driver` 转换后再发到同一个方舟端点。Gemini 图片模型与文本模型共用 `/v1beta/models/{model}:{action}`，由 `gemini-image-passthrough` 原样转发 generateContent 请求体。OpenAI 入口的 `gemini-image` 由 `gemini-openai-image-driver` 转成 generateContent，额外字段按 Gemini 原生结构合并，`contents` 与 `generationConfig.candidateCount` 合并后恢复。见 [Gemini 原生生图](./gemini-image.md)。
 
 ## Embeddings
 
