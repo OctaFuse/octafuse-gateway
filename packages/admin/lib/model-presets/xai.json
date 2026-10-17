@@ -178,6 +178,48 @@
 		}
 	},
 	{
+		"id": "grok-4.20-multi-agent-0309",
+		"display_name": "Grok 4.20 Multi-Agent",
+		"description": "A 1M-context xAI multi-agent reasoning model for deep research and complex multi-step tasks. Supports reasoning at configurable effort levels. Batch API available at 20% off standard pricing.",
+		"i18n": {
+			"en": "A 1M-context xAI multi-agent reasoning model for deep research and complex multi-step tasks. Supports reasoning at configurable effort levels. Batch API available at 20% off standard pricing.",
+			"zh": "1M 上下文 xAI 多智能体推理模型，面向深度研究与复杂多步任务。支持可配置推理强度。Batch API 享标准价八折。"
+		},
+		"vendor": "xai",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 1.25,
+						"output_price": 2.5,
+						"cache_read_price": 0.2,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 2.5,
+						"output_price": 5,
+						"cache_read_price": 0.4,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-03-09"
+	},
+	{
 		"id": "grok-4.7",
 		"display_name": "Grok 4.7",
 		"description": "SpaceXAI's frontier model for coding, agentic tasks, and knowledge work. Reasoning effort supports low, medium, high (default), and xhigh. The Responses API always returns encrypted reasoning content, which later turns must send back unchanged.",
