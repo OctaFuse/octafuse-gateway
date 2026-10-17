@@ -104,7 +104,7 @@ ElevenLabs 原生路径相对 `providers.endpoints.elevenlabs.base`（默认 `ht
 | 对话 | `/chat/completions` | — | — | 用供应商的 `openai` 端点，不进 `volcengine` |
 | Responses | `/responses` | — | — | 同上；按量、Coding Plan、Agent Plan 预设已写入 `openai.endpoints.responses` |
 | Anthropic Messages | `/api/compatible/v1/messages`（套餐为 `/api/coding` 或 `/api/plan`） | — | — | 用供应商的 `anthropic` 端点；按量与套餐预设已写入 |
-| 生图 | `/images/generations` | ✅ | ✅ | 原生透传 `POST /v1/volcengine/images/generations`（含 SSE）。OpenAI 入口用 `volcengine-image`，只出 JSON，`n` 为 2–15 时出组图 |
+| 生图 | `/images/generations` | ✅ | ✅ | 原生透传 `POST /volcengine/api/v3/images/generations`（含 SSE）。OpenAI 入口用 `volcengine-image`，只出 JSON，`n` 为 2–15 时出组图 |
 | 视频任务 | `/contents/generations/tasks` | ❌ | ❌ | Seedance 等；网关没有视频模态 |
 | 豆包语音 | 语音合成 / 识别 | ❌ | ❌ | |
 

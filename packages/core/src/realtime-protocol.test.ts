@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
 	buildDashScopeRealtimeAuthProtocol,
+	isDashScopeRealtimePath,
 	parseDashScopeRealtimeAuthProtocol,
 	pickDashScopeRealtimeSubprotocol,
 } from './realtime-protocol';
@@ -36,5 +37,20 @@ describe('DashScope realtime browser auth protocol', () => {
 		);
 		assert.equal(pickDashScopeRealtimeSubprotocol(['chat']), 'chat');
 		assert.equal(pickDashScopeRealtimeSubprotocol([]), false);
+	});
+});
+
+describe('DashScope realtime entry paths', () => {
+	it('matches both official-style entries and the legacy alias', () => {
+		assert.equal(isDashScopeRealtimePath('/dashscope/api-ws/v1/inference'), true);
+		assert.equal(isDashScopeRealtimePath('/dashscope/api-ws/v1/realtime'), true);
+		assert.equal(isDashScopeRealtimePath('/dashscope/api-ws/v1/realtime/'), true);
+		assert.equal(isDashScopeRealtimePath('/v1/dashscope/realtime'), true);
+	});
+
+	it('does not match unrelated paths', () => {
+		assert.equal(isDashScopeRealtimePath('/v1/chat/completions'), false);
+		assert.equal(isDashScopeRealtimePath('/dashscope/api/v1/tasks'), false);
+		assert.equal(isDashScopeRealtimePath('/dashscope/api-ws/v1/other'), false);
 	});
 });

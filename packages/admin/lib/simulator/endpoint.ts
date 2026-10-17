@@ -5,6 +5,10 @@
 import { applyGeminiStreamQueryParams } from "@octafuse/core/gemini-upstream-url";
 import { requestSurfacePath } from "@octafuse/core/adapters/registry";
 import {
+	DASHSCOPE_REALTIME_INFERENCE_PATH,
+	DASHSCOPE_REALTIME_SESSION_PATH,
+} from "@octafuse/core/route-topology";
+import {
 	ELEVENLABS_TTS_VARIANTS,
 	elevenLabsTtsVariantSuffix,
 	isValidElevenLabsVoiceId,
@@ -81,19 +85,42 @@ export type BuildSimulatorRequestResult = {
 	multipartSummary?: string;
 };
 
-/** 构造 DashScope 原生实时入口的浏览器 WebSocket URL（鉴权在子协议中完成）。 */
+/**
+ * 构造 DashScope 原生实时入口的浏览器 WebSocket URL（鉴权在子协议中完成），路径与官方一致：
+ * - inference（run-task）：`/dashscope/api-ws/v1/inference`，不带查询参数，模型写在 run-task 的 `payload.model`；
+ * - session：`/dashscope/api-ws/v1/realtime?model=`，升级前按模型选路由。
+ */
 export function buildSimulatorDashScopeRealtimeUrl(input: {
 	baseUrl: string;
 	modelForRouting: string;
 	operation: string;
 }): string {
 	const base = stripTrailingSlash(input.baseUrl.trim());
-	const url = new URL(`${base}/v1/dashscope/realtime`);
+	const isInference = input.operation.endsWith(".inference");
+	const url = new URL(
+		`${base}${isInference ? DASHSCOPE_REALTIME_INFERENCE_PATH : DASHSCOPE_REALTIME_SESSION_PATH}`
+	);
 	if (url.protocol === "http:") url.protocol = "ws:";
 	if (url.protocol === "https:") url.protocol = "wss:";
-	url.searchParams.set("model", input.modelForRouting);
-	url.searchParams.set("operation", input.operation);
+	if (!isInference) url.searchParams.set("model", input.modelForRouting);
 	return url.toString();
+}
+
+/**
+ * inference（run-task）入口按帧里的 `payload.model` 选路由：
+ * 把 Gateway 模型 ID 写进 run-task；其它 operation（session）原样返回。
+ */
+export function withDashScopeRunTaskModel(
+	body: Record<string, unknown>,
+	operation: string,
+	modelForRouting: string
+): Record<string, unknown> {
+	if (!operation.endsWith(".inference")) return body;
+	const payload =
+		body.payload != null && typeof body.payload === "object" && !Array.isArray(body.payload)
+			? (body.payload as Record<string, unknown>)
+			: {};
+	return { ...body, payload: { ...payload, model: modelForRouting } };
 }
 
 function stripTrailingSlash(u: string): string {

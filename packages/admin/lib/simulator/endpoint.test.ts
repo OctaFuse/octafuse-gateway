@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildSimulatorRequest } from "./endpoint";
+import {
+	buildSimulatorDashScopeRealtimeUrl,
+	buildSimulatorRequest,
+	withDashScopeRunTaskModel,
+} from "./endpoint";
 
 describe("buildSimulatorRequest tools", () => {
 	it("builds /v1/tools/{id} for kind=tool", () => {
@@ -202,13 +206,13 @@ describe("buildSimulatorRequest openai", () => {
 			audioOperation: "transcriptions",
 			audioFile: null,
 		});
-		assert.equal(result.url, "https://gateway.example.com/v1/minimax/speech_to_text");
+		assert.equal(result.url, "https://gateway.example.com/minimax/v1/speech_to_text");
 		assert.equal(result.formData?.get("model"), "minimax-asr-1.0");
 		assert.equal(result.formData?.get("language"), "zh");
 		assert.equal(result.formData?.get("response_format"), "verbose_json");
 	});
 
-	it("builds MiniMax speech JSON for /v1/minimax/t2a_v2", () => {
+	it("builds MiniMax speech JSON for /minimax/v1/t2a_v2", () => {
 		const result = buildSimulatorRequest({
 			baseUrl: "https://gateway.example.com",
 			kind: "tts",
@@ -218,7 +222,7 @@ describe("buildSimulatorRequest openai", () => {
 			apiKey: "sk-test",
 			audioOperation: "speech",
 		});
-		assert.equal(result.url, "https://gateway.example.com/v1/minimax/t2a_v2");
+		assert.equal(result.url, "https://gateway.example.com/minimax/v1/t2a_v2");
 		assert.equal(result.headers["Content-Type"], "application/json");
 		assert.equal(result.formData, undefined);
 		assert.deepEqual(JSON.parse(result.bodyText), {
@@ -272,7 +276,7 @@ describe("buildSimulatorRequest openai", () => {
 		assert.equal(result.formData?.get("language_code"), "zh");
 	});
 
-	it("builds MiniMax image JSON for /v1/minimax/image_generation", () => {
+	it("builds MiniMax image JSON for /minimax/v1/image_generation", () => {
 		const result = buildSimulatorRequest({
 			baseUrl: "https://gateway.example.com",
 			kind: "image",
@@ -282,12 +286,12 @@ describe("buildSimulatorRequest openai", () => {
 			apiKey: "sk-test",
 			imageOperation: "generations",
 		});
-		assert.equal(result.url, "https://gateway.example.com/v1/minimax/image_generation");
+		assert.equal(result.url, "https://gateway.example.com/minimax/v1/image_generation");
 		assert.equal(JSON.parse(result.bodyText).model, "minimax-image-01");
 		assert.equal(JSON.parse(result.bodyText).prompt, "a lantern");
 	});
 
-	it("builds Volcengine image JSON for /v1/volcengine/images/generations", () => {
+	it("builds Volcengine image JSON for /volcengine/api/v3/images/generations", () => {
 		const result = buildSimulatorRequest({
 			baseUrl: "https://gateway.example.com",
 			kind: "image",
@@ -297,7 +301,7 @@ describe("buildSimulatorRequest openai", () => {
 			apiKey: "sk-test",
 			imageOperation: "generations",
 		});
-		assert.equal(result.url, "https://gateway.example.com/v1/volcengine/images/generations");
+		assert.equal(result.url, "https://gateway.example.com/volcengine/api/v3/images/generations");
 		assert.equal(result.headers["Content-Type"], "application/json");
 		assert.deepEqual(JSON.parse(result.bodyText), {
 			model: "doubao-seedream-5-0",
@@ -320,7 +324,7 @@ describe("buildSimulatorRequest openai", () => {
 		});
 		assert.equal(
 			result.url,
-			"https://gateway.example.com/v1/dashscope/services/aigc/multimodal-generation/generation"
+			"https://gateway.example.com/dashscope/api/v1/services/aigc/multimodal-generation/generation"
 		);
 		assert.equal(JSON.parse(result.bodyText).model, "qwen-audio-3.0-asr-flash");
 	});
@@ -391,5 +395,48 @@ describe("buildSimulatorRequest gemini", () => {
 		});
 		const u = new URL(result.url);
 		assert.equal(u.searchParams.has("alt"), false);
+	});
+});
+
+describe("DashScope realtime simulator URL", () => {
+	it("uses the official inference path without query parameters", () => {
+		assert.equal(
+			buildSimulatorDashScopeRealtimeUrl({
+				baseUrl: "https://gateway.example.com/",
+				modelForRouting: "fun-asr-realtime",
+				operation: "audio.transcriptions.realtime.inference",
+			}),
+			"wss://gateway.example.com/dashscope/api-ws/v1/inference"
+		);
+	});
+
+	it("uses the official session path with ?model= only", () => {
+		assert.equal(
+			buildSimulatorDashScopeRealtimeUrl({
+				baseUrl: "http://localhost:8787",
+				modelForRouting: "qwen3-asr-flash-realtime",
+				operation: "audio.transcriptions.realtime.session",
+			}),
+			"ws://localhost:8787/dashscope/api-ws/v1/realtime?model=qwen3-asr-flash-realtime"
+		);
+	});
+
+	it("writes the Gateway model into run-task for inference only", () => {
+		const runTask = {
+			header: { action: "run-task", task_id: "t1" },
+			payload: { task: "asr", model: "<auto>", parameters: { format: "pcm" } },
+		};
+		assert.deepEqual(
+			withDashScopeRunTaskModel(runTask, "audio.transcriptions.realtime.inference", "fun-asr-realtime:cn"),
+			{
+				header: { action: "run-task", task_id: "t1" },
+				payload: { task: "asr", model: "fun-asr-realtime:cn", parameters: { format: "pcm" } },
+			}
+		);
+		const session = { type: "session.update", session: {} };
+		assert.equal(
+			withDashScopeRunTaskModel(session, "audio.transcriptions.realtime.session", "qwen3"),
+			session
+		);
 	});
 });

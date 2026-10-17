@@ -1,6 +1,6 @@
 /**
  * DashScope SpeechSynthesizer 透传。
- * `POST /v1/dashscope/services/audio/tts/SpeechSynthesizer`
+ * `POST /dashscope/api/v1/services/audio/tts/SpeechSynthesizer`
  * `X-DashScope-SSE: enable` 走 `audio.speech.stream`，否则走 `audio.speech`。
  */
 import type { GatewayRepositories } from '@octafuse/core';

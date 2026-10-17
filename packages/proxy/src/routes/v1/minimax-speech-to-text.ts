@@ -1,5 +1,5 @@
 /**
- * MiniMax 原生 ASR 透传：`POST /v1/minimax/speech_to_text`
+ * MiniMax 原生 ASR 透传：`POST /minimax/v1/speech_to_text`
  *
  * 请求/上游都是 minimax + audio.transcriptions，adapter 必须是 passthrough。
  * 表单原样转发（model 换成供应商模型名），响应不改写，按上游 duration 计 audio_per_second。

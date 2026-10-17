@@ -7,30 +7,70 @@ import type { ModelKind } from '../db/model-kind';
 
 export const PASSTHROUGH_ROUTE_ADAPTER = 'passthrough';
 
+/**
+ * 厂商原生透传路径 = `/{厂商}` + 官方端点去掉 scheme 与 host 后剩下的部分。
+ * 官方 SDK 只需把 base_url 指到 `{gateway}/{厂商}/...`（与 ElevenLabs 的 `{gateway}/elevenlabs` 同理）。
+ * 国际区 host 不同但路径相同，具体走哪个上游由路由配置决定。
+ */
+
+/** DashScope 多模态生成透传：`POST /dashscope/api/v1/services/aigc/multimodal-generation/generation`。 */
 export const DASHSCOPE_MULTIMODAL_GENERATION_PATH =
-	'/v1/dashscope/services/aigc/multimodal-generation/generation';
+	'/dashscope/api/v1/services/aigc/multimodal-generation/generation';
 
 /** DashScope SpeechSynthesizer 透传：非流式与 SSE 共用这条路径，用 `X-DashScope-SSE` 区分。 */
 export const DASHSCOPE_SPEECH_SYNTHESIZER_PATH =
-	'/v1/dashscope/services/audio/tts/SpeechSynthesizer';
+	'/dashscope/api/v1/services/audio/tts/SpeechSynthesizer';
 
-/** DashScope 异步文件转写提交。任务查询是 `GET /v1/dashscope/tasks/:taskId`。 */
+/** DashScope 异步文件转写提交。任务查询是 `GET /dashscope/api/v1/tasks/:taskId`。 */
 export const DASHSCOPE_FILE_TRANSCRIPTION_PATH =
+	'/dashscope/api/v1/services/audio/asr/transcription';
+
+export const DASHSCOPE_TASKS_PATH = '/dashscope/api/v1/tasks';
+
+/**
+ * DashScope 实时 WebSocket（run-task 协议：Fun-ASR / Paraformer / CosyVoice）。
+ * 与官方 `wss://dashscope.aliyuncs.com/api-ws/v1/inference` 一致；模型在 run-task 帧的 `payload.model` 里，
+ * 网关升级后等第一帧 run-task 再选路由。
+ */
+export const DASHSCOPE_REALTIME_INFERENCE_PATH = '/dashscope/api-ws/v1/inference';
+
+/**
+ * DashScope 实时 WebSocket（session 协议：Qwen-ASR-Realtime / Qwen-TTS-Realtime）。
+ * 与官方 `wss://dashscope.aliyuncs.com/api-ws/v1/realtime?model=` 一致，升级前用 `?model=` 选路由。
+ */
+export const DASHSCOPE_REALTIME_SESSION_PATH = '/dashscope/api-ws/v1/realtime';
+
+/** MiniMax 原生文件转写透传：`POST /minimax/v1/speech_to_text`。 */
+export const MINIMAX_SPEECH_TO_TEXT_PATH = '/minimax/v1/speech_to_text';
+
+/** MiniMax 同步语音合成透传：`POST /minimax/v1/t2a_v2`。非流式与 SSE 共用这条路径。 */
+export const MINIMAX_T2A_PATH = '/minimax/v1/t2a_v2';
+
+/** MiniMax 文生图 / 图生图透传：`POST /minimax/v1/image_generation`。 */
+export const MINIMAX_IMAGE_GENERATION_PATH = '/minimax/v1/image_generation';
+
+/** 火山方舟 / BytePlus Seedream 生图透传：`POST /volcengine/api/v3/images/generations`。非流式与 SSE 共用。 */
+export const VOLCENGINE_IMAGE_GENERATIONS_PATH = '/volcengine/api/v3/images/generations';
+
+/*
+ * 旧路径（`/v1/{厂商}/...`）。
+ * TEMP(soloent)：只为兼容旧版 Agent 与已接入的外部调用方，不是公开 API。
+ * 删除条件：使用旧实时路径的 Agent 版本退出流通，并且外部调用方已经迁移。
+ * 删除时一并去掉 proxy `app.ts` 里的别名 route、`auth.ts` / `runtime/node.ts` 的旧路径匹配与相关测试。
+ */
+export const LEGACY_DASHSCOPE_MULTIMODAL_GENERATION_PATH =
+	'/v1/dashscope/services/aigc/multimodal-generation/generation';
+export const LEGACY_DASHSCOPE_SPEECH_SYNTHESIZER_PATH =
+	'/v1/dashscope/services/audio/tts/SpeechSynthesizer';
+export const LEGACY_DASHSCOPE_FILE_TRANSCRIPTION_PATH =
 	'/v1/dashscope/services/audio/asr/transcription';
-
-export const DASHSCOPE_TASKS_PATH = '/v1/dashscope/tasks';
-
-/** MiniMax 原生文件转写透传：`POST /v1/minimax/speech_to_text`。 */
-export const MINIMAX_SPEECH_TO_TEXT_PATH = '/v1/minimax/speech_to_text';
-
-/** MiniMax 同步语音合成透传：`POST /v1/minimax/t2a_v2`。非流式与 SSE 共用这条路径。 */
-export const MINIMAX_T2A_PATH = '/v1/minimax/t2a_v2';
-
-/** MiniMax 文生图 / 图生图透传：`POST /v1/minimax/image_generation`。 */
-export const MINIMAX_IMAGE_GENERATION_PATH = '/v1/minimax/image_generation';
-
-/** 火山方舟 / BytePlus Seedream 生图透传：`POST /v1/volcengine/images/generations`。非流式与 SSE 共用。 */
-export const VOLCENGINE_IMAGE_GENERATIONS_PATH = '/v1/volcengine/images/generations';
+export const LEGACY_DASHSCOPE_TASKS_PATH = '/v1/dashscope/tasks';
+/** 旧实时入口：`GET /v1/dashscope/realtime?model=&operation=`，升级前就要选路由。 */
+export const LEGACY_DASHSCOPE_REALTIME_PATH = '/v1/dashscope/realtime';
+export const LEGACY_MINIMAX_SPEECH_TO_TEXT_PATH = '/v1/minimax/speech_to_text';
+export const LEGACY_MINIMAX_T2A_PATH = '/v1/minimax/t2a_v2';
+export const LEGACY_MINIMAX_IMAGE_GENERATION_PATH = '/v1/minimax/image_generation';
+export const LEGACY_VOLCENGINE_IMAGE_GENERATIONS_PATH = '/v1/volcengine/images/generations';
 
 /**
  * ElevenLabs 原生文本转语音透传。官方 SDK 的 base_url 指到 `{gateway}/elevenlabs` 即可。
@@ -736,7 +776,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		billing: 'per_second',
 		responsePayload: 'websocket',
 		requiredUpstreamCapabilities: ['audio.realtime.inference'],
-		publicPath: `/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation={operation}`,
+		publicPath: DASHSCOPE_REALTIME_INFERENCE_PATH,
 		upstreamModels: { include: DASHSCOPE_ASR_INFERENCE_MODELS },
 	}),
 	passthroughDescriptor({
@@ -748,7 +788,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		billing: 'per_second',
 		responsePayload: 'websocket',
 		requiredUpstreamCapabilities: ['audio.realtime.session'],
-		publicPath: `/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation={operation}`,
+		publicPath: `${DASHSCOPE_REALTIME_SESSION_PATH}?model=${SURFACE_PATH_MODEL_PLACEHOLDER}`,
 		upstreamModels: { include: DASHSCOPE_ASR_SESSION_MODELS },
 	}),
 	passthroughDescriptor({
@@ -760,7 +800,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		billing: 'per_character',
 		responsePayload: 'websocket',
 		requiredUpstreamCapabilities: ['audio.realtime.inference'],
-		publicPath: `/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation={operation}`,
+		publicPath: DASHSCOPE_REALTIME_INFERENCE_PATH,
 		presetIntent: 'dashscope-tts-realtime',
 		upstreamModels: { include: COSYVOICE_REALTIME_MODELS },
 	}),
@@ -806,7 +846,7 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		billing: 'per_character',
 		responsePayload: 'websocket',
 		requiredUpstreamCapabilities: ['audio.realtime.session'],
-		publicPath: `/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation={operation}`,
+		publicPath: `${DASHSCOPE_REALTIME_SESSION_PATH}?model=${SURFACE_PATH_MODEL_PLACEHOLDER}`,
 		upstreamModels: { include: QWEN_TTS_REALTIME_SESSION_MODELS },
 	}),
 	passthroughDescriptor({
@@ -1003,11 +1043,13 @@ export function requestSurfacePath(
 	}
 	if (protocol === 'dashscope') {
 		if (operation.includes('.realtime.')) {
+			// inference（run-task）协议的模型在帧里；session 协议用官方 `?model=`。
+			if (operation.endsWith('.inference')) return DASHSCOPE_REALTIME_INFERENCE_PATH;
 			const modelParam =
 				modelId && modelId.length > 0
 					? encodeURIComponent(modelId)
 					: SURFACE_PATH_MODEL_PLACEHOLDER;
-			return `/v1/dashscope/realtime?model=${modelParam}&operation=${encodeURIComponent(operation)}`;
+			return `${DASHSCOPE_REALTIME_SESSION_PATH}?model=${modelParam}`;
 		}
 		if (operation === '*') return '/*';
 		return lookupPublicPath(protocol, operation) ?? `/${operation}`;

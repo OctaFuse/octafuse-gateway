@@ -28,6 +28,7 @@ import {
 import {
 	buildSimulatorRequest,
 	buildSimulatorDashScopeRealtimeUrl,
+	withDashScopeRunTaskModel,
 	type SimulatorGeminiAction,
 	type SimulatorProtocol,
 } from '@/lib/simulator/endpoint';
@@ -537,7 +538,7 @@ export function useSimulatorPageState() {
 					headers: {
 						'Sec-WebSocket-Protocol': 'octafuse-api-key.***',
 					},
-					bodyText: JSON.stringify(bodyObj, null, 2),
+					bodyText: JSON.stringify(withDashScopeRunTaskModel(bodyObj, operation, routing), null, 2),
 				};
 			}
 			const useImages =
@@ -1411,6 +1412,8 @@ export function useSimulatorPageState() {
 				modelForRouting: routing,
 				operation,
 			});
+			// inference 入口按 run-task 的 payload.model 选路由，URL 不再带 ?model=。
+			bodyObj = withDashScopeRunTaskModel(bodyObj, operation, routing);
 			setBodyError(null);
 			setInterrupted(false);
 			setSending(true);

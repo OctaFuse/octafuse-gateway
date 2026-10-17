@@ -81,10 +81,10 @@ describe('request surface path', () => {
 		assert.equal(requestSurfacePath('openai', 'audio.speech', 'audio-model'), '/v1/audio/speech');
 	});
 
-	it('shows the shared DashScope realtime WebSocket entry with routing parameters', () => {
+	it('shows the official-style DashScope realtime WebSocket entries', () => {
 		assert.equal(
 			requestSurfacePath('dashscope', 'audio.transcriptions.realtime.inference', 'my fun/asr'),
-			'/v1/dashscope/realtime?model=my%20fun%2Fasr&operation=audio.transcriptions.realtime.inference',
+			'/dashscope/api-ws/v1/inference',
 		);
 	});
 
@@ -95,31 +95,31 @@ describe('request surface path', () => {
 		);
 		assert.equal(
 			requestSurfacePath('dashscope', 'audio.transcriptions.realtime.inference'),
-			`/v1/dashscope/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}&operation=audio.transcriptions.realtime.inference`,
+			'/dashscope/api-ws/v1/inference',
 		);
 	});
 
 	it('maps DashScope HTTP audio operations to native passthrough endpoints', () => {
 		assert.equal(
 			requestSurfacePath('dashscope', 'audio.speech', 'cosyvoice-v2'),
-			'/v1/dashscope/services/audio/tts/SpeechSynthesizer',
+			'/dashscope/api/v1/services/audio/tts/SpeechSynthesizer',
 		);
 		assert.equal(
 			requestSurfacePath('dashscope', 'audio.speech.multimodal'),
-			'/v1/dashscope/services/aigc/multimodal-generation/generation',
+			'/dashscope/api/v1/services/aigc/multimodal-generation/generation',
 		);
 		assert.equal(requestSurfacePath('dashscope', 'audio.transcriptions'), '/v1/audio/transcriptions');
 		assert.equal(
 			requestSurfacePath('dashscope', 'audio.transcriptions.async'),
-			'/v1/dashscope/services/audio/asr/transcription',
+			'/dashscope/api/v1/services/audio/asr/transcription',
 		);
 		assert.equal(
 			requestSurfacePath('dashscope', 'audio.transcriptions.multimodal'),
-			'/v1/dashscope/services/aigc/multimodal-generation/generation',
+			'/dashscope/api/v1/services/aigc/multimodal-generation/generation',
 		);
 		assert.equal(
 			requestSurfacePath('dashscope', 'images.generations.multimodal'),
-			'/v1/dashscope/services/aigc/multimodal-generation/generation',
+			'/dashscope/api/v1/services/aigc/multimodal-generation/generation',
 		);
 	});
 
@@ -129,7 +129,7 @@ describe('request surface path', () => {
 		assert.equal(requestLogProtocolPath('openai', 'chat'), '/v1/chat/completions');
 		assert.equal(
 			requestLogProtocolPath('dashscope', 'audio.speech'),
-			'/v1/dashscope/services/audio/tts/SpeechSynthesizer',
+			'/dashscope/api/v1/services/audio/tts/SpeechSynthesizer',
 		);
 	});
 });

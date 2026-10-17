@@ -858,7 +858,7 @@ curl -sS "$GATEWAY_URL/v1/audio/transcriptions" \
    |---|---|---|---|
    | `doubao-seedream-5-0` | ¥0.22 / 张（一口价，不按分辨率翻倍） | **0.22** | **0.035** |
    | `doubao-seedream-5-0-pro` | 单图生成 ≤261 万像素（1.5K 及以下）¥0.30 / 以上 ¥0.60；参考图首张免费、之后 ¥0.02 | `by_size`：`1k` / `1.5k` **0.30**，`2k` **0.60**；缺省 **0.60**（方舟默认 2K）；`image.input.default=0.02` | **0.045** / **0.09**；input **0.003** |
-4. **Routes**：OpenAI SDK 入口选适配器 `volcengine-image`（上游 `volcengine` / `images.generations`）；流式与方舟原文走原生透传 `POST /v1/volcengine/images/generations`。`provider_model_name` 填方舟 Model ID。`watermark` 等由客户端请求或 route `custom_params` 按需传入，**不**写在模型预设里。
+4. **Routes**：OpenAI SDK 入口选适配器 `volcengine-image`（上游 `volcengine` / `images.generations`）；流式与方舟原文走原生透传 `POST /volcengine/api/v3/images/generations`。`provider_model_name` 填方舟 Model ID。`watermark` 等由客户端请求或 route `custom_params` 按需传入，**不**写在模型预设里。
 5. **Playground / Simulator**：选该路由 → generations；Seedream **图生图**走 `POST /v1/images/generations` + JSON `image`（勿用 multipart `/v1/images/edits`，火山无 OpenAI edits 形态）。
 6. **Request Logs**：核对 `pricing_audit.kind=image_per_image`、`billing_kind`、`output_image_count=1`、`charged_cost≈官方单价×charged_factor`。
 7. **curl**（用户 API Key）：

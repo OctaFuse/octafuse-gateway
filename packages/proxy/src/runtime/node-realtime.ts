@@ -25,6 +25,8 @@ import type {
 	RequestTimingCollector,
 } from '../services/request-timing';
 import { extractUpstreamRequestId } from '../services/egress/upstream-request-id';
+import { createRealtimeSocket, type RealtimeSocket } from '../services/egress/dashscope-realtime-socket';
+import type { DeferredRealtimeRuntime } from '../services/egress/dashscope-realtime-session';
 
 const nodeRequire = createRequire(import.meta.url);
 const wsModule = nodeRequire('ws') as {
@@ -357,6 +359,41 @@ export function createNodeDashScopeRealtimeDispatch(
 					reject(error);
 				});
 		});
+}
+
+/** 把 `ws` socket 包成运行时无关的 `RealtimeSocket`。 */
+function wrapNodeSocket(socket: NodeWebSocket): RealtimeSocket {
+	return createRealtimeSocket({
+		send: (data) => {
+			if (typeof data === 'string') socket.send(data);
+			else socket.send(Buffer.isBuffer(data) ? data : Buffer.from(data as ArrayBuffer));
+		},
+		close: (code, reason) => closeSocket(socket, code ?? 1000, reason ?? ''),
+		subscribe: (handlers) => {
+			socket.on('message', (data, isBinary) => handlers.message(isBinary ? data : data.toString()));
+			socket.on('close', (code, reason) => handlers.close(code, reason.toString()));
+			socket.on('error', () => handlers.error());
+		},
+	});
+}
+
+/**
+ * inference 新入口（延迟连接上游）的 Node 运行时：下游 `client` 已经完成 upgrade，
+ * 订阅在这里立刻开始排队，等第一帧 run-task 后再由会话选路由、连上游。
+ */
+export function createNodeDashScopeDeferredRuntime(
+	client: NodeWebSocket,
+	WebSocketCtor: NodeWebSocketConstructor = wsModule.WebSocket
+): DeferredRealtimeRuntime {
+	return {
+		client: wrapNodeSocket(client),
+		connectUpstream: async (route, operation, signal, timing, attempt) => {
+			const opened = await connectUpstream(route, operation, signal, timing, attempt, WebSocketCtor);
+			if ('response' in opened) return { response: opened.response, requestId: opened.requestId };
+			opened.socket.binaryType = 'nodebuffer';
+			return { socket: wrapNodeSocket(opened.socket), requestId: opened.requestId };
+		},
+	};
 }
 
 export function createNodeWebSocketServer(): NodeWebSocketServer {

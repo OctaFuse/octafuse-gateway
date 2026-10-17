@@ -1,7 +1,7 @@
 /**
  * MiniMax 文件转写。
  * `minimax-asr-file`：OpenAI `POST /v1/audio/transcriptions` → `POST {minimax.base}/speech_to_text`，并改写 srt/vtt。
- * passthrough：公开 `POST /v1/minimax/speech_to_text` 原样转发，只替换 model，响应不改写。
+ * passthrough：公开 `POST /minimax/v1/speech_to_text` 原样转发，只替换 model，响应不改写。
  * language 放请求头。
  */
 import {

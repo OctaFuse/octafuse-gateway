@@ -3,7 +3,29 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { isRouteAdapterCompatible, ROUTE_ADAPTERS } from '../route-topology';
+import {
+	DASHSCOPE_FILE_TRANSCRIPTION_PATH,
+	DASHSCOPE_MULTIMODAL_GENERATION_PATH,
+	DASHSCOPE_REALTIME_INFERENCE_PATH,
+	DASHSCOPE_REALTIME_SESSION_PATH,
+	DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
+	DASHSCOPE_TASKS_PATH,
+	isRouteAdapterCompatible,
+	LEGACY_DASHSCOPE_FILE_TRANSCRIPTION_PATH,
+	LEGACY_DASHSCOPE_MULTIMODAL_GENERATION_PATH,
+	LEGACY_DASHSCOPE_REALTIME_PATH,
+	LEGACY_DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
+	LEGACY_DASHSCOPE_TASKS_PATH,
+	LEGACY_MINIMAX_IMAGE_GENERATION_PATH,
+	LEGACY_MINIMAX_SPEECH_TO_TEXT_PATH,
+	LEGACY_MINIMAX_T2A_PATH,
+	LEGACY_VOLCENGINE_IMAGE_GENERATIONS_PATH,
+	MINIMAX_IMAGE_GENERATION_PATH,
+	MINIMAX_SPEECH_TO_TEXT_PATH,
+	MINIMAX_T2A_PATH,
+	ROUTE_ADAPTERS,
+	VOLCENGINE_IMAGE_GENERATIONS_PATH,
+} from '../route-topology';
 import {
 	ADAPTER_REGISTRY,
 	getAdapterByOptionKey,
@@ -14,6 +36,7 @@ import {
 	requestOperationsFromRegistry,
 	requestSurfacePath,
 	ROUTE_ADAPTER_MAPPINGS,
+	SURFACE_PATH_MODEL_PLACEHOLDER,
 	upstreamOperationsFromRegistry,
 } from './registry';
 
@@ -202,13 +225,13 @@ describe('adapter registry', () => {
 		assert.equal(requestSurfacePath('openai', 'chat'), '/v1/chat/completions');
 		assert.equal(
 			requestSurfacePath('dashscope', 'audio.transcriptions.multimodal'),
-			'/v1/dashscope/services/aigc/multimodal-generation/generation',
+			'/dashscope/api/v1/services/aigc/multimodal-generation/generation',
 		);
 		assert.equal(
 			requestSurfacePath('minimax', 'audio.transcriptions'),
-			'/v1/minimax/speech_to_text',
+			'/minimax/v1/speech_to_text',
 		);
-		assert.equal(requestSurfacePath('minimax', 'audio.speech'), '/v1/minimax/t2a_v2');
+		assert.equal(requestSurfacePath('minimax', 'audio.speech'), '/minimax/v1/t2a_v2');
 		assert.equal(
 			requestSurfacePath('elevenlabs', 'audio.speech'),
 			'/elevenlabs/v1/text-to-speech/{voice_id}',
@@ -219,16 +242,65 @@ describe('adapter registry', () => {
 		);
 		assert.equal(
 			requestSurfacePath('minimax', 'images.generations'),
-			'/v1/minimax/image_generation',
+			'/minimax/v1/image_generation',
 		);
 		assert.equal(
 			requestSurfacePath('volcengine', 'images.generations'),
-			'/v1/volcengine/images/generations',
+			'/volcengine/api/v3/images/generations',
 		);
 		assert.equal(
 			requestSurfacePath('dashscope', 'audio.transcriptions.realtime.inference', 'my fun/asr'),
-			'/v1/dashscope/realtime?model=my%20fun%2Fasr&operation=audio.transcriptions.realtime.inference',
+			'/dashscope/api-ws/v1/inference',
 		);
+	});
+
+	it('maps realtime operations to the official-style WebSocket paths', () => {
+		// inference（run-task）：模型在帧里，路径不带任何查询参数。
+		for (const operation of [
+			'audio.transcriptions.realtime.inference',
+			'audio.speech.realtime.inference',
+		]) {
+			assert.equal(requestSurfacePath('dashscope', operation, 'any-model'), '/dashscope/api-ws/v1/inference');
+			assert.equal(requestSurfacePath('dashscope', operation), '/dashscope/api-ws/v1/inference');
+		}
+		// session：官方用 `?model=`，不再有 `operation` 参数。
+		assert.equal(
+			requestSurfacePath('dashscope', 'audio.transcriptions.realtime.session', 'qwen3-asr-flash-realtime'),
+			'/dashscope/api-ws/v1/realtime?model=qwen3-asr-flash-realtime',
+		);
+		assert.equal(
+			requestSurfacePath('dashscope', 'audio.speech.realtime.session', 'my tts/model'),
+			'/dashscope/api-ws/v1/realtime?model=my%20tts%2Fmodel',
+		);
+		assert.equal(
+			requestSurfacePath('dashscope', 'audio.speech.realtime.session'),
+			`/dashscope/api-ws/v1/realtime?model=${SURFACE_PATH_MODEL_PLACEHOLDER}`,
+		);
+	});
+
+	it('builds vendor paths as /{vendor} + the official endpoint path', () => {
+		assert.equal(DASHSCOPE_MULTIMODAL_GENERATION_PATH, '/dashscope/api/v1/services/aigc/multimodal-generation/generation');
+		assert.equal(DASHSCOPE_SPEECH_SYNTHESIZER_PATH, '/dashscope/api/v1/services/audio/tts/SpeechSynthesizer');
+		assert.equal(DASHSCOPE_FILE_TRANSCRIPTION_PATH, '/dashscope/api/v1/services/audio/asr/transcription');
+		assert.equal(DASHSCOPE_TASKS_PATH, '/dashscope/api/v1/tasks');
+		assert.equal(DASHSCOPE_REALTIME_INFERENCE_PATH, '/dashscope/api-ws/v1/inference');
+		assert.equal(DASHSCOPE_REALTIME_SESSION_PATH, '/dashscope/api-ws/v1/realtime');
+		assert.equal(MINIMAX_SPEECH_TO_TEXT_PATH, '/minimax/v1/speech_to_text');
+		assert.equal(MINIMAX_T2A_PATH, '/minimax/v1/t2a_v2');
+		assert.equal(MINIMAX_IMAGE_GENERATION_PATH, '/minimax/v1/image_generation');
+		assert.equal(VOLCENGINE_IMAGE_GENERATIONS_PATH, '/volcengine/api/v3/images/generations');
+	});
+
+	it('keeps the legacy /v1/{vendor} paths as aliases', () => {
+		assert.equal(LEGACY_DASHSCOPE_MULTIMODAL_GENERATION_PATH, '/v1/dashscope/services/aigc/multimodal-generation/generation');
+		assert.equal(LEGACY_DASHSCOPE_SPEECH_SYNTHESIZER_PATH, '/v1/dashscope/services/audio/tts/SpeechSynthesizer');
+		assert.equal(LEGACY_DASHSCOPE_FILE_TRANSCRIPTION_PATH, '/v1/dashscope/services/audio/asr/transcription');
+		assert.equal(LEGACY_DASHSCOPE_TASKS_PATH, '/v1/dashscope/tasks');
+		assert.equal(LEGACY_DASHSCOPE_REALTIME_PATH, '/v1/dashscope/realtime');
+		assert.equal(LEGACY_MINIMAX_SPEECH_TO_TEXT_PATH, '/v1/minimax/speech_to_text');
+		assert.equal(LEGACY_MINIMAX_T2A_PATH, '/v1/minimax/t2a_v2');
+		assert.equal(LEGACY_MINIMAX_IMAGE_GENERATION_PATH, '/v1/minimax/image_generation');
+		assert.equal(LEGACY_VOLCENGINE_IMAGE_GENERATIONS_PATH, '/v1/volcengine/images/generations');
 	});
 
 	it('matches Seedream provider model names to the volcengine image passthrough', () => {

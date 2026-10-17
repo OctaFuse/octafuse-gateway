@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import type { IncomingMessage } from 'node:http';
 import type { RouteResult } from '../services/model-router';
 import {
+	createNodeDashScopeDeferredRuntime,
 	createNodeDashScopeRealtimeDispatch,
 	type NodeWebSocket,
 	type NodeWebSocketConstructor,
@@ -237,5 +238,63 @@ describe('Node DashScope realtime adapter', () => {
 		client.resume();
 		assert.equal(typeof upstream!.sent[0], 'string');
 		assert.equal(JSON.parse(String(upstream!.sent[0])).payload.model, 'fun-asr-realtime-v2');
+	});
+});
+
+describe('Node DashScope deferred realtime runtime', () => {
+	it('queues downstream frames from construction and relays them once connected upstream', async () => {
+		const client = new FakeSocket();
+		const received: Array<string | ArrayBuffer | Uint8Array> = [];
+		let upstream: FakeSocket | null = null;
+		let upstreamUrl = '';
+		const WebSocketCtor = function (url: string): NodeWebSocket {
+			upstreamUrl = url;
+			upstream = new FakeSocket();
+			queueMicrotask(() => upstream?.emitOpen());
+			return upstream;
+		} as unknown as NodeWebSocketConstructor;
+
+		const runtime = createNodeDashScopeDeferredRuntime(client, WebSocketCtor);
+		// 监听器注册之前到达的 run-task 帧要先排队
+		client.emitMessage(JSON.stringify({ header: { action: 'run-task' }, payload: { model: 'm', task: 'asr' } }), false);
+		runtime.client.onMessage((data) => received.push(data));
+		assert.equal(typeof received[0], 'string');
+
+		const opened = await runtime.connectUpstream(
+			route({ providerModelName: 'fun-asr-realtime-v2' }),
+			'audio.transcriptions.realtime.inference'
+		);
+		assert.ok('socket' in opened);
+		assert.match(upstreamUrl, /wss:\/\/dashscope/);
+
+		const upstreamFrames: Array<string | ArrayBuffer | Uint8Array> = [];
+		opened.socket.onMessage((data) => upstreamFrames.push(data));
+		upstream!.emitUpstreamMessage(JSON.stringify({ header: { event: 'task-started' } }), false);
+		assert.equal(typeof upstreamFrames[0], 'string');
+
+		runtime.client.send(JSON.stringify({ header: { event: 'task-started' } }));
+		assert.equal(typeof client.sent[0], 'string');
+		runtime.client.close(1000, 'done');
+		assert.equal(client.closeCodes[0], 1000);
+	});
+
+	it('aborts a pending upstream connection when the session signal fires', async () => {
+		const client = new FakeSocket();
+		let upstream: FakeSocket | null = null;
+		const WebSocketCtor = function (_url: string): NodeWebSocket {
+			upstream = new FakeSocket();
+			return upstream;
+		} as unknown as NodeWebSocketConstructor;
+		const runtime = createNodeDashScopeDeferredRuntime(client, WebSocketCtor);
+		const controller = new AbortController();
+		const pending = runtime.connectUpstream(
+			route(),
+			'audio.transcriptions.realtime.inference',
+			controller.signal
+		);
+		await new Promise<void>((resolve) => setImmediate(resolve));
+		controller.abort();
+		await assert.rejects(pending, /aborted/);
+		assert.equal(upstream!.closeCodes[0], 1000);
 	});
 });

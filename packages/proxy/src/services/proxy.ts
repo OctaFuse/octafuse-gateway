@@ -59,6 +59,8 @@ import {
 	type DashScopeRealtimeDispatchOptions,
 	type DashScopeRealtimeOperation,
 } from "./egress/dashscope-realtime-driver";
+import type { RealtimeSocket } from "./egress/dashscope-realtime-socket";
+import type { RealtimeUpstreamConnect } from "./egress/dashscope-realtime-session";
 import { dispatchAnthropicRoute } from "./egress/anthropic-driver";
 import { dispatchGeminiRoute } from "./egress/gemini-driver";
 import { dispatchOpenAiEmbeddingsRoute } from "./egress/openai-embeddings-driver";
@@ -70,6 +72,7 @@ import {
 	failoverDispatch,
 	type FailoverDispatchOptions,
 	type ProxyDispatchMeta,
+	type ProxyFailoverResult,
 } from './failover-dispatch';
 import type { GatewayCircuitAlertEvent } from './circuit-alert-types';
 import type { StickyTraceSnapshot } from './provider-sticky-routing';
@@ -622,6 +625,59 @@ export async function proxyDashScopeRealtime(
 		requestSignal,
 		options
 	);
+}
+
+/**
+ * 延迟连接版本（DashScope inference 新入口）：下游已升级，这里只负责选路由并连上游（含 failover）。
+ * 成功时返回已连上的上游 socket，由调用方交给会话桥接；桥接结束后用 `finishUsage` 回填用量。
+ */
+export async function proxyDashScopeRealtimeDeferred(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	operation: DashScopeRealtimeOperation,
+	connectUpstream: RealtimeUpstreamConnect,
+	requestSignal?: AbortSignal,
+	options?: FailoverDispatchOptions
+): Promise<{
+	result: ProxyFailoverResult;
+	upstream: RealtimeSocket | null;
+	finishUsage: (usage: UsageFromStream) => void;
+}> {
+	const opened: { socket: RealtimeSocket | null } = { socket: null };
+	let finishUsage: (usage: UsageFromStream) => void = () => undefined;
+	const usagePromise = new Promise<UsageFromStream>((resolve) => {
+		finishUsage = resolve;
+	});
+	const result = await failoverDispatch(
+		repos,
+		routes,
+		"dashscope",
+		async (
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) => {
+			const connected = await connectUpstream(route, operation, signal, timing, attempt);
+			if ("response" in connected) {
+				return {
+					response: connected.response,
+					usagePromise: Promise.resolve(EMPTY_USAGE),
+					upstreamRequestId: connected.requestId,
+				};
+			}
+			opened.socket = connected.socket;
+			// 下游已经升级，这里用 200 仅表示“上游已连上”，供 failover 判定成功。
+			return {
+				response: new Response(null, { status: 200 }),
+				usagePromise,
+				upstreamRequestId: connected.requestId,
+			};
+		},
+		requestSignal,
+		options
+	);
+	return { result, upstream: opened.socket, finishUsage };
 }
 
 /**

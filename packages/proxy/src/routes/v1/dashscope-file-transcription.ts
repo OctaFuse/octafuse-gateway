@@ -1,7 +1,7 @@
 /**
  * DashScope 异步文件转写透传。
- * `POST /v1/dashscope/services/audio/asr/transcription` 提交任务。
- * `GET /v1/dashscope/tasks/:taskId?model=` 查询任务；成功时按结果里的时长计费，响应仍是任务 JSON。
+ * `POST /dashscope/api/v1/services/audio/asr/transcription` 提交任务。
+ * `GET /dashscope/api/v1/tasks/:taskId?model=` 查询任务；成功时按结果里的时长计费，响应仍是任务 JSON。
  */
 import type { ModelRow } from '@octafuse/core';
 import { audioModelGuardMessage } from './audio-model-guard';

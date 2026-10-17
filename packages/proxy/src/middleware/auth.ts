@@ -8,7 +8,7 @@ import type { Env } from '../app';
 import { GatewayErrorCode } from '../services/gateway-error-codes';
 import { gatewayErrorJson } from '../services/gateway-error-response';
 import type { ApiKeyRateLimit } from '@octafuse/core';
-import { parseDashScopeRealtimeAuthProtocol } from '@octafuse/core/realtime-protocol';
+import { isDashScopeRealtimePath, parseDashScopeRealtimeAuthProtocol } from '@octafuse/core/realtime-protocol';
 import {
 	consumeRateLimitLayers,
 	hasPositiveTotalBalance,
@@ -70,13 +70,14 @@ function maskKey(key: string): string {
  */
 function extractApiKey(c: { req: { header: (name: string) => string | undefined; path: string; url: string } }): string | null {
   const auth = c.req.header('Authorization');
-  const bearer = auth?.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  // 官方 DashScope SDK 的 WebSocket 握手写小写 `bearer`；HTTP 鉴权方案名本就不区分大小写。
+  const bearer = auth && /^bearer\s/i.test(auth) ? auth.slice(7).trim() : '';
   if (bearer) {
     return bearer;
   }
 
 	// 浏览器 WebSocket 无法自定义 Authorization；实时入口从协商子协议读取 Key。
-	if (c.req.path.startsWith('/v1/dashscope/realtime')) {
+	if (isDashScopeRealtimePath(c.req.path)) {
 		const realtimeAuth = parseDashScopeRealtimeAuthProtocol(
 			c.req.header('Sec-WebSocket-Protocol')
 		);

@@ -137,9 +137,9 @@ npm run db:migrate:pg   # 首次迁移（种子键由 `0002_seed.sql` 写入）
 npm run dev:proxy:node   # 等价于先 dotenv 加载根 .env，再执行 proxy 的 dev:node
 ```
 
-Node Proxy 同样暴露 `GET /v1/dashscope/realtime` WebSocket 入口。浏览器无法自定义 `Authorization` 时，可通过 `Sec-WebSocket-Protocol` 传递网关 API Key（`octafuse-api-key.<sk>`），与 Cloudflare 代理服务入口使用同一协议。Node 客户端应优先使用 `Authorization: Bearer`。
+Node Proxy 同样暴露 `GET /dashscope/api-ws/v1/inference` 与 `GET /dashscope/api-ws/v1/realtime?model=` 两个 WebSocket 入口（旧别名 `/v1/dashscope/realtime` 暂留）。浏览器无法自定义 `Authorization` 时，可通过 `Sec-WebSocket-Protocol` 传递网关 API Key（`octafuse-api-key.<sk>`），与 Cloudflare 代理服务入口使用同一协议。Node 客户端应优先使用 `Authorization: Bearer`。
 
-握手完成后立刻发送 `run-task` 是安全的：Node 运行时会在鉴权与连上游完成前 `pause()` 底层读，避免无监听器时丢掉首帧。关闭套接字时请尽量显式传入 `1000`；不带状态码（对端看到 `1005`）也会被规范化后记账，但显式码更稳妥。细节见 [DashScope 音频架构](./architecture/dashscope-audio.md)。
+握手完成后立刻发送 `run-task` 是安全的：Node 运行时会在会话开始监听前 `pause()` 底层读，避免无监听器时丢掉首帧。inference 入口升级后才读取 `run-task` 的 `payload.model` 选路由，失败以 `task-failed` 事件回报。关闭套接字时请尽量显式传入 `1000`；不带状态码（对端看到 `1005`）也会被规范化后记账，但显式码更稳妥。细节见 [DashScope 音频架构](./architecture/dashscope-audio.md)。
 
 **或**在 **`packages/proxy`** 目录放置 `.env`（可复制 [`packages/proxy/.env.example`](../../packages/proxy/.env.example)），然后：
 

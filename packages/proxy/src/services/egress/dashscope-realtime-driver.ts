@@ -16,6 +16,12 @@ import type {
 } from "../request-timing";
 import { buildRouteRequestBody } from "../route-default-params";
 import { extractUpstreamRequestId } from "./upstream-request-id";
+import {
+	createRealtimeSocket,
+	type RealtimeFrameData,
+	type RealtimeSocket,
+} from "./dashscope-realtime-socket";
+import type { DeferredRealtimeRuntime } from "./dashscope-realtime-session";
 
 export const DASHSCOPE_REALTIME_OPERATIONS = [
 	"audio.transcriptions.realtime.inference",
@@ -376,34 +382,18 @@ function bridgeSockets(params: {
 	});
 }
 
-/** 使用 Workers outbound WebSocket fetch 建立上游，再通过 WebSocketPair 对外暴露本地连接。 */
-export async function dispatchDashScopeRealtime(
+type WorkersUpstreamOpened = { upstream: WebSocket; requestId: string | null };
+type WorkersUpstreamRejected = { response: Response; requestId: string | null };
+
+/** 第一步：建立（含 Upgrade 握手）上游 WebSocket，还不涉及下游。 */
+async function openWorkersUpstream(
 	route: RouteResult,
 	operation: DashScopeRealtimeOperation,
-	requestSignal?: AbortSignal,
-	timing?: RequestTimingCollector | null,
-	attempt?: RequestTimingAttempt,
-	options: DashScopeRealtimeDispatchOptions = {}
-): Promise<ProxyDispatchResult> {
-	if (options.nodeDispatch) {
-		return options.nodeDispatch(route, operation, requestSignal, timing, attempt);
-	}
-	if (typeof WebSocketPair === "undefined") {
-		return {
-			response: new Response(
-				JSON.stringify({
-					error: {
-						message:
-							"DashScope realtime requires the Cloudflare Workers runtime",
-					},
-				}),
-				{ status: 501, headers: { "Content-Type": "application/json" } }
-			),
-			usagePromise: Promise.resolve(EMPTY_USAGE),
-			upstreamRequestId: null,
-		};
-	}
-
+	requestSignal: AbortSignal | undefined,
+	timing: RequestTimingCollector | null | undefined,
+	attempt: RequestTimingAttempt | undefined,
+	options: Pick<DashScopeRealtimeDispatchOptions, "fetchImpl">
+): Promise<WorkersUpstreamOpened | WorkersUpstreamRejected> {
 	const capability = realtimeCapability(operation);
 	const endpoint = resolveUpstreamEndpoint(
 		"dashscope",
@@ -429,13 +419,56 @@ export async function dispatchDashScopeRealtime(
 		signal: requestSignal,
 	});
 	timing?.markAttemptHeaders(attempt, upstreamResponse.status);
-	const upstreamRequestId = extractUpstreamRequestId(upstreamResponse.headers);
+	const requestId = extractUpstreamRequestId(upstreamResponse.headers);
 	const upstream = upstreamResponse.webSocket;
 	if (upstreamResponse.status !== 101 || !upstream) {
+		return { response: upstreamResponse, requestId };
+	}
+	return { upstream, requestId };
+}
+
+function workersUnavailableResponse(): ProxyDispatchResult {
+	return {
+		response: new Response(
+			JSON.stringify({
+				error: {
+					message: "DashScope realtime requires the Cloudflare Workers runtime",
+				},
+			}),
+			{ status: 501, headers: { "Content-Type": "application/json" } }
+		),
+		usagePromise: Promise.resolve(EMPTY_USAGE),
+		upstreamRequestId: null,
+	};
+}
+
+/** 第二步（旧入口与 session 入口）：连上游成功后立刻创建 WebSocketPair 并桥接两端。 */
+export async function dispatchDashScopeRealtime(
+	route: RouteResult,
+	operation: DashScopeRealtimeOperation,
+	requestSignal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt,
+	options: DashScopeRealtimeDispatchOptions = {}
+): Promise<ProxyDispatchResult> {
+	if (options.nodeDispatch) {
+		return options.nodeDispatch(route, operation, requestSignal, timing, attempt);
+	}
+	if (typeof WebSocketPair === "undefined") return workersUnavailableResponse();
+
+	const opened = await openWorkersUpstream(
+		route,
+		operation,
+		requestSignal,
+		timing,
+		attempt,
+		options
+	);
+	if ("response" in opened) {
 		return {
-			response: upstreamResponse,
+			response: opened.response,
 			usagePromise: Promise.resolve(EMPTY_USAGE),
-			upstreamRequestId,
+			upstreamRequestId: opened.requestId,
 		};
 	}
 
@@ -445,7 +478,7 @@ export async function dispatchDashScopeRealtime(
 	const usagePromise = bridgeSockets({
 		client,
 		server,
-		upstream,
+		upstream: opened.upstream,
 		route,
 		operation,
 		timing,
@@ -462,6 +495,72 @@ export async function dispatchDashScopeRealtime(
 			},
 		}),
 		usagePromise,
-		upstreamRequestId,
+		upstreamRequestId: opened.requestId,
+	};
+}
+
+/** 把 Workers `WebSocket` 包成运行时无关的 `RealtimeSocket`（会先 accept）。 */
+function wrapWorkersWebSocket(
+	socket: WebSocket,
+	options: { upstream: boolean }
+): RealtimeSocket {
+	if (options.upstream) socket.binaryType = "arraybuffer";
+	socket.accept({ allowHalfOpen: true });
+	return createRealtimeSocket({
+		send: (data) => socket.send(data as string | ArrayBuffer),
+		close: (code, reason) => closeSocket(socket, code ?? 1000, reason ?? ""),
+		subscribe: (handlers) => {
+			socket.addEventListener("message", (event) =>
+				handlers.message(event.data as RealtimeFrameData)
+			);
+			socket.addEventListener("close", (event) =>
+				handlers.close(event.code, event.reason)
+			);
+			socket.addEventListener("error", () => handlers.error());
+		},
+	});
+}
+
+/**
+ * inference 新入口用：创建 WebSocketPair 并立刻接受下游，上游等第一帧 run-task 后再连。
+ * 不在 Workers 运行时（没有 `WebSocketPair`）返回 null。
+ */
+export function createWorkersDeferredRealtime(
+	options: Pick<DashScopeRealtimeDispatchOptions, "fetchImpl" | "responseProtocol"> = {}
+): { runtime: DeferredRealtimeRuntime; response: Response } | null {
+	if (typeof WebSocketPair === "undefined") return null;
+	const pair = new WebSocketPair();
+	const clientEnd = pair[0];
+	const serverEnd = pair[1];
+	const runtime: DeferredRealtimeRuntime = {
+		client: wrapWorkersWebSocket(serverEnd, { upstream: false }),
+		connectUpstream: async (route, operation, signal, timing, attempt) => {
+			const opened = await openWorkersUpstream(
+				route,
+				operation,
+				signal,
+				timing,
+				attempt,
+				options
+			);
+			if ("response" in opened) return opened;
+			return {
+				socket: wrapWorkersWebSocket(opened.upstream, { upstream: true }),
+				requestId: opened.requestId,
+			};
+		},
+	};
+	return {
+		runtime,
+		response: new Response(null, {
+			status: 101,
+			webSocket: clientEnd,
+			headers: {
+				"X-Octafuse-Realtime-Protocol": "dashscope",
+				...(options.responseProtocol
+					? { "Sec-WebSocket-Protocol": options.responseProtocol }
+					: {}),
+			},
+		}),
 	};
 }

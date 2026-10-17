@@ -29,15 +29,15 @@ Octafuse Gateway의 핵심 목표는 **1인 기업(OPC) 또는 기업 내부를 
     - Anthropic 엔드포인트: `POST /v1/messages`
     - Google Gemini 엔드포인트: `POST /v1beta/models/{model}:generateContent` (`streamGenerateContent` 포함)
     - DashScope 네이티브 엔드포인트:
-      - 동기식 멀티모달(ASR, Qwen-TTS, 이미지 생성): `POST /v1/dashscope/services/aigc/multimodal-generation/generation`
-      - 음성 합성: `POST /v1/dashscope/services/audio/tts/SpeechSynthesizer`
-      - 비동기 파일 전사: `POST /v1/dashscope/services/audio/asr/transcription`, `GET /v1/dashscope/tasks/{taskId}`
-      - 실시간 오디오: `GET /v1/dashscope/realtime`
+      - 동기식 멀티모달(ASR, Qwen-TTS, 이미지 생성): `POST /dashscope/api/v1/services/aigc/multimodal-generation/generation`
+      - 음성 합성: `POST /dashscope/api/v1/services/audio/tts/SpeechSynthesizer`
+      - 비동기 파일 전사: `POST /dashscope/api/v1/services/audio/asr/transcription`, `GET /dashscope/api/v1/tasks/{taskId}`
+      - 실시간 오디오: `GET /dashscope/api-ws/v1/inference`(run-task) / `GET /dashscope/api-ws/v1/realtime?model=`(Qwen-Realtime 세션)
     - MiniMax 네이티브 엔드포인트:
-      - 파일 전사: `POST /v1/minimax/speech_to_text`
-      - 음성 합성: `POST /v1/minimax/t2a_v2`
-      - 이미지 생성: `POST /v1/minimax/image_generation`
-    - Volcengine Ark 네이티브 엔드포인트(Seedream 이미지 생성): `POST /v1/volcengine/images/generations`
+      - 파일 전사: `POST /minimax/v1/speech_to_text`
+      - 음성 합성: `POST /minimax/v1/t2a_v2`
+      - 이미지 생성: `POST /minimax/v1/image_generation`
+    - Volcengine Ark 네이티브 엔드포인트(Seedream 이미지 생성): `POST /volcengine/api/v3/images/generations`
 4. Protocol 어댑터와 변환: 클라이언트와 업스트림 사이의 Protocol 변환을 Route에서 선택해 익숙한 호출 방식으로 여러 Provider를 사용할 수 있습니다. 예를 들어 OpenAI Images 클라이언트에서 Alibaba Cloud Model Studio의 Qwen Image / Wan Image, Volcengine Ark의 Seedream, MiniMax 이미지 모델을 호출할 수 있고, OpenAI Audio 클라이언트에서 Model Studio와 MiniMax의 음성 인식과 음성 합성을 사용할 수 있습니다.
 5. Agent 도구 연결: `/v1/tools/*`를 통해 Agent용 도구를 통합 제공하고 로그, 과금, 비용 관리를 중앙화합니다. 모델과 도구를 하나의 Gateway에서 사용할 수 있습니다.
     - 웹 검색(`POST /v1/tools/web-search`): Bocha, Tavily, Alibaba Cloud CleverSee, Tencent Cloud WSA

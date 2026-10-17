@@ -1,3 +1,9 @@
+import {
+	DASHSCOPE_REALTIME_INFERENCE_PATH,
+	DASHSCOPE_REALTIME_SESSION_PATH,
+	LEGACY_DASHSCOPE_REALTIME_PATH,
+} from './adapters/registry';
+
 /**
  * 浏览器原生 WebSocket 不能设置 Authorization 请求头，实时网关入口使用
  * 一个带 API Key 的 Sec-WebSocket-Protocol token 完成握手鉴权。
@@ -31,4 +37,18 @@ export function pickDashScopeRealtimeSubprotocol(protocols: Iterable<string>): s
 	const auth = offered.find((value) => value.startsWith(DASHSCOPE_REALTIME_AUTH_PROTOCOL_PREFIX));
 	if (auth) return auth;
 	return offered[0] ?? false;
+}
+
+/**
+ * DashScope 实时 WebSocket 入口路径判断（含旧入口别名）。
+ * 这些入口允许浏览器用 `Sec-WebSocket-Protocol` 携带 API Key，Node upgrade 白名单也用它。
+ */
+export function isDashScopeRealtimePath(pathname: string): boolean {
+	const path = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+	return (
+		path === DASHSCOPE_REALTIME_SESSION_PATH ||
+		path === DASHSCOPE_REALTIME_INFERENCE_PATH ||
+		// TEMP(soloent)：旧实时入口别名，删除条件见 proxy `app.ts` 的 TEMP 注释。
+		path === LEGACY_DASHSCOPE_REALTIME_PATH
+	);
 }

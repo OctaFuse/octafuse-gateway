@@ -8,7 +8,9 @@ import { createAdaptorServer } from '@hono/node-server';
 import type { IncomingMessage } from 'node:http';
 import { pathToFileURL } from 'node:url';
 import { createProxyApp } from '../app';
+import { isDashScopeRealtimePath } from '@octafuse/core/realtime-protocol';
 import {
+	createNodeDashScopeDeferredRuntime,
 	createNodeDashScopeRealtimeDispatch,
 	createNodeWebSocketServer,
 	type NodeWebSocket,
@@ -71,7 +73,9 @@ function printNodeStartupBanner(
 		`  Anthropic      POST ${base}/v1/messages`,
 		`  Gemini         POST ${base}/v1beta/models/{model}:generateContent`,
 		`  Web search     POST ${base}/v1/tools/web-search`,
-		`  DashScope WS   GET  ${base}/v1/dashscope/realtime`,
+		`  DashScope WS   GET  ${base}/dashscope/api-ws/v1/inference`,
+		`  DashScope WS   GET  ${base}/dashscope/api-ws/v1/realtime?model=`,
+		`  DashScope WS   GET  ${base}/v1/dashscope/realtime（旧别名）`,
 		'',
 		`  数据库         ${dbLineLabel}  ${redactedUrl}`,
 		`  DATABASE_DRIVER ${dbDriver}`,
@@ -116,7 +120,7 @@ export async function startNodeServer(port = Number(process.env.PORT ?? 8787)): 
 			request.url ?? '/',
 			`http://${request.headers.host ?? '127.0.0.1'}`
 		).pathname;
-		if (pathname !== '/v1/dashscope/realtime') {
+		if (!isDashScopeRealtimePath(pathname)) {
 			socket.destroy();
 			return;
 		}
@@ -148,6 +152,8 @@ async function handleNodeRealtimeUpgrade(
 	try {
 		const response = await app.fetch(fetchRequest, {
 			NODE_REALTIME_DISPATCH: createNodeDashScopeRealtimeDispatch(client),
+			// 延迟连接入口（inference）按需调用，此时才开始订阅下游帧。
+			NODE_REALTIME_DEFERRED: () => createNodeDashScopeDeferredRuntime(client),
 		});
 		if (response.headers.get('x-octafuse-realtime-upgrade') === '1') {
 			client.resume();

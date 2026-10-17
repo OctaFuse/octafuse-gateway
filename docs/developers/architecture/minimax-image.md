@@ -7,7 +7,7 @@
 | request protocol | operation | 入口 | 说明 |
 | ---------------- | --------- | ---- | ---- |
 | `openai` | `images.generations` | `POST /v1/images/generations` | 适配器 `minimax-image`。不转发 `size`；`aspect_ratio`、`width`、`height` 有值才原样转发。响应改写成 OpenAI `{ data: [{ url }] }` 或 `{ b64_json }` |
-| `minimax` | `images.generations` | `POST /v1/minimax/image_generation` | 文生图和带 `subject_reference` 的图生图共用这一端点。返回 MiniMax JSON，不改写成 OpenAI `{data:[{url}]}` |
+| `minimax` | `images.generations` | `POST /minimax/v1/image_generation` | 文生图和带 `subject_reference` 的图生图共用这一端点。返回 MiniMax JSON，不改写成 OpenAI `{data:[{url}]}` |
 
 上游路径：
 
@@ -50,7 +50,7 @@ client.images.generate(
 
 ## 调试台与模拟器
 
-调试台直连上游，不计费、不写请求日志。转换路由的编辑器使用 OpenAI 字段，发出去的是 MiniMax 请求；透传路由直接编辑 MiniMax JSON。成功后预览 `data.image_urls` 与 `data.image_base64`（base64 会补上 `data:image/jpeg;base64,`），转换路由的 OpenAI `data[]` 也能预览。模拟器按所选协议打 `POST /v1/images/generations` 或 `POST /v1/minimax/image_generation`。
+调试台直连上游，不计费、不写请求日志。转换路由的编辑器使用 OpenAI 字段，发出去的是 MiniMax 请求；透传路由直接编辑 MiniMax JSON。成功后预览 `data.image_urls` 与 `data.image_base64`（base64 会补上 `data:image/jpeg;base64,`），转换路由的 OpenAI `data[]` 也能预览。模拟器按所选协议打 `POST /v1/images/generations` 或 `POST /minimax/v1/image_generation`。
 
 ## 官方来源
 

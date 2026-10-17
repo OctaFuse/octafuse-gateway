@@ -1057,7 +1057,7 @@ Admin 中为图片模型配置 `output_modalities: ["image"]` 及对应 mode 价
 ### MiniMax 生图透传
 
 ```text
-POST /v1/minimax/image_generation
+POST /minimax/v1/image_generation
 Authorization: Bearer <USER_API_KEY>
 Content-Type: application/json
 ```
@@ -1081,7 +1081,7 @@ OpenAI SDK 使用适配器 `volcengine-image`，调用 `POST /v1/images/generati
 原生和流式走透传：
 
 ```text
-POST /v1/volcengine/images/generations
+POST /volcengine/api/v3/images/generations
 Authorization: Bearer <USER_API_KEY>
 Content-Type: application/json
 ```
@@ -1127,7 +1127,7 @@ curl -sS "$GATEWAY_URL/v1/audio/speech" \
 `qwen-audio-3.0-asr-flash` 也可走原生 JSON，不经过 OpenAI multipart：
 
 ```
-POST /v1/dashscope/services/aigc/multimodal-generation/generation
+POST /dashscope/api/v1/services/aigc/multimodal-generation/generation
 Authorization: Bearer <USER_API_KEY>
 Content-Type: application/json
 ```
@@ -1139,27 +1139,30 @@ Content-Type: application/json
 实时 ASR / TTS 使用 WebSocket 入口：
 
 ```text
-wss://<gateway>/v1/dashscope/realtime?model=<gateway-model>&operation=<operation>
+# run-task 协议（Paraformer / Fun-ASR / CosyVoice 等）：模型与任务写在 run-task 帧里
+wss://<gateway>/dashscope/api-ws/v1/inference
+# Qwen-Realtime session：模型在查询参数里
+wss://<gateway>/dashscope/api-ws/v1/realtime?model=<gateway-model>
 Authorization: Bearer <USER_API_KEY>
 ```
 
-请求与上游都使用 `dashscope` 协议及同名 operation，事件和二进制音频帧保持原生语义。可用 operation、浏览器子协议鉴权、Node / Workers 运行时差异、Close 码约束与计费见 [DashScope 音频架构](../architecture/dashscope-audio.md)。
+路径与百炼官方一致，官方 SDK 只需把 base 换成网关域名加 `/dashscope`。请求与上游都使用 `dashscope` 协议，事件和二进制音频帧保持原生语义；operation 由入口与 `payload.task` 推断，客户端无需传 `operation`。旧别名 `/v1/dashscope/realtime?model=&operation=` 暂时保留。可用 operation、浏览器子协议鉴权、Node / Workers 运行时差异、Close 码约束与计费见 [DashScope 音频架构](../architecture/dashscope-audio.md)。
 
 ### DashScope 语音合成与文件转写透传
 
 | 公开路径 | operation | 说明 |
 |----------|-----------|------|
-| `POST /v1/dashscope/services/audio/tts/SpeechSynthesizer` | `audio.speech` / `audio.speech.stream` | CosyVoice 等 SpeechSynthesizer 模型。`X-DashScope-SSE: enable` 为流式，响应保持 DashScope 原文，按 `usage.characters` 计费 |
-| `POST /v1/dashscope/services/aigc/multimodal-generation/generation` | `audio.speech.multimodal` | Qwen-TTS 与百炼上的 MiniMax 语音，与同步 ASR、生图共用路径，网关按模型类型分流 |
-| `POST /v1/dashscope/services/audio/asr/transcription` | `audio.transcriptions.async` | 提交异步 filetrans 任务，立即返回任务 JSON，不计费 |
-| `GET /v1/dashscope/tasks/{taskId}?model=<gateway-model>` | `audio.transcriptions.async` | 查询任务，响应是任务 JSON；任务成功时按结果时长计费 |
+| `POST /dashscope/api/v1/services/audio/tts/SpeechSynthesizer` | `audio.speech` / `audio.speech.stream` | CosyVoice 等 SpeechSynthesizer 模型。`X-DashScope-SSE: enable` 为流式，响应保持 DashScope 原文，按 `usage.characters` 计费 |
+| `POST /dashscope/api/v1/services/aigc/multimodal-generation/generation` | `audio.speech.multimodal` | Qwen-TTS 与百炼上的 MiniMax 语音，与同步 ASR、生图共用路径，网关按模型类型分流 |
+| `POST /dashscope/api/v1/services/audio/asr/transcription` | `audio.transcriptions.async` | 提交异步 filetrans 任务，立即返回任务 JSON，不计费 |
+| `GET /dashscope/api/v1/tasks/{taskId}?model=<gateway-model>` | `audio.transcriptions.async` | 查询任务，响应是任务 JSON；任务成功时按结果时长计费 |
 
 请求与上游都是 `dashscope` 和表中的 operation，adapter 必须是 `passthrough`。网关只替换 `model`。OpenAI 客户端改用 `POST /v1/audio/speech` 或 `POST /v1/audio/transcriptions`，并在路由上选择对应的 DashScope 转换适配器。
 
 ### MiniMax 同步语音合成透传
 
 ```text
-POST /v1/minimax/t2a_v2
+POST /minimax/v1/t2a_v2
 Authorization: Bearer <USER_API_KEY>
 Content-Type: application/json
 ```
@@ -1285,7 +1288,7 @@ OpenAI 入口使用适配器 `elevenlabs-asr-file`，调用上面的 `POST /v1/a
 ### MiniMax 文件转写透传
 
 ```text
-POST /v1/minimax/speech_to_text
+POST /minimax/v1/speech_to_text
 Authorization: Bearer <USER_API_KEY>
 Content-Type: multipart/form-data
 ```

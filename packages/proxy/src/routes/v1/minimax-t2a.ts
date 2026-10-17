@@ -1,6 +1,6 @@
 /**
  * MiniMax 同步语音合成透传。
- * `POST /v1/minimax/t2a_v2`
+ * `POST /minimax/v1/t2a_v2`
  * 非流式 JSON 与 `stream: true` 的 SSE 共用 `audio.speech`。
  */
 import type { GatewayRepositories } from '@octafuse/core';
