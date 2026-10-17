@@ -8,6 +8,8 @@ export type RouteListRow = GatewayModelRoute & {
 	provider_name?: string;
 };
 
+export type RouteEditorTab = 'mapping' | 'request' | 'pricing' | 'test';
+
 /** Provider presentation: topology cards or vertical provider rows. */
 export type RouteFlowDensity = 'topology' | 'list';
 

@@ -3,11 +3,13 @@
 import { useMemo, useState } from 'react';
 import {
 	ArrowDownIcon,
+	ArrowsUpDownIcon,
+	CheckCircleIcon,
 	ClipboardDocumentIcon,
-	ExclamationTriangleIcon,
 	PencilSquareIcon,
 	PlusIcon,
 	PowerIcon,
+	ScaleIcon,
 } from '@heroicons/react/24/outline';
 import {
 	isAudioModel,
@@ -18,7 +20,6 @@ import {
 import { providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provider-kind';
 import { useLocale, useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
-import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
@@ -28,14 +29,16 @@ import type { RouteModelGroup, RequestSurfaceGroup } from '../route-utils';
 import {
 	compareRoutesWithinPriorityLayer,
 	groupSectionsByRequestSurface,
+	isRouteConfigurationAvailable,
 	parseModelTagsList,
 	protocolBadgeClass,
 	requestSurfacePath,
 	resolveEffectiveRouteStrategy,
-	routeHasCustomParamsForceOverride,
+	summarizeRouteCustomParams,
 	splitRoutesByProtocolAndRouteGroup,
 } from '../route-utils';
 import {
+	type RouteEditorTab,
 	type RouteFlowDensity,
 	type RouteListRow,
 	type RouteProtocolGroupSection,
@@ -83,7 +86,7 @@ type Props = {
 	togglingId: string | null;
 	onCopyModelId: (modelId: string) => void;
 	onCreate: (modelId: string, preset?: { protocol?: string; operation?: string; group?: string }) => void;
-	onEdit: (route: RouteListRow) => void;
+	onEdit: (route: RouteListRow, initialTab?: RouteEditorTab) => void;
 	onEditModel: (modelId: string) => void;
 	onToggleStatus: (route: RouteListRow) => void;
 	onOpenStrategyDialog: OpenStrategyDialog;
@@ -108,7 +111,7 @@ function RouteTarget({
 	stickyEnabled: boolean;
 	stickyTotal: number | null;
 	togglingId: string | null;
-	onEdit: (route: RouteListRow) => void;
+	onEdit: (route: RouteListRow, initialTab?: RouteEditorTab) => void;
 	onToggleStatus: (route: RouteListRow) => void;
 }) {
 	const t = useTranslations('routes.flow');
@@ -125,7 +128,30 @@ function RouteTarget({
 	);
 	const enabled = route.status === 'active';
 	const providerDisabled = provider?.status === 'disabled';
-	const available = enabled && !providerDisabled;
+	const available = isRouteConfigurationAvailable(route, provider);
+	const availabilityHint = t(available ? 'availabilityAvailableTooltip' : !enabled ? 'availabilityRouteDisabledTooltip' : 'availabilityProviderDisabledTooltip');
+	const params = summarizeRouteCustomParams(route.custom_params);
+	const paramsBadges = (
+		<div className={`flex min-w-0 flex-wrap items-center gap-1 ${listView ? 'route-provider-list-params' : 'ml-auto justify-end'}`}>
+			{listView ? <span className="route-provider-mobile-label text-[10px] text-slate-500">{t('listParams')}</span> : null}
+			{(['headers', 'body'] as const).filter((side) => params[side]).map((side) => (
+				<button
+					key={side}
+					type="button"
+					onClick={() => onEdit(route, 'request')}
+					className={`rounded border px-1.5 py-0.5 text-[10px] leading-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${!available ? 'border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200' : side === 'headers' ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100' : 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100'}`}
+					title={side === 'headers'
+						? t(params.forceOverrideHeaders ? 'paramsHeadersForceTooltip' : 'paramsHeadersTooltip')
+						: t(params.forceOverrideBody ? 'paramsBodyForceTooltip' : 'paramsBodyTooltip')}
+					aria-label={`${t('editRoute')}: ${t(side === 'headers' ? 'paramsHeaders' : 'paramsBody')}`}
+				>
+					{t(side === 'headers' ? 'paramsHeaders' : 'paramsBody')}
+				</button>
+			))}
+			{listView && !params.headers && !params.body ? <span className="text-xs text-slate-400">—</span> : null}
+		</div>
+	);
+
 
 	const upstreamModel = (
 		<button
@@ -152,30 +178,19 @@ function RouteTarget({
 	return (
 		<div
 			role="listitem"
-			className={`${listView ? 'route-provider-list-grid w-full min-w-0 gap-x-3 gap-y-2 px-3 py-2' : 'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border transition'} ${
+			data-available={available}
+			className={`relative ${listView ? 'route-provider-list-grid w-full min-w-0 gap-x-3 gap-y-2 px-3 py-2' : 'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border transition'} ${
 				available
-					? listView ? 'bg-white hover:bg-blue-50/30' : 'border-slate-200 bg-white shadow-[0_2px_6px_-2px_rgba(15,23,42,0.14)] hover:border-slate-300 hover:shadow-md'
-					: listView ? 'bg-slate-50/70 hover:bg-slate-100/60' : 'border-slate-200 bg-slate-50/80 hover:border-slate-300'
+					? listView ? 'bg-white hover:bg-emerald-50/40' : 'border-emerald-200 bg-white shadow-[0_2px_6px_-2px_rgba(15,23,42,0.14)] hover:border-emerald-300 hover:shadow-md'
+					: listView ? 'bg-slate-100 hover:bg-slate-200/60' : 'border-dashed border-slate-300 bg-slate-100 hover:border-slate-400'
 			}`}
 		>
+			<span aria-hidden className={`pointer-events-none absolute inset-y-0 left-0 w-1 ${available ? 'bg-emerald-500' : enabled && providerDisabled ? 'bg-amber-500' : 'bg-slate-400'}`} />
 			<div className={listView ? 'contents' : 'p-3'}>
 				<div className={`flex min-w-0 items-center ${listView ? 'route-provider-list-identity gap-2' : 'gap-2.5'}`}>
 					<VendorIcon vendor={provider?.vendor_key} iconKey={provider?.icon_key} size="compact" className={available ? '' : 'opacity-60 grayscale'} />
 					<div className="flex min-w-0 flex-1 items-center gap-2">
-						{providerDisabled && (
-							<span className="inline-flex shrink-0 pt-0.5">
-								<InfoHintPopover
-									label={t('providerDisabled')}
-									openOnHover
-									portal
-									align="start"
-									panelClassName="max-w-40"
-									icon={<ExclamationTriangleIcon className="h-3.5 w-3.5 text-amber-600" aria-hidden />}
-								>
-									{t('providerDisabled')}
-								</InfoHintPopover>
-							</span>
-						)}
+
 						<button
 							type="button"
 							onClick={() => onEdit(route)}
@@ -191,39 +206,55 @@ function RouteTarget({
 								</span>
 							) : null}
 						</button>
-						{!listView ? stickyUsage : null}
+						{!listView ? (
+							<div className="flex shrink-0 items-center gap-1.5">
+								<span
+									className={`inline-flex h-7 min-w-8 items-center justify-center gap-1 rounded-md border px-2 text-xs font-semibold tabular-nums ${available ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-300 bg-slate-100 text-slate-600'}`}
+									title={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
+									aria-label={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
+								>
+									<ScaleIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+									{route.weight ?? 1}
+								</span>
+								{stickyUsage}
+							</div>
+						) : null}
 					</div>
 				</div>
 				{!listView ? upstreamModel : null}
 				{listView ? <div className="route-provider-list-model min-w-0">{upstreamModel}</div> : null}
 				<div className={listView ? 'contents' : 'mt-3 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-4'}>
-					<div className={listView ? 'flex min-w-0 justify-center text-[10px]' : 'contents'}>
+					<div className={listView ? 'flex min-w-0 flex-col items-center gap-1 text-[10px]' : 'flex flex-wrap items-center gap-1.5'}>
 						<button
 							type="button"
 							onClick={() => onToggleStatus(route)}
 							disabled={togglingId === route.id}
 							aria-pressed={enabled}
-							className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-wait disabled:opacity-50 ${enabled ? (providerDisabled ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200') : 'bg-slate-600 text-white hover:bg-slate-700'}`}
-							title={enabled ? tList('routeEnabled') : tList('routeDisabled')}
+							className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-wait disabled:opacity-50 ${available ? 'bg-emerald-600 text-white hover:bg-emerald-700' : enabled ? 'bg-white text-slate-600 ring-1 ring-inset ring-slate-300 hover:bg-slate-200' : 'bg-slate-600 text-white hover:bg-slate-700'}`}
+							title={`${availabilityHint} · ${enabled ? tList('routeEnabled') : tList('routeDisabled')}`}
 							aria-label={enabled ? tList('routeEnabled') : tList('routeDisabled')}
 						>
-							<PowerIcon className="h-3 w-3" aria-hidden />
-							{enabled ? t('enabledShort') : t('disabledShort')}
+							{available ? <CheckCircleIcon className="h-3 w-3" aria-hidden /> : <PowerIcon className="h-3 w-3" aria-hidden />}
+							{available ? t('availableShort') : enabled ? t('enabledShort') : t('disabledShort')}
 						</button>
+						{providerDisabled ? (
+							<span className="rounded border border-amber-300 bg-amber-50 px-1 py-0.5 text-center text-[9px] font-semibold leading-3 text-amber-800" title={t('availabilityProviderDisabledTooltip')}>
+								{t('providerDisabled')}
+							</span>
+						) : null}
 					</div>
-					<span className={`${listView ? 'text-center text-xs' : 'text-[10px]'} tabular-nums text-slate-600`} title={t('badgeWeightTooltip', { value: route.weight ?? 1 })}>
-						{listView ? <span className="route-provider-mobile-label mr-1 text-[10px]">{t('listWeight')}</span> : null}
-						{listView ? route.weight ?? 1 : t('targetWeight', { value: route.weight ?? 1 })}
-					</span>
-					{!listView && route.custom_params ? (
-						<span className="rounded bg-slate-100 px-1.5 text-slate-500" title={routeHasCustomParamsForceOverride(route.custom_params) ? t('badgeParamsForceOverrideTooltip') : t('badgeParamsTooltip')}>
-							{t('targetParams')}
+					{listView ? (
+						<span className="inline-flex min-w-0 items-center justify-center gap-1 tabular-nums" title={t('badgeWeightTooltip', { value: route.weight ?? 1 })} aria-label={t('badgeWeightTooltip', { value: route.weight ?? 1 })}>
+							<span className="route-provider-mobile-label mr-1 text-[10px] text-slate-500">{t('listWeight')}</span>
+							<span className={`text-sm font-bold ${available ? 'text-slate-900' : 'text-slate-600'}`}>{route.weight ?? 1}</span>
 						</span>
 					) : null}
+					{!listView && (params.headers || params.body) ? paramsBadges : null}
 					{listView ? <div className="flex min-w-0 justify-center">{stickyUsage}</div> : null}
+					{listView ? paramsBadges : null}
 				</div>
 			</div>
-			<RouteTargetPricing compact={listView} priceOverride={route.price_override} onEdit={() => onEdit(route)} />
+			<RouteTargetPricing muted={!available} compact={listView} priceOverride={route.price_override} onEdit={() => onEdit(route, 'pricing')} />
 		</div>
 	);
 }
@@ -436,6 +467,7 @@ function RouteProviderListHeader() {
 			<span className="text-center">{t('listStatus')}</span>
 			<span className="text-center">{t('listWeight')}</span>
 			<span className="text-center">{t('listStickyUsers')}</span>
+			<span>{t('listParams')}</span>
 			<div className={`route-provider-pricing-columns ${configuredView ? 'route-provider-pricing-configured' : ''}`}>
 				<span>{t('pricingPeriod')}</span>
 				{configuredView ? (
@@ -493,7 +525,7 @@ function PriorityTierPanel({
 	const t = useTranslations('routes.flow');
 	const tStrategy = useTranslations('routes.strategy');
 	const isList = density === 'list';
-	const activeCount = routes.filter(route => route.status === 'active').length;
+	const availableCount = routes.filter(route => isRouteConfigurationAvailable(route, providerMeta.get(route.provider_id))).length;
 	const strategy = resolveEffectiveRouteStrategy({
 		poolStrategy: section.poolStrategy,
 		poolTierStrategies: section.poolTierStrategies,
@@ -518,8 +550,13 @@ function PriorityTierPanel({
 	return (
 		<div className="w-full min-w-0">
 			<div className={isList ? `flex min-w-0 flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2 ${layerIndex > 0 ? 'border-t border-t-slate-200' : ''}` : 'mb-3 flex min-w-0 flex-wrap items-center gap-2 px-0.5 py-1'}>
-				<span className="rounded bg-slate-200/70 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
-					P{priority}
+				<span
+					className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50 px-2 text-indigo-800"
+					title={t('badgePriorityTooltip', { value: priority })}
+					aria-label={t('badgePriorityTooltip', { value: priority })}
+				>
+					<ArrowsUpDownIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+					<span className="text-sm font-bold tabular-nums">{priority}</span>
 				</span>
 				{layerIndex > 0 ? (
 					<button type="button" onClick={onOpenFailover} title={t('failoverRules')} aria-label={t('failoverRules')} className="inline-flex items-center gap-1 rounded text-[11px] font-medium text-slate-600 hover:text-blue-700 focus-visible:outline-blue-500">
@@ -528,14 +565,14 @@ function PriorityTierPanel({
 					</button>
 				) : <span className="text-[11px] font-semibold text-slate-700">{layerLabel}</span>}
 				<span
-					className={`text-[10px] tabular-nums ${activeCount > 0 ? 'text-slate-500' : 'font-medium text-amber-700'}`}
-					title={t('tierActiveTotal', {
-						active: activeCount,
+					className={`text-[10px] tabular-nums ${availableCount > 0 ? 'text-slate-500' : 'font-medium text-amber-700'}`}
+					title={t('tierAvailableTooltip', {
+						active: availableCount,
 						total: routes.length,
 					})}
 				>
 					{t('tierActiveTotal', {
-						active: activeCount,
+						active: availableCount,
 						total: routes.length,
 					})}
 				</span>
@@ -822,7 +859,7 @@ function FlowSection({
 	const t = useTranslations('routes.flow');
 
 	return (
-		<div className="bg-slate-50/70 px-3 sm:px-4">
+		<div className="px-3 sm:px-4">
 			<div className="xl:grid xl:grid-cols-[minmax(160px,210px)_minmax(0,1fr)]">
 				<div className="relative flex min-w-0 flex-col justify-center py-3 xl:pr-8">
 					<RequestSurfaceNode surface={surface} modelId={card.model_id} />
@@ -961,7 +998,7 @@ export function RouteModelFlow(props: Props) {
 				</div>
 			</header>
 
-			<div className="divide-y divide-slate-200/80 bg-slate-100/60 px-3 py-3 sm:px-4">
+			<div className="divide-y divide-slate-300/80 bg-slate-200/80 px-3 py-3 sm:px-4">
 				{surfaceGroups.length ? surfaceGroups.map((surface) => (
 					<FlowSection
 						key={surface.key}
