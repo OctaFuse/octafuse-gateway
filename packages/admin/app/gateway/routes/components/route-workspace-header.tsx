@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import type { StickyRefreshIntervalMs } from '../sticky-refresh-preference';
 import type { RouteFlowDensity, RouteWorkspaceView } from '../types';
 import { StickyRefreshControl } from './sticky-refresh-control';
+import { useRoutePricingDisplay } from '../use-route-pricing-display';
 
 type Props = {
 	visibleModelCount: number;
@@ -26,6 +27,7 @@ function viewSwitchButtonClass(active: boolean) {
 export function RouteWorkspaceHeader(props: Props) {
 	const { visibleModelCount, visibleRouteCount, density, onDensityChange, view, onViewChange, stickyRefreshIntervalMs } = props;
 	const t = useTranslations('routes.workspace');
+	const [pricingDisplay, setPricingDisplay] = useRoutePricingDisplay();
 
 	return (
 		<div className="md:sticky md:top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm sm:px-6">
@@ -76,6 +78,23 @@ export function RouteWorkspaceHeader(props: Props) {
 							>
 								<Icon className="h-4 w-4 shrink-0" aria-hidden />
 								{t(value === 'list' ? 'densityList' : 'densityCards')}
+							</button>
+						))}
+					</div>
+				</div>
+				<div className="flex items-center gap-2" role="group" aria-label={t('pricingDisplayLabel')}>
+					<span className="shrink-0 text-xs text-slate-500">{t('pricingDisplayLabel')}</span>
+					<div className={VIEW_SWITCH_GROUP_CLASS}>
+						{(['effective', 'configured'] as const).map(value => (
+							<button
+								key={value}
+								type="button"
+								onClick={() => setPricingDisplay(value)}
+								aria-pressed={pricingDisplay === value}
+								title={t(value === 'effective' ? 'pricingDisplayEffectiveHint' : 'pricingDisplayConfiguredHint')}
+								className={viewSwitchButtonClass(pricingDisplay === value)}
+							>
+								{t(value === 'effective' ? 'pricingDisplayEffective' : 'pricingDisplayConfigured')}
 							</button>
 						))}
 					</div>

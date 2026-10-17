@@ -957,6 +957,11 @@
 			"viewByModel": "按模型",
 			"viewOverviewHint": "一张流转图汇总全部模型：请求入口 → 模型 → 路由组 → 上游",
 			"viewByModelHint": "按模型拆开拓扑，便于排查单个模型的接线",
+			"pricingDisplayLabel": "倍率显示",
+			"pricingDisplayEffective": "实际倍率",
+			"pricingDisplayConfigured": "原始倍率",
+			"pricingDisplayEffectiveHint": "显示当前生效的供应商倍率与计费、成本倍率合成后的结果",
+			"pricingDisplayConfiguredHint": "分别显示原始设置的供应商、计费和成本倍率",
 			"stickyRefreshShortLabel": "自动刷新",
 			"stickyRefreshLabel": "Sticky 数据自动刷新",
 			"stickyRefreshOff": "关闭自动刷新",
@@ -1031,13 +1036,20 @@
 			"providerFactorDeadlineMarker": "供应商倍率设有有效期，悬浮查看详情。",
 			"providerFactorTimezone": "业务时区：{timezone}",
 			"effectivePricing": {
+				"charged": "实际计费",
+				"metered": "实际成本",
 				"chargedFormula": "实际计费倍率：供应商 {provider} × 计费 {configured} = {effective}",
 				"meteredFormula": "实际成本倍率：供应商 {provider} × 成本 {configured} = {effective}",
 				"invalidValidity": "有效期无效",
 				"breakdown": {
 					"validity": "供应商倍率有效期",
-					"unlimited": "不限时间"
-				}
+					"unlimited": "不限时间",
+					"applied": "已合成供应商倍率",
+					"notApplied": "供应商倍率未生效 · 按 ×1 计算",
+					"standard": "供应商倍率为 ×1",
+					"basis": "相对于该时段刊例价；不含用户专属倍率。各行按当前日期预览。"
+				},
+				"inactiveProvider": "供应商倍率当前不生效，计算时按 ×1。"
 			},
 			"pricingCharged": "计费倍率",
 			"pricingMetered": "成本倍率",

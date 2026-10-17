@@ -957,6 +957,11 @@
 			"viewByModel": "모델별",
 			"viewOverviewHint": "모든 모델을 한 흐름으로: 요청 진입점 → 모델 → 라우트 그룹 → 업스트림",
 			"viewByModelHint": "모델별로 토폴로지를 나눠 단일 모델 배선을 점검",
+			"pricingDisplayLabel": "배율 표시",
+			"pricingDisplayEffective": "실효 배율",
+			"pricingDisplayConfigured": "설정 배율",
+			"pricingDisplayEffectiveHint": "현재 유효한 공급자 배율을 적용한 청구 및 원가 배율 표시",
+			"pricingDisplayConfiguredHint": "설정된 공급자, 청구 및 원가 배율을 각각 표시",
 			"stickyRefreshShortLabel": "자동 새로고침",
 			"stickyRefreshLabel": "Sticky 데이터 자동 새로고침",
 			"stickyRefreshOff": "자동 새로고침 끄기",
@@ -1031,13 +1036,20 @@
 			"providerFactorDeadlineMarker": "공급자 배율에 유효 기간이 있습니다. 마우스를 올려 자세히 확인하세요.",
 			"providerFactorTimezone": "업무 시간대: {timezone}",
 			"effectivePricing": {
+				"charged": "실효 청구",
+				"metered": "실효 원가",
 				"chargedFormula": "실효 청구 배율: 공급자 {provider} × 청구 {configured} = {effective}",
 				"meteredFormula": "실효 원가 배율: 공급자 {provider} × 원가 {configured} = {effective}",
 				"invalidValidity": "유효 기간 오류",
 				"breakdown": {
 					"validity": "공급자 배율 유효 기간",
-					"unlimited": "기간 제한 없음"
-				}
+					"unlimited": "기간 제한 없음",
+					"applied": "공급자 배율 반영됨",
+					"notApplied": "공급자 배율 미적용 · ×1로 계산",
+					"standard": "공급자 배율은 ×1",
+					"basis": "해당 시간대 카탈로그 가격 기준이며 사용자별 배율은 포함하지 않습니다. 모든 행은 현재 날짜 기준 미리 보기입니다."
+				},
+				"inactiveProvider": "공급자 배율이 현재 적용되지 않아 ×1로 계산합니다."
 			},
 			"pricingCharged": "청구 배율",
 			"pricingMetered": "원가 배율",

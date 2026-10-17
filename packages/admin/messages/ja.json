@@ -957,6 +957,11 @@
 			"viewByModel": "モデル別",
 			"viewOverviewHint": "全モデルを1枚のフローにまとめる：リクエスト入口 → モデル → ルートグループ → 上流",
 			"viewByModelHint": "モデルごとにトポロジーを分け、単一モデルの配線確認向け",
+			"pricingDisplayLabel": "倍率表示",
+			"pricingDisplayEffective": "実効倍率",
+			"pricingDisplayConfigured": "設定倍率",
+			"pricingDisplayEffectiveHint": "現在有効なプロバイダー倍率を適用した請求・原価倍率を表示",
+			"pricingDisplayConfiguredHint": "設定したプロバイダー・請求・原価倍率をそれぞれ表示",
 			"stickyRefreshShortLabel": "自動更新",
 			"stickyRefreshLabel": "Sticky データの自動更新",
 			"stickyRefreshOff": "自動更新オフ",
@@ -1031,13 +1036,20 @@
 			"providerFactorDeadlineMarker": "プロバイダ倍率には有効期間があります。ホバーで詳細を表示します。",
 			"providerFactorTimezone": "業務タイムゾーン：{timezone}",
 			"effectivePricing": {
+				"charged": "実効課金",
+				"metered": "実効原価",
 				"chargedFormula": "実効課金倍率：プロバイダー {provider} × 課金 {configured} = {effective}",
 				"meteredFormula": "実効原価倍率：プロバイダー {provider} × 原価 {configured} = {effective}",
 				"invalidValidity": "有効期間が不正です",
 				"breakdown": {
 					"validity": "プロバイダー倍率の有効期間",
-					"unlimited": "期間制限なし"
-				}
+					"unlimited": "期間制限なし",
+					"applied": "プロバイダー倍率を合成済み",
+					"notApplied": "プロバイダー倍率は無効 · ×1 で計算",
+					"standard": "プロバイダー倍率は ×1",
+					"basis": "この時間帯のカタログ価格が基準です。ユーザー固有倍率は含みません。各行は現在日時でのプレビューです。"
+				},
+				"inactiveProvider": "プロバイダー倍率は現在無効のため、×1 で計算します。"
 			},
 			"pricingCharged": "請求倍率",
 			"pricingMetered": "原価倍率",

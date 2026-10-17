@@ -21,11 +21,9 @@ import {
 	providerFactorChipClass,
 	resolveRouteScheduleDisplay,
 } from '../route-utils';
+import { useRoutePricingDisplay } from '../use-route-pricing-display';
 
-/**
- * One line per period, showing the factors as maintained on the route:
- * provider factor, billing multiplier and cost multiplier (all relative to that period's catalog price).
- */
+/** One line per period, showing effective results or the three configured factors. */
 export function RouteTargetPricing({
 	priceOverride,
 	onEdit,
@@ -38,6 +36,8 @@ export function RouteTargetPricing({
 	const t = useTranslations('routes.flow');
 	const modal = useTranslations('routes.modal');
 	const list = useTranslations('routes.listItem');
+	const [pricingDisplay] = useRoutePricingDisplay();
+	const configuredView = pricingDisplay === 'configured';
 	const locale = useLocale();
 	const timezone = useBusinessTimezone();
 	const now = useNow({ updateInterval: 1000 });
@@ -78,19 +78,19 @@ export function RouteTargetPricing({
 
 	return (
 		<div className={compact ? 'route-provider-list-pricing min-w-0 py-0.5 pr-0.5' : 'overflow-x-auto border-t border-slate-100 px-2.5 py-1.5'}>
-			<div className={compact ? 'route-provider-pricing-columns min-w-0' : 'grid min-w-0 grid-cols-[minmax(0,1fr)_repeat(3,3.25rem)] gap-x-1'}>
+			<div className={compact ? `route-provider-pricing-columns min-w-0 ${configuredView ? 'route-provider-pricing-configured' : ''}` : `grid min-w-0 gap-x-1 ${configuredView ? 'grid-cols-[minmax(0,1fr)_repeat(3,3.25rem)]' : 'grid-cols-[minmax(0,1fr)_repeat(2,4.5rem)]'}`}>
 				<div className={`${compact ? 'route-provider-price-heading' : ''} ${columns} pb-1.5 text-[10px] leading-4 text-slate-500`}>
 					<span className="inline-flex items-center gap-1">
 						<ClockIcon className="h-3 w-3" aria-hidden />{t('pricingPeriod')}
 					</span>
-					{([
+					{configuredView ? ([
 						['pricingProviderFactor', modal('providerFactor')],
 						['pricingBillingMultiplier', modal('editor.chargedFactorLabel')],
 						['pricingCostMultiplier', modal('editor.meteredFactorLabel')],
 					] as const).map(([key, full]) => (
-						<span key={key} className="inline-flex items-center justify-end whitespace-nowrap" title={full}>
-							{t(key)}
-						</span>
+						<span key={key} className="inline-flex items-center justify-end whitespace-nowrap" title={full}>{t(key)}</span>
+					)) : (['charged', 'metered'] as const).map(side => (
+						<span key={side} className="inline-flex items-center justify-end gap-1 whitespace-nowrap">{t(`effectivePricing.${side}`)}</span>
 					))}
 				</div>
 				{[null, ...windows].map((window, position) => {
@@ -106,6 +106,8 @@ export function RouteTargetPricing({
 					const period = window ? `${formatScheduleRange(window.start, window.end)} ${formatDays(window.days)}`
 						: modal(windows.length ? 'editor.otherPeriods' : 'editor.allPeriods');
 					const isCurrent = windows.length > 0 && currentIndex === position - 1;
+					const providerApplied = active && provider !== 1;
+					const providerStatus = t(`effectivePricing.breakdown.${!active ? 'notApplied' : providerApplied ? 'applied' : 'standard'}`);
 					const validityInfo = [
 						validity.providerStartsAt ? `${modal('providerFactorStarts')}: ${dateFormatter.format(new Date(validity.providerStartsAt))}` : '',
 						validity.providerExpiresAt ? `${modal('providerFactorExpires')}: ${dateFormatter.format(new Date(validity.providerExpiresAt))}` : '',
@@ -115,10 +117,10 @@ export function RouteTargetPricing({
 					const factors = (['charged', 'metered'] as const).map(side => {
 						const configured = side === 'charged' ? window?.charged_factor ?? bases.chargedFactor : window?.metered_factor ?? bases.meteredFactor;
 						const effective = normalizeScheduleFactor(effectiveProvider * configured);
-						const tooltip = t(`effectivePricing.${side}Formula`, {
+						const formula = t(`effectivePricing.${side}Formula`, {
 							provider: formatFactorMultiplier(effectiveProvider), configured: formatFactorMultiplier(configured), effective: formatFactorMultiplier(effective),
 						});
-						return { side, configured, tooltip };
+						return { side, effective, configured, tooltip: `${period} · ${providerStatus} · ${formula}` };
 					});
 					return (
 						<div key={position} className={`${columns} w-full ${compact ? 'min-h-6' : 'min-h-8'} py-1 text-left text-[11px] transition hover:bg-slate-50 ${compact ? '' : 'border-t border-dashed border-slate-100'}`}>
@@ -135,37 +137,66 @@ export function RouteTargetPricing({
 									{isCurrent && <span className="rounded bg-blue-50 px-1 text-[9px] font-medium leading-4 text-blue-600">{modal('catalogScheduleNow')}</span>}
 								</button>
 							</div>
-							<span className="inline-flex justify-self-end">
-								<InfoHintPopover label={`${modal('providerFactor')} ${formatFactorMultiplier(provider)}`} openOnHover portal icon={
-									<span className={`relative ${providerFactorChipClass(provider, active)}`}>
-										{formatFactorMultiplierForChip(provider)}
-										{hasValidity && (
-											<span
-												className={`absolute -right-1.5 -top-1.5 inline-flex h-3 w-3 items-center justify-center rounded-full bg-white ring-1 ${invalidOrInactive ? 'text-amber-500 ring-amber-300' : 'text-sky-500 ring-sky-300'}`}
-												title={t('providerFactorDeadlineMarker')}
-											>
-												<ClockIcon className="h-2.5 w-2.5" aria-hidden />
-											</span>
-										)}
-									</span>
-								}>
-									<p className="font-semibold text-slate-900">{modal('providerFactor')}</p>
-									<p className="mt-1 text-[11px] text-slate-500">{period}</p>
-									<p className={`mt-2 text-[11px] ${invalidOrInactive ? 'text-amber-700' : 'text-slate-600'}`}>
-										{formatFactorMultiplier(provider)} · {timing}
-									</p>
-									<div className="mt-3 border-t border-slate-100 pt-2 text-[11px] leading-5 text-slate-500">
-										<p className="font-medium text-slate-700">{t('effectivePricing.breakdown.validity')}</p>
-										{validity.providerWindowInvalid ? <p>{t('effectivePricing.invalidValidity')}</p> : validityInfo.length ? validityInfo.map(line => <p key={line}>{line}</p>) : <p>{t('effectivePricing.breakdown.unlimited')}</p>}
-										{validityInfo.length > 0 && <p className="mt-1">{t('providerFactorTimezone', { timezone })}</p>}
-									</div>
-								</InfoHintPopover>
-							</span>
-							{factors.map(({ side, configured, tooltip }) => (
+							{configuredView ? (
+								<span className="inline-flex justify-self-end">
+									<InfoHintPopover label={`${modal('providerFactor')} ${formatFactorMultiplier(provider)}`} openOnHover portal icon={
+										<span className={`relative ${providerFactorChipClass(provider, active)}`}>
+											{formatFactorMultiplierForChip(provider)}
+											{hasValidity && (
+												<span
+													className={`absolute -right-1.5 -top-1.5 inline-flex h-3 w-3 items-center justify-center rounded-full bg-white ring-1 ${invalidOrInactive ? 'text-amber-500 ring-amber-300' : 'text-sky-500 ring-sky-300'}`}
+													title={t('providerFactorDeadlineMarker')}
+												>
+													<ClockIcon className="h-2.5 w-2.5" aria-hidden />
+												</span>
+											)}
+										</span>
+									}>
+										<p className="font-semibold text-slate-900">{modal('providerFactor')}</p>
+										<p className="mt-1 text-[11px] text-slate-500">{period}</p>
+										<p className={`mt-2 text-[11px] ${invalidOrInactive ? 'text-amber-700' : 'text-slate-600'}`}>
+											{formatFactorMultiplier(provider)} · {timing}
+										</p>
+										<div className="mt-3 border-t border-slate-100 pt-2 text-[11px] leading-5 text-slate-500">
+											<p className="font-medium text-slate-700">{t('effectivePricing.breakdown.validity')}</p>
+											{validity.providerWindowInvalid ? <p>{t('effectivePricing.invalidValidity')}</p> : validityInfo.length ? validityInfo.map(line => <p key={line}>{line}</p>) : <p>{t('effectivePricing.breakdown.unlimited')}</p>}
+											{validityInfo.length > 0 && <p className="mt-1">{t('providerFactorTimezone', { timezone })}</p>}
+										</div>
+									</InfoHintPopover>
+								</span>
+							) : null}
+							{factors.map(({ side, effective, configured, tooltip }) => (
 								<span key={side} className="inline-flex justify-self-end">
-									<span className={factorChipClassForValue(configured, side)} title={tooltip}>
-										{formatFactorMultiplierForChip(configured)}
-									</span>
+									{configuredView ? (
+										<span className={factorChipClassForValue(configured, side)} title={tooltip}>{formatFactorMultiplierForChip(configured)}</span>
+									) : <InfoHintPopover label={tooltip} openOnHover portal icon={
+										<span className="inline-flex items-center gap-1">
+											{!active && <ClockIcon className="h-3 w-3 text-amber-500" aria-hidden />}
+											<span className={`relative ${factorChipClassForValue(effective, side)}`}>
+												{formatFactorMultiplierForChip(effective)}
+												{providerApplied && <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-violet-500 ring-1 ring-white" aria-hidden />}
+											</span>
+										</span>
+									}>
+										<p className="font-semibold text-slate-900">{t(`effectivePricing.${side}`)}</p>
+										<p className="mt-1 text-[11px] text-slate-500">{period}</p>
+										<p className={`mt-2 flex items-center gap-1.5 text-[11px] ${!active ? 'text-amber-700' : providerApplied ? 'text-violet-700' : 'text-slate-500'}`}>
+											{providerApplied && <span className="h-1.5 w-1.5 rounded-full bg-violet-500" aria-hidden />}
+											{providerStatus}
+										</p>
+										<dl className="mt-3 space-y-2 border-t border-slate-100 pt-3 text-xs">
+											<div className="flex justify-between gap-3"><dt>{modal('providerFactor')}</dt><dd className="text-right tabular-nums">{formatFactorMultiplier(provider)} · {timing}</dd></div>
+											<div className="flex justify-between gap-3"><dt>{modal(side === 'charged' ? 'editor.chargedFactorLabel' : 'editor.meteredFactorLabel')}</dt><dd className="font-mono tabular-nums">{formatFactorMultiplier(configured)}</dd></div>
+										</dl>
+										{!active && <p className="mt-2 text-[11px] leading-5 text-amber-700">{t('effectivePricing.inactiveProvider')}</p>}
+										<p className="mt-3 rounded bg-slate-50 px-2 py-2 font-mono text-sm font-semibold tabular-nums text-slate-900">{effectiveProvider} × {configured} = {effective}</p>
+										<div className="mt-3 border-t border-slate-100 pt-2 text-[11px] leading-5 text-slate-500">
+											<p className="font-medium text-slate-700">{t('effectivePricing.breakdown.validity')}</p>
+											{validity.providerWindowInvalid ? <p>{t('effectivePricing.invalidValidity')}</p> : validityInfo.length ? validityInfo.map(line => <p key={line}>{line}</p>) : <p>{t('effectivePricing.breakdown.unlimited')}</p>}
+											{validityInfo.length > 0 && <p>{t('providerFactorTimezone', { timezone })}</p>}
+											<p className="mt-2">{t('effectivePricing.breakdown.basis')}</p>
+										</div>
+									</InfoHintPopover>}
 								</span>
 							))}
 						</div>

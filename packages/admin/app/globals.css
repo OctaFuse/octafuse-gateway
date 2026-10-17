@@ -152,8 +152,13 @@
 .route-provider-pricing-columns {
   display: grid;
   max-width: 20rem;
-  grid-template-columns: minmax(0, 1fr) repeat(3, 3.25rem);
+  grid-template-columns: minmax(0, 1fr) repeat(2, 4.5rem);
   gap: 0 0.5rem;
+}
+
+/* Keep the same pricing area while switching between effective and configured factors. */
+.route-provider-pricing-columns.route-provider-pricing-configured {
+  grid-template-columns: minmax(0, 1fr) repeat(3, 3.25rem);
 }
 
 .route-provider-list-header .route-provider-pricing-columns {

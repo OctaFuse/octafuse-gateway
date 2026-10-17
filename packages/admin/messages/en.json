@@ -957,6 +957,11 @@
 			"viewByModel": "By model",
 			"viewOverviewHint": "One flow of all models: request surface → model → route group → upstream",
 			"viewByModelHint": "Per-model topology for debugging a single model's wiring",
+			"pricingDisplayLabel": "Multipliers",
+			"pricingDisplayEffective": "Effective",
+			"pricingDisplayConfigured": "Configured",
+			"pricingDisplayEffectiveHint": "Show billing and cost multipliers after applying the active provider factor",
+			"pricingDisplayConfiguredHint": "Show the configured provider, billing and cost multipliers separately",
 			"stickyRefreshShortLabel": "Auto-refresh",
 			"stickyRefreshLabel": "Sticky data auto-refresh",
 			"stickyRefreshOff": "Auto-refresh off",
@@ -1031,13 +1036,20 @@
 			"providerFactorDeadlineMarker": "Provider factor has a validity window. Hover for details.",
 			"providerFactorTimezone": "Business time zone: {timezone}",
 			"effectivePricing": {
+				"charged": "Actual bill",
+				"metered": "Actual cost",
 				"chargedFormula": "Effective billing multiplier: provider {provider} × billing {configured} = {effective}",
 				"meteredFormula": "Effective cost multiplier: provider {provider} × cost {configured} = {effective}",
 				"invalidValidity": "Invalid validity period",
 				"breakdown": {
 					"validity": "Provider multiplier validity",
-					"unlimited": "No time limit"
-				}
+					"unlimited": "No time limit",
+					"applied": "Provider multiplier included",
+					"notApplied": "Provider multiplier inactive · using ×1",
+					"standard": "Provider multiplier is ×1",
+					"basis": "Relative to this period’s catalog price; excludes user-specific multipliers. All rows are previewed as of now."
+				},
+				"inactiveProvider": "The provider multiplier is inactive; ×1 is used in this calculation."
 			},
 			"pricingCharged": "Charged",
 			"pricingMetered": "Metered",
