@@ -822,7 +822,7 @@ function FlowSection({
 	const t = useTranslations('routes.flow');
 
 	return (
-		<div className="bg-slate-50/70 px-3 sm:px-4">
+		<div className="px-3 sm:px-4">
 			<div className="xl:grid xl:grid-cols-[minmax(160px,210px)_minmax(0,1fr)]">
 				<div className="relative flex min-w-0 flex-col justify-center py-3 xl:pr-8">
 					<RequestSurfaceNode surface={surface} modelId={card.model_id} />
@@ -961,7 +961,7 @@ export function RouteModelFlow(props: Props) {
 				</div>
 			</header>
 
-			<div className="divide-y divide-slate-200/80 bg-slate-100/60 px-3 py-3 sm:px-4">
+			<div className="divide-y divide-slate-300/80 bg-slate-200/80 px-3 py-3 sm:px-4">
 				{surfaceGroups.length ? surfaceGroups.map((surface) => (
 					<FlowSection
 						key={surface.key}

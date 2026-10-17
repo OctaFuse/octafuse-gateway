@@ -464,7 +464,7 @@ function SurfaceCatalogSection({
 				<div className="hidden grid-cols-[210px_220px_200px_minmax(0,1fr)] gap-0 border-b border-slate-100 bg-slate-50/70 px-4 py-2 text-[10px] font-medium uppercase tracking-wider text-slate-400 2xl:grid">
 					{['catalogColumnSurface', 'catalogColumnModel', 'catalogColumnGroup', 'catalogColumnProvider'].map(key => <span key={key}>{t(key)}</span>)}
 				</div>
-			<div className="bg-slate-50/70 px-3 sm:px-4">
+			<div className="bg-slate-200/80 px-3 sm:px-4">
 				<div className="xl:grid xl:grid-cols-[minmax(160px,210px)_minmax(0,1fr)]">
 					<div className="relative flex min-w-0 flex-col justify-center py-3 xl:pr-4">
 						<RequestSurfaceNode surface={surface} />
