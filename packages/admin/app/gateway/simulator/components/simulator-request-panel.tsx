@@ -287,7 +287,11 @@ export function SimulatorRequestPanel({
 			{showAudioTranscriptions ? (
 				<div className="space-y-2">
 					<p className="text-xs text-gray-500">
-						{showAudioRealtimeMicrophone ? t('audioRealtimeDashScopeHint') : t('audioTranscriptionsHint')}
+						{showAudioRealtimeMicrophone
+							? t('audioRealtimeDashScopeHint')
+							: protocol === 'elevenlabs'
+							? t('audioTranscriptionsElevenLabsHint')
+							: t('audioTranscriptionsHint')}
 					</p>
 					{showAudioRealtimeMicrophone ? (
 						<fieldset className="flex flex-wrap items-center gap-4 rounded-md border border-gray-200 px-3 py-2 text-sm">
@@ -357,6 +361,8 @@ export function SimulatorRequestPanel({
 						? t('audioSpeechDashScopeHint')
 						: protocol === 'minimax'
 						? t('audioSpeechMiniMaxHint')
+						: protocol === 'elevenlabs'
+						? t('audioSpeechElevenLabsHint')
 						: t('audioSpeechHint')}
 				</p>
 			) : null}

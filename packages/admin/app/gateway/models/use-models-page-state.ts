@@ -326,19 +326,24 @@ export function useModelsPageState() {
 		void loadImportCatalog();
 	}, [loadImportCatalog, selectedKind]);
 
+	const unpricedImportIds = useMemo(
+		() => new Set(importCatalogRows.filter((r) => !r.pricing_available).map((r) => r.id)),
+		[importCatalogRows]
+	);
+
 	const toggleImportPreset = useCallback(
 		(id: string) => {
-			if (existingModelIds.has(id)) return;
+			if (existingModelIds.has(id) || unpricedImportIds.has(id)) return;
 			setImportSelected((prev) => ({ ...prev, [id]: !prev[id] }));
 		},
-		[existingModelIds]
+		[existingModelIds, unpricedImportIds]
 	);
 
 	const selectAllImportPresets = useCallback(() => {
 		setImportSelected((prev) => {
 			const next = { ...prev };
 			for (const row of filteredImportCatalogRows) {
-				if (!existingModelIds.has(row.id)) {
+				if (!existingModelIds.has(row.id) && row.pricing_available) {
 					next[row.id] = true;
 				}
 			}
@@ -352,7 +357,7 @@ export function useModelsPageState() {
 
 	const runImportSelectedPresets = useCallback(async () => {
 		const ids = importCatalogRows
-			.filter((r) => importSelected[r.id] && !existingModelIds.has(r.id))
+			.filter((r) => importSelected[r.id] && !existingModelIds.has(r.id) && r.pricing_available)
 			.map((r) => r.id);
 		if (ids.length === 0) {
 			notify('error', tImport('selectNone'));

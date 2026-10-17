@@ -1,6 +1,9 @@
 import {
 	AUDIO_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	ELEVENLABS_OPENAI_SPEECH_BODY_TEMPLATE,
+	ELEVENLABS_SPEECH_BODY_TEMPLATE,
+	ELEVENLABS_TRANSCRIPTIONS_BODY_TEMPLATE,
 	MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE,
 	MINIMAX_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE,
@@ -171,6 +174,11 @@ export function typicalPlaygroundDriverHeaders(protocol?: string | null): Record
 				'Content-Type': 'application/json',
 				Authorization: 'Bearer ••••••••',
 			};
+		case 'elevenlabs':
+			return {
+				'Content-Type': 'application/json',
+				'xi-api-key': '••••••••',
+			};
 		default:
 			return {
 				'Content-Type': 'application/json',
@@ -278,7 +286,7 @@ export function templateForRoute(
 	}
 	const isAudio = kind === 'asr' || kind === 'tts';
 	const isAudioTranscription = kind === 'asr';
-	const isAudioHttp = proto === 'openai' || proto === 'dashscope' || proto === 'minimax';
+	const isAudioHttp = proto === 'openai' || proto === 'dashscope' || proto === 'minimax' || proto === 'elevenlabs';
 	const realtime = isAudio && proto === 'dashscope' && isDashScopeRealtimeOperation(route.upstream_operation ?? '');
 	if (realtime) {
 		return route.upstream_operation?.startsWith('audio.speech.')
@@ -291,6 +299,7 @@ export function templateForRoute(
 	}
 	if (isAudio && isAudioHttp) {
 		if (isAudioTranscription) {
+			if (proto === 'elevenlabs' && route.adapter === 'passthrough') return ELEVENLABS_TRANSCRIPTIONS_BODY_TEMPLATE;
 			if (proto === 'dashscope' && route.adapter === 'passthrough' && route.upstream_operation === 'audio.transcriptions.async') {
 				return DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE;
 			}
@@ -310,6 +319,9 @@ export function templateForRoute(
 		}
 		if (proto === 'dashscope' && route.upstream_operation === 'audio.speech') {
 			return buildDashScopeSpeechBodyTemplate(route.provider_model_name);
+		}
+		if (proto === 'elevenlabs') {
+			return route.adapter === 'elevenlabs-tts' ? ELEVENLABS_OPENAI_SPEECH_BODY_TEMPLATE : ELEVENLABS_SPEECH_BODY_TEMPLATE;
 		}
 		if (proto === 'minimax' && route.adapter === 'minimax-tts') return MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE;
 		if (proto === 'minimax') return MINIMAX_SPEECH_BODY_TEMPLATE;

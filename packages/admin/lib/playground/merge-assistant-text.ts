@@ -3,7 +3,7 @@
  * 并将推理类字段与正文分列，便于区分。
  */
 
-export type PlaygroundProtocol = "openai" | "anthropic" | "gemini" | "dashscope" | "minimax" | "volcengine";
+export type PlaygroundProtocol = "openai" | "anthropic" | "gemini" | "dashscope" | "minimax" | "volcengine" | "elevenlabs";
 
 export type PlaygroundResponseParseMode = "sse" | "json" | "ndjson" | "text";
 
@@ -312,13 +312,13 @@ function mergeFromJsonObjectParts(
 	if (!o || typeof o !== "object") {
 		return parts;
 	}
-	if (protocol === "openai" || protocol === "dashscope") {
+	if (protocol === "openai" || protocol === "dashscope" || protocol === "elevenlabs") {
 		const object = o as Record<string, unknown>;
 		const responsesParts = extractOpenAiResponsesOutputParts(object);
 		if (responsesParts) {
 			return responsesParts;
 		}
-		// OpenAI Audio Transcriptions 返回顶层 text；DashScope 直连调试返回 output.text。
+		// OpenAI Audio Transcriptions / ElevenLabs speech-to-text 返回顶层 text；DashScope 直连调试返回 output.text。
 		if (typeof object.text === "string") {
 			parts.body = object.text;
 			return parts;

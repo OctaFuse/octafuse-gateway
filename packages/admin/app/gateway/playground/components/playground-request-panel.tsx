@@ -292,6 +292,12 @@ export function PlaygroundRequestPanel({
 						{t(
 							selectedUsesDashScopeRealtime
 								? 'audioRealtimeDashScopeHint'
+								: selected?.adapter === 'elevenlabs-tts'
+								? 'audioSpeechElevenLabsOpenAiHint'
+								: selected?.upstream_protocol === 'elevenlabs' && selectedIsAudioTranscription
+								? 'audioTranscriptionsElevenLabsHint'
+								: selected?.upstream_protocol === 'elevenlabs'
+								? 'audioSpeechElevenLabsHint'
 								: selected?.adapter === 'minimax-tts'
 								? 'audioSpeechMiniMaxOpenAiHint'
 								: selected?.upstream_protocol === 'minimax' && !selectedIsAudioTranscription

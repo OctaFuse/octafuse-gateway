@@ -33,9 +33,10 @@ const CHIP_DOT: Partial<Record<ProviderListFilter, string>> = {
 	dashscope: 'bg-violet-500',
 	minimax: 'bg-rose-500',
 	volcengine: 'bg-cyan-600',
+	elevenlabs: 'bg-neutral-800',
 };
 
-const PROTOCOL_FILTERS: readonly ProviderListFilter[] = ['openai', 'anthropic', 'gemini', 'dashscope', 'minimax', 'volcengine'];
+const PROTOCOL_FILTERS: readonly ProviderListFilter[] = ['openai', 'anthropic', 'gemini', 'dashscope', 'minimax', 'volcengine', 'elevenlabs'];
 
 export function ProviderToolbar(props: ProviderToolbarProps) {
 	const {
@@ -74,7 +75,8 @@ export function ProviderToolbar(props: ProviderToolbarProps) {
 			filter === 'gemini' ||
 			filter === 'dashscope' ||
 			filter === 'minimax' ||
-			filter === 'volcengine'
+			filter === 'volcengine' ||
+			filter === 'elevenlabs'
 		) {
 			return tUpstream(filter);
 		}

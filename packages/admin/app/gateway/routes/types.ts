@@ -229,6 +229,7 @@ export const PROTOCOL_DISPLAY_LABEL: Record<string, string> = {
 	dashscope: 'DashScope',
 	minimax: 'MiniMax',
 	volcengine: 'Volcengine',
+	elevenlabs: 'ElevenLabs',
 };
 
 export const ROUTE_GROUP_CARD_BADGE_CLASS = 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200';

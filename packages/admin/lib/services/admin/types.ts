@@ -251,6 +251,8 @@ export type AdminStaticModelPresetCatalogItem = {
 	tier_count: number;
 	/** 表格短文案（如 `¥12 / ¥36 /M` 或 `$2 / $8 /M`）。 */
 	pricing_label: string | null;
+	/** 当前计费币种的目录价分支是否存在；不存在时无法导入（例如只有 USD 刊例价的海外模型在 CNY 网关下）。 */
+	pricing_available: boolean;
 	/** 悬停详情：token 档位行（单位与 `BILLING_CURRENCY` 一致）。 */
 	pricing_preview: string | null;
 };

@@ -12,6 +12,16 @@ const EXPECTED_AUDIO_IDS = [
 	'cosyvoice-v3-plus',
 	'cosyvoice-v3.5-flash',
 	'cosyvoice-v3.5-plus',
+	'elevenlabs-flash-v2',
+	'elevenlabs-flash-v2.5',
+	'elevenlabs-multilingual-v2',
+	'elevenlabs-scribe-v2',
+	'elevenlabs-scribe-v2-medical',
+	'elevenlabs-turbo-v2.5',
+	'elevenlabs-v3',
+	'elevenlabs-v3-conversational',
+	'elevenlabs-v4',
+	'elevenlabs-v4-turbo',
 	'fun-asr',
 	'fun-asr-realtime',
 	'gpt-4o-mini-transcribe',
@@ -128,5 +138,34 @@ describe('static audio model presets (*-audio.json)', () => {
 		const cosy35 = byId.get('cosyvoice-v3.5-plus')!;
 		assert.equal(asPricing(cosy35.pricing.cny).audio?.price_per_character, 0.00015);
 		assert.equal(asPricing(cosy35.pricing.usd).audio?.price_per_character, 0.0000214285714);
+	});
+
+	it('locks ElevenLabs official USD list prices and CNY = USD × 7 placeholders', () => {
+		const byId = new Map(listStaticModelPresets().map((r) => [r.id, r]));
+		const perChar = (id: string) => asPricing(byId.get(id)!.pricing.usd).audio as { price_per_character: number };
+		assert.equal(perChar('elevenlabs-v4').price_per_character, 0.00008);
+		assert.equal(perChar('elevenlabs-v4-turbo').price_per_character, 0.00004);
+		assert.equal(perChar('elevenlabs-v3').price_per_character, 0.00008);
+		assert.equal(perChar('elevenlabs-v3-conversational').price_per_character, 0.00004);
+		assert.equal(perChar('elevenlabs-flash-v2').price_per_character, 0.00004);
+		assert.equal(perChar('elevenlabs-multilingual-v2').price_per_character, 0.00008);
+		assert.equal(perChar('elevenlabs-flash-v2.5').price_per_character, 0.00004);
+		assert.equal(perChar('elevenlabs-turbo-v2.5').price_per_character, 0.00004);
+		const scribe = byId.get('elevenlabs-scribe-v2')!;
+		assert.equal(asPricing(scribe.pricing.usd).audio_billing_mode, 'per_second');
+		assert.equal(
+			(asPricing(scribe.pricing.usd).audio as { price_per_second: number }).price_per_second,
+			0.00006111
+		);
+		assert.equal(
+			(asPricing(scribe.pricing.cny).audio as { price_per_second: number }).price_per_second,
+			0.00042777
+		);
+		const perCharCny = (id: string) => asPricing(byId.get(id)!.pricing.cny).audio as { price_per_character: number };
+		assert.equal(perCharCny('elevenlabs-v4').price_per_character, 0.00056);
+		assert.equal(perCharCny('elevenlabs-v4-turbo').price_per_character, 0.00028);
+		assert.equal(perCharCny('elevenlabs-flash-v2.5').price_per_character, 0.00028);
+		assert.deepEqual(byId.get('elevenlabs-scribe-v2-medical')!.pricing.usd, scribe.pricing.usd);
+		assert.deepEqual(byId.get('elevenlabs-scribe-v2-medical')!.pricing.cny, scribe.pricing.cny);
 	});
 });

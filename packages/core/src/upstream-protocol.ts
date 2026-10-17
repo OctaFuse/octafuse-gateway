@@ -2,7 +2,7 @@
  * 上游协议枚举与 OpenAI Images URL 派生。
  * Provider 端点解析见 `provider-endpoints.ts`（`providers.endpoints` JSON）。
  */
-export type UpstreamProtocol = 'openai' | 'anthropic' | 'gemini' | 'dashscope' | 'minimax' | 'volcengine';
+export type UpstreamProtocol = 'openai' | 'anthropic' | 'gemini' | 'dashscope' | 'minimax' | 'volcengine' | 'elevenlabs';
 
 /** 允许写入 D1 或参与校验的协议字面量列表。 */
 export const UPSTREAM_PROTOCOLS: readonly UpstreamProtocol[] = [
@@ -12,6 +12,7 @@ export const UPSTREAM_PROTOCOLS: readonly UpstreamProtocol[] = [
 	'dashscope',
 	'minimax',
 	'volcengine',
+	'elevenlabs',
 ] as const;
 
 const PROTOCOL_LIST = UPSTREAM_PROTOCOLS.join(', ');
@@ -33,7 +34,8 @@ export function normalizeUpstreamProtocol(raw: string): UpstreamProtocol {
 		v === 'openai' ||
 		v === 'dashscope' ||
 		v === 'minimax' ||
-		v === 'volcengine'
+		v === 'volcengine' ||
+		v === 'elevenlabs'
 	) {
 		return v;
 	}

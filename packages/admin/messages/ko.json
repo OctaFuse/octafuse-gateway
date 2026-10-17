@@ -359,6 +359,7 @@
 		"dashscope": "DashScope",
 		"minimax": "MiniMax",
 		"volcengine": "Volcengine",
+		"elevenlabs": "ElevenLabs",
 		"protocolUnknown": "프로토콜: {protocol}",
 		"endpointCopyTitle": "{label} — {url} (클릭하여 복사)"
 	},
@@ -510,6 +511,7 @@
 			"dashscopeOptional": "DashScope",
 			"minimaxOptional": "MiniMax",
 			"volcengineOptional": "Volcengine",
+			"elevenlabsOptional": "ElevenLabs",
 			"baseUrl": "Base URL",
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
@@ -524,6 +526,8 @@
 			"minimaxHint": "Base만 있으면 음성 인식은 '{base}'/speech_to_text, 음성 합성은 '{base}'/t2a_v2, 이미지 생성은 '{base}'/image_generation 으로 파생됩니다. 국제 호스트는 api.minimax.io 입니다. 동영상과 음악 엔드포인트는 아직 없습니다.",
 			"volcenginePlaceholder": "https://ark.cn-beijing.volces.com/api/v3",
 			"volcengineHint": "Base만 있으면 Seedream 이미지 생성은 '{base}'/images/generations 이 됩니다. 중국 Ark는 ark.cn-beijing.volces.com, BytePlus ModelArk는 ark.ap-southeast.bytepluses.com 입니다. 채팅은 OpenAI 엔드포인트 설정을 그대로 씁니다.",
+			"elevenlabsPlaceholder": "https://api.elevenlabs.io/v1",
+			"elevenlabsHint": "Base만 있으면 음성 전사는 '{base}'/speech-to-text, 음성 합성은 '{base}'/text-to-speech/'{voice_id}' 로 파생됩니다. 음성 ID는 경로 매개변수로 요청마다 채워집니다. EU 데이터 상주는 api.eu.residency.elevenlabs.io 입니다. WebSocket, 음성 관리, 더빙, 효과음, 음악 엔드포인트는 아직 없습니다.",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
 			"dashscopeHint": "Base만 입력하면 아래의 DashScope HTTP·WSS 엔드포인트(filetrans, 핫워드, 음성 포함)를 모두 생성합니다. 일부 기능만 제공하는 플랜(예: Qwen Token Plan)은 Base를 비우고 URL 재정의에서 지원하는 엔드포인트만 입력하세요. 워크스페이스 엔드포인트는 해당 DashScope 호스트를 입력하세요.",
 			"advancedToggle": "URL 재정의",
@@ -532,9 +536,12 @@
 			"advancedHintDashscope": "전체 URL을 입력하세요. 엔드포인트는 기능별로 나뉘며 한 모델은 그중 하나만 사용합니다. 여러 항목이 같은 업스트림 URL(예: multimodal-generation)을 가리킬 수 있지만 각각 켜고 끌 수 있도록 분리되어 있습니다. Base가 있으면 빈 항목은 생성된 URL을 사용하고, Base가 없으면 빈 항목은 지원하지 않음을 뜻합니다.",
 			"advancedHintMinimax": "전체 URL을 입력합니다. Base가 있는 항목은 비워 두면 게이트웨이가 speech_to_text, t2a_v2, image_generation 을 만듭니다.",
 			"advancedHintVolcengine": "전체 URL을 입력합니다. Base가 있으면 비워 두고, 게이트웨이가 images/generations 를 만듭니다.",
+			"advancedHintElevenlabs": "전체 URL을 입력하세요. Base가 있으면 비워 두세요. 게이트웨이가 speech-to-text 또는 text-to-speech/'{voice_id}'를 파생합니다. 사용자 지정 음성 합성 URL에는 '{voice_id}' 자리표시자가 있어야 합니다.",
 			"capHintMiniMaxAudioTranscriptions": "MiniMax 파일 전사 POST /v1/speech_to_text. 라우트 어댑터는 MiniMax 파일 전사를 고르세요. language 는 폼이 아니라 요청 헤더로 보냅니다.",
 			"capHintMiniMaxAudioSpeech": "MiniMax 동기 음성 합성 POST /v1/t2a_v2. 어댑터는 MiniMax audio.speech 패스스루입니다. 비스트리밍과 stream:true 가 같은 엔드포인트를 씁니다.",
 			"capHintMiniMaxImagesGenerations": "MiniMax 이미지 생성 POST /v1/image_generation. 어댑터는 MiniMax images.generations 패스스루입니다. 텍스트 생성과 참조 이미지가 같은 엔드포인트입니다.",
+			"capHintElevenLabsAudioTranscriptions": "ElevenLabs 파일 전사 POST /v1/speech-to-text(Scribe). 어댑터는 ElevenLabs 패스스루 또는 OpenAI 전사 어댑터입니다. 인증은 xi-api-key 헤더를 사용합니다.",
+			"capHintElevenLabsAudioSpeech": "ElevenLabs 텍스트 음성 변환 POST /v1/text-to-speech/'{voice_id}'. stream, with-timestamps, stream/with-timestamps 변형은 같은 엔드포인트를 씁니다.",
 			"capHintVolcengineImagesGenerations": "Volcengine Seedream. 네이티브 패스스루와 OpenAI 변환 어댑터 volcengine-image 가 모두 Ark POST /images/generations 를 호출합니다. 스트리밍은 네이티브 패스스루만 지원합니다.",
 			"capChat": "chat (/v1/chat/completions)",
 			"capResponses": "responses (/v1/responses)",
@@ -739,6 +746,7 @@
 			"alreadyInGatewayRow": "{id}은(는) 이미 Gateway에 있습니다",
 			"importPresetRow": "프리셋 {id} 가져오기",
 			"catalogTiers": "{count}개 구간",
+			"noCatalogPrice": "{currency} 카탈로그 가격이 없어 가져올 수 없습니다",
 			"pricingPerImageFallback": "image token 요금",
 			"importSelected": "선택 항목 가져오기 ({count})",
 			"pricingPerSecondFallback": "초 단위 오디오",
@@ -1213,6 +1221,8 @@
 				"minimax-asr-file": "MiniMax 파일 전사",
 				"minimax-tts": "MiniMax 공식 음성 합성",
 				"minimax-image": "MiniMax 공식 이미지 생성",
+				"elevenlabs-asr-file": "ElevenLabs 파일 전사",
+				"elevenlabs-tts": "ElevenLabs 음성 합성",
 				"volcengine-image": "Volcengine Seedream 이미지 생성",
 				"gemini-image": "Gemini 공식 이미지 생성"
 			},
@@ -1319,6 +1329,25 @@
 						"url과 b64_json은 모두 OpenAI data[]로 다시 씁니다."
 					]
 				},
+				"elevenlabs-asr-file": {
+					"purpose": "공급자 모델 이름은 scribe_v1 또는 scribe_v2입니다.",
+					"mapping": [
+						"language는 language_code로 보내고 prompt는 버려집니다.",
+						"게이트웨이는 항상 단어 타임스탬프를 요청하고 segments를 로컬에서 만들며 srt와 vtt를 생성합니다.",
+						"response_format=diarized_json은 화자 분리를 켭니다. webhook=true는 거부됩니다.",
+						"tag_audio_events, num_speakers 등은 추가 폼 필드로 전달합니다."
+					]
+				},
+				"elevenlabs-tts": {
+					"purpose": "공급자 모델 이름은 eleven_v3, eleven_multilingual_v2, eleven_flash_v2_5, eleven_turbo_v2_5 중 하나입니다.",
+					"mapping": [
+						"voice는 ElevenLabs voice_id이며 업스트림 경로에 들어갑니다.",
+						"response_format은 mp3, opus, pcm, wav(24 kHz)를 지원합니다. aac와 flac은 400을 반환합니다.",
+						"speed는 0.7–1.2이며 voice_settings.speed로 들어갑니다. instructions는 400을 반환합니다.",
+						"stream_format=sse는 OpenAI 음성 이벤트로 변환됩니다.",
+						"voice_settings, language_code, seed는 extra_body로 전달합니다."
+					]
+				},
 				"volcengine-image": {
 					"purpose": "OpenAI SDK의 POST /v1/images/generations를 화산 방주 이미지 생성으로 바꿉니다. 공급자 모델 이름은 doubao-seedream, dola-seedream, seedream입니다.",
 					"mapping": [
@@ -1388,6 +1417,8 @@
 				"prompt": "프롬프트(prompt)",
 				"temperature": "샘플링 온도(temperature)",
 				"response_format_aac": "AAC 오디오 (response_format)",
+				"response_format_flac": "FLAC 오디오(response_format)",
+				"instructions": "instructions",
 				"openai_speed_range": "0.5–2 밖의 속도",
 				"quality": "품질(quality)"
 			},
@@ -1790,7 +1821,7 @@
 			"allProtocols": "모든 프로토콜",
 			"allRouteGroups": "모든 Route 그룹"
 		},
-		"audioOpenaiOnly": "음성 전사 테스트는 OpenAI multipart, MiniMax 파일 전사, 또는 동기 Adapter가 구현된 DashScope 라우트를 지원합니다.",
+		"audioOpenaiOnly": "음성 전사 테스트는 OpenAI multipart, MiniMax 또는 ElevenLabs 파일 전사, 또는 동기 Adapter가 구현된 DashScope 라우트를 지원합니다.",
 		"audioTranscriptionsHint": "오디오 모델: JSON 필드(language, response_format)와 아래 오디오 파일. 파일은 multipart로 transcriptions에 전송됩니다. 과금/요청 로그 없음.",
 		"audioTranscriptionsDashScopeHint": "DashScope 동기 ASR: Playground Adapter가 오디오를 Data URL로 인코딩하여 JSON으로 업스트림에 전송합니다. 과금 및 요청 로그 없음.",
 		"audioRealtimeDashScopeHint": "DashScope 실시간 ASR/TTS: 브라우저가 WebSocket을 열고 관리 콘솔이 업스트림 WSS와 프레임을 중계합니다. 과금 및 요청 로그 없음.",
@@ -1798,6 +1829,9 @@
 		"audioSpeechPassthroughHint": "네이티브 패스스루: JSON은 SpeechSynthesizer로 그대로 전달됩니다. Playground가 model을 라우트의 공급자 모델 이름으로 바꿉니다. 스트림은 X-DashScope-SSE로 결정됩니다. 청구 및 요청 로그는 없습니다.",
 		"audioSpeechMiniMaxHint": "네이티브 패스스루: JSON은 t2a_v2로 그대로 전달됩니다. Playground가 model을 라우트의 공급자 모델 이름으로 바꿉니다. stream:false는 hex를 디코딩해 재생하고, stream:true는 SSE를 보여 줍니다. 청구 및 요청 로그는 없습니다.",
 		"audioSpeechMiniMaxOpenAiHint": "OpenAI 음성 JSON은 MiniMax t2a_v2로 변환됩니다. voice에는 MiniMax voice_id를 넣습니다. Playground가 model을 라우트의 공급자 모델 이름으로 바꾸고 디코딩한 오디오를 재생합니다. 청구 및 요청 로그는 없습니다.",
+		"audioSpeechElevenLabsHint": "네이티브 패스스루: body.voice_id로 음성을 지정하고, 선택적으로 body.variant(speech, stream, timestamps, stream-timestamps)와 output_format, 나머지는 ElevenLabs JSON을 보냅니다. 플레이그라운드는 이를 경로와 쿼리로 옮기고 model_id를 라우트의 공급자 모델 이름으로 바꾼 뒤 반환된 오디오를 재생합니다. 과금과 요청 로그는 없습니다.",
+		"audioSpeechElevenLabsOpenAiHint": "OpenAI 음성 JSON을 ElevenLabs 텍스트 음성 변환으로 바꿉니다. voice는 ElevenLabs voice_id여야 합니다. 플레이그라운드는 model을 라우트의 공급자 모델 이름으로 바꾸고 반환된 오디오를 재생합니다. 과금과 요청 로그는 없습니다.",
+		"audioTranscriptionsElevenLabsHint": "전사: ElevenLabs 필드(language_code, diarize, tag_audio_events 등)와 오디오 파일을 multipart로 POST /v1/speech-to-text에 보냅니다. OpenAI 어댑터는 language와 response_format을 씁니다. 과금과 요청 로그는 없습니다.",
 		"audioFile": "오디오 파일",
 		"audioFileHint": "오디오 파일 하나 선택(mp3, wav, m4a, webm…). multipart로 전송(JSON 편집기에 넣지 않음).",
 		"audioFileDashScopeHint": "오디오 파일 1개를 선택하세요. Admin 업로드 후 서버가 DashScope Data URL로 인코딩합니다(JSON 편집기에는 넣지 않습니다).",
@@ -1989,13 +2023,15 @@
 		"errSelectKey": "API Key를 선택하고 불러오기가 끝날 때까지 기다리세요(sk-…)",
 		"errBodyMustBeObject": "요청 본문은 JSON 객체여야 합니다",
 		"infoModelOverwritten": "요청 본문의 model을 \"{model}\"(으)로 설정했습니다(선택한 모델 및 Route 그룹과 일치).",
-		"protocolLockedAudio": "오디오 라우트는 OpenAI HTTP(ASR: POST /v1/audio/transcriptions, TTS: /v1/audio/speech), MiniMax 패스스루(POST /v1/minimax/speech_to_text 또는 /v1/minimax/t2a_v2) 또는 DashScope 실시간 WSS를 지원합니다.",
+		"protocolLockedAudio": "오디오 라우트는 OpenAI HTTP(ASR: POST /v1/audio/transcriptions, TTS: /v1/audio/speech), MiniMax 패스스루(POST /v1/minimax/speech_to_text 또는 /v1/minimax/t2a_v2), ElevenLabs 패스스루(POST /elevenlabs/v1/speech-to-text 또는 /elevenlabs/v1/text-to-speech/'{voice_id}') 또는 DashScope 실시간 WSS를 지원합니다.",
 		"audioTranscriptionsHint": "전사: JSON 필드(language, response_format)와 오디오 파일. OpenAI는 multipart POST /v1/audio/transcriptions, MiniMax 패스스루는 POST /v1/minimax/speech_to_text.",
 		"audioRealtimeDashScopeHint": "DashScope 실시간 ASR: 브라우저가 WebSocket을 열며, 작업 모드는 바이너리 PCM, 세션 모드는 Base64 오디오 이벤트를 전송합니다.",
 		"audioRealtimeSpeechHint": "DashScope 실시간 음성 합성: 브라우저가 WebSocket을 열고 run-task 다음 continue-task 텍스트를 전송한 뒤 오디오 청크를 받습니다.",
 		"audioSpeechHint": "음성 합성: JSON 본문에서 input, voice, response_format, speed를 편집 → POST /v1/audio/speech.",
 		"audioSpeechDashScopeHint": "네이티브 패스스루: JSON은 SpeechSynthesizer로 전송됩니다. 스트림은 X-DashScope-SSE: enable을 붙입니다. Proxy는 업스트림 usage.characters로 과금합니다.",
 		"audioSpeechMiniMaxHint": "네이티브 패스스루: JSON은 POST /v1/minimax/t2a_v2로 전송됩니다. 비스트림 hex는 브라우저에서 디코딩해 재생하고, stream:true는 SSE를 보여 준 뒤 마지막 완전한 오디오를 재생합니다. Proxy는 extra_info.usage_characters로 과금합니다.",
+		"audioSpeechElevenLabsHint": "네이티브 패스스루: JSON을 POST /elevenlabs/v1/text-to-speech/'{voice_id}'로 보냅니다. body.voice_id와 body.variant(speech, stream, timestamps, stream-timestamps)가 경로를 정하고 output_format은 쿼리로 갑니다. Proxy는 글자 수로 과금합니다.",
+		"audioTranscriptionsElevenLabsHint": "전사: JSON 필드와 오디오 파일. OpenAI는 multipart POST /v1/audio/transcriptions, ElevenLabs 패스스루는 POST /elevenlabs/v1/speech-to-text를 사용합니다.",
 		"audioFile": "오디오 파일",
 		"audioFileHint": "multipart 업로드용 오디오 파일 하나 선택.",
 		"audioRealtimeFileDashScopeHint": "실시간 ASR은 선택한 WSS 모드로 오디오를 보냅니다. 파일은 재생입니다(wav/mp3/ogg는 브라우저에서 16 kHz PCM으로 디코딩하고, 원시 .pcm은 그대로 전송).",

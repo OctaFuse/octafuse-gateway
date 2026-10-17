@@ -17,6 +17,8 @@ export {
 	MINIMAX_SPEECH_TO_TEXT_PATH,
 	MINIMAX_T2A_PATH,
 	VOLCENGINE_IMAGE_GENERATIONS_PATH,
+	ELEVENLABS_TEXT_TO_SPEECH_PATH,
+	ELEVENLABS_SPEECH_TO_TEXT_PATH,
 	PASSTHROUGH_ROUTE_ADAPTER,
 	ROUTE_ADAPTER_MAPPINGS,
 	ROUTE_ADAPTERS,
@@ -73,6 +75,12 @@ export const REQUEST_OPERATIONS_BY_PROTOCOL = {
 	 * 非流式 JSON 与 `stream: true` 的 SSE 共用这条路径，adapter 是 passthrough。
 	 */
 	volcengine: ['images.generations'],
+	/**
+	 * 公开入口：`POST /elevenlabs/v1/text-to-speech/:voice_id[/stream][/with-timestamps]`、
+	 * `POST /elevenlabs/v1/speech-to-text`。adapter 都是 passthrough。
+	 * TTS 四种变体共用 `audio.speech`。
+	 */
+	elevenlabs: ['audio.transcriptions', 'audio.speech'],
 } as const satisfies Record<UpstreamProtocol, readonly string[]>;
 
 export type RequestOperation =

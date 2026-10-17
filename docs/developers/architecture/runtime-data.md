@@ -203,7 +203,7 @@ sequenceDiagram
 - **`route-strategies/*`** — 同层排序：`hash_affinity`（加权 Rendezvous）、`weighted_random`、`weight_priority`、`weighted_round_robin`。
 - **`provider-sticky-routing.ts`** — 查询 / 校验共享粘性绑定；命中时把绑定上游目标跨 priority 前置，成功后 bind / touch，供应商可归因失败时解绑。
 - **`route-attempt-planner.ts`（`buildRouteAttemptPlan`）** — 无有效粘性前置上游目标时，按 priority 硬序 → 层内策略 → 过滤熔断中的供应商。
-- **`provider-circuit-breaker.ts`** — 按 **`providerId`**：429（`Retry-After` 或 5s→60s）、401/403（**5min**）、普通 5xx（连续 3 次后 10s）；524 / fetch 不跨请求熔断。
+- **`provider-circuit-breaker.ts`** — 按 **`providerId`**：429（`Retry-After` 或 5s→60s）、401/402/403（**5min**）、普通 5xx（连续 3 次后 10s）；524 / fetch 不跨请求熔断。
 - **`user-model-circuit-breaker.ts`** — 按 **user + model**：敏感内容与普通上游 400 **共用**递增退避 **20s → 1min → 3min → 5min → 10min**（成功清零）；短路仅用 `circuit.sensitive_content` / `circuit.client_error` 区分。**Images / Audio** 不参与普通 400（`client_error`）熔断，仍参与敏感内容熔断（见 [proxy-request-lifecycle.md](./proxy-request-lifecycle.md) §2.2）。
 - **`failover-dispatch.ts`** — `attempts` 为空时 **429** + `Retry-After`（`circuit.upstream_capacity_exhausted`）；循环内复查已熔断供应商；否则按序打上游，全部失败返回最后一次上游响应。
 

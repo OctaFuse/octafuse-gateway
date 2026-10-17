@@ -380,6 +380,7 @@ export function useSimulatorPageState() {
 				matchingRoutes.find((candidate) => candidate.upstream_protocol === protocol)?.provider_model_name ??
 				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'dashscope')?.provider_model_name ??
 				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'minimax')?.provider_model_name ??
+				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'elevenlabs')?.provider_model_name ??
 				matchingRoutes[0]?.provider_model_name
 			);
 		}
@@ -393,7 +394,12 @@ export function useSimulatorPageState() {
 			if (!selectedToolId) return 'tool';
 		} else {
 			if (!selectedModelId) return 'model';
-			if (selectedModelIsAudio && protocol !== 'openai' && protocol !== 'dashscope' && protocol !== 'minimax') {
+			if (selectedModelIsAudio &&
+				protocol !== 'openai' &&
+				protocol !== 'dashscope' &&
+				protocol !== 'minimax' &&
+				protocol !== 'elevenlabs'
+			) {
 				return 'audioProtocol';
 			}
 			if (
@@ -410,7 +416,7 @@ export function useSimulatorPageState() {
 			if (matchingRoutes.length === 0) return 'route';
 			if (
 				selectedAudioOperation === 'transcriptions' &&
-				(protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax')
+				(protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax' || protocol === 'elevenlabs')
 			) {
 				const fileUrl = (() => {
 					try {
@@ -514,7 +520,7 @@ export function useSimulatorPageState() {
 		}
 		try {
 			const audioOperation =
-				!isToolKind && (protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax')
+				!isToolKind && (protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax' || protocol === 'elevenlabs')
 					? selectedAudioOperation
 					: null;
 			if (protocol === 'dashscope' && audioOperation && !selectedUsesDashScopeHttpAsr) {
@@ -851,7 +857,9 @@ export function useSimulatorPageState() {
 	useEffect(() => {
 		if (selectedAudioOperation) {
 			const audioProtocol =
-				protocol === 'dashscope' || protocol === 'minimax' ? protocol : ('openai' as const);
+				protocol === 'dashscope' || protocol === 'minimax' || protocol === 'elevenlabs'
+					? protocol
+					: ('openai' as const);
 			if (protocol !== audioProtocol) setProtocolState(audioProtocol);
 			setBodyText(
 				bodyTemplateForSelection(
@@ -1108,6 +1116,7 @@ export function useSimulatorPageState() {
 				matched.find((candidate) => candidate.upstream_protocol === next)?.provider_model_name ??
 				matched.find((candidate) => candidate.upstream_protocol === 'dashscope')?.provider_model_name ??
 				matched.find((candidate) => candidate.upstream_protocol === 'minimax')?.provider_model_name ??
+				matched.find((candidate) => candidate.upstream_protocol === 'elevenlabs')?.provider_model_name ??
 				matched[0]?.provider_model_name;
 			setBodyText(
 				bodyTemplateForSelection(
@@ -1120,7 +1129,9 @@ export function useSimulatorPageState() {
 							next === 'volcengine' ||
 							next === 'gemini'),
 					imageOperation,
-					next === 'openai' || next === 'dashscope' || next === 'minimax' ? selectedAudioOperation : null,
+					next === 'openai' || next === 'dashscope' || next === 'minimax' || next === 'elevenlabs'
+						? selectedAudioOperation
+						: null,
 					undefined,
 					next === 'dashscope' ? selectedDashScopeRealtimeOperation : null,
 					providerModelName,
@@ -1158,7 +1169,12 @@ export function useSimulatorPageState() {
 				setBodyError(null);
 				return;
 			}
-			if (selectedModelIsAudio && next !== 'openai' && next !== 'dashscope' && next !== 'minimax') {
+			if (selectedModelIsAudio &&
+				next !== 'openai' &&
+				next !== 'dashscope' &&
+				next !== 'minimax' &&
+				next !== 'elevenlabs'
+			) {
 				setInfoHint(t('protocolLockedAudio'));
 				return;
 			}
@@ -1363,7 +1379,7 @@ export function useSimulatorPageState() {
 		}
 
 		const audioOperation =
-			!isToolKind && (protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax')
+			!isToolKind && (protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax' || protocol === 'elevenlabs')
 				? selectedAudioOperation
 				: null;
 		const useImages =

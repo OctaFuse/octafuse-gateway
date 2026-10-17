@@ -359,6 +359,7 @@
 		"dashscope": "DashScope",
 		"minimax": "MiniMax",
 		"volcengine": "Volcengine",
+		"elevenlabs": "ElevenLabs",
 		"protocolUnknown": "Protocol: {protocol}",
 		"endpointCopyTitle": "{label} — {url} (click to copy)"
 	},
@@ -510,6 +511,7 @@
 			"dashscopeOptional": "DashScope",
 			"minimaxOptional": "MiniMax",
 			"volcengineOptional": "Volcengine",
+			"elevenlabsOptional": "ElevenLabs",
 			"baseUrl": "Base URL",
 			"openaiPlaceholder": "https://api.openai.com/v1",
 			"anthropicPlaceholder": "https://api.anthropic.com",
@@ -524,6 +526,8 @@
 			"minimaxHint": "A base derives speech recognition as '{base}'/speech_to_text, speech synthesis as '{base}'/t2a_v2, and image generation as '{base}'/image_generation. Use api.minimax.io for the international host. Video and music do not have endpoints yet.",
 			"volcenginePlaceholder": "https://ark.cn-beijing.volces.com/api/v3",
 			"volcengineHint": "A base derives Seedream image generation as '{base}'/images/generations. China Ark uses ark.cn-beijing.volces.com; BytePlus ModelArk uses ark.ap-southeast.bytepluses.com. Chat stays on the OpenAI endpoint config.",
+			"elevenlabsPlaceholder": "https://api.elevenlabs.io/v1",
+			"elevenlabsHint": "A base derives speech-to-text as '{base}'/speech-to-text and text-to-speech as '{base}'/text-to-speech/'{voice_id}'. The voice ID is a path parameter filled in per request. EU residency uses api.eu.residency.elevenlabs.io. WebSocket, voice management, dubbing, sound effects, and music do not have endpoints yet.",
 			"dashscopePlaceholder": "https://dashscope.aliyuncs.com/api/v1",
 			"dashscopeHint": "With only a base, the gateway derives every DashScope HTTP and WSS endpoint below, including filetrans, hotwords, and voices. For plans that expose only some capabilities (such as Qwen Token Plan), leave the base empty and fill in only the supported URL overrides. For a workspace endpoint, use the corresponding DashScope host.",
 			"advancedToggle": "URL overrides",
@@ -532,9 +536,12 @@
 			"advancedHintDashscope": "Enter full URLs. Endpoints are split by capability and a model uses only one of them. Several may point to the same upstream URL (such as multimodal-generation); they are separate so each can be enabled on its own. With a base, empty fields use the derived URL. Without a base, an empty field means unsupported.",
 			"advancedHintMinimax": "Enter a full URL. Leave a field empty when a base is set; the gateway derives speech_to_text, t2a_v2, or image_generation.",
 			"advancedHintVolcengine": "Enter a full URL. Leave the field empty when a base is set; the gateway derives images/generations.",
+			"advancedHintElevenlabs": "Enter a full URL. Leave a field empty when a base is set; the gateway derives speech-to-text or text-to-speech/'{voice_id}'. A custom speech URL must contain the '{voice_id}' placeholder.",
 			"capHintMiniMaxAudioTranscriptions": "MiniMax file transcription, POST /v1/speech_to_text. Choose the MiniMax file transcription adapter. The gateway sends language as a request header, not a form field.",
 			"capHintMiniMaxAudioSpeech": "MiniMax sync speech synthesis, POST /v1/t2a_v2. Choose the MiniMax audio.speech passthrough. Non-stream and stream:true share this endpoint.",
 			"capHintMiniMaxImagesGenerations": "MiniMax image generation, POST /v1/image_generation. Choose the MiniMax images.generations passthrough. Text-to-image and subject reference share this endpoint.",
+			"capHintElevenLabsAudioTranscriptions": "ElevenLabs file transcription, POST /v1/speech-to-text (Scribe). Choose the ElevenLabs passthrough or the OpenAI transcriptions adapter. Auth uses the xi-api-key header.",
+			"capHintElevenLabsAudioSpeech": "ElevenLabs text-to-speech, POST /v1/text-to-speech/'{voice_id}'. The stream, with-timestamps, and stream/with-timestamps variants share this endpoint.",
 			"capHintVolcengineImagesGenerations": "Volcengine Seedream. Native passthrough and the OpenAI adapter volcengine-image both call Ark POST /images/generations. Streaming is native passthrough only.",
 			"capChat": "chat (/v1/chat/completions)",
 			"capResponses": "responses (/v1/responses)",
@@ -739,6 +746,7 @@
 			"alreadyInGatewayRow": "{id} already in gateway",
 			"importPresetRow": "Import preset {id}",
 			"catalogTiers": "{count} tier(s)",
+			"noCatalogPrice": "No {currency} catalog price; cannot be imported",
 			"pricingPerImageFallback": "image token rates",
 			"importSelected": "Import selected ({count})",
 			"pricingPerSecondFallback": "Per-second audio",
@@ -1213,6 +1221,8 @@
 				"minimax-asr-file": "MiniMax file transcription",
 				"minimax-tts": "MiniMax official speech",
 				"minimax-image": "MiniMax official images",
+				"elevenlabs-asr-file": "ElevenLabs file transcription",
+				"elevenlabs-tts": "ElevenLabs speech",
 				"volcengine-image": "Volcengine Seedream images",
 				"gemini-image": "Gemini official images"
 			},
@@ -1319,6 +1329,25 @@
 						"url and b64_json are both rewritten as OpenAI data[]."
 					]
 				},
+				"elevenlabs-asr-file": {
+					"purpose": "Set the provider model name to scribe_v1 or scribe_v2.",
+					"mapping": [
+						"language is sent as language_code. prompt is dropped.",
+						"The gateway always requests word timestamps, builds segments locally, and renders srt and vtt.",
+						"response_format=diarized_json turns speaker diarization on. webhook=true is rejected.",
+						"Pass tag_audio_events or num_speakers with extra form fields."
+					]
+				},
+				"elevenlabs-tts": {
+					"purpose": "Set the provider model name to eleven_v3, eleven_multilingual_v2, eleven_flash_v2_5, or eleven_turbo_v2_5.",
+					"mapping": [
+						"voice is an ElevenLabs voice_id and goes into the upstream path.",
+						"response_format accepts mp3, opus, pcm, and wav (24 kHz). aac and flac return 400.",
+						"speed is 0.7–1.2 and goes into voice_settings.speed. instructions returns 400.",
+						"stream_format=sse becomes OpenAI speech events.",
+						"Pass voice_settings, language_code, or seed with extra_body."
+					]
+				},
 				"volcengine-image": {
 					"purpose": "OpenAI SDK calls POST /v1/images/generations. The gateway converts that to Ark image generation. Provider model names are doubao-seedream, dola-seedream, or seedream.",
 					"mapping": [
@@ -1388,6 +1417,8 @@
 				"prompt": "prompt",
 				"temperature": "temperature",
 				"response_format_aac": "AAC audio (response_format)",
+				"response_format_flac": "FLAC audio (response_format)",
+				"instructions": "instructions",
 				"openai_speed_range": "speed outside 0.5–2",
 				"quality": "quality"
 			},
@@ -1790,7 +1821,7 @@
 			"allProtocols": "All protocols",
 			"allRouteGroups": "All route groups"
 		},
-		"audioOpenaiOnly": "Audio transcription testing supports OpenAI multipart, MiniMax file transcription, or DashScope routes with an implemented synchronous adapter.",
+		"audioOpenaiOnly": "Audio transcription testing supports OpenAI multipart, MiniMax or ElevenLabs file transcription, or DashScope routes with an implemented synchronous adapter.",
 		"audioTranscriptionsHint": "Audio model: JSON fields (language, response_format) plus an audio file below. File is sent as multipart to the upstream transcriptions endpoint. No billing or request logs.",
 		"audioTranscriptionsDashScopeHint": "DashScope synchronous ASR: the Playground adapter encodes the audio as a Data URL and sends JSON upstream. No billing or request logs.",
 		"audioRealtimeDashScopeHint": "DashScope realtime ASR/TTS: the browser opens a WebSocket and Admin bridges frames to the upstream WSS. No billing or request logs.",
@@ -1798,6 +1829,9 @@
 		"audioSpeechPassthroughHint": "Native passthrough: the JSON is forwarded to SpeechSynthesizer as written. Playground replaces model with the route provider model name. Streaming uses X-DashScope-SSE. No billing or request logs.",
 		"audioSpeechMiniMaxHint": "Native passthrough: JSON is forwarded to t2a_v2 as written. Playground replaces model with the route provider model name. stream:false is decoded from hex and played; stream:true shows the SSE events. No billing or request logs.",
 		"audioSpeechMiniMaxOpenAiHint": "OpenAI speech JSON is converted to MiniMax t2a_v2. voice must be a MiniMax voice_id. Playground replaces model with the route provider model name and plays the decoded audio. No billing or request logs.",
+		"audioSpeechElevenLabsHint": "Native passthrough: send body.voice_id (the voice), optional body.variant (speech, stream, timestamps, stream-timestamps), output_format, and the usual JSON. Playground moves them into the path and query and replaces model_id with the route provider model name. The returned audio is played. No billing or request logs.",
+		"audioSpeechElevenLabsOpenAiHint": "OpenAI speech JSON is converted to ElevenLabs text-to-speech. voice must be an ElevenLabs voice_id. Playground replaces model with the route provider model name and plays the returned audio. No billing or request logs.",
+		"audioTranscriptionsElevenLabsHint": "Transcriptions: ElevenLabs fields (language_code, diarize, tag_audio_events, …) plus an audio file, sent as multipart to POST /v1/speech-to-text. For the OpenAI adapter use language and response_format. No billing or request logs.",
 		"audioFile": "Audio file",
 		"audioFileHint": "Select one audio file (mp3, wav, m4a, webm, …). Sent as multipart (not in the JSON editor).",
 		"audioFileDashScopeHint": "Select one audio file. After upload to Admin, the server encodes it as a DashScope Data URL (not in the JSON editor).",
@@ -1989,13 +2023,15 @@
 		"errSelectKey": "Select an API key and wait until it finishes loading (sk-…)",
 		"errBodyMustBeObject": "Request body must be a JSON object",
 		"infoModelOverwritten": "Set request body model to \"{model}\" (matches selected model and route group).",
-		"protocolLockedAudio": "Audio routes support OpenAI HTTP (POST /v1/audio/transcriptions for ASR or /v1/audio/speech for TTS), MiniMax passthrough (POST /v1/minimax/speech_to_text or /v1/minimax/t2a_v2), or DashScope realtime WSS.",
+		"protocolLockedAudio": "Audio routes support OpenAI HTTP (POST /v1/audio/transcriptions for ASR or /v1/audio/speech for TTS), MiniMax passthrough (POST /v1/minimax/speech_to_text or /v1/minimax/t2a_v2), ElevenLabs passthrough (POST /elevenlabs/v1/speech-to-text or /elevenlabs/v1/text-to-speech/'{voice_id}'), or DashScope realtime WSS.",
 		"audioTranscriptionsHint": "Transcriptions: JSON fields (language, response_format) plus an audio file. OpenAI uses multipart POST /v1/audio/transcriptions; MiniMax passthrough uses POST /v1/minimax/speech_to_text.",
 		"audioRealtimeDashScopeHint": "DashScope realtime ASR: the browser opens a WebSocket; task mode sends binary PCM and session mode sends Base64 audio events.",
 		"audioRealtimeSpeechHint": "DashScope realtime speech: the browser opens a WebSocket, sends run-task followed by continue-task text, and receives audio chunks.",
 		"audioSpeechHint": "Speech synthesis: edit input, voice, response_format, and speed in the JSON body → POST /v1/audio/speech.",
 		"audioSpeechDashScopeHint": "Native passthrough: JSON is sent to SpeechSynthesizer. Streaming sets X-DashScope-SSE: enable. The Proxy bills characters from upstream usage.",
 		"audioSpeechMiniMaxHint": "Native passthrough: JSON is sent to POST /v1/minimax/t2a_v2. A non-stream hex payload is decoded in the browser; stream:true shows the SSE events, then plays the last complete audio frame. The Proxy bills extra_info.usage_characters.",
+		"audioSpeechElevenLabsHint": "Native passthrough: JSON goes to POST /elevenlabs/v1/text-to-speech/'{voice_id}'. body.voice_id and body.variant (speech, stream, timestamps, stream-timestamps) pick the path; output_format goes in the query. The Proxy bills characters.",
+		"audioTranscriptionsElevenLabsHint": "Transcriptions: JSON fields plus an audio file. OpenAI uses multipart POST /v1/audio/transcriptions; ElevenLabs passthrough uses POST /elevenlabs/v1/speech-to-text.",
 		"audioFile": "Audio file",
 		"audioFileHint": "Select one audio file for multipart upload.",
 		"audioRealtimeFileDashScopeHint": "Realtime ASR sends audio in the selected WSS mode. File input replays a clip (wav/mp3/ogg are decoded to 16 kHz PCM in the browser; raw .pcm is sent as-is).",

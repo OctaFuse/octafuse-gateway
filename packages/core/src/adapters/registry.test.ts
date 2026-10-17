@@ -35,7 +35,24 @@ describe('adapter registry', () => {
 			'minimax-image',
 			'volcengine-image',
 			'gemini-image',
+			'elevenlabs-tts',
+			'elevenlabs-asr-file',
 		]);
+	});
+
+	it('matches ElevenLabs model families', () => {
+		const tts = getAdapterByOptionKey('elevenlabs-tts')!;
+		assert.equal(matchAdapterUpstreamModel(tts, 'eleven_multilingual_v2'), 'match');
+		assert.equal(matchAdapterUpstreamModel(tts, 'eleven_v3'), 'match');
+		assert.equal(matchAdapterUpstreamModel(tts, 'eleven_v4_turbo'), 'match');
+		assert.equal(matchAdapterUpstreamModel(tts, 'eleven_flash_v2'), 'match');
+		assert.equal(matchAdapterUpstreamModel(tts, 'eleven_multilingual_ttv_v2'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(tts, 'eleven_ttv_v3'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(tts, 'eleven_multilingual_sts_v2'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(tts, 'scribe_v2'), 'mismatch');
+		const asr = getAdapterByOptionKey('elevenlabs-asr-file')!;
+		assert.equal(matchAdapterUpstreamModel(asr, 'scribe_v2'), 'match');
+		assert.equal(matchAdapterUpstreamModel(asr, 'scribe_v2_realtime'), 'mismatch');
 	});
 
 	it('treats only mapped adapters as conversion adapters', () => {
@@ -63,7 +80,7 @@ describe('adapter registry', () => {
 			upstreamProtocol: 'minimax',
 			upstreamOperation: 'audio.transcriptions',
 		});
-		assert.equal(listConversionAdapters().length, 14);
+		assert.equal(listConversionAdapters().length, 16);
 		assert.deepEqual(ROUTE_ADAPTER_MAPPINGS['minimax-tts'], {
 			requestProtocol: 'openai',
 			requestOperation: 'audio.speech',
@@ -81,6 +98,18 @@ describe('adapter registry', () => {
 			requestOperation: 'images.generations',
 			upstreamProtocol: 'volcengine',
 			upstreamOperation: 'images.generations',
+		});
+		assert.deepEqual(ROUTE_ADAPTER_MAPPINGS['elevenlabs-tts'], {
+			requestProtocol: 'openai',
+			requestOperation: 'audio.speech',
+			upstreamProtocol: 'elevenlabs',
+			upstreamOperation: 'audio.speech',
+		});
+		assert.deepEqual(ROUTE_ADAPTER_MAPPINGS['elevenlabs-asr-file'], {
+			requestProtocol: 'openai',
+			requestOperation: 'audio.transcriptions',
+			upstreamProtocol: 'elevenlabs',
+			upstreamOperation: 'audio.transcriptions',
 		});
 		assert.deepEqual(ROUTE_ADAPTER_MAPPINGS['gemini-image'], {
 			requestProtocol: 'openai',
@@ -151,6 +180,9 @@ describe('adapter registry', () => {
 		]);
 		assert.deepEqual(requestOperationsFromRegistry('minimax', 'tts'), ['audio.speech']);
 		assert.deepEqual(requestOperationsFromRegistry('minimax', 'image'), ['images.generations']);
+		assert.deepEqual(requestOperationsFromRegistry('elevenlabs', 'asr'), ['audio.transcriptions']);
+		assert.deepEqual(requestOperationsFromRegistry('elevenlabs', 'tts'), ['audio.speech']);
+		assert.deepEqual(upstreamOperationsFromRegistry('elevenlabs', 'tts'), ['audio.speech']);
 		assert.deepEqual(requestOperationsFromRegistry('gemini', 'llm'), ['models.generate']);
 		assert.deepEqual(requestOperationsFromRegistry('gemini', 'image'), ['models.generate']);
 		assert.deepEqual(upstreamOperationsFromRegistry('gemini', 'image'), ['models.generate']);
@@ -177,6 +209,14 @@ describe('adapter registry', () => {
 			'/v1/minimax/speech_to_text',
 		);
 		assert.equal(requestSurfacePath('minimax', 'audio.speech'), '/v1/minimax/t2a_v2');
+		assert.equal(
+			requestSurfacePath('elevenlabs', 'audio.speech'),
+			'/elevenlabs/v1/text-to-speech/{voice_id}',
+		);
+		assert.equal(
+			requestSurfacePath('elevenlabs', 'audio.transcriptions'),
+			'/elevenlabs/v1/speech-to-text',
+		);
 		assert.equal(
 			requestSurfacePath('minimax', 'images.generations'),
 			'/v1/minimax/image_generation',
@@ -280,6 +320,12 @@ describe('adapter registry', () => {
 		assert.deepEqual(features['dashscope-asr-file-async'], []);
 		assert.deepEqual(features['dashscope-tts-minimax'], []);
 		assert.deepEqual(features['minimax-tts'], ['response_format_aac', 'openai_speed_range']);
+		assert.deepEqual(features['elevenlabs-tts'], [
+			'response_format_aac',
+			'response_format_flac',
+			'openai_speed_range',
+			'instructions',
+		]);
 	});
 
 	it('keeps option keys unique', () => {

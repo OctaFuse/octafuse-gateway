@@ -151,14 +151,20 @@ export default function SimulatorPage() {
 								onEditFilesChange={s.setEditFiles}
 								showAudioTranscriptions={
 									s.selectedAudioOperation === 'transcriptions' &&
-									(s.protocol === 'openai' || s.protocol === 'dashscope' || s.protocol === 'minimax')
+									(s.protocol === 'openai' ||
+										s.protocol === 'dashscope' ||
+										s.protocol === 'minimax' ||
+										s.protocol === 'elevenlabs')
 								}
 								showAudioRealtimeMicrophone={s.selectedCanUseMicrophone}
 								audioInputMode={s.audioInputMode}
 								onAudioInputModeChange={s.setAudioInputMode}
 								showAudioSpeech={
 									s.selectedAudioOperation === 'speech' &&
-									(s.protocol === 'openai' || s.protocol === 'dashscope' || s.protocol === 'minimax')
+									(s.protocol === 'openai' ||
+										s.protocol === 'dashscope' ||
+										s.protocol === 'minimax' ||
+										s.protocol === 'elevenlabs')
 								}
 								showAudioRealtime={
 									s.protocol === 'dashscope' &&

@@ -38,6 +38,13 @@ import type {
 	MiniMaxJsonPassthroughOperation,
 	MiniMaxJsonPassthroughOptions,
 } from "./egress/minimax-json-passthrough";
+import {
+	dispatchElevenLabsSttPassthrough,
+	dispatchElevenLabsTtsPassthrough,
+	type ElevenLabsPassthroughOptions,
+	type ElevenLabsSttPassthroughRequest,
+	type ElevenLabsTtsPassthroughRequest,
+} from "./egress/elevenlabs-passthrough";
 import type { VolcengineJsonPassthroughOptions } from "./egress/volcengine-json-passthrough";
 import type {
 	GeminiImageAction,
@@ -307,7 +314,7 @@ export async function proxyAudioTranscriptions(
 	return failoverDispatch(
 		repos,
 		routes,
-		["openai", "dashscope", "minimax"],
+		["openai", "dashscope", "minimax", "elevenlabs"],
 		(
 			route,
 			signal,
@@ -338,7 +345,7 @@ export async function proxyAudioSpeech(
 	return failoverDispatch(
 		repos,
 		routes,
-		["openai", "dashscope", "minimax"],
+		["openai", "dashscope", "minimax", "elevenlabs"],
 		(
 			route,
 			signal,
@@ -533,6 +540,54 @@ export async function proxyMiniMaxAsrPassthrough(
 			attempt?: RequestTimingAttempt
 		) =>
 			dispatchMiniMaxSpeechPassthrough(route, request, signal, timing, attempt),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 ElevenLabs 原生文本转语音透传（四种变体共用 `audio.speech`）。 */
+export async function proxyElevenLabsTtsPassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	request: ElevenLabsTtsPassthroughRequest,
+	requestSignal?: AbortSignal,
+	options?: AudioTranscriptionProxyOptions & { elevenLabs?: ElevenLabsPassthroughOptions }
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"elevenlabs",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchElevenLabsTtsPassthrough(route, request, signal, timing, attempt, options?.elevenLabs),
+		requestSignal,
+		options
+	);
+}
+
+/** 代理 ElevenLabs 原生语音转文字透传（multipart，不转 OpenAI transcriptions）。 */
+export async function proxyElevenLabsSttPassthrough(
+	repos: GatewayRepositories,
+	routes: RouteResult[],
+	request: ElevenLabsSttPassthroughRequest,
+	requestSignal?: AbortSignal,
+	options?: AudioTranscriptionProxyOptions & { elevenLabs?: ElevenLabsPassthroughOptions }
+): Promise<ProxyResult> {
+	return failoverDispatch(
+		repos,
+		routes,
+		"elevenlabs",
+		(
+			route,
+			signal,
+			timing?: RequestTimingCollector | null,
+			attempt?: RequestTimingAttempt
+		) =>
+			dispatchElevenLabsSttPassthrough(route, request, signal, timing, attempt, options?.elevenLabs),
 		requestSignal,
 		options
 	);

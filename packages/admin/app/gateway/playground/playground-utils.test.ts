@@ -684,6 +684,14 @@ describe('playground-utils', () => {
 		assert.equal(tagged?.value, '1');
 	});
 
+	it('previewPlaygroundOutboundHeaderRows uses xi-api-key for ElevenLabs', () => {
+		const rows = previewPlaygroundOutboundHeaderRows({ upstreamProtocol: 'elevenlabs' });
+		assert.deepEqual(
+			rows.map((row) => row.name).sort(),
+			['Content-Type', 'xi-api-key'],
+		);
+	});
+
 	it('previewPlaygroundOutboundHeaderRows prefers sent headers and still tags extras', () => {
 		const rows = previewPlaygroundOutboundHeaderRows({
 			customParams: JSON.stringify({ headers: { x: '1' } }),

@@ -28,6 +28,8 @@ import { dashScopeSpeechRoutes } from './routes/v1/dashscope-speech';
 import { dashScopeFileTranscriptionRoutes, dashScopeTaskRoutes } from './routes/v1/dashscope-file-transcription';
 import { miniMaxSpeechToTextRoutes } from './routes/v1/minimax-speech-to-text';
 import { miniMaxT2aRoutes } from './routes/v1/minimax-t2a';
+import { elevenLabsSpeechToTextRoutes } from './routes/v1/elevenlabs-speech-to-text';
+import { elevenLabsTextToSpeechRoutes } from './routes/v1/elevenlabs-text-to-speech';
 import { miniMaxImageGenerationRoutes } from './routes/v1/minimax-image-generation';
 import { volcengineImageGenerationRoutes } from './routes/v1/volcengine-image-generation';
 import {
@@ -88,7 +90,7 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 		cors({
 			origin: '*',
 			allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-			allowHeaders: ['Content-Type', 'Authorization', 'Accept', 'language', 'X-DashScope-SSE', 'X-DashScope-Async', 'MCP-Protocol-Version', 'Mcp-Session-Id'],
+			allowHeaders: ['Content-Type', 'Authorization', 'Accept', 'language', 'X-DashScope-SSE', 'X-DashScope-Async', 'MCP-Protocol-Version', 'Mcp-Session-Id', 'xi-api-key'],
 			exposeHeaders: ['X-OctaFuse-Request-Id', 'X-OctaFuse-Error-Code', 'Mcp-Session-Id'],
 		}),
 	);
@@ -140,6 +142,9 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 	app.route(MINIMAX_SPEECH_TO_TEXT_PATH, miniMaxSpeechToTextRoutes);
 	app.route(MINIMAX_T2A_PATH, miniMaxT2aRoutes);
 	app.route(MINIMAX_IMAGE_GENERATION_PATH, miniMaxImageGenerationRoutes);
+	// ElevenLabs 原生路径与官方 SDK 一致（含 `/v1`），文本转语音路径末尾的 `{voice_id}` 由子路由匹配。
+	app.route('/elevenlabs/v1/speech-to-text', elevenLabsSpeechToTextRoutes);
+	app.route('/elevenlabs/v1/text-to-speech', elevenLabsTextToSpeechRoutes);
 	app.route(VOLCENGINE_IMAGE_GENERATIONS_PATH, volcengineImageGenerationRoutes);
 	app.route('/v1/messages', messagesRoutes);
 	// TEMP(soloent): 只为兼容 SoloEnt Agent 的历史拼路径，不是公开 API。

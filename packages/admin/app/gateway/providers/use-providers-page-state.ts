@@ -50,6 +50,7 @@ function emptyFilterCounts(): Record<ProviderListFilter, number> {
 		dashscope: 0,
 		minimax: 0,
 		volcengine: 0,
+		elevenlabs: 0,
 	};
 }
 

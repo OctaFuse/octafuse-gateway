@@ -3,6 +3,9 @@ import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import {
 	AUDIO_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	ELEVENLABS_OPENAI_SPEECH_BODY_TEMPLATE,
+	ELEVENLABS_SPEECH_BODY_TEMPLATE,
+	ELEVENLABS_TRANSCRIPTIONS_BODY_TEMPLATE,
 	MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE,
 	MINIMAX_SPEECH_BODY_TEMPLATE,
 	AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE,
@@ -66,6 +69,7 @@ export const BODY_TEMPLATES: Record<SimulatorProtocol, string> = {
 }`,
 	dashscope: '{}',
 	minimax: AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	elevenlabs: ELEVENLABS_TRANSCRIPTIONS_BODY_TEMPLATE,
 	volcengine: VOLCENGINE_IMAGE_BODY_TEMPLATE,
 };
 
@@ -121,6 +125,7 @@ export function bodyTemplateForSelection(
 	if (audioOperation && protocol === 'openai') {
 		if (audioOperation === 'speech' && providerModelName) {
 			if (/^speech-/i.test(providerModelName.trim())) return MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE;
+			if (/^eleven_/i.test(providerModelName.trim())) return ELEVENLABS_OPENAI_SPEECH_BODY_TEMPLATE;
 			// OpenAI surface 可能映射到 DashScope；模板音色必须匹配实际供应商模型。
 			return buildDashScopeSpeechBodyTemplate(providerModelName);
 		}
@@ -131,6 +136,9 @@ export function bodyTemplateForSelection(
 	}
 	if (audioOperation && protocol === 'minimax') {
 		return audioOperation === 'speech' ? MINIMAX_SPEECH_BODY_TEMPLATE : AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE;
+	}
+	if (audioOperation && protocol === 'elevenlabs') {
+		return audioOperation === 'speech' ? ELEVENLABS_SPEECH_BODY_TEMPLATE : ELEVENLABS_TRANSCRIPTIONS_BODY_TEMPLATE;
 	}
 	if (audioOperation && protocol === 'dashscope') {
 		if (realtimeOperation === 'audio.speech' || realtimeOperation === 'audio.speech.stream') {
@@ -353,6 +361,7 @@ export const SIMULATOR_PROTOCOL_ORDER: readonly SimulatorProtocol[] = [
 	'dashscope',
 	'minimax',
 	'volcengine',
+	'elevenlabs',
 ];
 
 export type SimulatorClientSurfaceOptions = {

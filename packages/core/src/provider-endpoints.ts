@@ -88,6 +88,12 @@ export const MINIMAX_ENDPOINT_CAPABILITIES = [
 	'images.generations',
 ] as const satisfies readonly ProviderEndpointCapability[];
 
+/** ElevenLabs 原生能力：文件转写、文本转语音（voice_id 在路径里）。 */
+export const ELEVENLABS_ENDPOINT_CAPABILITIES = [
+	'audio.transcriptions',
+	'audio.speech',
+] as const satisfies readonly ProviderEndpointCapability[];
+
 /** 火山方舟 / BytePlus ModelArk 原生能力。当前只有 Seedream 生图。 */
 export const VOLCENGINE_ENDPOINT_CAPABILITIES = [
 	'images.generations',
@@ -100,6 +106,7 @@ const CAPABILITIES_BY_PROTOCOL: Record<UpstreamProtocol, readonly ProviderEndpoi
 	dashscope: DASHSCOPE_ENDPOINT_CAPABILITIES,
 	minimax: MINIMAX_ENDPOINT_CAPABILITIES,
 	volcengine: VOLCENGINE_ENDPOINT_CAPABILITIES,
+	elevenlabs: ELEVENLABS_ENDPOINT_CAPABILITIES,
 };
 
 /** Write-side whitelist: gemini accepts canonical + legacy keys. */
@@ -113,6 +120,7 @@ export const WRITABLE_CAPABILITIES_BY_PROTOCOL: Record<
 	dashscope: DASHSCOPE_ENDPOINT_CAPABILITIES,
 	minimax: MINIMAX_ENDPOINT_CAPABILITIES,
 	volcengine: VOLCENGINE_ENDPOINT_CAPABILITIES,
+	elevenlabs: ELEVENLABS_ENDPOINT_CAPABILITIES,
 };
 
 const ALL_CAPABILITIES = new Set<string>([
@@ -123,6 +131,7 @@ const ALL_CAPABILITIES = new Set<string>([
 	...DASHSCOPE_ENDPOINT_CAPABILITIES,
 	...MINIMAX_ENDPOINT_CAPABILITIES,
 	...VOLCENGINE_ENDPOINT_CAPABILITIES,
+	...ELEVENLABS_ENDPOINT_CAPABILITIES,
 ]);
 
 /** 单协议配置：`base` 与/或按 capability 的完整 URL 模板。 */
@@ -330,7 +339,8 @@ export function validateAndNormalizeProviderEndpoints(raw: unknown): ProviderEnd
 				const urlForValidation = url
 					.replace(/\{model\}/g, 'm')
 					.replace(/\{action\}/g, 'a')
-					.replace(/\{task_id\}/g, 't');
+					.replace(/\{task_id\}/g, 't')
+					.replace(/\{voice_id\}/g, 'v');
 				if (protocol === 'dashscope' && isDashScopeRealtimeCapability(cap)) {
 					assertWebSocketUrl(urlForValidation, `endpoints.${protocol}.endpoints.${cap}`);
 				} else {
@@ -358,6 +368,11 @@ export function validateAndNormalizeProviderEndpoints(raw: unknown): ProviderEnd
 				) {
 					throw new Error(
 						`endpoints.${protocol}.endpoints.${cap} must include {task_id} placeholder`
+					);
+				}
+				if (protocol === 'elevenlabs' && cap === 'audio.speech' && !url.includes('{voice_id}')) {
+					throw new Error(
+						`endpoints.${protocol}.endpoints.${cap} must include {voice_id} placeholder`
 					);
 				}
 				mapped[cap as ProviderEndpointCapability] = url;
@@ -389,12 +404,13 @@ export function validateAndNormalizeProviderEndpoints(raw: unknown): ProviderEnd
 
 function fillEndpointTemplate(
 	template: string,
-	vars: { model?: string; action?: string; taskId?: string }
+	vars: { model?: string; action?: string; taskId?: string; voiceId?: string }
 ): string {
 	return template
 		.replace(/\{model\}/g, () => encodeURIComponent(vars.model ?? ''))
 		.replace(/\{action\}/g, () => encodeURIComponent(vars.action ?? ''))
-		.replace(/\{task_id\}/g, () => encodeURIComponent(vars.taskId ?? ''));
+		.replace(/\{task_id\}/g, () => encodeURIComponent(vars.taskId ?? ''))
+		.replace(/\{voice_id\}/g, () => encodeURIComponent(vars.voiceId ?? ''));
 }
 
 export type ResolveUpstreamEndpointOptions = {
@@ -404,6 +420,8 @@ export type ResolveUpstreamEndpointOptions = {
 	providerId?: string;
 	/** DashScope 异步文件识别任务查询 ID。 */
 	taskId?: string;
+	/** ElevenLabs 文本转语音的音色 ID（路径参数）。 */
+	voiceId?: string;
 };
 
 function resolveGeminiWireAction(
@@ -526,10 +544,14 @@ export function resolveUpstreamEndpoint(
 		if (resolvedCapability === 'audio.transcriptions.tasks' && !options.taskId) {
 			throw new Error('DashScope task endpoint requires taskId');
 		}
+		if (protocol === 'elevenlabs' && resolvedCapability === 'audio.speech' && !options.voiceId) {
+			throw new Error('ElevenLabs speech endpoint requires voiceId');
+		}
 		return fillEndpointTemplate(template, {
 			model: options.model,
 			action: options.action,
 			taskId: options.taskId,
+			voiceId: options.voiceId,
 		});
 	}
 
@@ -554,6 +576,9 @@ export function resolveUpstreamEndpoint(
 				if (protocol === 'minimax') {
 					return `${root}/speech_to_text`;
 				}
+				if (protocol === 'elevenlabs') {
+					return `${root}/speech-to-text`;
+				}
 				return `${root}/audio/transcriptions`;
 			case 'audio.transcriptions.multimodal':
 				return `${root}/services/aigc/multimodal-generation/generation`;
@@ -568,6 +593,12 @@ export function resolveUpstreamEndpoint(
 				}
 				if (protocol === 'minimax') {
 					return `${root}/t2a_v2`;
+				}
+				if (protocol === 'elevenlabs') {
+					if (!options.voiceId) {
+						throw new Error('ElevenLabs speech endpoint requires voiceId');
+					}
+					return `${root}/text-to-speech/${encodeURIComponent(options.voiceId)}`;
 				}
 				return `${root}/audio/speech`;
 			case 'audio.speech.multimodal':

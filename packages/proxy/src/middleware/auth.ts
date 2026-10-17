@@ -93,6 +93,14 @@ function extractApiKey(c: { req: { header: (name: string) => string | undefined;
     }
   }
 
+  // ElevenLabs SDK sends xi-api-key on the native /elevenlabs/* surface.
+  if (path.startsWith('/elevenlabs/')) {
+    const elevenLabsKey = c.req.header('xi-api-key')?.trim() ?? '';
+    if (elevenLabsKey) {
+      return elevenLabsKey;
+    }
+  }
+
   // Gemini SDK commonly sends API key in query string or x-goog-api-key.
   if (path.startsWith('/v1beta/')) {
     try {

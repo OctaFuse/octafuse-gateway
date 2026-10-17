@@ -96,6 +96,43 @@ export const MINIMAX_SPEECH_BODY_TEMPLATE = `{
   }
 }`;
 
+/** OpenAI `/v1/audio/speech` → ElevenLabs text-to-speech。voice 必须是 ElevenLabs voice_id。 */
+export const ELEVENLABS_OPENAI_SPEECH_BODY_TEMPLATE = `{
+  "model": "<auto>",
+  "input": "你好，欢迎使用 OctaFuse Gateway。",
+  "voice": "JBFqnCBsd6RMkjVDRZzb",
+  "response_format": "mp3",
+  "speed": 1,
+  "voice_settings": {
+    "stability": 0.5,
+    "similarity_boost": 0.75
+  }
+}`;
+
+/**
+ * ElevenLabs 原生 text-to-speech。voice_id / variant（speech|stream|timestamps|stream-timestamps）进路径，
+ * output_format / enable_logging / optimize_streaming_latency 进 query，其余作为 JSON body。
+ */
+export const ELEVENLABS_SPEECH_BODY_TEMPLATE = `{
+  "model_id": "<auto>",
+  "voice_id": "JBFqnCBsd6RMkjVDRZzb",
+  "variant": "speech",
+  "output_format": "mp3_44100_128",
+  "text": "你好，欢迎使用 OctaFuse Gateway。",
+  "voice_settings": {
+    "stability": 0.5,
+    "similarity_boost": 0.75
+  }
+}`;
+
+/** ElevenLabs 原生 speech-to-text（音频文件另行上传为 multipart）。 */
+export const ELEVENLABS_TRANSCRIPTIONS_BODY_TEMPLATE = `{
+  "model_id": "<auto>",
+  "language_code": "",
+  "diarize": false,
+  "tag_audio_events": true
+}`;
+
 /** Validate audio file before send (Playground / Simulator). */
 export function validateAudioTranscriptionFile(
 	file: File | null | undefined

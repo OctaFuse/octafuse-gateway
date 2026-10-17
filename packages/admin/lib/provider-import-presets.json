@@ -795,6 +795,32 @@
 		}
 	},
 	{
+		"name": "ElevenLabs",
+		"vendor_key": "elevenlabs",
+		"endpoints": {
+			"elevenlabs": {
+				"base": "https://api.elevenlabs.io/v1"
+			}
+		},
+		"description": "ElevenLabs on api.elevenlabs.io: native file transcription (Scribe, POST /v1/speech-to-text) and text-to-speech (POST /v1/text-to-speech/{voice_id}) on elevenlabs.base. No openai.base, so OpenAI Audio is served through the elevenlabs-tts and elevenlabs-asr-file adapters. EU data residency uses api.eu.residency.elevenlabs.io.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "ElevenLabs",
+					"description": "ElevenLabs 官方 API，支持原生文件转写（Scribe）与文本转语音，并可通过适配器提供 OpenAI 兼容的 /v1/audio/* 入口。"
+				},
+				"en": {
+					"name": "ElevenLabs",
+					"description": "ElevenLabs official API with native file transcription (Scribe) and text-to-speech, plus OpenAI-compatible /v1/audio/* through adapters."
+				}
+			},
+			"links": {
+				"platform": "https://elevenlabs.io/app",
+				"api_keys": "https://elevenlabs.io/app/developers/api-keys"
+			}
+		}
+	},
+	{
 		"name": "OpenAI",
 		"vendor_key": "openai",
 		"endpoints": {

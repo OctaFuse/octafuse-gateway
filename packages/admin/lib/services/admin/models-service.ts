@@ -410,6 +410,7 @@ export function listStaticModelPresetCatalogForAdmin(
 				retired: p.retired ?? null,
 				tier_count: tierCount,
 				pricing_label: pricing.label,
+				pricing_available: pricingRaw != null && typeof pricingRaw === 'object',
 				pricing_preview: pricing.detail,
 			};
 		})

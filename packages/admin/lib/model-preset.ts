@@ -8,12 +8,12 @@
  * 命名约定：
  * - `<vendor>.json` — LLM（`modalities.output` 以 `text` 为主，含多模态「看图」LLM）
  * - `<vendor>-image.json` — 纯文生图（`modalities.output` 含 `image`）
- * - `<vendor>-audio.json` — 语音转写 ASR（`pricing.audio_billing_mode: per_second | token`）
+ * - `<vendor>-audio.json` — 语音转写 ASR 与语音合成 TTS（`pricing.audio_billing_mode: per_second | token | per_character`）
  * - `<vendor>-embedding.json` — 向量模型（`modalities.output` 为 `embedding`；仅按输入 token 计费，output / cache 价为 0 / null）
  * - `aliyun.json` 另含 DashScope ASR/TTS，便于从同一个官方厂商目录一起导入供应商与音频模型。
  *
  * 各预设内 **`pricing.usd`** 与 D1 导出 `data/remote/.../data-remote-table-models-*.sql` 中 `pricing_profile` 一致（美元口径）；
- * **`pricing.cny`**：国内厂商以中国区官方/Postgres 价为准；海外厂商（openai / anthropic / google / xai 等）按 **USD × 7** 换算占位。
+ * **`pricing.cny`**：有官方人民币标价的（国内厂商，以中国区官方/Postgres 价为准）取官方价；没有的（海外厂商，如 openai / anthropic / google / xai / elevenlabs 等）一律按 **USD × 7** 换算占位，不使用实时汇率，且不得留空（测试会拦截）。
  * 导入时按当前 `BILLING_CURRENCY` 选用 `usd` / `cny` **整段**写入 `pricing_profile`（含可选 `schedule` 官方时段，不只 `tiers`）。
  * DeepSeek V4 / V4.1 目录价为空闲价；`schedule` 为北京时间工作日高峰 09:00–12:00、14:00–18:00、`factor` 2。命中按 `BUSINESS_TIMEZONE` 墙钟，中国区请设 `Asia/Shanghai`。
  * Google Gemini 目录价为 Standard 标准价，不含限时导入价、Batch、Flex。Flash 3.7 / 3.8 写入 $1.50 / $7.50，而不是 2026-12-31 前的 $0.75 / $3.75。
@@ -40,6 +40,7 @@ import bytedancePresets from './model-presets/bytedance.json';
 import bytedanceImagePresets from './model-presets/bytedance-image.json';
 import coherePresets from './model-presets/cohere.json';
 import deepseekPresets from './model-presets/deepseek.json';
+import elevenlabsAudioPresets from './model-presets/elevenlabs-audio.json';
 import googlePresets from './model-presets/google.json';
 import googleImagePresets from './model-presets/google-image.json';
 import googleEmbeddingPresets from './model-presets/google-embedding.json';
@@ -105,6 +106,7 @@ const STATIC_MODEL_PRESETS_BY_VENDOR = [
 	bytedanceImagePresets,
 	coherePresets,
 	deepseekPresets,
+	elevenlabsAudioPresets,
 	googlePresets,
 	googleImagePresets,
 	googleEmbeddingPresets,

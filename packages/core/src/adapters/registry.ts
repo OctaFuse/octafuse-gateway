@@ -32,6 +32,15 @@ export const MINIMAX_IMAGE_GENERATION_PATH = '/v1/minimax/image_generation';
 /** 火山方舟 / BytePlus Seedream 生图透传：`POST /v1/volcengine/images/generations`。非流式与 SSE 共用。 */
 export const VOLCENGINE_IMAGE_GENERATIONS_PATH = '/v1/volcengine/images/generations';
 
+/**
+ * ElevenLabs 原生文本转语音透传。官方 SDK 的 base_url 指到 `{gateway}/elevenlabs` 即可。
+ * 同一 operation 覆盖四种变体：`/:voice_id`、`/stream`、`/with-timestamps`、`/stream/with-timestamps`。
+ */
+export const ELEVENLABS_TEXT_TO_SPEECH_PATH = '/elevenlabs/v1/text-to-speech/{voice_id}';
+
+/** ElevenLabs 原生文件转写透传：`POST /elevenlabs/v1/speech-to-text`。 */
+export const ELEVENLABS_SPEECH_TO_TEXT_PATH = '/elevenlabs/v1/speech-to-text';
+
 export const SURFACE_PATH_MODEL_PLACEHOLDER = '{model}';
 
 /** Gemini 原生向量入口 operation：`embedContent` 与 `batchEmbedContents` 共用。 */
@@ -129,6 +138,16 @@ const QWEN_TTS_HTTP_MODELS = {
 } as const;
 const MINIMAX_TTS_MODELS = ['minimax/speech-*'] as const;
 const MINIMAX_NATIVE_TTS_MODELS = ['speech-*'] as const;
+/** ElevenLabs TTS：`eleven_*`，排除语音转语音与音色设计家族。 */
+const ELEVENLABS_TTS_MODELS = {
+	include: ['eleven_*'],
+	exclude: ['*_sts_*', '*_ttv_*', 'eleven_text_to_sound_*', 'eleven_music*'],
+} as const;
+/** ElevenLabs Scribe 文件转写；实时模型不走 HTTP。 */
+const ELEVENLABS_STT_MODELS = {
+	include: ['scribe_*'],
+	exclude: ['*realtime*'],
+} as const;
 const MINIMAX_IMAGE_MODELS = ['image-01*'] as const;
 const VOLCENGINE_IMAGE_MODELS = ['doubao-seedream-*', 'dola-seedream-*', 'seedream-*'] as const;
 const QWEN_TTS_REALTIME_SESSION_MODELS = ['qwen3-tts-*realtime*', 'qwen-tts-realtime*'] as const;
@@ -429,6 +448,48 @@ const CONVERSION_ADAPTERS = [
 			generationConfig: { imageConfig: { aspectRatio: '16:9', imageSize: '2K' } },
 		},
 	},
+	{
+		id: 'elevenlabs-tts',
+		optionKey: 'elevenlabs-tts',
+		upstreamModels: ELEVENLABS_TTS_MODELS,
+		request: { protocol: 'openai', operation: 'audio.speech' },
+		upstream: { protocol: 'elevenlabs', operations: ['audio.speech'] },
+		modality: 'audio',
+		modelKind: 'tts',
+		exchange: 'unary',
+		billing: 'per_character',
+		requestPayload: 'json',
+		responsePayload: 'binary',
+		requiredUpstreamCapabilities: ['audio.speech'],
+		publicPath: '/v1/audio/speech',
+		roles: ['upstream'],
+		lossyFeatures: ['response_format_aac', 'response_format_flac', 'openai_speed_range', 'instructions'],
+		protectedUpstreamPaths: ['text', 'model_id', 'output_format'],
+		extraBodyExample: {
+			voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+			language_code: 'en',
+			seed: 42,
+		},
+	},
+	{
+		id: 'elevenlabs-asr-file',
+		optionKey: 'elevenlabs-asr-file',
+		upstreamModels: ELEVENLABS_STT_MODELS,
+		request: { protocol: 'openai', operation: 'audio.transcriptions' },
+		upstream: { protocol: 'elevenlabs', operations: ['audio.transcriptions'] },
+		modality: 'audio',
+		modelKind: 'asr',
+		exchange: 'unary',
+		billing: 'per_second',
+		requestPayload: 'multipart',
+		responsePayload: 'json',
+		requiredUpstreamCapabilities: ['audio.transcriptions'],
+		publicPath: '/v1/audio/transcriptions',
+		roles: ['upstream'],
+		lossyFeatures: ['prompt'],
+		protectedUpstreamPaths: ['model_id', 'timestamps_granularity', 'webhook'],
+		extraBodyExample: { tag_audio_events: false, num_speakers: 2 },
+	},
 ] as const satisfies readonly AdapterDescriptor[];
 
 function passthroughDescriptor(input: {
@@ -609,6 +670,29 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		requiredUpstreamCapabilities: ['audio.speech'],
 		publicPath: MINIMAX_T2A_PATH,
 		upstreamModels: { include: MINIMAX_NATIVE_TTS_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'elevenlabs',
+		operation: 'audio.transcriptions',
+		modelKind: 'asr',
+		modality: 'audio',
+		billing: 'per_second',
+		requestPayload: 'multipart',
+		requiredUpstreamCapabilities: ['audio.transcriptions'],
+		publicPath: ELEVENLABS_SPEECH_TO_TEXT_PATH,
+		upstreamModels: ELEVENLABS_STT_MODELS,
+	}),
+	passthroughDescriptor({
+		protocol: 'elevenlabs',
+		operation: 'audio.speech',
+		modelKind: 'tts',
+		modality: 'audio',
+		exchange: 'sse',
+		billing: 'per_character',
+		responsePayload: 'binary',
+		requiredUpstreamCapabilities: ['audio.speech'],
+		publicPath: ELEVENLABS_TEXT_TO_SPEECH_PATH,
+		upstreamModels: ELEVENLABS_TTS_MODELS,
 	}),
 	passthroughDescriptor({
 		protocol: 'minimax',
@@ -913,7 +997,7 @@ export function requestSurfacePath(
 		}
 		return `/v1beta/models/${modelSegment}:${operation}`;
 	}
-	if (protocol === 'minimax' || protocol === 'volcengine') {
+	if (protocol === 'minimax' || protocol === 'volcengine' || protocol === 'elevenlabs') {
 		if (operation === '*') return '/*';
 		return lookupPublicPath(protocol, operation) ?? `/${operation}`;
 	}

@@ -51,6 +51,10 @@ import {
 import { dispatchDashScopeImageGenerations } from './dashscope-images-driver';
 import { dispatchGeminiOpenAiImage } from './gemini-openai-image-driver';
 import { dispatchMiniMaxOpenAiImage, dispatchMiniMaxOpenAiSpeech } from './minimax-openai-driver';
+import {
+	dispatchElevenLabsAudioTranscriptions,
+	dispatchElevenLabsOpenAiSpeech,
+} from './elevenlabs-openai-driver';
 import { dispatchOpenAiImageGenerations } from './openai-images-driver';
 import { dispatchVolcengineOpenAiImage } from './volcengine-openai-driver';
 
@@ -66,6 +70,7 @@ const AUDIO_TRANSCRIPTION_ADAPTERS = [
 	'dashscope-asr-fun-file',
 	'dashscope-asr-file-async',
 	'minimax-asr-file',
+	'elevenlabs-asr-file',
 ] as const satisfies readonly RouteAdapter[];
 
 const AUDIO_SPEECH_ADAPTERS = [
@@ -73,6 +78,7 @@ const AUDIO_SPEECH_ADAPTERS = [
 	'dashscope-tts-qwen',
 	'dashscope-tts-minimax',
 	'minimax-tts',
+	'elevenlabs-tts',
 ] as const satisfies readonly RouteAdapter[];
 
 const IMAGE_GENERATION_ADAPTERS = [
@@ -122,6 +128,9 @@ export function dispatchAudioTranscriptions(
 	if (route.adapter === 'minimax-asr-file') {
 		return dispatchMiniMaxAudioTranscriptions(route, req, ctx.signal, ctx.timing, ctx.attempt);
 	}
+	if (route.adapter === 'elevenlabs-asr-file') {
+		return dispatchElevenLabsAudioTranscriptions(route, req, ctx.signal, ctx.timing, ctx.attempt);
+	}
 	throw new Error(`Unsupported audio transcription adapter: ${route.adapter}`);
 }
 
@@ -130,6 +139,7 @@ const SPEECH_DISPATCH = {
 	'dashscope-tts-qwen': dispatchDashScopeQwenTts,
 	'dashscope-tts-minimax': dispatchDashScopeMiniMaxTts,
 	'minimax-tts': dispatchMiniMaxOpenAiSpeech,
+	'elevenlabs-tts': dispatchElevenLabsOpenAiSpeech,
 } as const;
 
 export function dispatchAudioSpeech(

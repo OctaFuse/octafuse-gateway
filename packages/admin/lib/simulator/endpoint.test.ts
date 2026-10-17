@@ -228,6 +228,50 @@ describe("buildSimulatorRequest openai", () => {
 		});
 	});
 
+	it("builds ElevenLabs native speech path, query, and model_id", () => {
+		const result = buildSimulatorRequest({
+			baseUrl: "https://gateway.example.com",
+			kind: "tts",
+			protocol: "elevenlabs",
+			modelForRouting: "elevenlabs-flash-v2.5",
+			body: {
+				voice_id: "JBFqnCBsd6RMkjVDRZzb",
+				variant: "stream",
+				output_format: "mp3_44100_128",
+				model_id: "<auto>",
+				text: "hello",
+			},
+			apiKey: "sk-test",
+			audioOperation: "speech",
+		});
+		assert.equal(
+			result.url,
+			"https://gateway.example.com/elevenlabs/v1/text-to-speech/JBFqnCBsd6RMkjVDRZzb/stream?output_format=mp3_44100_128"
+		);
+		assert.deepEqual(JSON.parse(result.bodyText), {
+			model_id: "elevenlabs-flash-v2.5",
+			text: "hello",
+		});
+	});
+
+	it("builds ElevenLabs native transcription multipart", () => {
+		const file = new File(["x"], "a.wav", { type: "audio/wav" });
+		const result = buildSimulatorRequest({
+			baseUrl: "https://gateway.example.com",
+			kind: "asr",
+			protocol: "elevenlabs",
+			modelForRouting: "elevenlabs-scribe-v2",
+			body: { diarize: true, language_code: "zh" },
+			apiKey: "sk-test",
+			audioOperation: "transcriptions",
+			audioFile: file,
+		});
+		assert.equal(result.url, "https://gateway.example.com/elevenlabs/v1/speech-to-text");
+		assert.equal(result.formData?.get("model_id"), "elevenlabs-scribe-v2");
+		assert.equal(result.formData?.get("diarize"), "true");
+		assert.equal(result.formData?.get("language_code"), "zh");
+	});
+
 	it("builds MiniMax image JSON for /v1/minimax/image_generation", () => {
 		const result = buildSimulatorRequest({
 			baseUrl: "https://gateway.example.com",

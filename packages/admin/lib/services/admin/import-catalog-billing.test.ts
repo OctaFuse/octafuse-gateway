@@ -716,3 +716,22 @@ describe('import catalog embedding presets', () => {
 		}
 	});
 });
+
+describe('static model presets always carry both USD and CNY pricing', () => {
+	it('every preset with pricing.usd also has pricing.cny (USD × 7 placeholder when no official CNY)', () => {
+		const missing = listStaticModelPresets()
+			.filter((p) => {
+				const pricing = p.pricing as { usd?: unknown; cny?: unknown } | null | undefined;
+				return pricing?.usd != null && pricing.cny == null;
+			})
+			.map((p) => p.id);
+		assert.deepEqual(missing, []);
+	});
+
+	it('fills xAI Grok Build / Grok 4.20 CNY as USD × 7', () => {
+		const cny = listStaticModelPresetCatalogForAdmin('CNY');
+		assert.equal(cny.find((r) => r.id === 'grok-build-0.1')!.pricing_label, '¥7 / ¥14 /M');
+		assert.equal(cny.find((r) => r.id === 'grok-4.20-0309-reasoning')!.pricing_label, '¥8.75 / ¥17.5 /M');
+		assert.equal(cny.find((r) => r.id === 'grok-4.20-0309-non-reasoning')!.pricing_label, '¥8.75 / ¥17.5 /M');
+	});
+});

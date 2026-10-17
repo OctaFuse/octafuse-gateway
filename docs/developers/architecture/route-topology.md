@@ -39,6 +39,7 @@ model + route_group + request protocol + operation
 | Gemini | **`models.generate`**（generate-content 家族，覆盖流式与非流式；图片模型走同一入口。OpenAI 生图入口的转换适配器是 `gemini-image`。见 [Gemini 原生生图](./gemini-image.md)）、**`models.embed`**（`:embedContent` 与 `:batchEmbedContents`，向量模型使用，上游模板同样含 `{model}` 与 `{action}`） |
 | DashScope | `audio.transcriptions.*`、`audio.speech.*`（见 [DashScope 音频架构](./dashscope-audio.md)）、`images.generations.multimodal`（见 [DashScope 生图架构](./dashscope-image.md)） |
 | MiniMax | `audio.transcriptions`（公开 `POST /v1/minimax/speech_to_text`）、`audio.speech`（公开 `POST /v1/minimax/t2a_v2`）、`images.generations`（公开 `POST /v1/minimax/image_generation`）。OpenAI 入口的转换适配器是 `minimax-asr-file`、`minimax-tts`、`minimax-image`。见 [MiniMax 音频](./minimax-audio.md)、[MiniMax 生图](./minimax-image.md) |
+| ElevenLabs | `audio.transcriptions`（公开 `POST /elevenlabs/v1/speech-to-text`）、`audio.speech`（公开 `POST /elevenlabs/v1/text-to-speech/{voice_id}`，含 `/stream`、`/with-timestamps`、`/stream/with-timestamps` 三个变体，共用同一 operation）。OpenAI 入口的转换适配器是 `elevenlabs-asr-file`、`elevenlabs-tts`。见 [ElevenLabs 音频](./elevenlabs-audio.md) |
 | Volcengine | `images.generations`（公开 `POST /v1/volcengine/images/generations`）。火山方舟与 BytePlus ModelArk 共用这一协议。OpenAI 入口的转换适配器是 `volcengine-image`。对话和 Responses 仍走供应商的 OpenAI 端点。见 [火山方舟 Seedream 生图](./volcengine-image.md) |
 
 `*` 是迁移兼容值。运行时先查精确 operation 的请求入口，查不到时再回退同协议的 `*` 请求入口。

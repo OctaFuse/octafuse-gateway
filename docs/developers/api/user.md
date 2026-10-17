@@ -496,7 +496,7 @@ GET /v1/models
 | `output_modalities` | string[] \| null | 支持的输出模态：`text`、`image`、`audio` |
 | `released_at` | string \| null | 模型发布日期（`YYYY-MM-DD`） |
 | `discounts` | object | 按 `route_group` 派生的前台折扣。每个 group 含 `kind`（`flat` / `schedule`）、`timezone`、`schedule_mode`、代表路由的 `priority`/`weight`、`current` 当刻窗口，以及 `windows[]`（`catalog_factor` × `route_factor` = `composite_factor`）。代表路由取该 group 下 active 路由中 `priority` 最大、同层 `weight` 最大的一条；两者仍并列时取当刻 `composite_factor` 最小（折扣最大）的一条，倍率也相同则保持列表原顺序。官方或路由时段未覆盖的钟点会补 `catalog_factor=1` 的兜底窗（含带 `days` 的工作日高峰：工作日空隙与周末整日都会补），因此仅工作日高峰、倍率相同的官方窗不会被压成 `kind: flat`。若该用户配置了该目录模型的 `charged_cost_factors`，再按 route group 查找（具体分组，其次 `"*"`，数字覆盖全部分组）并按 `USER_CHARGED_COST_FACTOR_MODE` 叠进 **`route_factor`** 后重算 `composite_factor`（`multiply` 为路由 × 用户；`min` 取较小 Charged；`catalog_factor` 不变）。该分组未命中时与 `GET /catalog/models` 倍率一致 |
-| `inbound` | object[] | **请求入口**（客户端可打的公开路径）：`{ protocol, operation }`。聚合当前可见 `route_groups` 下 active 请求入口：LLM 文本为 `openai.chat`、`openai.responses`、`anthropic.messages`、`gemini.models.generate`；图 / 音频为 `openai.images.generations`、`openai.images.edits`、`openai.audio.transcriptions`、`openai.audio.speech`。不含 DashScope、MiniMax、火山方舟的原生透传入口。`operation=*` 在同协议没有精确入口时展开为该协议默认文本 operation（OpenAI → `chat`，Anthropic → `messages`，Gemini → `models.generate`）；同协议已有精确入口（含图 / 音频）时不再展开。列表按稳定顺序去重（LLM 文本在前，`responses` 排在 `chat` 前，随后为图 / 音频），**不是**推荐入口；选哪条由客户端决定。与 `GET /catalog/models` 的 `protocols`（**上游协议**）不同：Chat 与 Responses 都是 `openai`，必须看 `operation` |
+| `inbound` | object[] | **请求入口**（客户端可打的公开路径）：`{ protocol, operation }`。聚合当前可见 `route_groups` 下 active 请求入口：LLM 文本为 `openai.chat`、`openai.responses`、`anthropic.messages`、`gemini.models.generate`；图 / 音频为 `openai.images.generations`、`openai.images.edits`、`openai.audio.transcriptions`、`openai.audio.speech`。不含 DashScope、MiniMax、ElevenLabs、火山方舟的原生透传入口。`operation=*` 在同协议没有精确入口时展开为该协议默认文本 operation（OpenAI → `chat`，Anthropic → `messages`，Gemini → `models.generate`）；同协议已有精确入口（含图 / 音频）时不再展开。列表按稳定顺序去重（LLM 文本在前，`responses` 排在 `chat` 前，随后为图 / 音频），**不是**推荐入口；选哪条由客户端决定。与 `GET /catalog/models` 的 `protocols`（**上游协议**）不同：Chat 与 Responses 都是 `openai`，必须看 `operation` |
 | `metadata` | object \| undefined | 扩展元数据 |
 
 ### 示例
@@ -1110,7 +1110,7 @@ Content-Type: application/json
 | `stream_format` | 可选；`audio`（默认）或 `sse` |
 | `instructions` | 可选；风格指令，最多 4096 个字符 |
 
-同协议 OpenAI 上游使用 `passthrough`；转到 DashScope SpeechSynthesizer、Qwen-TTS、DashScope 上的 MiniMax，或 MiniMax 官方 `t2a_v2` 时，必须选择对应的显式 adapter。MiniMax 官方适配器是 `minimax-tts`：`voice` 用 MiniMax `voice_id`，格式限 `mp3` / `pcm` / `flac` / `wav`，语速限 `0.5`–`2`，不支持 `instructions`。非流式返回音频字节；`stream_format=sse` 返回 OpenAI speech SSE。最终字符数采用上游 `extra_info.usage_characters`，缺失时不会用输入长度补算。DashScope TTS 则采用上游 `usage.characters`。
+同协议 OpenAI 上游使用 `passthrough`；转到 DashScope SpeechSynthesizer、Qwen-TTS、DashScope 上的 MiniMax，或 MiniMax 官方 `t2a_v2` 时，必须选择对应的显式 adapter。ElevenLabs 适配器是 `elevenlabs-tts`（见下文「ElevenLabs 文本转语音」）。MiniMax 官方适配器是 `minimax-tts`：`voice` 用 MiniMax `voice_id`，格式限 `mp3` / `pcm` / `flac` / `wav`，语速限 `0.5`–`2`，不支持 `instructions`。非流式返回音频字节；`stream_format=sse` 返回 OpenAI speech SSE。最终字符数采用上游 `extra_info.usage_characters`，缺失时不会用输入长度补算。DashScope TTS 则采用上游 `usage.characters`。
 
 默认 `GET /v1/models` **不含** TTS；列出 TTS 请用 `kind=tts`（`kind=audio` 会同时含 ASR）或 `kind=all`。命中可见 `audio.speech` 路由时，`model_info.inbound` 会包含 `{ "protocol": "openai", "operation": "audio.speech" }`。
 
@@ -1170,11 +1170,26 @@ OpenAI 入口使用适配器 `minimax-tts`，调用上面的 `POST /v1/audio/spe
 
 文件转写透传见下文「MiniMax 文件转写透传」。
 
+### ElevenLabs 文本转语音
+
+```text
+POST /elevenlabs/v1/text-to-speech/{voice_id}
+POST /elevenlabs/v1/text-to-speech/{voice_id}/stream
+POST /elevenlabs/v1/text-to-speech/{voice_id}/with-timestamps
+POST /elevenlabs/v1/text-to-speech/{voice_id}/stream/with-timestamps
+xi-api-key: <USER_API_KEY>        # 也可用 Authorization: Bearer
+Content-Type: application/json
+```
+
+请求与上游都是 `elevenlabs` + `audio.speech`，adapter 必须是 `passthrough`；四个变体共用这一 operation。`model_id` 与 `text` 必填，`model_id` 填 Gateway 模型 ID，网关转发时换成路由上的供应商模型名。`voice_id` 只接受字母、数字、`_`、`-`。`output_format`、`enable_logging`、`optimize_streaming_latency` 作为 query 原样转发。按响应头 `x-character-count` 按字符计费，缺失时按 `text` 长度计。上游 `detail.status=quota_exceeded` 改写为 402，`too_many_concurrent_requests`、`system_busy` 改写为 429，以便故障转移。详见 [ElevenLabs 音频](../architecture/elevenlabs-audio.md)。
+
+OpenAI 入口使用适配器 `elevenlabs-tts`，调用上面的 `POST /v1/audio/speech`。`voice` 填 ElevenLabs `voice_id`；`response_format` 支持 `mp3`、`opus`、`pcm`、`wav`（`wav` 与 `pcm` 为 24 kHz），`aac` 与 `flac` 返回 400；`speed` 范围 `0.7`–`1.2`；`instructions` 返回 400。`voice_settings`、`language_code`、`seed` 等官方字段通过 `extra_body` 传入。`stream_format=sse` 返回 OpenAI speech SSE。
+
 ---
 
 ## 语音转写（Audio Transcriptions）
 
-OpenAI 兼容 Audio Transcriptions API，供桌面 Agent 语音输入等场景调用。鉴权与 Chat 相同（用户 API Key）；模型须配置请求协议为 **OpenAI** 的路由（上游可以是 OpenAI 透传，也可以经 `dashscope-asr-*`、`minimax-asr-file` 等适配器转换），且 `pricing_profile` 含有效的 Audio 计费配置（见下方双模式）。
+OpenAI 兼容 Audio Transcriptions API，供桌面 Agent 语音输入等场景调用。鉴权与 Chat 相同（用户 API Key）；模型须配置请求协议为 **OpenAI** 的路由（上游可以是 OpenAI 透传，也可以经 `dashscope-asr-*`、`minimax-asr-file`、`elevenlabs-asr-file` 等适配器转换），且 `pricing_profile` 含有效的 Audio 计费配置（见下方双模式）。
 
 ```
 POST /v1/audio/transcriptions
@@ -1254,6 +1269,18 @@ curl -sS "$GATEWAY_URL/v1/audio/transcriptions" \
 ```
 
 默认 `GET /v1/models` **不含** ASR / TTS；列表可用 `kind=asr`（`kind=audio` 会同时含 TTS）或 `kind=all`。命中可见 `audio.transcriptions` 路由时，`model_info.inbound` 会包含 `{ "protocol": "openai", "operation": "audio.transcriptions" }`。Kind 判定规则（有效的 `audio_billing_mode` 优先，其次按模态签名兜底）见 [模型类型](../reference/model-kinds.md)；计费字段见 [admin.md「pricing_profile」](./admin.md#pricing_profile--price_override-契约adminmodelsadminroutes)。
+
+### ElevenLabs 文件转写透传
+
+```text
+POST /elevenlabs/v1/speech-to-text
+xi-api-key: <USER_API_KEY>        # 也可用 Authorization: Bearer
+Content-Type: multipart/form-data
+```
+
+请求与上游都是 `elevenlabs` + `audio.transcriptions`，adapter 必须是 `passthrough`。表单沿用 ElevenLabs 官方字段，`model_id` 必填且填 Gateway 模型 ID；`file` 与 `cloud_storage_url` / `source_url` 二选一。`webhook=true` 返回 400。响应保持上游原文，按上游 `audio_duration_secs` 按秒计费。
+
+OpenAI 入口使用适配器 `elevenlabs-asr-file`，调用上面的 `POST /v1/audio/transcriptions`。`language` 转为 `language_code`，`prompt` 不转发；`response_format` 支持 `json`、`text`、`verbose_json`、`diarized_json`、`srt`、`vtt`，其中 `diarized_json` 会开启说话人识别，`srt` / `vtt` 由网关生成。`tag_audio_events`、`num_speakers` 等官方字段作为额外表单字段传入。
 
 ### MiniMax 文件转写透传
 
@@ -1413,7 +1440,7 @@ LLM 及 token 模式的价格以每百万 token 为单位（per-million-token pr
 - **全部不可用**（均熔断）：网关直接返回 **429**，响应体为 `{ "error": { "code": "upstream_capacity_exhausted", ... } }`，并带 `Retry-After`；**不调用上游**。
 - **有可试路由时**：按序打上游；可重试失败则换下一 Provider；全部 attempt 失败则返回**最后一次**上游响应。
 
-**可重试并换 Provider**：上游 `429`、`5xx`、`401`、`403`、网络/`fetch` 失败（524 / fetch 仅同次 failover，不跨请求熔断）。熔断按 **`providers.id`**：429 优先读 `Retry-After` 或递增退避；401/403 约 **5min**；普通 5xx 连续 3 次后约 10s。
+**可重试并换 Provider**：上游 `429`、`5xx`、`401`、`402`（余额 / 额度用尽）、`403`、网络/`fetch` 失败（524 / fetch 仅同次 failover，不跨请求熔断）。熔断按 **`providers.id`**：429 优先读 `Retry-After` 或递增退避；401/402/403 约 **5min**；普通 5xx 连续 3 次后约 10s。
 
 **User+model 熔断**（与 provider 熔断独立，按 `userId + modelId`，退避 **20s → 1min → 3min → 5min → 10min**；见 [proxy-request-lifecycle.md](../architecture/proxy-request-lifecycle.md) §2.2）：
 

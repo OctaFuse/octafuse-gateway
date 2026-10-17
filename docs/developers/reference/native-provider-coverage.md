@@ -1,6 +1,6 @@
-# DashScope、MiniMax 与火山方舟能力覆盖
+# DashScope、MiniMax、ElevenLabs 与火山方舟能力覆盖
 
-本文对照阿里云百炼 DashScope、MiniMax，以及火山方舟 / BytePlus ModelArk 官方开放的接口，记录网关当前的透传与协议转换支持情况，以及已知缺口。已支持能力的行为细节见各自的架构文档，本文只回答「有没有、缺什么」。
+本文对照阿里云百炼 DashScope、MiniMax、ElevenLabs，以及火山方舟 / BytePlus ModelArk 官方开放的接口，记录网关当前的透传与协议转换支持情况，以及已知缺口。已支持能力的行为细节见各自的架构文档，本文只回答「有没有、缺什么」。
 
 **核对日期**：2026-10-08。官方接口或网关能力变化后，更新对应行并刷新日期。
 
@@ -9,6 +9,7 @@
 - [适配器与驱动](../architecture/adapters-and-drivers.md)
 - [DashScope 音频](../architecture/dashscope-audio.md)、[DashScope 生图](../architecture/dashscope-image.md)
 - [MiniMax 音频](../architecture/minimax-audio.md)、[MiniMax 生图](../architecture/minimax-image.md)
+- [ElevenLabs 音频](../architecture/elevenlabs-audio.md)
 - [火山方舟 Seedream 生图](../architecture/volcengine-image.md)
 - [文生图模型](./image-models.md)（入口、目录与计费）
 - [Gemini 原生生图](../architecture/gemini-image.md)（与本文三家厂商分开记录；图片模型复用 Gemini `models.generate`，OpenAI 入口用 `gemini-image`）
@@ -77,6 +78,23 @@ MiniMax 原生路径相对 `providers.endpoints.minimax.base`（国内 `https://
 | 音乐、歌词、翻唱 | `music_generation` 等 | ❌ | ❌ | 官方自 2026-08-20 起不再面向新用户开放，可暂不做 |
 | 文件管理 | 上传、列出、检索、下载、删除 | ❌ | — | 异步语音、音色复刻、视频下载的前置能力 |
 
+## ElevenLabs
+
+ElevenLabs 原生路径相对 `providers.endpoints.elevenlabs.base`（默认 `https://api.elevenlabs.io/v1`，欧盟数据驻留 `https://api.eu.residency.elevenlabs.io/v1`），用 `xi-api-key` 鉴权。公开透传路径是 `/elevenlabs/v1/*`。
+
+| 能力 | 官方端点 | 透传 | 协议转换 | 备注 |
+|------|----------|------|----------|------|
+| 文本转语音 | `/v1/text-to-speech/{voice_id}` | ✅ | ✅ | OpenAI 入口用 `elevenlabs-tts`，`aac` / `flac` / `instructions` 不支持，含 SSE |
+| 文本转语音（流式） | `…/stream` | ✅ | ✅ | 转换入口用 `stream_format=sse` |
+| 带时间戳的文本转语音 | `…/with-timestamps`、`…/stream/with-timestamps` | ✅ | ❌ | OpenAI 没有对应字段，只开放原生透传 |
+| 文件转写（Scribe） | `/v1/speech-to-text` | ✅ | ✅ | 转换入口用 `elevenlabs-asr-file`；`webhook=true` 不支持；单文件上限沿用网关的 25MB |
+| 文本转语音（WebSocket） | `wss://…/stream-input` | ❌ | ❌ | |
+| 实时转写 | `wss://…/speech-to-text/realtime` | ❌ | ❌ | Scribe Realtime |
+| 音色列表 / 复刻 / 设计 / 管理 | `/v1/voices`、`/v1/voices/add` 等 | ❌ | — | 音色 ID 由客户端自行管理 |
+| 语音转语音 | `/v1/speech-to-speech/{voice_id}` | ❌ | ❌ | |
+| 配音、音效、音乐、语音隔离 | `/v1/dubbing`、`/v1/sound-generation`、`/v1/music`、`/v1/audio-isolation` | ❌ | ❌ | |
+| 用量 / 额度查询 | `/v1/user/subscription` | ❌ | — | 没有供应商额度适配器 |
+
 ## 火山方舟
 
 `volcengine` 是火山方舟与 BytePlus ModelArk 共用的上游协议，只承载方舟原生能力。原生路径相对 `providers.endpoints.volcengine.base`：国内 `https://ark.cn-beijing.volces.com/api/v3`，国际 `https://ark.ap-southeast.bytepluses.com/api/v3`。也可以显式填写 capability URL 覆盖派生结果。
@@ -104,10 +122,12 @@ MiniMax 原生路径相对 `providers.endpoints.minimax.base`（国内 `https://
 | 类型 | 缺失项 |
 |------|--------|
 | DashScope 模型 | `qwen3-tts-*` / `qwen-tts*`、`qwen-tts-realtime*`、`MiniMax/speech-2.8-hd`、`paraformer-*`、`qwen-audio-3.1-asr-flash-*`、`qwen-image-edit*` |
+| ElevenLabs 模型 | `scribe_v1`（已弃用，定价页不再列价）、`scribe_v2_realtime`（仅 WebSocket） |
 | MiniMax 模型 | `MiniMax-M2.5-highspeed`、`MiniMax-M2.1`、`MiniMax-M2.1-highspeed`、`MiniMax-M2`、`MiniMax-M3.1-Flash-Preview`（仅 M Plan）、`speech-2.6-hd` / `speech-2.6-turbo`、`speech-02-hd` / `speech-02-turbo` |
 
 ## 官方来源
 
+- ElevenLabs：[API 定价](https://elevenlabs.io/pricing/api)、[API 参考](https://elevenlabs.io/docs/api-reference/introduction)
 - MiniMax：[接口概览](https://platform.minimaxi.com/docs/api-reference/api-overview.md)、[文档索引](https://platform.minimaxi.com/docs/llms.txt)
 - 百炼：[模型列表](https://help.aliyun.com/zh/model-studio/getting-started/models)、[Responses 兼容](https://www.alibabacloud.com/help/en/model-studio/compatibility-with-openai-responses-api)
 - 火山方舟：[图片生成 API](https://docs.volcengine.com/docs/ark/image-generation-api)

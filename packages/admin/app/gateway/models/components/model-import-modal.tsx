@@ -453,6 +453,7 @@ export function ModelImportModal(props: Props) {
 								<tbody className="divide-y divide-gray-100 bg-white">
 									{sortedRows.map((row) => {
 										const alreadyInGateway = existingModelIds.has(row.id);
+										const noPricing = !row.pricing_available;
 										const kind = row.kind;
 										const pricingLabel =
 											row.pricing_label ??
@@ -466,14 +467,14 @@ export function ModelImportModal(props: Props) {
 											<tr
 												key={row.id}
 												className={
-													alreadyInGateway ? 'bg-gray-50 text-gray-400' : 'hover:bg-gray-50'
+													alreadyInGateway || noPricing ? 'bg-gray-50 text-gray-400' : 'hover:bg-gray-50'
 												}
 											>
 												<td className="px-3 py-2 align-middle">
 													<input
 														type="checkbox"
 														checked={alreadyInGateway ? false : !!selected[row.id]}
-														disabled={alreadyInGateway}
+														disabled={alreadyInGateway || noPricing}
 														onChange={() => onTogglePreset(row.id)}
 														className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
 														aria-label={
@@ -550,7 +551,13 @@ export function ModelImportModal(props: Props) {
 													</>
 												) : null}
 												<td className="px-3 py-2 text-right tabular-nums text-gray-700">
-													<CatalogPricingPreview label={pricingLabel} detail={pricingDetail} />
+													{noPricing ? (
+														<span className="text-xs text-amber-700">
+															{t('noCatalogPrice', { currency: billingCurrency })}
+														</span>
+													) : (
+														<CatalogPricingPreview label={pricingLabel} detail={pricingDetail} />
+													)}
 												</td>
 											</tr>
 										);

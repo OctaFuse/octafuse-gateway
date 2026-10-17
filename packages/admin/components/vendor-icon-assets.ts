@@ -16,6 +16,7 @@ import cerebrasIcon from '@lobehub/icons-static-svg/icons/cerebras.svg';
 import cohereIcon from '@lobehub/icons-static-svg/icons/cohere.svg';
 import deepinfraIcon from '@lobehub/icons-static-svg/icons/deepinfra.svg';
 import deepseekIcon from '@lobehub/icons-static-svg/icons/deepseek.svg';
+import elevenlabsIcon from '@lobehub/icons-static-svg/icons/elevenlabs.svg';
 import fireworksIcon from '@lobehub/icons-static-svg/icons/fireworks.svg';
 import geminiIcon from '@lobehub/icons-static-svg/icons/gemini.svg';
 import groqIcon from '@lobehub/icons-static-svg/icons/groq.svg';
@@ -71,6 +72,7 @@ export const vendorIconAssets: Readonly<Record<string, string>> = {
 	cohere: assetUrl(cohereIcon),
 	deepinfra: assetUrl(deepinfraIcon),
 	deepseek: assetUrl(deepseekIcon),
+	elevenlabs: assetUrl(elevenlabsIcon),
 	fireworks: assetUrl(fireworksIcon),
 	google: assetUrl(geminiIcon),
 	groq: assetUrl(groqIcon),
