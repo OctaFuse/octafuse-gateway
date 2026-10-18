@@ -759,6 +759,8 @@ describe('MiniMax M3.1 Flash Preview catalog specs', () => {
 		const m3 = listStaticModelPresets().find((p) => p.id === 'minimax-m3');
 		assert.ok(preset);
 		assert.ok(m3);
+		const presetId = preset.id;
+		const m3Id = m3.id;
 		assert.equal(preset.display_name, 'MiniMax M3.1 Flash Preview');
 		assert.equal(preset.vendor, 'minimax');
 		assert.equal(preset.context_window, 1000000);
@@ -772,8 +774,8 @@ describe('MiniMax M3.1 Flash Preview catalog specs', () => {
 		assert.match(preset.i18n?.zh ?? '', /按 MiniMax M3 标准刊例预填/);
 		assert.deepEqual(preset.pricing, m3.pricing);
 		for (const billing of ['USD', 'CNY'] as const) {
-			const row = listStaticModelPresetCatalogForAdmin(billing).find((item) => item.id === preset.id);
-			const m3Row = listStaticModelPresetCatalogForAdmin(billing).find((item) => item.id === m3.id);
+			const row = listStaticModelPresetCatalogForAdmin(billing).find((item) => item.id === presetId);
+			const m3Row = listStaticModelPresetCatalogForAdmin(billing).find((item) => item.id === m3Id);
 			assert.ok(row, billing);
 			assert.ok(m3Row, billing);
 			assert.equal(row.kind, 'llm');
