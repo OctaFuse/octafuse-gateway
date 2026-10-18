@@ -782,8 +782,8 @@ export function ProviderModal(props: ProviderModalProps) {
 							id={`${tabsId}-basic-panel`}
 							aria-labelledby={`${tabsId}-basic`}
 						>
-							<div className="grid gap-8 md:min-h-full md:grid-cols-[1fr_0.9fr]">
-								<div className="space-y-5">
+							<div className="grid gap-8 md:h-full md:min-h-0 md:grid-cols-[1fr_0.9fr]">
+								<div className="min-w-0 space-y-5 md:min-h-0 md:overflow-y-auto md:overscroll-contain md:pr-1">
 									<div>
 										<label
 											htmlFor={`${tabsId}-kind`}
@@ -974,36 +974,39 @@ export function ProviderModal(props: ProviderModalProps) {
 										</p>
 									</div>
 								</div>
-								<div className="flex min-h-0 flex-col rounded-xl border border-gray-200 bg-gray-50/60 p-5">
+								<div className="flex min-w-0 flex-col gap-5 md:h-full md:min-h-0">
 									{catalogIntro ? (
-										<div className="mb-5 border-b border-gray-200 pb-5">
-											<p className="text-xs font-medium text-gray-500">
+										<div className="flex flex-col rounded-xl border border-gray-200 bg-gray-50/40 p-4 md:min-h-0 md:flex-1">
+											<h3 className="shrink-0 text-xs font-medium text-gray-500">
 												{t("catalogIntro")}
-											</p>
-											<p className="mt-2 max-h-32 overflow-y-auto whitespace-pre-wrap text-sm leading-6 text-gray-600">
+											</h3>
+											<p
+												tabIndex={0}
+												className="mt-2 max-h-40 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words text-sm leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-blue-200 md:min-h-0 md:max-h-none md:flex-1"
+											>
 												{catalogIntro}
 											</p>
 										</div>
 									) : null}
-									<div>
-										<h3
-											id="provider-note-heading"
-											className="text-sm font-semibold text-gray-900"
+									<div className="shrink-0">
+										<label
+											htmlFor={`${tabsId}-note`}
+											className="mb-2 block text-xs font-medium text-gray-700"
 										>
 											{t("note")}
-										</h3>
+										</label>
+										<textarea
+											id={`${tabsId}-note`}
+											rows={4}
+											value={formData.note}
+											onChange={(e) =>
+												onFormChange({ ...formData, note: e.target.value })
+											}
+											className="block h-32 max-h-32 w-full resize-none overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+											placeholder={t("notePlaceholder")}
+											autoComplete="off"
+										/>
 									</div>
-									<textarea
-										rows={3}
-										value={formData.note}
-										onChange={(e) =>
-											onFormChange({ ...formData, note: e.target.value })
-										}
-										className="mt-3 min-h-[10rem] w-full flex-1 resize-y md:resize-none rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-										placeholder={t("notePlaceholder")}
-										autoComplete="off"
-										aria-labelledby="provider-note-heading"
-									/>
 								</div>
 							</div>
 						</section>

@@ -503,6 +503,10 @@ export function useModelEditModal(options?: Options) {
 		setShowModal(false);
 	}, [isDeleting, isSaving]);
 
+	const handleRoutesChanged = useCallback(async () => {
+		await onChanged?.();
+	}, [onChanged]);
+
 	return {
 		billingCurrency,
 		showModal,
@@ -532,6 +536,7 @@ export function useModelEditModal(options?: Options) {
 		handleDuplicate,
 		openEditById,
 		handleDelete,
+		handleRoutesChanged,
 		handleAddTag,
 		handleRemoveTag,
 		toggleFormModality,

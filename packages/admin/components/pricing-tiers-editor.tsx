@@ -2,6 +2,7 @@
 
 import { type ReactNode } from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
+import { InfoHintPopover } from './InfoHintPopover';
 import { useTranslations } from 'next-intl';
 
 import type {
@@ -23,6 +24,8 @@ export type PricingTiersEditorProps = {
 	minRows?: number;
 	/** Optional title on the same row as Add / Preview (e.g. Models form). */
 	title?: string;
+	/** Move detailed billing instructions into the shared help popover. */
+	hintDisplay?: 'inline' | 'popover';
 	/** Left side of the Add / Preview row, left-aligned (e.g. billing / provider factor on routes form). */
 	toolbarStart?: ReactNode;
 	/** ISO 4217，与网关 `BILLING_CURRENCY` 一致 */
@@ -77,6 +80,7 @@ export function PricingTiersEditor({
 	onChange,
 	minRows = 0,
 	title,
+	hintDisplay = 'inline',
 	toolbarStart,
 	billingCurrencyCode = 'USD',
 	variant = 'llm',
@@ -160,7 +164,22 @@ export function PricingTiersEditor({
 					{hasToolbarLeft ? (
 						<div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5 text-left">
 							{toolbarStart}
-							{title ? <span className="text-sm font-medium text-gray-800">{title}</span> : null}
+							{title ? (
+								<span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-gray-800">
+									{title}
+									{hintDisplay === 'popover' ? (
+										<>
+											<span className="whitespace-nowrap rounded bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-500">
+												{billCode} · {isPerImage ? t('unitPerImage', { currency: billSym }) : t('unitPerM', { currency: billSym })}
+											</span>
+											<InfoHintPopover label={title} openOnHover openOnFocus portal align="start">
+												<p className="leading-6">{unitFooter}</p>
+												{isImage && !isPerImage ? <p className="mt-2 leading-6">{t('imageHint')}</p> : null}
+											</InfoHintPopover>
+										</>
+									) : null}
+								</span>
+							) : null}
 						</div>
 					) : null}
 					<div className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1.5">
@@ -177,7 +196,9 @@ export function PricingTiersEditor({
 						) : null}
 					</div>
 				</div>
-				<p className="mt-1 text-xs leading-5 text-slate-500">{unitFooter}</p>
+				{hintDisplay === 'inline' ? (
+					<p className="mt-1 text-xs leading-5 text-slate-500">{unitFooter}</p>
+				) : null}
 			</div>
 			{isImage && onImageBillingModeChange ? (
 				<div className="space-y-1.5">
@@ -216,7 +237,7 @@ export function PricingTiersEditor({
 					</div>
 				</div>
 			) : null}
-			{isImage && !isPerImage ? (
+			{isImage && !isPerImage && hintDisplay === 'inline' ? (
 				<p className="text-[11px] text-gray-500 leading-relaxed">{t('imageHint')}</p>
 			) : null}
 			{isPerImage && onPerImageDraftChange ? (

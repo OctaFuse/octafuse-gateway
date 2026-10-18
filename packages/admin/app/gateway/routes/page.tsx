@@ -263,6 +263,7 @@ function RoutesContent() {
 			/>
 
 			<ModelModal
+				onRoutesChanged={state.modelEdit.handleRoutesChanged}
 				open={state.modelEdit.showModal}
 				editingModel={state.modelEdit.editingModel}
 				duplicateSourceModelId={state.modelEdit.duplicateSourceModelId}

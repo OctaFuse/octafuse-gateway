@@ -259,6 +259,8 @@ export function DailyScheduleEditor(props: Props) {
 										comfortable
 											? summarizeWindow
 												? 'grid grid-cols-3 items-end gap-3'
+												: isSingle
+												? 'grid grid-cols-2 items-end gap-3 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto]'
 												: 'grid grid-cols-2 items-end gap-3 sm:grid-cols-[repeat(5,minmax(0,1fr))_auto]'
 											: inline
 											? 'flex w-full shrink-0 items-end gap-1.5 sm:w-auto sm:min-w-[22rem]'

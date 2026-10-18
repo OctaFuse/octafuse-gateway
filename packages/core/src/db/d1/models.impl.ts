@@ -88,10 +88,8 @@ export function createD1ModelsRepository(db: D1DatabaseClient): ModelsRepository
 			return result.meta.changes;
 		},
 
-		async deleteModelCascade(id: string): Promise<number> {
-			await raw.prepare('DELETE FROM model_routes WHERE model_id = ?').bind(id).run();
-			await raw.prepare('DELETE FROM model_tags WHERE model_id = ?').bind(id).run();
-			const deleted = await raw.prepare('DELETE FROM models WHERE id = ?').bind(id).run();
+		async deleteModelIfUnrouted(id: string): Promise<number> {
+			const deleted = await raw.prepare('DELETE FROM models WHERE id = ? AND NOT EXISTS (SELECT 1 FROM model_routes WHERE model_id = ?)').bind(id, id).run();
 			return deleted.meta.changes;
 		},
 	};

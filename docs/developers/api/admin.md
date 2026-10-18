@@ -1161,3 +1161,7 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 `providers` 与 `modelProviders` 另含 `failover_request_count`、`failover_request_rate`；`failover_rate` 含义不变。归属规则与供应商用量相同：按日志最终 `provider_id` 统计，不代表上游逐次尝试可用率。
 
 `recentErrors` 为所选区间（仍受 180 天上限约束）内最近 10 条 `status = error` 日志，字段与全局请求日志相同。
+
+### 删除模型的路由约束
+
+`DELETE /admin/models/:id`（公开管理前缀 `/api/admin/models/:id`）仅删除无关联路由的模型。仍有任何路由（包括停用路由）时返回 `409`，不再级联删除路由。需先通过 `GET /admin/routes?model_id=...` 查看引用，并通过路由删除接口逐条移除；不存在的模型返回 `404`。数据库写入时再次检查引用，避免检查之后新建路由被误删；模型标签和空路由池/入口按现有外键级联清理。

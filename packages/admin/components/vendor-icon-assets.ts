@@ -43,6 +43,7 @@ import perplexityIcon from '@lobehub/icons-static-svg/icons/perplexity.svg';
 import qiniuIcon from '@lobehub/icons-static-svg/icons/qiniu.svg';
 import qwenIcon from '@lobehub/icons-static-svg/icons/qwen.svg';
 import sambanovaIcon from '@lobehub/icons-static-svg/icons/sambanova.svg';
+import scnetIcon from './icons/scnet.svg';
 import siliconCloudIcon from '@lobehub/icons-static-svg/icons/siliconcloud.svg';
 import stabilityIcon from '@lobehub/icons-static-svg/icons/stability.svg';
 import stepfunIcon from '@lobehub/icons-static-svg/icons/stepfun.svg';
@@ -99,6 +100,7 @@ export const vendorIconAssets: Readonly<Record<string, string>> = {
 	perplexity: assetUrl(perplexityIcon),
 	qiniu: assetUrl(qiniuIcon),
 	sambanova: assetUrl(sambanovaIcon),
+	scnet: assetUrl(scnetIcon),
 	siliconflow: assetUrl(siliconCloudIcon),
 	stability: assetUrl(stabilityIcon),
 	stepfun: assetUrl(stepfunIcon),

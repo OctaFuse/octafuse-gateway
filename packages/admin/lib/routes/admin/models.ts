@@ -171,7 +171,7 @@ adminModelsRoutes.patch('/:id', async (c) => {
 	}
 });
 
-/** 级联删除模型及其路由、标签（见 `deleteModelService`）。 */
+/** Delete only an unrouted model; return 409 while any route still references it. */
 adminModelsRoutes.delete('/:id', async (c) => {
 	const id = c.req.param('id');
 	try {
