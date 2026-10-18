@@ -2,6 +2,7 @@
 
 import {
 	ClipboardDocumentIcon,
+	CodeBracketIcon,
 	DocumentDuplicateIcon,
 	EyeIcon,
 	EyeSlashIcon,
@@ -28,7 +29,10 @@ import {
 import {
 	providerApiKeyPreview,
 	getProtocolEndpointMode,
-	partialProtocolForm,
+	getSelectedProtocolCapabilities,
+	toggleProtocolCapability,
+	suggestProtocolEndpointUrl,
+	protocolFormHasOverrides,
 	switchProtocolEndpointMode,
 	protocolFormIsConfigured,
 } from "../provider-utils";
@@ -41,6 +45,7 @@ import {
 	pickProviderCatalogText,
 	pickProviderKindLabel,
 } from "@/lib/provider-kind";
+import { InfoHintPopover } from "@/components/InfoHintPopover";
 import { VendorIcon } from "@/components/model-vendor-icon";
 import type { UpstreamProtocol } from "@octafuse/core/upstream-protocol";
 import type {
@@ -50,6 +55,7 @@ import type {
 } from "../types";
 import { ProviderCatalogOutboundLink } from "./provider-catalog-outbound-link";
 import { useProviderRoutes } from "../use-provider-routes";
+import { ProviderEndpointsJsonPreview } from "./provider-endpoints-json-preview";
 import { ProviderRelatedRoutes } from "./provider-related-routes";
 import { ProviderProtocolIcon } from "./provider-protocol-icon";
 import { PROVIDER_ENDPOINT_FIELDS } from "../provider-endpoint-fields";
@@ -130,44 +136,55 @@ function navigateTabs(event: KeyboardEvent<HTMLButtonElement>) {
 
 function EndpointUrlField({
 	id,
+	name,
 	path,
 	description,
 	value,
 	placeholder,
 	websocket,
+	suggestedUrl,
 	onChange,
 }: {
 	id: string;
+	name: string;
 	path: string;
 	description: string;
 	value: string;
 	placeholder: string;
 	websocket?: boolean;
+	suggestedUrl?: string | null;
 	onChange: (value: string) => void;
 }) {
+	const t = useTranslations("providers.modal");
 	const filled = Boolean(value.trim());
 	return (
 		<div className="min-w-0 px-4 py-4">
-			<label
-				htmlFor={id}
-				className="mb-2.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5"
-			>
+			<div className="mb-2.5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+				<label htmlFor={id} className="text-sm font-medium text-gray-800">
+					{name}
+				</label>
+				<InfoHintPopover
+					label={t("capabilityHelp", { name })}
+					openOnHover
+					openOnFocus
+					portal
+					align="start"
+				>
+					<p className="leading-5">{description}</p>
+				</InfoHintPopover>
 				<code
-					className={`break-all rounded px-1.5 py-0.5 text-xs font-semibold leading-5 ${
-						filled ? "bg-blue-50 text-blue-700" : "bg-gray-100 text-gray-700"
+					id={`${id}-path`}
+					className={`ml-auto break-all rounded px-1.5 py-0.5 text-[11px] font-medium leading-5 ${
+						filled ? "bg-blue-50 text-blue-700" : "bg-gray-100 text-gray-600"
 					}`}
 				>
+					{websocket ? "WSS " : ""}
 					{path}
 				</code>
-				{websocket ? (
-					<span className="text-[10px] font-semibold tracking-wide text-gray-400">
-						WSS
-					</span>
-				) : null}
-				<span className="text-xs leading-5 text-gray-500">{description}</span>
-			</label>
+			</div>
 			<input
 				id={id}
+				aria-describedby={`${id}-path`}
 				type="url"
 				value={value}
 				onChange={(event) => onChange(event.target.value)}
@@ -180,6 +197,16 @@ function EndpointUrlField({
 				spellCheck={false}
 				placeholder={placeholder}
 			/>
+			{!filled && suggestedUrl ? (
+				<button
+					type="button"
+					onClick={() => onChange(suggestedUrl)}
+					title={suggestedUrl}
+					className="mt-2 rounded text-xs font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+				>
+					{t("useBaseUrlEndpoint")}
+				</button>
+			) : null}
 		</div>
 	);
 }
@@ -195,10 +222,17 @@ function ProtocolFields({
 }) {
 	const t = useTranslations("providers.modal");
 	const mode = getProtocolEndpointMode(protocol, form);
-	const partialForm =
-		mode === "partial" ? partialProtocolForm(protocol, form) : form;
+	const hasMixedConfig =
+		!form.mode &&
+		Boolean(form.base.trim()) &&
+		protocolFormHasOverrides(protocol, form);
+	const selectedCapabilities = getSelectedProtocolCapabilities(protocol, form);
 	const updatePartial = (next: ProtocolEndpointForm) =>
-		onChange({ ...next, mode: "partial", partialDraftReady: true });
+		onChange({
+			...next,
+			mode: "partial",
+			selectedCapabilities,
+		});
 	const panelId = useId();
 	const baseNote =
 		protocol === "gemini"
@@ -251,6 +285,11 @@ function ProtocolFields({
 					{t(mode === "all" ? "baseUrlHint" : "partialCapabilitiesHint")}
 				</p>
 			</div>
+			{hasMixedConfig ? (
+				<p className="border-b border-amber-100 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
+					{t("mixedEndpointConfigHint")}
+				</p>
+			) : null}
 			{mode === "all" ? (
 				<div className="px-4 py-5">
 					<label
@@ -276,64 +315,131 @@ function ProtocolFields({
 					) : null}
 				</div>
 			) : (
-				<div className="divide-y divide-gray-100">
-					{protocol === "gemini" && partialForm.legacyPerAction ? (
-						<>
-							<p className="mx-4 my-3 rounded-md bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
-								{t("legacyPerActionNotice")}
-							</p>
-							{(["generateContent", "streamGenerateContent"] as const).map(
-								(action) => (
-									<EndpointUrlField
-										key={action}
-										id={`${panelId}-${action}`}
-										path={`/{model}:${action}`}
-										description={t(
-											`endpointCapabilities.${
-												action === "generateContent"
-													? "geminiGenerate"
-													: "geminiStream"
-											}`
-										)}
-										value={partialForm.legacyPerAction?.[action] ?? ""}
-										placeholder={t("endpointUrlPlaceholder")}
-										onChange={(value) =>
-											updatePartial({
-												...partialForm,
-												legacyPerAction: {
-													...partialForm.legacyPerAction!,
-													[action]: value,
-												},
-											})
-										}
-									/>
-								)
-							)}
-						</>
-					) : null}
-					{PROVIDER_ENDPOINT_FIELDS[protocol]
-						.filter(
-							({ field }) =>
-								!(
-									protocol === "gemini" &&
-									partialForm.legacyPerAction &&
-									field === "modelsGenerate"
-								)
-						)
-						.map(({ field, path, description, websocket }) => (
-							<EndpointUrlField
-								key={field}
-								id={`${panelId}-${field}`}
-								path={path}
-								description={t(`endpointCapabilities.${description}`)}
-								value={partialForm[field]}
-								placeholder={t("endpointUrlPlaceholder")}
-								websocket={websocket}
-								onChange={(value) =>
-									updatePartial({ ...partialForm, [field]: value })
+				<div>
+					<fieldset className="border-b border-gray-100 px-4 py-4">
+						<legend className="sr-only">{t("selectCapabilities")}</legend>
+						<div className="flex flex-wrap gap-2">
+							{PROVIDER_ENDPOINT_FIELDS[protocol].map(
+								({ capability, description }) => {
+									const checked = selectedCapabilities.includes(capability);
+									return (
+										<label
+											key={capability}
+											title={t(`endpointCapabilities.${description}`)}
+											className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+												checked
+													? "border-blue-200 bg-blue-50 text-blue-700"
+													: "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+											}`}
+										>
+											<input
+												type="checkbox"
+												checked={checked}
+												onChange={(event) =>
+													onChange(
+														toggleProtocolCapability(
+															protocol,
+															form,
+															capability,
+															event.target.checked
+														)
+													)
+												}
+												className="h-3.5 w-3.5 rounded border-gray-300 accent-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+											/>
+											{t(`endpointCapabilityLabels.${description}`)}
+										</label>
+									);
 								}
-							/>
-						))}
+							)}
+						</div>
+					</fieldset>
+					{selectedCapabilities.length === 0 ? (
+						<p className="px-4 py-8 text-center text-sm text-gray-400">
+							{t("noCapabilitiesSelected")}
+						</p>
+					) : null}
+					<div className="divide-y divide-gray-100">
+						{protocol === "gemini" &&
+						form.legacyPerAction &&
+						selectedCapabilities.includes("models.generate") ? (
+							<>
+								<p className="mx-4 my-3 rounded-md bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+									{t("legacyPerActionNotice")}
+								</p>
+								{(["generateContent", "streamGenerateContent"] as const).map(
+									(action) => (
+										<EndpointUrlField
+											key={action}
+											id={`${panelId}-${action}`}
+											name={t(
+												`endpointCapabilityLabels.${
+													action === "generateContent"
+														? "geminiGenerate"
+														: "geminiStream"
+												}`
+											)}
+											path={`/{model}:${action}`}
+											description={t(
+												`endpointCapabilities.${
+													action === "generateContent"
+														? "geminiGenerate"
+														: "geminiStream"
+												}`
+											)}
+											value={form.legacyPerAction?.[action] ?? ""}
+											suggestedUrl={suggestProtocolEndpointUrl(
+												protocol,
+												form.base,
+												"models.generate",
+												action
+											)}
+											placeholder={t("endpointUrlPlaceholder")}
+											onChange={(value) =>
+												updatePartial({
+													...form,
+													legacyPerAction: {
+														...form.legacyPerAction!,
+														[action]: value,
+													},
+												})
+											}
+										/>
+									)
+								)}
+							</>
+						) : null}
+						{PROVIDER_ENDPOINT_FIELDS[protocol]
+							.filter(
+								({ field, capability }) =>
+									selectedCapabilities.includes(capability) &&
+									!(
+										protocol === "gemini" &&
+										form.legacyPerAction &&
+										field === "modelsGenerate"
+									)
+							)
+							.map(({ field, capability, path, description, websocket }) => (
+								<EndpointUrlField
+									key={field}
+									id={`${panelId}-${field}`}
+									name={t(`endpointCapabilityLabels.${description}`)}
+									path={path}
+									description={t(`endpointCapabilities.${description}`)}
+									value={form[field]}
+									suggestedUrl={suggestProtocolEndpointUrl(
+										protocol,
+										form.base,
+										capability
+									)}
+									placeholder={t("endpointUrlPlaceholder")}
+									websocket={websocket}
+									onChange={(value) =>
+										updatePartial({ ...form, [field]: value })
+									}
+								/>
+							))}
+					</div>
 				</div>
 			)}
 			{protocol === "gemini" ? (
@@ -401,6 +507,20 @@ export function ProviderModal(props: ProviderModalProps) {
 		onRoutesChanged
 	);
 	const busy = isSaving || isDeleting || routesState.isDeleting;
+	const deleteDisabled =
+		busy || !routesState.ready || routesState.routes.length > 0;
+	const deleteDisabledReason = routesState.error
+		? t("relatedRoutes.loadFailed")
+		: !routesState.ready
+		? tCommon("loading")
+		: routesState.routes.length > 0
+		? t("routesBlocked", { count: routesState.routes.length })
+		: isSaving
+		? tCommon("saving")
+		: isDeleting || routesState.isDeleting
+		? tCommon("deleting")
+		: undefined;
+
 	const [activeTab, setActiveTab] = useState<"basic" | "endpoints" | "routes">(
 		"basic"
 	);
@@ -408,6 +528,7 @@ export function ProviderModal(props: ProviderModalProps) {
 	const titleId = useId();
 	const tabsId = useId();
 	const [endpointTab, setEndpointTab] = useState<UpstreamProtocol>("openai");
+	const [showEndpointsJson, setShowEndpointsJson] = useState(false);
 	const [showApiKey, setShowApiKey] = useState(false);
 	const [apiKeyFocused, setApiKeyFocused] = useState(false);
 	const previewApiKey =
@@ -455,6 +576,7 @@ export function ProviderModal(props: ProviderModalProps) {
 
 	useEffect(() => {
 		setActiveTab("basic");
+		setShowEndpointsJson(false);
 		setShowApiKey(false);
 		setApiKeyFocused(false);
 		setApiKeyCopied(false);
@@ -493,6 +615,20 @@ export function ProviderModal(props: ProviderModalProps) {
 	}, [open, busy]);
 
 	if (!open) return null;
+
+	const deleteButton = editingProvider ? (
+		<button
+			type="button"
+			onClick={() => {
+				if (!deleteDisabled) void onDelete(editingProvider.id);
+			}}
+			disabled={deleteDisabled}
+			className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:pointer-events-none disabled:opacity-50"
+		>
+			<TrashIcon className="h-4 w-4" aria-hidden />
+			{isDeleting ? tCommon("deleting") : t("deleteProvider")}
+		</button>
+	) : null;
 
 	return (
 		<div
@@ -575,43 +711,61 @@ export function ProviderModal(props: ProviderModalProps) {
 					</button>
 				</div>
 
-				<div
-					role="tablist"
-					aria-label={t("modalTabs")}
-					className="flex shrink-0 gap-5 border-b border-gray-200 px-5 sm:px-7"
-				>
-					{mainTabs.map(({ key, label, Icon }) => (
+				<div className="flex shrink-0 flex-wrap items-start justify-between gap-x-4 border-b border-gray-200 px-5 sm:px-7">
+					<div
+						role="tablist"
+						aria-label={t("modalTabs")}
+						className="flex gap-3 sm:gap-5"
+					>
+						{mainTabs.map(({ key, label, Icon }) => (
+							<button
+								key={key}
+								type="button"
+								role="tab"
+								id={`${tabsId}-${key}`}
+								aria-selected={activeTab === key}
+								aria-controls={`${tabsId}-${key}-panel`}
+								onClick={() => {
+									setActiveTab(key);
+									setShowEndpointsJson(false);
+								}}
+								onKeyDown={navigateTabs}
+								tabIndex={activeTab === key ? 0 : -1}
+								className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 pb-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+									activeTab === key
+										? "border-blue-600 text-blue-700"
+										: "border-transparent text-gray-500 hover:text-gray-900"
+								}`}
+							>
+								<Icon className="hidden h-4 w-4 sm:block" aria-hidden />
+								{label}
+								{key === "routes" && routesState.ready ? (
+									<span
+										className={`rounded-full px-2 py-0.5 text-xs ${
+											activeTab === key
+												? "bg-blue-50 text-blue-700"
+												: "bg-gray-100 text-gray-600"
+										}`}
+									>
+										{routesState.routes.length}
+									</span>
+								) : null}
+							</button>
+						))}
+					</div>
+					{activeTab === "endpoints" ? (
 						<button
-							key={key}
 							type="button"
-							role="tab"
-							id={`${tabsId}-${key}`}
-							aria-selected={activeTab === key}
-							aria-controls={`${tabsId}-${key}-panel`}
-							onClick={() => setActiveTab(key)}
-							onKeyDown={navigateTabs}
-							tabIndex={activeTab === key ? 0 : -1}
-							className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 pb-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-								activeTab === key
-									? "border-blue-600 text-blue-700"
-									: "border-transparent text-gray-500 hover:text-gray-900"
-							}`}
+							onClick={() => setShowEndpointsJson((value) => !value)}
+							aria-pressed={showEndpointsJson}
+							className="mb-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
 						>
-							<Icon className="hidden h-4 w-4 sm:block" aria-hidden />
-							{label}
-							{key === "routes" && routesState.ready ? (
-								<span
-									className={`rounded-full px-2 py-0.5 text-xs ${
-										activeTab === key
-											? "bg-blue-50 text-blue-700"
-											: "bg-gray-100 text-gray-600"
-									}`}
-								>
-									{routesState.routes.length}
-								</span>
-							) : null}
+							<CodeBracketIcon className="h-4 w-4" aria-hidden />
+							{t(
+								showEndpointsJson ? "backToEndpointForm" : "viewEndpointsJson"
+							)}
 						</button>
-					))}
+					) : null}
 				</div>
 				<div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-6 sm:px-7">
 					{saveError && (
@@ -860,66 +1014,70 @@ export function ProviderModal(props: ProviderModalProps) {
 							id={`${tabsId}-endpoints-panel`}
 							aria-labelledby={`${tabsId}-endpoints`}
 						>
-							<div className="grid items-start gap-5 md:grid-cols-[160px_minmax(0,1fr)]">
-								<div
-									className="flex flex-wrap gap-1 rounded-xl bg-gray-50 p-2 md:flex-col"
-									role="tablist"
-									aria-label={t("endpointsTabsAria")}
-								>
-									{PROTOCOL_TABS.map(({ key, labelKey }) => {
-										const selected = endpointTab === key;
-										const configured = protocolFormIsConfigured(
-											key,
-											formData[key]
-										);
-										return (
-											<button
-												key={key}
-												type="button"
-												role="tab"
-												id={`provider-endpoint-tab-${key}`}
-												aria-selected={selected}
-												aria-controls={`provider-endpoint-panel-${key}`}
-												onClick={() => setEndpointTab(key)}
-												onKeyDown={navigateTabs}
-												tabIndex={selected ? 0 : -1}
-												className={`inline-flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-													selected
-														? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
-														: "text-gray-600 hover:bg-white/70 hover:text-gray-900"
-												}`}
-											>
-												<span className="h-4 w-4 shrink-0">
-													<ProviderProtocolIcon protocol={key} />
-												</span>
-												{t(labelKey)}
-												{configured ? (
-													<span
-														className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"
-														title={t("configured")}
-														aria-label={t("configured")}
-													/>
-												) : null}
-											</button>
-										);
-									})}
+							{showEndpointsJson ? (
+								<ProviderEndpointsJsonPreview form={formData} />
+							) : (
+								<div className="grid items-start gap-5 md:grid-cols-[160px_minmax(0,1fr)]">
+									<div
+										className="flex flex-wrap gap-1 rounded-xl bg-gray-50 p-2 md:flex-col"
+										role="tablist"
+										aria-label={t("endpointsTabsAria")}
+									>
+										{PROTOCOL_TABS.map(({ key, labelKey }) => {
+											const selected = endpointTab === key;
+											const configured = protocolFormIsConfigured(
+												key,
+												formData[key]
+											);
+											return (
+												<button
+													key={key}
+													type="button"
+													role="tab"
+													id={`provider-endpoint-tab-${key}`}
+													aria-selected={selected}
+													aria-controls={`provider-endpoint-panel-${key}`}
+													onClick={() => setEndpointTab(key)}
+													onKeyDown={navigateTabs}
+													tabIndex={selected ? 0 : -1}
+													className={`inline-flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+														selected
+															? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
+															: "text-gray-600 hover:bg-white/70 hover:text-gray-900"
+													}`}
+												>
+													<span className="h-4 w-4 shrink-0">
+														<ProviderProtocolIcon protocol={key} />
+													</span>
+													{t(labelKey)}
+													{configured ? (
+														<span
+															className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"
+															title={t("configured")}
+															aria-label={t("configured")}
+														/>
+													) : null}
+												</button>
+											);
+										})}
+									</div>
+									<div
+										key={endpointTab}
+										className="min-w-0"
+										role="tabpanel"
+										id={`provider-endpoint-panel-${endpointTab}`}
+										aria-labelledby={`provider-endpoint-tab-${endpointTab}`}
+									>
+										<ProtocolFields
+											protocol={endpointTab}
+											form={formData[endpointTab]}
+											onChange={(next) =>
+												onFormChange({ ...formData, [endpointTab]: next })
+											}
+										/>
+									</div>
 								</div>
-								<div
-									key={endpointTab}
-									className="min-w-0"
-									role="tabpanel"
-									id={`provider-endpoint-panel-${endpointTab}`}
-									aria-labelledby={`provider-endpoint-tab-${endpointTab}`}
-								>
-									<ProtocolFields
-										protocol={endpointTab}
-										form={formData[endpointTab]}
-										onChange={(next) =>
-											onFormChange({ ...formData, [endpointTab]: next })
-										}
-									/>
-								</div>
-							</div>
+							)}
 						</section>
 						{editingProvider ? (
 							<section
@@ -940,49 +1098,21 @@ export function ProviderModal(props: ProviderModalProps) {
 
 				<div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50 px-5 py-4 sm:px-7">
 					<div className="flex flex-wrap items-center gap-2">
-						{editingProvider && (
-							<button
-								type="button"
-								onClick={() => {
-									if (routesState.ready && !routesState.routes.length)
-										void onDelete(editingProvider.id);
-								}}
-								title={
-									routesState.error
-										? t("relatedRoutes.loadFailed")
-										: routesState.loading
-										? tCommon("loading")
-										: routesState.routes.length
-										? t("routesBlocked", { count: routesState.routes.length })
-										: undefined
-								}
-								disabled={
-									busy || !routesState.ready || routesState.routes.length > 0
-								}
-								className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-							>
-								<TrashIcon className="h-4 w-4" aria-hidden />
-								{isDeleting ? tCommon("deleting") : t("deleteProvider")}
-							</button>
-						)}
-						{editingProvider && routesState.error ? (
-							<button
-								type="button"
-								onClick={() => setActiveTab("routes")}
-								className="text-xs text-red-600 hover:underline"
-							>
-								{t("relatedRoutes.loadFailed")}
-							</button>
-						) : null}
-						{editingProvider && routesState.routes.length > 0 ? (
-							<button
-								type="button"
-								onClick={() => setActiveTab("routes")}
-								className="text-xs text-gray-500 hover:text-blue-600"
-							>
-								{t("routesBlocked", { count: routesState.routes.length })}
-							</button>
-						) : null}
+						{editingProvider &&
+							(deleteDisabledReason ? (
+								<InfoHintPopover
+									label={t("deleteProvider")}
+									disabledTrigger={deleteButton}
+									openOnHover
+									openOnFocus
+									portal
+									align="start"
+								>
+									<p className="leading-5">{deleteDisabledReason}</p>
+								</InfoHintPopover>
+							) : (
+								deleteButton
+							))}
 					</div>
 					<div className="ml-auto flex gap-2">
 						<button

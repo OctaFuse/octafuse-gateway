@@ -177,6 +177,11 @@ function configFromProtocolForm(
 	if (form.mode !== "all") {
 		for (const { field, capability } of PROVIDER_ENDPOINT_FIELDS[protocol]) {
 			if (
+				form.selectedCapabilities &&
+				!form.selectedCapabilities.includes(capability)
+			)
+				continue;
+			if (
 				protocol === "gemini" &&
 				field === "modelsGenerate" &&
 				form.legacyPerAction
@@ -224,6 +229,11 @@ export function formDataToEndpointsMap(
 	if (volcengine) map.volcengine = volcengine;
 	if (elevenlabs) map.elevenlabs = elevenlabs;
 	return map;
+}
+
+/** Read-only preview of the exact endpoints field submitted by the provider form. */
+export function formatProviderEndpointsPreview(form: ProviderFormData): string {
+	return JSON.stringify({ endpoints: formDataToEndpointsMap(form) }, null, 2);
 }
 
 export function formDataToEndpointsJson(form: ProviderFormData): string | null {
@@ -396,59 +406,75 @@ export function getProtocolEndpointMode(
 	);
 }
 
-/** Materialize Base URL fallbacks without changing existing custom URLs or templates. */
-export function partialProtocolForm(
+/** Suggest a URL only; callers must explicitly accept it before it becomes configured. */
+export function suggestProtocolEndpointUrl(
 	protocol: UpstreamProtocol,
-	form: ProtocolEndpointForm
-): ProtocolEndpointForm {
-	if (form.partialDraftReady || form.mode === "partial" || !form.base.trim())
-		return form;
-	const next = { ...form };
-	const baseMap = { [protocol]: { base: form.base.trim() } };
-	const derived = (
-		capability: ProviderEndpointCapability,
-		action = "generateContent"
-	) => {
-		try {
-			return resolveUpstreamEndpoint(protocol, capability, baseMap, {
+	base: string,
+	capability: ProviderEndpointCapability,
+	legacyAction?: "generateContent" | "streamGenerateContent"
+): string | null {
+	if (!base.trim()) return null;
+	try {
+		if (!["http:", "https:"].includes(new URL(base.trim()).protocol))
+			return null;
+		const url = resolveUpstreamEndpoint(
+			protocol,
+			capability,
+			{ [protocol]: { base: base.trim() } },
+			{
 				model: "{model}",
-				action: capability === "models.embed" ? "embedContent" : action,
+				action:
+					capability === "models.embed"
+						? "embedContent"
+						: legacyAction ?? "generateContent",
 				taskId: "{task_id}",
 				voiceId: "{voice_id}",
-			})
-				.replace(/%7B(model|task_id|voice_id)%7D/gi, "{$1}")
-				.replace(
-					/:(generateContent|streamGenerateContent|embedContent)$/,
-					":{action}"
-				);
-		} catch {
-			// Incomplete/invalid Base URLs remain editable; do not invent a usable endpoint.
-			return "";
-		}
-	};
-	for (const { field, capability } of PROVIDER_ENDPOINT_FIELDS[protocol]) {
-		if (
-			protocol === "gemini" &&
-			field === "modelsGenerate" &&
-			next.legacyPerAction
-		) {
-			next.legacyPerAction = { ...next.legacyPerAction };
-			for (const action of [
-				"generateContent",
-				"streamGenerateContent",
-			] as const) {
-				if (!next.legacyPerAction[action].trim()) {
-					next.legacyPerAction[action] = derived(capability, action).replace(
-						"{action}",
-						action
-					);
-				}
 			}
-		} else if (!next[field].trim()) {
-			next[field] = derived(capability);
-		}
+		).replace(/%7B(model|task_id|voice_id)%7D/gi, "{$1}");
+		return protocol === "gemini" && !legacyAction
+			? url.replace(/:(generateContent|embedContent)$/, ":{action}")
+			: url;
+	} catch {
+		return null;
 	}
-	return next;
+}
+
+/** Existing filled endpoints are selected by default; an explicit empty selection stays empty. */
+export function getSelectedProtocolCapabilities(
+	protocol: UpstreamProtocol,
+	form: ProtocolEndpointForm
+): ProviderEndpointCapability[] {
+	if (form.selectedCapabilities) return form.selectedCapabilities;
+	return PROVIDER_ENDPOINT_FIELDS[protocol]
+		.filter(
+			({ field }) =>
+				Boolean(form[field].trim()) ||
+				(protocol === "gemini" &&
+					field === "modelsGenerate" &&
+					Boolean(
+						form.legacyPerAction?.generateContent.trim() ||
+							form.legacyPerAction?.streamGenerateContent.trim()
+					))
+		)
+		.map(({ capability }) => capability);
+}
+
+export function toggleProtocolCapability(
+	protocol: UpstreamProtocol,
+	form: ProtocolEndpointForm,
+	capability: ProviderEndpointCapability,
+	selected: boolean
+): ProtocolEndpointForm {
+	const capabilities = new Set(getSelectedProtocolCapabilities(protocol, form));
+	if (selected) capabilities.add(capability);
+	else capabilities.delete(capability);
+	return {
+		...form,
+		mode: "partial",
+		selectedCapabilities: PROVIDER_ENDPOINT_FIELDS[protocol]
+			.filter((item) => capabilities.has(item.capability))
+			.map((item) => item.capability),
+	};
 }
 
 export function switchProtocolEndpointMode(
@@ -457,9 +483,9 @@ export function switchProtocolEndpointMode(
 	mode: "all" | "partial"
 ): ProtocolEndpointForm {
 	return {
-		...partialProtocolForm(protocol, form),
+		...form,
 		mode,
-		partialDraftReady: true,
+		selectedCapabilities: getSelectedProtocolCapabilities(protocol, form),
 	};
 }
 

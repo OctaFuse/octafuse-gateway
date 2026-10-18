@@ -7,6 +7,7 @@ import {
 	saveProvider,
 } from './provider-api';
 import { EMPTY_PROVIDER_FORM } from './types';
+import { formatProviderEndpointsPreview } from './provider-utils';
 import type { RouteListRow } from '../routes/types';
 
 function route(id: string, providerId = 'provider-1'): RouteListRow {
@@ -204,5 +205,74 @@ describe('provider credential form requests', () => {
 			false
 		);
 		assert.equal(fetchMock.mock.callCount(), 0);
+	});
+});
+
+describe('provider endpoint JSON preview', () => {
+	it('matches the actual submitted endpoints without exposing credentials or inactive drafts', async (context) => {
+		const forms = [
+			{
+				...EMPTY_PROVIDER_FORM,
+				api_key: 'preview-secret-marker',
+				note: 'private-note-marker',
+				openai: {
+					...EMPTY_PROVIDER_FORM.openai,
+					mode: 'all' as const,
+					base: 'https://example.test/v1',
+					chat: 'https://inactive-draft.test/chat',
+				},
+				anthropic: {
+					...EMPTY_PROVIDER_FORM.anthropic,
+					mode: 'partial' as const,
+					selectedCapabilities: ['messages' as const],
+					messages: 'https://example.test/v1/messages',
+					base: 'https://inactive-base.test',
+				},
+			},
+			{
+				...EMPTY_PROVIDER_FORM,
+				api_key: 'preview-secret-marker',
+				openai: {
+					...EMPTY_PROVIDER_FORM.openai,
+					mode: 'partial' as const,
+					base: 'https://inactive-base.test',
+					chat: 'https://unchecked-draft.test/chat',
+					responses: 'https://example.test/v1/responses',
+					selectedCapabilities: ['responses' as const],
+				},
+			},
+			{ ...EMPTY_PROVIDER_FORM, api_key: 'preview-secret-marker' },
+		];
+		let submitted: unknown;
+		context.mock.method(
+			globalThis,
+			'fetch',
+			async (_url: string, options: RequestInit) => {
+				const body = JSON.parse(String(options.body));
+				submitted = body.endpoints;
+				return json({ success: true });
+			}
+		);
+		for (const form of forms) {
+			const preview = formatProviderEndpointsPreview(form);
+			const parsed = JSON.parse(preview);
+			assert.deepEqual(Object.keys(parsed), ['endpoints']);
+			for (const excluded of [
+				'preview-secret-marker',
+				'private-note-marker',
+				'inactive-draft',
+				'inactive-base',
+				'unchecked-draft',
+				'selectedCapabilities',
+				'mode',
+			])
+				assert.equal(preview.includes(excluded), false);
+			await saveProvider(form, 'p-json', { updateApiKey: false });
+			assert.deepEqual(parsed.endpoints, submitted);
+		}
+		assert.deepEqual(
+			JSON.parse(formatProviderEndpointsPreview(EMPTY_PROVIDER_FORM)),
+			{ endpoints: {} }
+		);
 	});
 });

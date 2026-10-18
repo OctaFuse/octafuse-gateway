@@ -1,11 +1,16 @@
 import type { ProviderEndpointCapability } from '@octafuse/core/provider-endpoints';
-import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
+import {
+	UPSTREAM_PROTOCOLS,
+	type UpstreamProtocol,
+} from '@octafuse/core/upstream-protocol';
+import { requiredCapabilitiesForUpstreamOperation } from '@octafuse/core/adapters/registry';
+import { canonicalizeRequestOperation } from '@octafuse/core/route-topology';
 import type { ProtocolEndpointForm } from './types';
 
 type EndpointFormField = Exclude<
 	keyof ProtocolEndpointForm,
 	| 'mode'
-	| 'partialDraftReady'
+	| 'selectedCapabilities'
 	| 'base'
 	| 'auth'
 	| 'legacyPerAction'
@@ -215,3 +220,30 @@ export const PROVIDER_ENDPOINT_FIELDS: Record<
 		},
 	],
 };
+
+/** Resolve route operations through the same endpoint dependencies used by runtime adapters. */
+export function endpointFieldsForUpstreamOperation(
+	protocol: string,
+	operation: string | null | undefined
+): readonly ProviderEndpointField[] {
+	const knownProtocol = UPSTREAM_PROTOCOLS.find(
+		(value) => value === protocol.trim().toLowerCase()
+	);
+	const op = operation?.trim();
+	if (!knownProtocol || !op || op === '*') return [];
+	const capabilities = [
+		...new Set(
+			requiredCapabilitiesForUpstreamOperation(
+				knownProtocol,
+				canonicalizeRequestOperation(knownProtocol, op)
+			)
+		),
+	];
+	const fields = capabilities.map((capability) =>
+		PROVIDER_ENDPOINT_FIELDS[knownProtocol].find(
+			(field) => field.capability === capability
+		)
+	);
+	// Keep an unknown operation visible as-is rather than describing only part of its requirements.
+	return fields.every((field) => field !== undefined) ? fields : [];
+}

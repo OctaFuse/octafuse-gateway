@@ -67,11 +67,11 @@ export type GeminiLegacyPerActionEndpoints = {
 	streamGenerateContent: string;
 };
 
-/** 单协议表单；mode 与 partialDraftReady 仅用于编辑器，不写入 API。 */
+/** 单协议表单；模式、能力选择与草稿标记仅用于编辑器，不写入 API。 */
 export type ProtocolEndpointForm = {
 	mode?: 'all' | 'partial';
-	/** 切换回全能力后，保留部分能力草稿（包括已全部清空的草稿）。 */
-	partialDraftReady?: boolean;
+	/** 未设置时从已有完整端点推断；取消勾选保留 URL 草稿但不提交。 */
+	selectedCapabilities?: ProviderEndpointCapability[];
 	base: string;
 	chat: string;
 	responses: string;
