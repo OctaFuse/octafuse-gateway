@@ -400,7 +400,7 @@
 			"zh": "面向深度思考、工具调用、结构化输出、GUI 任务，以及文本、图像与视频多模态理解的豆包 Seed 2.1 Pro。上下文窗口 1024k，最大回答 256k。BytePlus ModelArk 未上架该模型，因此没有美元刊例价。"
 		},
 		"vendor": "bytedance",
-		"context_window": 1024000,
+		"context_window": 1000000,
 		"max_tokens": 256000,
 		"pricing": {
 			"cny": {
@@ -483,7 +483,7 @@
 			"zh": "面向自适应推理与 Agent 实验场景的持续演进型豆包模型。"
 		},
 		"vendor": "bytedance",
-		"context_window": 1024000,
+		"context_window": 1000000,
 		"max_tokens": 256000,
 		"pricing": {
 			"usd": {

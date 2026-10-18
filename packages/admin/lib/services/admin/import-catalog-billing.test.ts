@@ -757,7 +757,7 @@ describe('Doubao Seed catalog list prices', () => {
 	it('adds doubao-seed-2-1-pro-260915 with CNY only', () => {
 		const preset = doubaoPreset('doubao-seed-2-1-pro-260915');
 		assert.equal(preset.display_name, 'Doubao Seed 2.1 Pro (260915)');
-		assert.equal(preset.context_window, 1024000);
+		assert.equal(preset.context_window, 1000000);
 		assert.equal(preset.max_tokens, 256000);
 		assert.equal(preset.released, '2026-09-15');
 		assert.equal(preset.retired, undefined);
@@ -775,12 +775,12 @@ describe('Doubao Seed catalog list prices', () => {
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
 		assert.ok(usd);
 		assert.ok(cny);
-		assert.equal(usd!.context_window, 1024000);
+		assert.equal(usd!.context_window, 1000000);
 		assert.equal(usd!.max_tokens, 256000);
 		assert.equal(usd!.pricing_available, false);
 		assert.equal(usd!.pricing_label, null);
 		assert.equal(cny!.pricing_label, '¥6 / ¥30 /M');
-		assert.equal(cny!.context_window, 1024000);
+		assert.equal(cny!.context_window, 1000000);
 		assert.equal(cny!.max_tokens, 256000);
 
 		const tiers = doubaoTiers(preset.id, 'CNY');
@@ -794,12 +794,12 @@ describe('Doubao Seed catalog list prices', () => {
 
 	it('raises doubao-seed-evolving context window to 1024k without changing prices', () => {
 		const preset = doubaoPreset('doubao-seed-evolving');
-		assert.equal(preset.context_window, 1024000);
+		assert.equal(preset.context_window, 1000000);
 		assert.equal(preset.max_tokens, 256000);
 		assert.deepEqual(preset.modalities?.input, ['text', 'image', 'video']);
 		const usdRow = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === preset.id);
 		const cnyRow = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
-		assert.equal(usdRow!.context_window, 1024000);
+		assert.equal(usdRow!.context_window, 1000000);
 		assert.equal(usdRow!.max_tokens, 256000);
 		assert.equal(usdRow!.pricing_label, '$1 / $5 /M');
 		assert.equal(cnyRow!.pricing_label, '¥6 / ¥30 /M');
