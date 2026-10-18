@@ -54,7 +54,6 @@ export type UserModelsPreviewItem = {
 		pricing_profile: ParsedPricingProfile | null;
 		input_price: number | null;
 		output_price: number | null;
-		description: string | null;
 		input_modalities: string[] | null;
 		output_modalities: string[] | null;
 		released_at: string | null;
@@ -239,7 +238,6 @@ export async function getAdminUserModelsPreview(
 				pricing_profile: pricingProfile,
 				input_price: prices.input_price,
 				output_price: prices.output_price,
-				description: model.description,
 				input_modalities: parseModelModalitiesJson(model.input_modalities),
 				output_modalities: parseModelModalitiesJson(model.output_modalities),
 				released_at: model.released_at ?? null,

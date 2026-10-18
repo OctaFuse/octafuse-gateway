@@ -124,14 +124,14 @@ adminProvidersRoutes.post("/import", async (c) => {
 adminProvidersRoutes.get("/sync/diff", async (c) => {
 	try {
 		const repos = c.get("repositories");
-		const data = await getProviderSyncReportService(repos, c.req.query("locale"));
+		const data = await getProviderSyncReportService(repos);
 		return c.json(normalizeApiTimeFields({ success: true, data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, "Failed to compute provider sync diff");
 	}
 });
 
-/** 把选中的官方值写入 provider（只写 description / endpoints；服务端重算差异）。 */
+/** 把选中的官方值写入 provider（只写 endpoints，或清空与目录介绍相同的 note；服务端重算差异）。 */
 adminProvidersRoutes.post("/sync/apply", async (c) => {
 	let body: ProviderSyncApplyBody;
 	try {

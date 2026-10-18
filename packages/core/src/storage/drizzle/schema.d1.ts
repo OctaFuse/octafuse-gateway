@@ -71,7 +71,8 @@ export const providersTable = sqliteTable(
 		apiKey: text('api_key').notNull().default(''),
 		/** `active` | `disabled` */
 		status: text('status').notNull().default('active'),
-		description: text('description'),
+		/** Operator note. Catalog introductions are resolved from static presets. */
+		note: text('note'),
 		createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 	},
 	(t) => [uniqueIndex('uk_providers_name_kind').on(t.name, t.kind)]
@@ -86,7 +87,8 @@ export const modelsTable = sqliteTable('models', {
 	maxTokens: integer('max_tokens').default(8192),
 	/** JSON：统一阶梯/固定价（`models` 列价真源）。 */
 	pricingProfile: text('pricing_profile'),
-	description: text('description'),
+	/** Operator note. Catalog introductions are resolved from static presets. */
+	note: text('note'),
 	metadata: text('metadata'),
 	inputModalities: text('input_modalities'),
 	outputModalities: text('output_modalities'),

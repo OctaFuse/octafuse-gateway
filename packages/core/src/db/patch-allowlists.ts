@@ -4,7 +4,7 @@
  * 防止传入任意字符串被拼入 SQL。
  */
 
-export const PROVIDER_PATCH_COLS = new Set(['name', 'kind', 'endpoints', 'description', 'api_key', 'status']);
+export const PROVIDER_PATCH_COLS = new Set(['name', 'kind', 'endpoints', 'note', 'api_key', 'status']);
 
 export const MODEL_PATCH_COLS = new Set([
 	'display_name',
@@ -12,7 +12,7 @@ export const MODEL_PATCH_COLS = new Set([
 	'context_window',
 	'max_tokens',
 	'pricing_profile',
-	'description',
+	'note',
 	'metadata',
 	'input_modalities',
 	'output_modalities',

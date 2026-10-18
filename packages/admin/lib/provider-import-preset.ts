@@ -21,10 +21,8 @@ import rawPresets from './provider-import-presets.json';
 import { getModelVendorLabel, normalizeModelVendorInput } from './model-vendor';
 import type { AdminProviderImportCatalogItem } from '@/lib/services/admin/types';
 import {
-	listConfiguredCapabilities,
 	parseProviderEndpoints,
 	serializeProviderEndpoints,
-	type ProviderEndpointCapability,
 	type ProviderEndpointsMap,
 	type ProviderEndpointsSource,
 } from '@octafuse/core/provider-endpoints';
@@ -40,12 +38,12 @@ export type StaticProviderImportPresetRow = {
 	icon_key?: string;
 	endpoints: ProviderEndpointsMap;
 	/**
-	 * 可选运维说明。目录 `catalog.i18n` 缺摘要时，导入才把它写入 `providers.description`。
+	 * 可选运维说明。目录 `catalog.i18n` 缺摘要时，导入列表用它做介绍回退；不写入数据库。
 	 */
 	description?: string | null;
 	/**
-	 * 导入列表与入库文案。中文界面写入 `zh` 的名称和摘要，其余界面写入 `en`。
-	 * `name` 仍是 `providers.kind` 的稳定英文键，不随语言改变。
+	 * 导入列表展示文案。中文界面显示 `zh`，其余界面显示 `en`。
+	 * `name` 仍是 `providers.kind` 的稳定英文键，不随语言改变，也不写入介绍。
 	 */
 	catalog?: {
 		i18n: {
@@ -76,15 +74,6 @@ export type ProviderCatalogOutbound = {
 /** 运行时 catalog 行键（JSON 数组下标字符串）；与入库 provider id 无关。 */
 export type StaticProviderImportPresetWithKey = StaticProviderImportPresetRow & {
 	catalog_key: string;
-};
-
-/** Import 弹窗 / catalog 摘要用的 OpenAI 端点一行展示。 */
-export type ProviderImportOpenAiSummary = {
-	/** 复制/展示用的主 URL（base 或 chat） */
-	url: string;
-	/** 是否配置了 openai.base（全能力） */
-	hasBase: boolean;
-	capabilities: ProviderEndpointCapability[];
 };
 
 const STATIC_ROWS = rawPresets as StaticProviderImportPresetRow[];
@@ -145,6 +134,15 @@ function catalogLabelsFromRow(
 	};
 }
 
+/** 目录介绍的中英文。缺本地化摘要时回退模板运维说明。 */
+export function providerPresetCatalogCopy(row: StaticProviderImportPresetRow): { en: string | null; zh: string | null } {
+	const labels = catalogLabelsFromRow(row);
+	const fallback = row.description?.trim() || '';
+	const en = labels?.en.description?.trim() || fallback;
+	const zh = labels?.zh.description?.trim() || fallback;
+	return { en: en || null, zh: zh || null };
+}
+
 /** 导入列表展示文案。中文界面用模板中文，其余界面用英文；缺本地化时回退稳定英文名和运维说明。 */
 export function providerImportCatalogCopy(
 	row: {
@@ -162,8 +160,9 @@ export function providerImportCatalogCopy(
 }
 
 /**
- * 导入写入 `providers` 的显示名和介绍。
- * `kind` 固定为模板英文 `name`；`name` / `description` 与导入列表当前语言一致。
+ * 导入时使用的显示名和类型。
+ * `kind` 固定为模板英文 `name`；`name` 与导入列表当前语言一致。
+ * `description` 只给导入列表展示，不写入数据库。
  */
 export function providerImportStoredFields(
 	row: StaticProviderImportPresetRow,
@@ -321,6 +320,7 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 		['qnaigc.com', identity('qiniu')],
 		['openai.qiniu.com', identity('qiniu')],
 		['modelink.ai', identity('qiniu')],
+		['open-design.ai', identity('opendesign')],
 		['opencode.ai', identity('opencode')],
 		['zenmux.ai', identity('zenmux')],
 		['openrouter.ai', identity('openrouter')],
@@ -419,6 +419,7 @@ function identityFromNameHint(normalizedName: string): ProviderCatalogIdentity |
 		[['moonshot', '月之暗面'], identity('moonshot')],
 		[['minimax'], identity('minimax')],
 		[['elevenlabs'], identity('elevenlabs')],
+		[['opendesign', 'open design'], identity('opendesign')],
 		[['openai'], identity('openai')],
 		[['anthropic', 'claude'], identity('anthropic')],
 		[['gemini', 'google', '谷歌'], identity('google')],
@@ -518,6 +519,8 @@ export type StoredProviderPresentation = {
 	catalogLinks: ProviderCatalogLinks | null;
 	/** 未分类或自定义时为 null。自定义文案由 UI 翻译。 */
 	kindLabels: ProviderKindLabels | null;
+	/** 已保存类型的中英文介绍。自定义、未分类或模板没有介绍时为 null。 */
+	kindDescriptions: { en: string; zh: string } | null;
 };
 
 const PRESET_BY_EXACT_NAME = new Map(STATIC_ROWS.map((row) => [row.name.trim(), row]));
@@ -544,6 +547,7 @@ export function resolveStoredProviderPresentation(provider: {
 			iconKey: inferStaticProviderIconKey({ ...provider, vendor_key: vendorKey }),
 			catalogLinks: lookupStaticProviderCatalogLinks(provider),
 			kindLabels: null,
+			kindDescriptions: null,
 		};
 	}
 	if (kind === CUSTOM_PROVIDER_KIND) {
@@ -552,6 +556,7 @@ export function resolveStoredProviderPresentation(provider: {
 			iconKey: 'other',
 			catalogLinks: null,
 			kindLabels: null,
+			kindDescriptions: null,
 		};
 	}
 	const preset = PRESET_BY_EXACT_NAME.get(kind);
@@ -561,14 +566,17 @@ export function resolveStoredProviderPresentation(provider: {
 			iconKey: 'other',
 			catalogLinks: null,
 			kindLabels: { en: kind, zh: kind },
+			kindDescriptions: null,
 		};
 	}
 	const identity = identityForPreset(preset);
+	const copy = providerPresetCatalogCopy(preset);
 	return {
 		vendorKey: identity.vendorKey,
 		iconKey: identity.iconKey,
 		catalogLinks: catalogLinksFromRow(preset),
 		kindLabels: providerKindLabelsForPreset(preset),
+		kindDescriptions: copy.en || copy.zh ? { en: copy.en ?? '', zh: copy.zh ?? '' } : null,
 	};
 }
 
@@ -635,25 +643,6 @@ function protocolsForPreset(p: StaticProviderImportPresetRow): AdminProviderImpo
 	if (map.anthropic) out.push('anthropic');
 	if (map.gemini) out.push('gemini');
 	return out;
-}
-
-/** 从已解析的 endpoints map 取 OpenAI 协议展示摘要（base 或 chat-only）。 */
-export function summarizeOpenAiImportEndpoints(
-	map: ProviderEndpointsMap
-): ProviderImportOpenAiSummary | null {
-	const cfg = map.openai;
-	if (!cfg) return null;
-	const url =
-		cfg.base ||
-		cfg.endpoints?.chat ||
-		Object.values(cfg.endpoints ?? {})[0] ||
-		'';
-	if (!url) return null;
-	return {
-		url,
-		hasBase: Boolean(cfg.base),
-		capabilities: listConfiguredCapabilities(map, 'openai'),
-	};
 }
 
 /** 全部静态模板行（含 catalog 键与 endpoints）。 */

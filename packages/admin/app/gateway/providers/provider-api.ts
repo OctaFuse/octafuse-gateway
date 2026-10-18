@@ -26,7 +26,7 @@ export async function saveProvider(
 	const payload: Record<string, unknown> = {
 		name: formData.name,
 		kind: formData.kind,
-		description: formData.description,
+		note: formData.note,
 		endpoints: formDataToEndpointsMap(formData),
 		status: formData.status === 'disabled' ? 'disabled' : 'active',
 	};
@@ -122,8 +122,8 @@ export async function fetchProviderQuota(
 	return { success: false, message: data.message || 'Failed to query provider quota' };
 }
 
-export async function fetchProviderSyncReport(locale: string): Promise<ProviderSyncReport> {
-	const response = await fetch(`/api/admin/providers/sync/diff?locale=${encodeURIComponent(locale)}`);
+export async function fetchProviderSyncReport(): Promise<ProviderSyncReport> {
+	const response = await fetch('/api/admin/providers/sync/diff');
 	const data = await readApiJson<ProviderSyncReport>(response);
 	if (data.success && data.data) return data.data;
 	throw new Error(data.message || 'Failed to load provider sync diff');

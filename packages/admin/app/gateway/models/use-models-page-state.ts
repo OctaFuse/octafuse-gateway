@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { parseModelModalitiesJson } from '@octafuse/core/db/model-modalities';
 import { resolveModelKind } from '@octafuse/core/db/model-kind';
@@ -69,7 +69,6 @@ import {
 } from './types';
 
 export function useModelsPageState() {
-	const locale = useLocale();
 	const tCatalog = useTranslations('models.catalog');
 	const tImport = useTranslations('models.import');
 	const tModal = useTranslations('models.modal');
@@ -366,7 +365,7 @@ export function useModelsPageState() {
 		}
 		setImportSubmitting(true);
 		try {
-			const result = await importModelPresets(ids, locale);
+			const result = await importModelPresets(ids);
 			if (result.success) {
 				const { created, failed, skipped_existing } = result.data;
 				const skipN = skipped_existing?.length ?? 0;
@@ -395,7 +394,7 @@ export function useModelsPageState() {
 		} finally {
 			setImportSubmitting(false);
 		}
-	}, [existingModelIds, importCatalogRows, importSelected, locale, notify, refreshModels, tImport]);
+	}, [existingModelIds, importCatalogRows, importSelected, notify, refreshModels, tImport]);
 
 	const applyImagePricingDraft = useCallback((draft: ImagePricingDraftState) => {
 		setImageBillingMode(draft.mode);
@@ -426,7 +425,7 @@ export function useModelsPageState() {
 				output_modalities: outputMods,
 				released_at: model.released_at ?? '',
 				tags: listTags,
-				description: model.description ?? '',
+				note: model.note ?? '',
 				metadata: formatMetadataForEditor(model.metadata),
 			});
 			if (audioModel) {

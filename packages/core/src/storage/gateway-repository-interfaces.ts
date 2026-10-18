@@ -206,7 +206,7 @@ export interface ModelsRepository {
 		contextWindow: unknown;
 		maxTokens: unknown;
 		pricingProfile?: unknown;
-		description: unknown;
+		note: unknown;
 		metadata: unknown;
 		inputModalities?: unknown;
 		outputModalities?: unknown;
@@ -355,7 +355,7 @@ export interface ProvidersRepository {
 		kind?: string;
 		/** `providers.endpoints` JSON 文本 */
 		endpoints: string | null;
-		description: unknown;
+		note: unknown;
 		apiKey?: string;
 		status?: string;
 	}): Promise<void>;

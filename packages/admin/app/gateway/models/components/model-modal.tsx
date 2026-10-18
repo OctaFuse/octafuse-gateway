@@ -4,7 +4,7 @@ import { formatPerMillionTokenUnit, formatPerCharacterUnit, formatPerSecondUnit 
 import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { useMemo, useState } from 'react';
 import { CodeBracketIcon, DocumentDuplicateIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { DailyScheduleEditor } from '@/components/daily-schedule-editor';
 import {
 	MODEL_INPUT_MODALITIES,
@@ -100,6 +100,12 @@ export function ModelModal(props: Props) {
 
 	const t = useTranslations('models.modal');
 	const tCommon = useTranslations('common');
+	const locale = useLocale();
+	const catalogIntro = (() => {
+		const catalog = editingModel?.catalog_i18n;
+		if (!catalog) return '';
+		return locale.toLowerCase().startsWith('zh') ? catalog.zh || catalog.en : catalog.en || catalog.zh;
+	})();
 	const tRoutes = useTranslations('routes.modal');
 	const isImageModel = formKind === 'image';
 	const isAudioModel = formKind === 'asr' || formKind === 'tts';
@@ -831,13 +837,19 @@ export function ModelModal(props: Props) {
 					</div>
 					<div className="mt-5 grid grid-cols-1 items-stretch gap-5 xl:grid-cols-2">
 						<div className="flex min-h-36 flex-col">
-							<label className="mb-1 block text-sm font-medium text-gray-700">{t('description')}</label>
+							{catalogIntro ? (
+								<div className="mb-3 rounded-md bg-gray-50 px-3 py-2">
+									<p className="text-xs font-medium text-gray-500">{t('catalogIntro')}</p>
+									<p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">{catalogIntro}</p>
+								</div>
+							) : null}
+							<label className="mb-1 block text-sm font-medium text-gray-700">{t('note')}</label>
 							<textarea
 								rows={4}
-								value={formData.description}
-								onChange={(e) => onFormChange({ ...formData, description: e.target.value })}
+								value={formData.note}
+								onChange={(e) => onFormChange({ ...formData, note: e.target.value })}
 								className="min-h-0 w-full flex-1 rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder={t('descriptionPlaceholder')}
+								placeholder={t('notePlaceholder')}
 							/>
 						</div>
 						<div className="flex min-h-36 flex-col">

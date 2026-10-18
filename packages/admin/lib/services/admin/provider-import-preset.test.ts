@@ -131,6 +131,46 @@ describe('provider import preset catalog metadata', () => {
 		);
 	});
 
+	it('keeps Open Design on chat, responses, and Anthropic without derived media endpoints', () => {
+		const row = listStaticProviderImportPresets().find((preset) => preset.name === 'Open Design');
+		assert.ok(row);
+		assert.equal(row.vendor_key, 'opendesign');
+		assert.equal(row.endpoints.openai?.base, undefined);
+		assert.deepEqual(row.endpoints.openai?.endpoints, {
+			chat: 'https://amr-link.open-design.ai/v1/chat/completions',
+			responses: 'https://amr-link.open-design.ai/v1/responses',
+		});
+		assert.equal(row.endpoints.anthropic?.base, 'https://amr-link.open-design.ai');
+		assert.equal(row.endpoints.gemini, undefined);
+		assert.deepEqual(listConfiguredCapabilities(row.endpoints, 'openai'), ['chat', 'responses']);
+		assert.equal(
+			resolveUpstreamEndpoint('openai', 'chat', row.endpoints),
+			'https://amr-link.open-design.ai/v1/chat/completions'
+		);
+		assert.equal(
+			resolveUpstreamEndpoint('openai', 'responses', row.endpoints),
+			'https://amr-link.open-design.ai/v1/responses'
+		);
+		assert.equal(
+			resolveUpstreamEndpoint('anthropic', 'messages', row.endpoints),
+			'https://amr-link.open-design.ai/v1/messages'
+		);
+		const catalog = listStaticProviderImportCatalogForAdmin().find((item) => item.name === 'Open Design');
+		assert.ok(catalog?.labels);
+		assert.equal(providerImportCatalogCopy(catalog, 'zh').name, 'Open Design');
+		assert.match(providerImportCatalogCopy(catalog, 'zh').description ?? '', /Design Plan/);
+		assert.equal(providerImportCatalogCopy(catalog, 'en').name, 'Open Design');
+		assert.equal(providerImportCatalogMatchesQuery(catalog, 'amr-link'), true);
+		assert.equal(inferStaticProviderVendorKey({ name: 'Open Design 生产账号' }), 'opendesign');
+		assert.equal(
+			inferStaticProviderVendorKey({
+				name: 'Renamed production upstream',
+				endpoints: replaceEndpointPaths(row.endpoints),
+			}),
+			'opendesign'
+		);
+	});
+
 	it('includes documented China-region chat, responses, and Anthropic endpoints', () => {
 		const rows = listStaticProviderImportPresets();
 		const byName = new Map(rows.map((row) => [row.name, row]));
@@ -686,7 +726,7 @@ describe('provider import preset catalog metadata', () => {
 		assert.equal(international.endpoints.minimax?.base, 'https://api.minimax.io/v1');
 	});
 
-	it('stores the catalog name and summary for the selected locale', () => {
+	it('returns the catalog name and summary for the selected locale without writing them to the database', () => {
 		const row = listStaticProviderImportPresets().find((preset) => preset.name === 'Volcengine Ark');
 		assert.ok(row);
 

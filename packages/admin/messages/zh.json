@@ -373,7 +373,8 @@
 			"provider": "供应商",
 			"routes": "关联路由",
 			"protocols": "协议与能力",
-			"keyAndQuota": "密钥与额度"
+			"keyAndQuota": "密钥与额度",
+			"status": "状态"
 		},
 		"title": "供应商",
 		"subtitle": "{product} 使用的上游 AI 供应商端点",
@@ -453,10 +454,6 @@
 			"catalogEmpty": "目录为空",
 			"noMatch": "没有匹配该名称的模板",
 			"selectRow": "选择 {name}",
-			"protocols": "protocols",
-			"openaiBase": "OpenAI base：{url}",
-			"openaiChat": "OpenAI chat：{url}",
-			"openaiCaps": "· {caps}",
 			"importSelected": "导入选中项（{count}）",
 			"selectNone": "请至少选择一个模板。",
 			"finished": "已导入 {created} 个供应商。",
@@ -588,9 +585,10 @@
 			"capMessages": "messages (/v1/messages)",
 			"capGenerateContent": "generateContent (/v1beta/models/'{model}':generateContent)",
 			"capStreamGenerateContent": "streamGenerateContent (/v1beta/models/'{model}':streamGenerateContent)",
-			"description": "描述",
-			"descriptionHint": "仅供内部参考；不会发送到上游。",
-			"descriptionPlaceholder": "可选的内部描述",
+			"catalogIntro": "官方介绍",
+			"note": "备注",
+			"noteHint": "写给这个账号的备注。官方介绍来自目录，会随界面语言切换。",
+			"notePlaceholder": "可选备注",
 			"deleteProvider": "删除供应商",
 			"confirmDelete": "删除该供应商？",
 			"apiKeyRequired": "API Key *",
@@ -626,7 +624,6 @@
 				"removed": "仅本地有"
 			},
 			"field": {
-				"description": "介绍",
 				"endpoints": "{protocol} 协议端点"
 			},
 			"slot": {
@@ -832,8 +829,9 @@
 			"tags": "标签",
 			"tagsPlaceholder": "例如 free、lite、pro、max — 按 Enter 添加",
 			"removeTag": "移除 {tag}",
-			"description": "描述",
-			"descriptionPlaceholder": "可选，仅供内部备注",
+			"catalogIntro": "官方介绍",
+			"note": "备注",
+			"notePlaceholder": "可选备注",
 			"metadataJson": "元数据（JSON）",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "删除模型",
@@ -892,7 +890,6 @@
 				"vendor": "厂商",
 				"context_window": "上下文窗口",
 				"max_tokens": "最大输出",
-				"description": "介绍",
 				"released_at": "发布日期",
 				"input_modalities": "输入模态",
 				"output_modalities": "输出模态",

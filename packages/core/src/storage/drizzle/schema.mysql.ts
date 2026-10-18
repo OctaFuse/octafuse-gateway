@@ -105,7 +105,8 @@ export const providersTable = mysqlTable(
 		apiKey: text('api_key').notNull().default(''),
 		/** `active` | `disabled` */
 		status: varchar('status', { length: COL.STATUS }).notNull().default('active'),
-		description: text('description'),
+		/** Operator note. Catalog introductions are resolved from static presets. */
+		note: text('note'),
 		createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 	},
 	(t) => [uniqueIndex('uk_providers_name_kind').on(t.name, t.kind)]
@@ -119,7 +120,8 @@ export const modelsTable = mysqlTable('models', {
 	/** Chat completion max output tokens; NULL for image-generation models. */
 	maxTokens: int('max_tokens').default(8192),
 	pricingProfile: text('pricing_profile'),
-	description: text('description'),
+	/** Operator note. Catalog introductions are resolved from static presets. */
+	note: text('note'),
 	metadata: text('metadata'),
 	inputModalities: text('input_modalities'),
 	outputModalities: text('output_modalities'),

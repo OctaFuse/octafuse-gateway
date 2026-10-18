@@ -64,7 +64,6 @@ interface ModelInfoResponse {
 	 */
 	input_price: number | null;
 	output_price: number | null;
-	description: string | null;
 	/** Parsed input modality list (e.g. text, image, file). */
 	input_modalities: string[] | null;
 	/** Parsed output modality list (e.g. text). */
@@ -165,7 +164,6 @@ modelsRoutes.get('/', async (c) => {
 				pricing_profile: pricingProfile,
 				input_price,
 				output_price,
-				description: m.description,
 				input_modalities: parseModelModalitiesJson(m.input_modalities),
 				output_modalities: parseModelModalitiesJson(m.output_modalities),
 				released_at: m.released_at ?? null,

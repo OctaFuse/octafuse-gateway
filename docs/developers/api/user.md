@@ -455,7 +455,6 @@ GET /v1/models
         },
         "input_price": 0.01,
         "output_price": 0.01,
-        "description": "智谱 GLM-4 通用模型",
         "input_modalities": ["text", "image", "file"],
         "output_modalities": ["text"],
         "released_at": "2024-06-05",
@@ -491,7 +490,6 @@ GET /v1/models
 | `pricing_profile` | object \| null | 解析后的模型主定价（与 Catalog 同形：`{ "tiers": [ { "upto", "label", "input_price", "output_price", … } ], "schedule"?: [ { "start", "end", "factor", "days"? } ] }`）；非法 JSON 为 `null`。**末档 `upto` 为 `null` 表示开放上界**；完整阶梯与 cache 价以此为准。可选 `schedule` 为官方分时倍率（时区为 `BUSINESS_TIMEZONE`，不写入 JSON） |
 | `input_price` | number \| null | **兼容展示**：由 `pricing_profile` 派生（取各档中 **最低** `input_price` 所在档的输入价，**不含**官方时段）；无合法 profile 时为 `null` |
 | `output_price` | number \| null | **兼容展示**：与上档同行的输出价（$/1M），同样不含官方时段 |
-| `description` | string \| null | 模型描述 |
 | `input_modalities` | string[] \| null | 支持的输入模态（OpenRouter 风格）：`text`、`image`、`audio`、`video`、`file`；客户端可据此限制附件类型 |
 | `output_modalities` | string[] \| null | 支持的输出模态：`text`、`image`、`audio` |
 | `released_at` | string \| null | 模型发布日期（`YYYY-MM-DD`） |
@@ -574,7 +572,6 @@ GET /catalog/models
       },
       "inbound": [{ "protocol": "openai", "operation": "chat" }],
       "recommended_protocol": "openai",
-      "description": "智谱 GLM-4 通用模型",
       "input_modalities": ["text", "image", "file"],
       "output_modalities": ["text"],
       "released_at": "2024-06-05",

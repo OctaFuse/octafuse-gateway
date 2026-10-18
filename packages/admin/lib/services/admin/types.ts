@@ -126,7 +126,8 @@ export type AdminProviderMutationInput = {
 	api_key?: unknown;
 	/** `active` | `disabled` */
 	status?: unknown;
-	description?: unknown;
+	/** 运营备注。空串或 null 清空。 */
+	note?: unknown;
 	[key: string]: unknown;
 };
 
@@ -141,7 +142,7 @@ export type AdminProviderImportCatalogItem = {
 	protocols: UpstreamProtocol[];
 	/** 序列化后的 endpoints JSON（可 null） */
 	endpoints: string | null;
-	/** 缺本地化摘要时回退写入 `providers.description` 的运维说明。 */
+	/** 缺本地化摘要时导入列表回退展示的运维说明。不写入数据库。 */
 	description: string | null;
 	/** 导入列表与入库文案。中文界面用 `zh`，其余界面用 `en`。 */
 	labels?: {
@@ -159,7 +160,7 @@ export type AdminProviderImportCatalogItem = {
 /** `POST /admin/providers/import` 请求体：导入选中的 catalog 键（`GET .../catalog` 返回的 `id`）。 */
 export type AdminProvidersImportBody = {
 	ids: string[];
-	/** 当前界面语言。`zh` 开头写入中文名称和摘要，其余写入英文。缺省按英文。 */
+	/** 当前界面语言。`zh` 开头用中文账号别名，其余用英文。缺省按英文。 */
 	locale?: string;
 };
 
@@ -185,7 +186,8 @@ export type AdminModelMutationInput = {
 	 * 空字符串 / null 表示清除（PATCH 时）。
 	 */
 	pricing_profile?: unknown;
-	description?: unknown;
+	/** 运营备注。空串或 null 清空。 */
+	note?: unknown;
 	metadata?: unknown;
 	tags?: unknown;
 	[key: string]: unknown;
@@ -238,9 +240,9 @@ export type AdminStaticModelPresetCatalogItem = {
 	kind: ModelKind;
 	context_window: number | null;
 	max_tokens: number | null;
-	/** English catalog summary. Non-Chinese imports write this (or `i18n.en`) to `models.description`. */
+	/** English catalog summary, shown when `i18n.en` is absent. Not stored. */
 	description: string | null;
-	/** Localized catalog summaries. Chinese imports write `zh` to `models.description`. */
+	/** Localized catalog introductions. Admin displays these; they are not stored. */
 	i18n: {
 		en: string;
 		zh: string;
@@ -262,8 +264,6 @@ export type AdminStaticModelPresetCatalogItem = {
 /** `POST /admin/models/import` 请求体：仅导入选中的预设 id。 */
 export type AdminModelsImportBody = {
 	ids: string[];
-	/** 当前界面语言。`zh` 开头把中文介绍写入 `models.description`，其余写入英文。缺省按英文。 */
-	locale?: string;
 };
 
 /** `POST /admin/models/import`：从内置静态目录按当前 `BILLING_CURRENCY` 选用 USD/CNY 价写入库。 */
@@ -304,7 +304,13 @@ export type AdminProviderRow = {
 	api_key?: string;
 	/** `active` | `disabled` */
 	status?: string;
-	description: string | null;
+	/** 运营备注。类型介绍见 `kind_descriptions`。 */
+	note: string | null;
+	/** 已保存类型的中英文介绍。自定义、未分类或模板没有介绍时省略。 */
+	kind_descriptions?: {
+		en: string;
+		zh: string;
+	};
 	created_at: string;
 	has_pending_key?: boolean;
 	/** `model_routes` 引用该 provider 的总数 */
@@ -328,7 +334,10 @@ export type AdminModelRow = {
 	released_at: string | null;
 	/** 厂商退役日期 `YYYY-MM-DD`，由内置静态目录按 id 匹配得出（不落库）；null=仍在提供或目录无此模型 */
 	retired_at?: string | null;
-	description: string | null;
+	/** 运营备注。目录介绍见 `catalog_i18n`。 */
+	note: string | null;
+	/** 静态目录中英文介绍。自建模型为 null。 */
+	catalog_i18n?: { en: string; zh: string } | null;
 	metadata: string | null;
 	/** 路由策略 JSON（`strategy` + `rules`）；null=回退全局 ROUTE_STRATEGY */
 	route_policy?: string | null;

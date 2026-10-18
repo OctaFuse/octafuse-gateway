@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useFeedback } from '@/components/feedback';
 import type {
 	ModelSyncField,
@@ -38,7 +38,6 @@ export function useModelSync(options: {
 	onReport: (report: ModelSyncReport) => void;
 }) {
 	const { onChanged, onReport } = options;
-	const locale = useLocale();
 	const t = useTranslations('models.sync');
 	const { notify, confirm } = useFeedback();
 
@@ -57,7 +56,7 @@ export function useModelSync(options: {
 			setLoading(true);
 			setError('');
 			try {
-				const next = await fetchModelSyncReport(locale);
+				const next = await fetchModelSyncReport();
 				setReport(next);
 				onReport(next);
 				setSelection((prev) => buildSelection(next, resetSelection ? {} : prev));
@@ -72,14 +71,14 @@ export function useModelSync(options: {
 				setLoading(false);
 			}
 		},
-		[locale, onReport, t]
+		[onReport, t]
 	);
 
 	/** 手动检查：拉取差异并告知结果；有更新时由页面提示条承接，不自动弹出面板。 */
 	const check = useCallback(async () => {
 		setChecking(true);
 		try {
-			const next = await fetchModelSyncReport(locale);
+			const next = await fetchModelSyncReport();
 			setReport(next);
 			setSelection(buildSelection(next, {}));
 			onReport(next);
@@ -97,7 +96,7 @@ export function useModelSync(options: {
 		} finally {
 			setChecking(false);
 		}
-	}, [locale, notify, onReport, t]);
+	}, [notify, onReport, t]);
 
 	/** `initialVendor`：想先看的厂商；缺省或无差异时落到第一项。 */
 	const openSync = useCallback(
@@ -207,7 +206,7 @@ export function useModelSync(options: {
 
 			setSubmitting(true);
 			try {
-				const result = await applyModelSync({ locale, items });
+				const result = await applyModelSync({ items });
 				if (!result.success) {
 					notify('error', result.message || t('applyFailed'));
 					return;
@@ -233,7 +232,7 @@ export function useModelSync(options: {
 				setSubmitting(false);
 			}
 		},
-		[confirm, load, locale, notify, onChanged, report, selection, t]
+		[confirm, load, notify, onChanged, report, selection, t]
 	);
 
 	return {

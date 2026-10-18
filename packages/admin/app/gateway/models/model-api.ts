@@ -128,21 +128,20 @@ export async function fetchImportCatalog(): Promise<PresetCatalogRow[]> {
 }
 
 export async function importModelPresets(
-	ids: string[],
-	locale: string
+	ids: string[]
 ): Promise<{ success: true; data: ModelImportResult } | { success: false; message: string }> {
 	const response = await fetch('/api/admin/models/import', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ ids, locale }),
+		body: JSON.stringify({ ids }),
 	});
 	const data = await readApiJson<ModelImportResult>(response);
 	if (data.success && data.data) return { success: true, data: data.data };
 	return { success: false, message: data.message || 'Import failed' };
 }
 
-export async function fetchModelSyncReport(locale: string): Promise<ModelSyncReport> {
-	const response = await fetch(`/api/admin/models/sync/diff?locale=${encodeURIComponent(locale)}`);
+export async function fetchModelSyncReport(): Promise<ModelSyncReport> {
+	const response = await fetch('/api/admin/models/sync/diff');
 	const data = await readApiJson<ModelSyncReport>(response);
 	if (data.success && data.data) return data.data;
 	throw new Error(data.message || 'Failed to load model sync diff');

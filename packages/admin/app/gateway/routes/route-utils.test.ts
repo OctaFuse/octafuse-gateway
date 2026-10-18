@@ -60,7 +60,7 @@ function model(overrides: Partial<GatewayModel> = {}): GatewayModel {
 		context_window: 128_000,
 		max_tokens: 4096,
 		tags: '[]',
-		description: null,
+		note: null,
 		metadata: null,
 		created_at: '',
 		...overrides,
@@ -72,7 +72,7 @@ function provider(endpoints: object): GatewayProvider {
 		id: 'provider-1',
 		name: 'Provider 1',
 		endpoints: JSON.stringify(endpoints),
-		description: null,
+		note: null,
 		created_at: '',
 	};
 }

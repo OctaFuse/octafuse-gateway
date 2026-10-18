@@ -157,12 +157,11 @@ export function ProviderQuotaButton({ providerId }: ProviderQuotaButtonProps) {
 					event.stopPropagation();
 					startQuery();
 				}}
-				className="pointer-events-auto inline-flex h-7 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+				className="pointer-events-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
 				title={t('action')}
 				aria-label={t('action')}
 			>
-				<BanknotesIcon className="h-3.5 w-3.5" aria-hidden />
-				<span className="max-w-[4.5rem] truncate">{t('action')}</span>
+				<BanknotesIcon className="h-4 w-4" aria-hidden />
 			</button>
 			{dialog}
 		</>

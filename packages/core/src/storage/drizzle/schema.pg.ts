@@ -75,7 +75,8 @@ export const providersTable = pgTable(
 		apiKey: text('api_key').notNull().default(''),
 		/** `active` | `disabled` */
 		status: text('status').notNull().default('active'),
-		description: text('description'),
+		/** Operator note. Catalog introductions are resolved from static presets. */
+		note: text('note'),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 	},
 	(t) => [uniqueIndex('uk_providers_name_kind').on(t.name, t.kind)]
@@ -89,7 +90,8 @@ export const modelsTable = pgTable('models', {
 	/** Chat completion max output tokens; NULL for image-generation models. */
 	maxTokens: integer('max_tokens').default(8192),
 	pricingProfile: text('pricing_profile'),
-	description: text('description'),
+	/** Operator note. Catalog introductions are resolved from static presets. */
+	note: text('note'),
 	metadata: text('metadata'),
 	inputModalities: text('input_modalities'),
 	outputModalities: text('output_modalities'),

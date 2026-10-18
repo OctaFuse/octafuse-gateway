@@ -373,7 +373,8 @@
 			"provider": "Provider",
 			"routes": "Routes",
 			"protocols": "Protocols & capabilities",
-			"keyAndQuota": "API key & quota"
+			"keyAndQuota": "API key & quota",
+			"status": "Status"
 		},
 		"title": "Providers",
 		"subtitle": "Upstream AI endpoints consumed by {product}",
@@ -453,10 +454,6 @@
 			"catalogEmpty": "Catalog is empty",
 			"noMatch": "No templates match this name",
 			"selectRow": "Select {name}",
-			"protocols": "protocols",
-			"openaiBase": "OpenAI base: {url}",
-			"openaiChat": "OpenAI chat: {url}",
-			"openaiCaps": "· {caps}",
 			"importSelected": "Import selected ({count})",
 			"selectNone": "Select at least one template.",
 			"finished": "Imported {created} provider(s).",
@@ -588,9 +585,10 @@
 			"capMessages": "messages (/v1/messages)",
 			"capGenerateContent": "generateContent (/v1beta/models/'{model}':generateContent)",
 			"capStreamGenerateContent": "streamGenerateContent (/v1beta/models/'{model}':streamGenerateContent)",
-			"description": "Description",
-			"descriptionHint": "Internal reference only; not sent to upstream.",
-			"descriptionPlaceholder": "Optional internal description",
+			"catalogIntro": "Official introduction",
+			"note": "Note",
+			"noteHint": "Your own note for this account. The official introduction comes from the catalog and follows the interface language.",
+			"notePlaceholder": "Optional note",
 			"deleteProvider": "Delete provider",
 			"confirmDelete": "Delete this provider?",
 			"apiKeyRequired": "API Key *",
@@ -626,7 +624,6 @@
 				"removed": "Local only"
 			},
 			"field": {
-				"description": "Description",
 				"endpoints": "{protocol} endpoints"
 			},
 			"slot": {
@@ -832,8 +829,9 @@
 			"tags": "Tags",
 			"tagsPlaceholder": "e.g. free, lite, pro, max — press Enter to add",
 			"removeTag": "Remove {tag}",
-			"description": "Description",
-			"descriptionPlaceholder": "Optional, for internal notes",
+			"catalogIntro": "Official introduction",
+			"note": "Note",
+			"notePlaceholder": "Optional note",
 			"metadataJson": "Metadata (JSON)",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "Delete model",
@@ -892,7 +890,6 @@
 				"vendor": "Vendor",
 				"context_window": "Context window",
 				"max_tokens": "Max output",
-				"description": "Description",
 				"released_at": "Release date",
 				"input_modalities": "Input modalities",
 				"output_modalities": "Output modalities",

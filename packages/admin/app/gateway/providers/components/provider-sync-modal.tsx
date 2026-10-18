@@ -4,7 +4,6 @@ import { ArrowPathIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroic
 import { useLocale, useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
 import type {
-	ProviderSyncDescriptionField,
 	ProviderSyncEndpointField,
 	ProviderSyncField,
 	ProviderSyncKindGroup,
@@ -35,26 +34,6 @@ function Value({ value, tone }: { value: string | null; tone: 'old' | 'new' | 'n
 		tone === 'old' ? 'bg-red-50 text-red-900' : tone === 'new' ? 'bg-emerald-50 text-emerald-900' : '';
 	return (
 		<span className={`break-all rounded px-1 py-0.5 font-mono text-[11px] leading-5 ${toneClass}`}>{value}</span>
-	);
-}
-
-function DescriptionDiff({ field }: { field: ProviderSyncDescriptionField }) {
-	const t = useTranslations('providers.sync');
-	return (
-		<div className="grid gap-2 text-xs sm:grid-cols-2">
-			<div className="min-w-0">
-				<p className="mb-1 font-medium text-gray-500">{t('current')}</p>
-				<p className="whitespace-pre-wrap break-words rounded-md border border-red-100 bg-red-50/60 p-2 text-gray-800">
-					{field.current ?? <span className="text-gray-300">—</span>}
-				</p>
-			</div>
-			<div className="min-w-0">
-				<p className="mb-1 font-medium text-gray-500">{t('official')}</p>
-				<p className="whitespace-pre-wrap break-words rounded-md border border-emerald-100 bg-emerald-50/60 p-2 text-gray-800">
-					{field.official ?? <span className="text-gray-300">—</span>}
-				</p>
-			</div>
-		</div>
 	);
 }
 
@@ -100,10 +79,7 @@ function FieldBlock(props: {
 	const { provider, field, apply, disabled, onToggle } = props;
 	const t = useTranslations('providers.sync');
 	const tUpstream = useTranslations('upstream');
-	const title =
-		field.key === 'description'
-			? t('field.description')
-			: t('field.endpoints', { protocol: tUpstream(field.protocol) });
+	const title = t('field.endpoints', { protocol: tUpstream(field.protocol) });
 
 	const choose = (wantApply: boolean) => {
 		if (wantApply !== apply) onToggle();
@@ -158,7 +134,7 @@ function FieldBlock(props: {
 			{field.status === 'removed' ? (
 				<p className="mb-2 text-xs text-gray-500">{t('removedHint')}</p>
 			) : null}
-			{field.key === 'description' ? <DescriptionDiff field={field} /> : <EndpointDiff field={field} />}
+			<EndpointDiff field={field} />
 		</div>
 	);
 }

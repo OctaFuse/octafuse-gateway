@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useFeedback } from '@/components/feedback';
 import type {
 	ProviderSyncField,
@@ -47,7 +47,6 @@ export function useProviderSync(options: {
 	onReport: (report: ProviderSyncReport) => void;
 }) {
 	const { onChanged, onReport } = options;
-	const locale = useLocale();
 	const t = useTranslations('providers.sync');
 	const { notify, confirm } = useFeedback();
 
@@ -67,7 +66,7 @@ export function useProviderSync(options: {
 		setLoading(true);
 		setError('');
 		try {
-			const next = await fetchProviderSyncReport(locale);
+			const next = await fetchProviderSyncReport();
 			setReport(next);
 			onReport(next);
 			setSelection((prev) => buildSelection(next, resetSelection ? {} : prev));
@@ -91,13 +90,13 @@ export function useProviderSync(options: {
 		} finally {
 			setLoading(false);
 		}
-	}, [locale, onReport, t]);
+	}, [onReport, t]);
 
 	/** 手动检查：拉取差异并告知结果；有更新时由页面提示条承接，不自动弹出面板。 */
 	const check = useCallback(async () => {
 		setChecking(true);
 		try {
-			const next = await fetchProviderSyncReport(locale);
+			const next = await fetchProviderSyncReport();
 			setReport(next);
 			setSelection(buildSelection(next, {}));
 			onReport(next);
@@ -119,7 +118,7 @@ export function useProviderSync(options: {
 		} finally {
 			setChecking(false);
 		}
-	}, [locale, notify, onReport, t]);
+	}, [notify, onReport, t]);
 
 	/** `initialKey`：想先看的类型（kind 或 `PROVIDER_SYNC_ORPHANS_KEY`）；缺省或无差异时落到第一项。 */
 	const openSync = useCallback((initialKey?: string) => {
@@ -228,7 +227,7 @@ export function useProviderSync(options: {
 
 			setSubmitting(true);
 			try {
-				const result = await applyProviderSync({ locale, items });
+				const result = await applyProviderSync({ items });
 				if (!result.success) {
 					notify('error', result.message || t('applyFailed'));
 					return;
@@ -254,7 +253,7 @@ export function useProviderSync(options: {
 				setSubmitting(false);
 			}
 		},
-		[confirm, load, locale, notify, onChanged, report, selection, t]
+		[confirm, load, notify, onChanged, report, selection, t]
 	);
 
 	const setOrphanTarget = useCallback((providerId: string, kind: string) => {

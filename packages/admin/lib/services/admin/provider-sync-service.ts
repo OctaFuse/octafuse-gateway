@@ -1,17 +1,15 @@
 /**
  * Provider 与官方模板同步：生成差异报告、按选中的字段应用官方值。
  *
- * 只写 `description` / `endpoints`；永不触碰 `api_key`、`status`、`name`、`kind`。
+ * 只写 `endpoints`；永不触碰 `note`、`api_key`、`status`、`name`、`kind`。
  * 应用时服务端重新计算差异，不信任前端展示过的内容。
  */
 import type { GatewayRepositories } from '@octafuse/core';
 import {
 	getStaticProviderPresetByKind,
 	listProviderKindChoices,
-	providerImportStoredFields,
 	suggestStaticProviderKindByEndpoints,
 	resolveStoredProviderPresentation,
-	type StaticProviderImportPresetRow,
 } from '@/lib/provider-import-preset';
 import { CUSTOM_PROVIDER_KIND } from '@/lib/provider-kind';
 import {
@@ -26,19 +24,8 @@ import {
 import { badRequest } from './errors';
 import { listProvidersService, updateProviderService } from './providers-service';
 
-/** 介绍按当前界面语言取目录摘要，端点仍按模板原文比对。 */
-function presetForSync(preset: StaticProviderImportPresetRow, locale: string | null | undefined) {
-	return {
-		description: providerImportStoredFields(preset, locale).description,
-		endpoints: preset.endpoints,
-	};
-}
-
 /** 差异报告：按模板类型分组，另列出 kind 已失效的 provider。 */
-export async function getProviderSyncReportService(
-	repos: GatewayRepositories,
-	locale?: string | null
-): Promise<ProviderSyncReport> {
+export async function getProviderSyncReportService(repos: GatewayRepositories): Promise<ProviderSyncReport> {
 	const providers = await listProvidersService(repos);
 	const groupsByKind = new Map<string, ProviderSyncKindGroup>();
 	const orphans: ProviderSyncOrphanEntry[] = [];
@@ -60,7 +47,7 @@ export async function getProviderSyncReportService(
 			continue;
 		}
 
-		const fields = diffProviderAgainstPreset(provider, presetForSync(preset, locale));
+		const fields = diffProviderAgainstPreset(provider, preset);
 		if (fields.length === 0) continue;
 		providersWithDiff += 1;
 
@@ -141,11 +128,7 @@ export async function applyProviderSyncService(
 				skipped += 1;
 				continue;
 			}
-			const patch = buildProviderSyncPatch(
-				row as { description?: string | null; endpoints?: string | null },
-				presetForSync(preset, body.locale),
-				fields
-			);
+			const patch = buildProviderSyncPatch(row, preset, fields);
 			if (Object.keys(patch).length === 0) {
 				skipped += 1;
 				continue;

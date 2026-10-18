@@ -18,21 +18,25 @@ function providerWithEndpoints(endpoints: unknown, extras: Partial<GatewayProvid
 		name: 'P1',
 		status: 'active',
 		endpoints: JSON.stringify(endpoints),
-		description: null,
+		note: null,
 		created_at: '',
 		...extras,
 	} as GatewayProvider;
 }
 
 describe('getProviderKeyStatus / providerMatchesListFilter', () => {
-	it('classifies pending, disabled, no_key, and key_set', () => {
+	it('classifies the key only, including when the provider is disabled', () => {
 		assert.equal(
 			getProviderKeyStatus(providerWithEndpoints({}, { has_pending_key: true, api_key: '(empty)' })),
 			'pending'
 		);
 		assert.equal(
 			getProviderKeyStatus(providerWithEndpoints({}, { status: 'disabled', api_key: 'sk-****' })),
-			'disabled'
+			'key_set'
+		);
+		assert.equal(
+			getProviderKeyStatus(providerWithEndpoints({}, { status: 'disabled', api_key: '(empty)' })),
+			'no_key'
 		);
 		assert.equal(
 			getProviderKeyStatus(providerWithEndpoints({}, { api_key: '(empty)' })),
@@ -91,7 +95,7 @@ describe('provider gemini form fold / round-trip', () => {
 		);
 		assert.equal(form.gemini.modelsGenerate, 'https://x.example/models/{model}:{action}');
 		assert.equal(form.gemini.legacyPerAction, null);
-		const map = formDataToEndpointsMap({ ...EMPTY_PROVIDER_FORM, ...form, id: 'p1', name: 'P1', description: '' });
+		const map = formDataToEndpointsMap({ ...EMPTY_PROVIDER_FORM, ...form, id: 'p1', name: 'P1', note: '' });
 		assert.equal(map.gemini?.endpoints?.['models.generate'], 'https://x.example/models/{model}:{action}');
 		assert.equal(map.gemini?.endpoints?.generateContent, undefined);
 	});
@@ -108,7 +112,7 @@ describe('provider gemini form fold / round-trip', () => {
 			})
 		);
 		assert.ok(form.gemini.legacyPerAction);
-		const map = formDataToEndpointsMap({ ...EMPTY_PROVIDER_FORM, ...form, id: 'p1', name: 'P1', description: '' });
+		const map = formDataToEndpointsMap({ ...EMPTY_PROVIDER_FORM, ...form, id: 'p1', name: 'P1', note: '' });
 		assert.equal(map.gemini?.endpoints?.generateContent, 'https://a.example/models/{model}:generateContent');
 		assert.equal(
 			map.gemini?.endpoints?.streamGenerateContent,
@@ -132,7 +136,7 @@ describe('provider gemini form fold / round-trip', () => {
 			...form,
 			id: 'p1',
 			name: 'P1',
-			description: '',
+			note: '',
 		});
 		assert.equal(map.gemini?.auth, 'bearer');
 		const autoForm = {
@@ -144,7 +148,7 @@ describe('provider gemini form fold / round-trip', () => {
 			...autoForm,
 			id: 'p1',
 			name: 'P1',
-			description: '',
+			note: '',
 		});
 		assert.equal(autoMap.gemini?.auth, undefined);
 	});

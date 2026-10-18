@@ -113,7 +113,8 @@ export interface ProviderRow {
   api_key?: string;
   /** `active` | `disabled`；disabled 不参与调度。 */
   status?: ProviderStatus | string;
-  description: string | null;
+  /** 运营备注。类型介绍由静态模板按语言解析，不入库。 */
+  note: string | null;
   created_at: string;
 }
 
@@ -132,7 +133,8 @@ export interface ModelRow {
   tags: string;
   /** active `model_routes` 的 `route_group` 去重 JSON 数组（部分查询可能无此列） */
   route_groups?: string | null;
-  description: string | null;
+  /** 运营备注。目录介绍由静态预设按语言解析，不入库。 */
+  note: string | null;
   metadata: string | null;
   /** JSON array string, e.g. `["text","image"]` */
   input_modalities: string | null;

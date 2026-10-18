@@ -47,6 +47,7 @@ const VENDOR_VISUALS: Record<string, IconVisual> = {
 	nvidia: { url: vendorIconAssets.nvidia, accent: '#76b900' },
 	ollama: { url: vendorIconAssets.ollama, accent: '#7c8ca1' },
 	openai: { url: vendorIconAssets.openai, accent: '#10a37f' },
+	opendesign: { accent: '#218c00' },
 	opencode: { url: vendorIconAssets.opencode, accent: '#f97316' },
 	openrouter: { url: vendorIconAssets.openrouter, accent: '#6366f1' },
 	other: { accent: '#64748b' },

@@ -86,6 +86,7 @@ function enrichProviderRow(provider: AdminProviderRow): AdminProviderRow {
 		...provider,
 		kind: String(provider.kind ?? ''),
 		kind_labels: presentation.kindLabels ?? undefined,
+		kind_descriptions: presentation.kindDescriptions ?? undefined,
 		vendor_key: presentation.vendorKey,
 		icon_key: presentation.iconKey,
 		catalog_links: presentation.catalogLinks ?? undefined,
@@ -136,7 +137,7 @@ export async function createProviderService(
 			name,
 			kind,
 			endpoints: endpointsJson,
-			description: body.description,
+			note: body.note,
 			apiKey,
 			status,
 		})
@@ -185,8 +186,8 @@ export async function updateProviderService(
 	if (body.kind !== undefined) {
 		patch.kind = normalizeProviderKind(body.kind, false);
 	}
-	if (body.description !== undefined) {
-		patch.description = body.description;
+	if (body.note !== undefined) {
+		patch.note = body.note;
 	}
 	if ('endpoints' in body) {
 		patch.endpoints = resolveEndpointsFromMutation(body);
@@ -230,7 +231,7 @@ export async function deleteProviderService(repos: GatewayRepositories, id: stri
 /**
  * 从 `lib/provider-import-presets.json` 按 **catalog 键**导入 Provider：
  * 写入占位 `PROVIDER_IMPORT_PENDING_API_KEY`，须在 Admin 中替换为真实密钥。
- * `kind` 写成模板英文名；显示名和介绍按 `locale` 取目录文案（中文 / 英文）。同一类型下同名才追加 `(2)` 后缀。
+ * `kind` 写成模板英文名；显示名按 `locale` 取目录文案（中文 / 英文）。同一类型下同名才追加 `(2)` 后缀。介绍不入库。
  */
 export async function importProvidersFromStaticPresetsService(
 	repos: GatewayRepositories,
@@ -274,7 +275,6 @@ export async function importProvidersFromStaticPresetsService(
 				name,
 				kind: stored.kind,
 				endpoints: preset.endpoints,
-				description: stored.description,
 				api_key: PROVIDER_IMPORT_PENDING_API_KEY,
 				status: 'active',
 			});

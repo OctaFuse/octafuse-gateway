@@ -4,8 +4,9 @@
  * 纯函数：只做结构化比对，不读库。按 `models.id` 与目录项一一对应；目录里没有的模型
  * （用户自建）不参与比对。
  *
- * 比对字段：display_name、vendor、context_window、max_tokens、description、released_at、
+ * 比对字段：display_name、vendor、context_window、max_tokens、released_at、
  * input_modalities、output_modalities、pricing_profile（按当前 BILLING_CURRENCY 的目录价分支）。
+ * 介绍只存在静态目录里。`note` 是运营备注，不参与比对。
  * 不比对：tags、metadata、route_policy（目录不维护，由运营自行管理）。
  *
  * 官方未给出的字段（null）一律不报差异，不会建议清空本地值。
@@ -22,7 +23,6 @@ export type ModelSyncScalarKey =
 	| 'vendor'
 	| 'context_window'
 	| 'max_tokens'
-	| 'description'
 	| 'released_at'
 	| 'input_modalities'
 	| 'output_modalities';
@@ -63,7 +63,6 @@ export type ModelSyncModelInput = {
 	vendor?: string | null;
 	context_window?: number | null;
 	max_tokens?: number | null;
-	description?: string | null;
 	released_at?: string | null;
 	input_modalities?: string | null;
 	output_modalities?: string | null;
@@ -76,7 +75,6 @@ export type ModelSyncPresetInput = {
 	vendor?: string | null;
 	context_window?: number | null;
 	max_tokens?: number | null;
-	description?: string | null;
 	released?: string | null;
 	input_modalities?: readonly string[] | null;
 	output_modalities?: readonly string[] | null;
@@ -176,7 +174,6 @@ export function diffModelAgainstPreset(
 		numberOrNull(model.max_tokens)?.toString() ?? null,
 		numberOrNull(preset.max_tokens)?.toString() ?? null
 	);
-	pushScalar('description', textOrNull(model.description), textOrNull(preset.description));
 	pushScalar('released_at', textOrNull(model.released_at), textOrNull(preset.released));
 	pushScalar(
 		'input_modalities',
@@ -206,7 +203,6 @@ export type ModelSyncPatch = {
 	vendor?: string;
 	context_window?: number;
 	max_tokens?: number;
-	description?: string;
 	released_at?: string;
 	input_modalities?: string[];
 	output_modalities?: string[];
@@ -231,7 +227,6 @@ export function buildModelSyncPatch(
 	if (want('vendor')) patch.vendor = normalizeModelVendorInput(preset.vendor);
 	if (want('context_window')) patch.context_window = numberOrNull(preset.context_window) ?? undefined;
 	if (want('max_tokens')) patch.max_tokens = numberOrNull(preset.max_tokens) ?? undefined;
-	if (want('description')) patch.description = textOrNull(preset.description) ?? undefined;
 	if (want('released_at')) patch.released_at = textOrNull(preset.released) ?? undefined;
 	if (want('input_modalities') && preset.input_modalities) patch.input_modalities = [...preset.input_modalities];
 	if (want('output_modalities') && preset.output_modalities) patch.output_modalities = [...preset.output_modalities];
@@ -269,8 +264,6 @@ export type ModelSyncReport = {
 };
 
 export type ModelSyncApplyBody = {
-	/** 与检查时相同。采用官方介绍时写入这一语言的目录介绍。 */
-	locale?: string;
 	items: Array<{ model_id: string; fields: string[] }>;
 };
 

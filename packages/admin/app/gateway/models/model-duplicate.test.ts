@@ -11,7 +11,7 @@ describe('modelFormForDuplicate', () => {
 			display_name: 'GPT-4o',
 			vendor: 'openai',
 			tags: ['chat'],
-			description: 'keep',
+			note: 'keep',
 			metadata: '{"tier":"standard"}',
 		};
 		const copy = modelFormForDuplicate(source, (name) => `${name} (copy)`);
@@ -19,7 +19,7 @@ describe('modelFormForDuplicate', () => {
 		assert.equal(copy.id, 'gpt-4o-copy');
 		assert.equal(copy.display_name, 'GPT-4o (copy)');
 		assert.equal(copy.vendor, 'openai');
-		assert.equal(copy.description, 'keep');
+		assert.equal(copy.note, 'keep');
 		assert.equal(copy.metadata, '{"tier":"standard"}');
 		assert.deepEqual(copy.tags, ['chat']);
 		assert.notEqual(copy.tags, source.tags);

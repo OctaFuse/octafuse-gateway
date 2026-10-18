@@ -16,7 +16,7 @@ function model(id: string): ModelRow {
 		max_tokens: 8192,
 		pricing_profile: null,
 		tags: '[]',
-		description: null,
+		note: null,
 		metadata: null,
 		input_modalities: '["text"]',
 		output_modalities: '["text"]',

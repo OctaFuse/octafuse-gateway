@@ -113,6 +113,7 @@ function ModelsContent() {
 						<span>{t('list.pricing')}</span>
 						<span>{t('list.routes')}</span>
 						<span>{t('list.tags')}</span>
+						<span />
 					</div>
 				)}
 				<div className={view === 'list' ? 'divide-y divide-slate-200' : 'contents'} role={view === 'list' ? 'list' : undefined} aria-label={view === 'list' ? t('title') : undefined}>

@@ -1930,5 +1930,37 @@
 				"api_keys": "https://ksp.console.ksyun.com/#/apiKey"
 			}
 		}
+	},
+	{
+		"name": "Open Design",
+		"vendor_key": "opendesign",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://amr-link.open-design.ai/v1/chat/completions",
+					"responses": "https://amr-link.open-design.ai/v1/responses"
+				}
+			},
+			"anthropic": {
+				"base": "https://amr-link.open-design.ai"
+			}
+		},
+		"description": "Open Design Cloud model plane at https://amr-link.open-design.ai/v1. Bearer keys look like sk-amr-…. OpenAI chat and responses stay on openai.endpoints (no openai.base, so images, audio, and embeddings are not derived). Anthropic Messages is POST /v1/messages, so the Anthropic base is the host root. Public client wiring uses chat/completions for most models, Responses for claude-haiku-5.5 and deepseek-v4-pro, and Anthropic Messages for glm-5.3-flash. API usage shares Design Plan credits with the app. Keys: https://open-design.ai/cloud/api-keys.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "Open Design",
+					"description": "Open Design Cloud 模型接口（amr-link.open-design.ai/v1）。大多数模型走 OpenAI Chat，Codex 风格走 Responses，glm-5.3-flash 走 Anthropic Messages。密钥为 sk-amr-，与应用共用 Design Plan 额度。未写入生图、音频和向量端点。"
+				},
+				"en": {
+					"name": "Open Design",
+					"description": "Open Design Cloud model API with OpenAI Chat, Responses, and Anthropic Messages. Keys are sk-amr- and share Design Plan credits."
+				}
+			},
+			"links": {
+				"platform": "https://open-design.ai/",
+				"api_keys": "https://open-design.ai/cloud/api-keys"
+			}
+		}
 	}
 ]

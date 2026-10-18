@@ -82,7 +82,7 @@ describe('model sync service', () => {
 
 	it('unknown model ids are reported as failed', async () => {
 		const { repos } = fakeRepos([]);
-		const out = await applyModelSyncService(repos, { items: [{ model_id: 'nope', fields: ['description'] }] });
+		const out = await applyModelSyncService(repos, { items: [{ model_id: 'nope', fields: ['display_name'] }] });
 		assert.equal(out.failed.length, 1);
 	});
 });
