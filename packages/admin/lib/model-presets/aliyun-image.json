@@ -5,7 +5,9 @@
 		"description": "Alibaba's flagship Qwen Image 3.0 model for dense layouts, multilingual text rendering, and photographic detail. Supports text-to-image and image editing up to 2K.",
 		"i18n": {
 			"en": "Alibaba's flagship Qwen Image 3.0 model for dense layouts, multilingual text rendering, and photographic detail. Supports text-to-image and image editing up to 2K.",
-			"zh": "阿里云千问图像 3.0 旗舰，面向复杂版面、多语言文字渲染与摄影级细节。支持文生图与图像编辑，最高 2K。"
+			"zh": "阿里云千问图像 3.0 旗舰，面向复杂版面、多语言文字渲染与摄影级细节。支持文生图与图像编辑，最高 2K。",
+			"ja": "Qwen Image 3.0 の最上位モデルです。込み入ったレイアウト、多言語の文字入れ、写真に近い細部に向いています。テキストからの生成と画像編集に対応し、出力は最大 2K です。",
+			"ko": "Qwen Image 3.0 플래그십입니다. 복잡한 레이아웃, 다국어 글자 렌더링, 사진에 가까운 디테일에 맞습니다. 텍스트 투 이미지와 이미지 편집을 지원하며, 최대 2K까지 출력합니다."
 		},
 		"vendor": "aliyun",
 		"context_window": null,
@@ -57,7 +59,9 @@
 		"description": "A faster Qwen Image 3.0 model for general generation and editing. Same 2K ceiling as Pro, with a flat per-image output price.",
 		"i18n": {
 			"en": "A faster Qwen Image 3.0 model for general generation and editing. Same 2K ceiling as Pro, with a flat per-image output price.",
-			"zh": "千问图像 3.0 标准版，生成更快，能力与 Pro 同档（最高 2K），输出按张一口价。"
+			"zh": "千问图像 3.0 标准版，生成更快，能力与 Pro 同档（最高 2K），输出按张一口价。",
+			"ja": "Qwen Image 3.0 の標準モデルです。Pro と同じ上限（最大 2K）で、生成はより速く、出力は1枚あたり定額です。",
+			"ko": "Qwen Image 3.0 표준 모델입니다. Pro와 같은 상한(최대 2K)에서 생성이 더 빠르고, 출력은 장당 정액입니다."
 		},
 		"vendor": "aliyun",
 		"context_window": null,
@@ -101,7 +105,9 @@
 		"description": "A unified text-to-image and image editing model with 7B visual generation parameters. Supports up to 10 reference images, transparent RGBA output, local editing, and subject preservation.",
 		"i18n": {
 			"en": "A unified text-to-image and image editing model with 7B visual generation parameters. Supports up to 10 reference images, transparent RGBA output, local editing, and subject preservation.",
-			"zh": "千问图像 2.1 Pro，70 亿参数视觉生成组件，支持最多 10 张参考图、透明 RGBA 输出、局部编辑与主体保留。"
+			"zh": "千问图像 2.1 Pro，70 亿参数视觉生成组件，支持最多 10 张参考图、透明 RGBA 输出、局部编辑与主体保留。",
+			"ja": "Qwen Image 2.1 Pro です。70億パラメータの画像生成部を持ち、参照画像は最大10枚、透明な RGBA 出力、部分編集、被写体の維持に対応します。",
+			"ko": "Qwen Image 2.1 Pro입니다. 70억 파라미터 이미지 생성부를 쓰며, 참조 이미지는 최대 10장, 투명 RGBA 출력, 부분 편집, 피사체 유지를 지원합니다."
 		},
 		"vendor": "aliyun",
 		"context_window": null,
@@ -139,7 +145,9 @@
 		"description": "Alibaba Wan 2.7 flagship for text-to-image, sequential sets, multi-reference editing, brand color control, and up to 4K generation.",
 		"i18n": {
 			"en": "Alibaba Wan 2.7 flagship for text-to-image, sequential sets, multi-reference editing, brand color control, and up to 4K generation.",
-			"zh": "阿里云万相 2.7 旗舰，支持文生图、组图、多图参考编辑与品牌色控制，文生图最高 4K。"
+			"zh": "阿里云万相 2.7 旗舰，支持文生图、组图、多图参考编辑与品牌色控制，文生图最高 4K。",
+			"ja": "Wan 2.7 の最上位モデルです。テキストからの生成、連作、複数参照画像での編集、ブランドカラーの指定に対応し、テキスト生成は最大 4K です。",
+			"ko": "Wan 2.7 플래그십입니다. 텍스트 투 이미지, 연작, 여러 참조 이미지 편집, 브랜드 색 지정을 지원하며, 텍스트 생성은 최대 4K입니다."
 		},
 		"vendor": "aliyun",
 		"context_window": null,
@@ -177,7 +185,9 @@
 		"description": "A faster Wan 2.7 model for generation, sequential sets, and multi-reference editing, with a 2K output ceiling.",
 		"i18n": {
 			"en": "A faster Wan 2.7 model for generation, sequential sets, and multi-reference editing, with a 2K output ceiling.",
-			"zh": "万相 2.7 标准版，生成更快，支持文生图、组图与多图编辑，最高 2K。"
+			"zh": "万相 2.7 标准版，生成更快，支持文生图、组图与多图编辑，最高 2K。",
+			"ja": "Wan 2.7 の標準モデルです。生成はより速く、テキストからの生成、連作、複数画像の編集に対応し、出力は最大 2K です。",
+			"ko": "Wan 2.7 표준 모델입니다. 생성이 더 빠르고, 텍스트 투 이미지, 연작, 여러 이미지 편집을 지원하며, 최대 2K까지 출력합니다."
 		},
 		"vendor": "aliyun",
 		"context_window": null,

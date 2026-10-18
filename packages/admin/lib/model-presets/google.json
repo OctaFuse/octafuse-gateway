@@ -5,7 +5,9 @@
 		"description": "Google's flagship Gemini reasoning model for complex software engineering, scientific problem solving, and multi-step agents. Input and output share a 1,048,576-token window; synchronous output defaults to 65,536 tokens, and long decode can reach 1,048,576.",
 		"i18n": {
 			"en": "Google's flagship Gemini reasoning model for complex software engineering, scientific problem solving, and multi-step agents. Input and output share a 1,048,576-token window; synchronous output defaults to 65,536 tokens, and long decode can reach 1,048,576.",
-			"zh": "面向复杂软件工程、科学问题求解与多步 Agent 的旗舰 Gemini 推理模型。输入与输出共用 1,048,576 Token 窗口；同步输出默认 65,536 Token，长解码最高 1,048,576 Token。"
+			"zh": "面向复杂软件工程、科学问题求解与多步 Agent 的旗舰 Gemini 推理模型。输入与输出共用 1,048,576 Token 窗口；同步输出默认 65,536 Token，长解码最高 1,048,576 Token。",
+			"ja": "難しいソフト開発、科学的な問題解決、複数ステップのエージェント向けの、Gemini 推論フラッグシップです。入出力は 1,048,576 トークンのウィンドウを共有します。同期出力の初期値は 65,536 トークン、長いデコードは最大 1,048,576 トークンです。",
+			"ko": "어려운 소프트웨어 개발, 과학 문제 풀이, 여러 단계 에이전트용 Gemini 추론 플래그십입니다. 입출력은 1,048,576 토큰 창을 공유합니다. 동기 출력 기본값은 65,536 토큰, 긴 디코드는 최대 1,048,576 토큰입니다."
 		},
 		"vendor": "google",
 		"context_window": 1048576,
@@ -54,7 +56,9 @@
 		"description": "Our most intelligent Flash model, engineered for long-horizon software engineering, autonomous agents, and complex enterprise workflows. It improves software engineering, agentic tasks, and multi-step reasoning over Gemini 3.7 Flash.",
 		"i18n": {
 			"en": "Our most intelligent Flash model, engineered for long-horizon software engineering, autonomous agents, and complex enterprise workflows. It improves software engineering, agentic tasks, and multi-step reasoning over Gemini 3.7 Flash.",
-			"zh": "面向长周期软件工程、自主 Agent 与复杂企业工作流的最强 Gemini Flash 模型。相较 Gemini 3.7 Flash，提升软件工程、Agent 任务与多步推理能力。"
+			"zh": "面向长周期软件工程、自主 Agent 与复杂企业工作流的最强 Gemini Flash 模型。相较 Gemini 3.7 Flash，提升软件工程、Agent 任务与多步推理能力。",
+			"ja": "長い期間のソフト開発、自律エージェント、込み入った企業の業務向けの、いちばん賢い Gemini Flash です。Gemini 3.7 Flash より、ソフト開発、エージェント作業、複数ステップの推論が上がっています。",
+			"ko": "긴 주기의 소프트웨어 개발, 자율 에이전트, 복잡한 기업 업무용으로 가장 똑똑한 Gemini Flash입니다. Gemini 3.7 Flash보다 소프트웨어 개발, 에이전트 작업, 여러 단계 추론이 올라갔습니다."
 		},
 		"vendor": "google",
 		"context_window": 1000000,
@@ -103,7 +107,9 @@
 		"description": "A high-efficiency Gemini workhorse for coding, agents, and knowledge work. It improves first-pass code accuracy, multi-step tool use, and production-ready application output over Gemini 3.6 Flash.",
 		"i18n": {
 			"en": "A high-efficiency Gemini workhorse for coding, agents, and knowledge work. It improves first-pass code accuracy, multi-step tool use, and production-ready application output over Gemini 3.6 Flash.",
-			"zh": "面向编程、Agent 与知识工作的高效率 Gemini 主力模型。相较 Gemini 3.6 Flash，提升首轮代码准确率、多步工具调用与可上线应用产出。"
+			"zh": "面向编程、Agent 与知识工作的高效率 Gemini 主力模型。相较 Gemini 3.6 Flash，提升首轮代码准确率、多步工具调用与可上线应用产出。",
+			"ja": "コーディング、エージェント、知識作業向けの、効率のよい Gemini の主力モデルです。Gemini 3.6 Flash より、初回のコード精度、複数ステップのツール呼び出し、そのまま出せるアプリの仕上がりが上がっています。",
+			"ko": "코딩, 에이전트, 지식 작업용으로 효율 좋은 Gemini 주력 모델입니다. Gemini 3.6 Flash보다 첫 코드 정확도, 여러 단계 도구 호출, 바로 낼 수 있는 앱 결과물이 올라갔습니다."
 		},
 		"vendor": "google",
 		"context_window": 1000000,
@@ -152,7 +158,9 @@
 		"description": "A high-efficiency Gemini model for coding, agents, and web or application development. It focuses on polished coding and application outputs with fewer unnecessary edits across agentic workflows.",
 		"i18n": {
 			"en": "A high-efficiency Gemini model for coding, agents, and web or application development. It focuses on polished coding and application outputs with fewer unnecessary edits across agentic workflows.",
-			"zh": "面向编程、Agent、Web 与应用开发的高效率 Gemini 模型。面向 Agent 工作流中的编程与应用开发，力求以更少的无效修改产出更成熟的结果。"
+			"zh": "面向编程、Agent、Web 与应用开发的高效率 Gemini 模型。面向 Agent 工作流中的编程与应用开发，力求以更少的无效修改产出更成熟的结果。",
+			"ja": "コーディング、エージェント、Web とアプリ開発向けの、効率のよい Gemini です。エージェントの流れのなかで、無駄な修正を減らし、より整ったコードとアプリを出すことを狙っています。",
+			"ko": "코딩, 에이전트, 웹과 앱 개발용으로 효율 좋은 Gemini입니다. 에이전트 흐름 안에서 불필요한 수정을 줄이고, 더 다듬어진 코드와 앱을 내는 쪽에 맞춰져 있습니다."
 		},
 		"vendor": "google",
 		"context_window": 1000000,
@@ -201,7 +209,9 @@
 		"description": "A frontier Gemini reasoning preview for software engineering and reliable agentic workflows. The preview improves software-engineering performance, agent reliability, and token efficiency across complex workflows.",
 		"i18n": {
 			"en": "A frontier Gemini reasoning preview for software engineering and reliable agentic workflows. The preview improves software-engineering performance, agent reliability, and token efficiency across complex workflows.",
-			"zh": "面向软件工程与高可靠 Agent 工作流的前沿 Gemini 推理预览模型。该预览版在复杂工作流中强化软件工程表现、Agent 可靠性和 Token 效率。"
+			"zh": "面向软件工程与高可靠 Agent 工作流的前沿 Gemini 推理预览模型。该预览版在复杂工作流中强化软件工程表现、Agent 可靠性和 Token 效率。",
+			"ja": "ソフト開発と、落ちにくいエージェントの流れ向けの、上位 Gemini 推論プレビューです。込み入った作業で、ソフト開発の成績、エージェントの安定性、トークン効率を強めています。",
+			"ko": "소프트웨어 개발과 잘 끊기지 않는 에이전트 흐름용 상위 Gemini 추론 프리뷰입니다. 복잡한 작업에서 소프트웨어 개발 성적, 에이전트 안정성, 토큰 효율을 강화했습니다."
 		},
 		"vendor": "google",
 		"context_window": 1000000,
@@ -264,7 +274,9 @@
 		"description": "A fast Gemini thinking model for multi-turn chat, coding, and agent workflows. It offers near-Pro reasoning and tool use at Flash-class speed for multi-turn chat, coding, and agents.",
 		"i18n": {
 			"en": "A fast Gemini thinking model for multi-turn chat, coding, and agent workflows. It offers near-Pro reasoning and tool use at Flash-class speed for multi-turn chat, coding, and agents.",
-			"zh": "适合多轮对话、编程与 Agent 工作流的高速 Gemini 思考模型。以 Flash 级速度提供接近 Pro 的推理与工具调用能力，适用于多轮对话、编程和 Agent。"
+			"zh": "适合多轮对话、编程与 Agent 工作流的高速 Gemini 思考模型。以 Flash 级速度提供接近 Pro 的推理与工具调用能力，适用于多轮对话、编程和 Agent。",
+			"ja": "複数ターンの対話、コーディング、エージェント向けの高速な Gemini 思考モデルです。Flash 級の速度で、Pro に近い推論とツール呼び出しを出します。",
+			"ko": "여러 턴 대화, 코딩, 에이전트용 고속 Gemini 사고 모델입니다. Flash급 속도로 Pro에 가까운 추론과 도구 호출을 냅니다."
 		},
 		"vendor": "google",
 		"context_window": 1000000,
@@ -313,7 +325,9 @@
 		"description": "An efficient multimodal Gemini model with strong coding, reasoning, and parallel-agent performance. It brings near-Pro coding and reasoning to a faster tier and is tuned for parallel agent execution.",
 		"i18n": {
 			"en": "An efficient multimodal Gemini model with strong coding, reasoning, and parallel-agent performance. It brings near-Pro coding and reasoning to a faster tier and is tuned for parallel agent execution.",
-			"zh": "在编程、推理与并行 Agent 场景表现出色的高效 Gemini 多模态模型。在更高效的档位提供接近 Pro 的编程和推理能力，并针对并行 Agent 执行优化。"
+			"zh": "在编程、推理与并行 Agent 场景表现出色的高效 Gemini 多模态模型。在更高效的档位提供接近 Pro 的编程和推理能力，并针对并行 Agent 执行优化。",
+			"ja": "コーディング、推論、並列エージェントで強い、効率のよい Gemini マルチモーダルです。より軽い枠で Pro に近いコーディングと推論を出し、並列のエージェント実行に合わせています。",
+			"ko": "코딩, 추론, 병렬 에이전트에서 강한 효율적인 Gemini 멀티모달입니다. 더 가벼운 구간에서 Pro에 가까운 코딩과 추론을 내고, 병렬 에이전트 실행에 맞춰져 있습니다."
 		},
 		"vendor": "google",
 		"context_window": 1000000,
@@ -362,7 +376,9 @@
 		"description": "A lightweight Gemini model for focused subagents and high-volume production tasks. The lightweight design is especially suited to focused subagents inside larger multi-agent systems.",
 		"i18n": {
 			"en": "A lightweight Gemini model for focused subagents and high-volume production tasks. The lightweight design is especially suited to focused subagents inside larger multi-agent systems.",
-			"zh": "面向专注型子 Agent 与高流量生产任务的轻量 Gemini 模型。轻量化设计尤其适合大型多 Agent 系统中执行明确子任务的子 Agent。"
+			"zh": "面向专注型子 Agent 与高流量生产任务的轻量 Gemini 模型。轻量化设计尤其适合大型多 Agent 系统中执行明确子任务的子 Agent。",
+			"ja": "役割の狭いサブエージェントと、量の多い本番処理向けの軽量 Gemini です。大きなマルチエージェントのなかで、決まった下位タスクを担うサブエージェントに特に向いています。",
+			"ko": "역할이 좁은 하위 에이전트와 양이 많은 프로덕션 작업용 경량 Gemini입니다. 큰 멀티 에이전트 안에서 정해진 하위 작업을 맡는 서브 에이전트에 특히 맞습니다."
 		},
 		"vendor": "google",
 		"context_window": 1000000,
@@ -411,7 +427,9 @@
 		"description": "A high-efficiency Gemini preview optimized for high-volume, latency-sensitive applications. It is tuned for high-volume workloads while approaching the quality of larger Flash models.",
 		"i18n": {
 			"en": "A high-efficiency Gemini preview optimized for high-volume, latency-sensitive applications. It is tuned for high-volume workloads while approaching the quality of larger Flash models.",
-			"zh": "针对高流量、延迟敏感应用优化的高效率 Gemini 预览模型。针对高吞吐工作负载优化，同时力求接近更大型 Flash 模型的质量。"
+			"zh": "针对高流量、延迟敏感应用优化的高效率 Gemini 预览模型。针对高吞吐工作负载优化，同时力求接近更大型 Flash 模型的质量。",
+			"ja": "量の多い、レイテンシを気にするアプリ向けに絞った、効率のよい Gemini プレビューです。スループットの高い処理に合わせつつ、より大きい Flash に近い品質を狙っています。",
+			"ko": "양이 많고 지연에 민감한 앱에 맞춘 효율 좋은 Gemini 프리뷰입니다. 처리량이 큰 작업에 맞추면서, 더 큰 Flash에 가까운 품질을 노립니다."
 		},
 		"vendor": "google",
 		"context_window": 1000000,
@@ -461,7 +479,9 @@
 		"description": "A capable Gemini reasoning model for coding, mathematics, science, and multimodal analysis. Built-in thinking supports more deliberate answers across advanced coding, mathematics, science, and multimodal analysis.",
 		"i18n": {
 			"en": "A capable Gemini reasoning model for coding, mathematics, science, and multimodal analysis. Built-in thinking supports more deliberate answers across advanced coding, mathematics, science, and multimodal analysis.",
-			"zh": "适合编程、数学、科学与多模态分析的高性能 Gemini 推理模型。内置思考能力可在高级编程、数学、科学和多模态分析中给出更审慎的回答。"
+			"zh": "适合编程、数学、科学与多模态分析的高性能 Gemini 推理模型。内置思考能力可在高级编程、数学、科学和多模态分析中给出更审慎的回答。",
+			"ja": "コーディング、数学、科学、マルチモーダル分析向けの高性能な Gemini 推論モデルです。思考が組み込まれており、これらの難しい問いにより慎重な答えを出せます。",
+			"ko": "코딩, 수학, 과학, 멀티모달 분석용 고성능 Gemini 추론 모델입니다. 사고가 내장되어 있어, 이런 어려운 질문에 더 신중한 답을 냅니다."
 		},
 		"vendor": "google",
 		"context_window": 1000000,
@@ -524,7 +544,9 @@
 		"description": "A versatile Gemini workhorse balancing reasoning quality, speed, and multimodal support. It balances built-in reasoning with workhorse throughput for coding, mathematics, science, and multimodal production tasks.",
 		"i18n": {
 			"en": "A versatile Gemini workhorse balancing reasoning quality, speed, and multimodal support. It balances built-in reasoning with workhorse throughput for coding, mathematics, science, and multimodal production tasks.",
-			"zh": "在推理质量、速度与多模态能力之间取得平衡的 Gemini 主力模型。在编程、数学、科学和多模态生产任务中平衡内置推理能力与主力级吞吐量。"
+			"zh": "在推理质量、速度与多模态能力之间取得平衡的 Gemini 主力模型。在编程、数学、科学和多模态生产任务中平衡内置推理能力与主力级吞吐量。",
+			"ja": "推論の質、速度、マルチモーダルのバランスを取った Gemini の主力モデルです。コーディング、数学、科学、マルチモーダルな本番処理で、組み込みの推論と主力級の処理量を両立します。",
+			"ko": "추론 품질, 속도, 멀티모달의 균형을 맞춘 Gemini 주력 모델입니다. 코딩, 수학, 과학, 멀티모달 프로덕션에서 내장 추론과 주력급 처리량을 같이 냅니다."
 		},
 		"vendor": "google",
 		"context_window": 1000000,
@@ -573,7 +595,9 @@
 		"description": "A low-cost Gemini reasoning model optimized for throughput and fast token generation. The model prioritizes ultra-low latency, low cost, high throughput, and fast token generation.",
 		"i18n": {
 			"en": "A low-cost Gemini reasoning model optimized for throughput and fast token generation. The model prioritizes ultra-low latency, low cost, high throughput, and fast token generation.",
-			"zh": "针对高吞吐与快速生成优化的低成本 Gemini 推理模型。重点优化超低延迟、低成本、高吞吐和快速 Token 生成。"
+			"zh": "针对高吞吐与快速生成优化的低成本 Gemini 推理模型。重点优化超低延迟、低成本、高吞吐和快速 Token 生成。",
+			"ja": "スループットと速い生成に振った、低コストの Gemini 推論モデルです。超低レイテンシ、低コスト、高い処理量、速いトークン生成を優先しています。",
+			"ko": "처리량과 빠른 생성에 맞춘 저비용 Gemini 추론 모델입니다. 초저지연, 낮은 비용, 높은 처리량, 빠른 토큰 생성을 우선합니다."
 		},
 		"vendor": "google",
 		"context_window": 1000000,

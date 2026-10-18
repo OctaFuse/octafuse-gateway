@@ -5,7 +5,9 @@
 		"description": "A flagship open GLM model for systems design, coding, and long-horizon agents. The open foundation model targets complex systems design and production-grade programming across long-running agent workflows.",
 		"i18n": {
 			"en": "A flagship open GLM model for systems design, coding, and long-horizon agents. The open foundation model targets complex systems design and production-grade programming across long-running agent workflows.",
-			"zh": "面向系统设计、编程与长周期 Agent 的 GLM 旗舰开放模型。开放基础模型面向复杂系统设计，以及长周期 Agent 工作流中的生产级编程。"
+			"zh": "面向系统设计、编程与长周期 Agent 的 GLM 旗舰开放模型。开放基础模型面向复杂系统设计，以及长周期 Agent 工作流中的生产级编程。",
+			"ja": "システム設計、コーディング、長い期間のエージェント向けの GLM フラッグシップ開放モデルです。難しいシステム設計と、長く動くエージェントのなかでの本番品質のプログラミングを想定しています。",
+			"ko": "시스템 설계, 코딩, 긴 주기의 에이전트용 GLM 플래그십 개방 모델입니다. 어려운 시스템 설계와, 오래 도는 에이전트 안에서의 프로덕션급 프로그래밍을 전제로 합니다."
 		},
 		"vendor": "zhipu",
 		"context_window": 200000,
@@ -50,7 +52,9 @@
 		"description": "A fast GLM model optimized for real-world agent environments and efficient inference. It is deeply optimized for fast inference in real-world, tool-using agent environments.",
 		"i18n": {
 			"en": "A fast GLM model optimized for real-world agent environments and efficient inference. It is deeply optimized for fast inference in real-world, tool-using agent environments.",
-			"zh": "针对真实 Agent 环境与高效推理优化的高速 GLM 模型。针对真实世界中使用工具的 Agent 环境进行深度优化，强调快速推理。"
+			"zh": "针对真实 Agent 环境与高效推理优化的高速 GLM 模型。针对真实世界中使用工具的 Agent 环境进行深度优化，强调快速推理。",
+			"ja": "現場のエージェント環境と効率のよい推論向けに絞った、高速な GLM です。ツールを使う現場のエージェントで、速い推論になるよう深く調整されています。",
+			"ko": "현장 에이전트 환경과 효율적인 추론에 맞춘 고속 GLM입니다. 도구를 쓰는 현장 에이전트에서 추론이 빨라지도록 깊게 조정되어 있습니다."
 		},
 		"vendor": "zhipu",
 		"context_window": 200000,
@@ -96,7 +100,9 @@
 		"description": "A GLM model with stronger coding and sustained performance on long-horizon tasks. Its coding improvements focus on sustained, independent execution over tasks that extend far beyond short interactions.",
 		"i18n": {
 			"en": "A GLM model with stronger coding and sustained performance on long-horizon tasks. Its coding improvements focus on sustained, independent execution over tasks that extend far beyond short interactions.",
-			"zh": "强化编程能力与长周期任务持续执行表现的 GLM 模型。编程能力提升重点面向远超短时交互、需要持续独立执行的任务。"
+			"zh": "强化编程能力与长周期任务持续执行表现的 GLM 模型。编程能力提升重点面向远超短时交互、需要持续独立执行的任务。",
+			"ja": "コーディングと、長いタスクを途中で投げ出さない実行を強めた GLM です。短いやり取りを超えて、自分で続けて終わらせる仕事にコーディングの改善が向いています。",
+			"ko": "코딩과, 긴 작업을 중간에 놓지 않는 실행을 강화한 GLM입니다. 짧은 주고받기를 넘어, 스스로 이어서 끝내는 일에 코딩 개선이 향해 있습니다."
 		},
 		"vendor": "zhipu",
 		"context_window": 200000,
@@ -141,7 +147,9 @@
 		"description": "A long-context GLM reasoning model for project-level software engineering and agents. The large-scale reasoning model is intended for project-level software engineering and long-horizon agent workflows.",
 		"i18n": {
 			"en": "A long-context GLM reasoning model for project-level software engineering and agents. The large-scale reasoning model is intended for project-level software engineering and long-horizon agent workflows.",
-			"zh": "面向项目级软件工程与 Agent 的长上下文 GLM 推理模型。大规模推理模型面向项目级软件工程和长周期 Agent 工作流。"
+			"zh": "面向项目级软件工程与 Agent 的长上下文 GLM 推理模型。大规模推理模型面向项目级软件工程和长周期 Agent 工作流。",
+			"ja": "プロジェクト規模のソフト開発とエージェント向けの、長いコンテキストを持つ GLM 推論モデルです。大規模な推論で、プロジェクト単位の開発と長いエージェントの流れを想定しています。",
+			"ko": "프로젝트 규모의 소프트웨어 개발과 에이전트용으로, 긴 컨텍스트를 가진 GLM 추론 모델입니다. 대규모 추론으로, 프로젝트 단위 개발과 긴 에이전트 흐름을 전제로 합니다."
 		},
 		"vendor": "zhipu",
 		"context_window": 1000000,
@@ -186,7 +194,9 @@
 		"description": "A flagship GLM model for long-horizon coding, agents, and security review. It keeps the GLM-5.2 base and raises coding and agent performance through post-training.",
 		"i18n": {
 			"en": "A flagship GLM model for long-horizon coding, agents, and security review. It keeps the GLM-5.2 base and raises coding and agent performance through post-training.",
-			"zh": "面向长程编程、Agent 与安全审查的 GLM 旗舰模型。沿用 GLM-5.2 基座，通过后训练提升编程与智能体表现。"
+			"zh": "面向长程编程、Agent 与安全审查的 GLM 旗舰模型。沿用 GLM-5.2 基座，通过后训练提升编程与智能体表现。",
+			"ja": "長いコーディング、エージェント、セキュリティレビュー向けの GLM フラッグシップです。GLM-5.2 の基盤を残し、ポストトレーニングでコーディングとエージェントの成績を上げています。",
+			"ko": "긴 코딩, 에이전트, 보안 리뷰용 GLM 플래그십입니다. GLM-5.2 기반을 유지하고, 포스트트레이닝으로 코딩과 에이전트 성적을 올렸습니다."
 		},
 		"vendor": "zhipu",
 		"context_window": 1000000,
@@ -231,7 +241,9 @@
 		"description": "A native multimodal GLM Flash model for visual coding, agents, and professional workflows. It outperforms GLM-5.2 at a fraction of the cost, with native image, video, and file understanding.",
 		"i18n": {
 			"en": "A native multimodal GLM Flash model for visual coding, agents, and professional workflows. It outperforms GLM-5.2 at a fraction of the cost, with native image, video, and file understanding.",
-			"zh": "面向视觉编程、Agent 与专业工作流的 GLM 原生多模态 Flash 模型。以远低于 GLM-5.2 的成本提供更强智能，原生支持图片、视频与文件理解。"
+			"zh": "面向视觉编程、Agent 与专业工作流的 GLM 原生多模态 Flash 模型。以远低于 GLM-5.2 的成本提供更强智能，原生支持图片、视频与文件理解。",
+			"ja": "視覚的なコーディング、エージェント、専門的な作業向けの、最初からマルチモーダルな GLM Flash です。GLM-5.2 よりかなり低いコストでより強い知能を出し、画像、動画、ファイルの理解に最初から対応します。",
+			"ko": "시각적 코딩, 에이전트, 전문 작업용으로 처음부터 멀티모달인 GLM Flash입니다. GLM-5.2보다 훨씬 낮은 비용으로 더 강한 지능을 내고, 이미지, 영상, 파일 이해를 처음부터 지원합니다."
 		},
 		"vendor": "zhipu",
 		"context_window": 1000000,
@@ -279,7 +291,9 @@
 		"description": "A high-throughput GLM-5.3-Flash serving SKU at up to 200 tokens/s. It keeps native image, video, and file understanding with the same 1M context window.",
 		"i18n": {
 			"en": "A high-throughput GLM-5.3-Flash serving SKU at up to 200 tokens/s. It keeps native image, video, and file understanding with the same 1M context window.",
-			"zh": "更高吞吐的 GLM-5.3-Flash 服务规格，推理速度达 200 tokens/s。沿用原生图片、视频与文件理解，以及同样的 1M 上下文。"
+			"zh": "更高吞吐的 GLM-5.3-Flash 服务规格，推理速度达 200 tokens/s。沿用原生图片、视频与文件理解，以及同样的 1M 上下文。",
+			"ja": "よりスループットの高い GLM-5.3-Flash の提供仕様で、推論速度は 200 tokens/s です。画像、動画、ファイルのネイティブな理解と、同じ 1M コンテキストを引き継いでいます。",
+			"ko": "처리량이 더 높은 GLM-5.3-Flash 제공 사양으로, 추론 속도는 200 tokens/s입니다. 이미지, 영상, 파일의 네이티브 이해와 같은 1M 컨텍스트를 그대로 씁니다."
 		},
 		"vendor": "zhipu",
 		"context_window": 1000000,

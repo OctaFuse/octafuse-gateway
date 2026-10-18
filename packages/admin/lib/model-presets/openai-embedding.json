@@ -5,7 +5,9 @@
 		"description": "OpenAI's small, efficient text embedding model (1536 dimensions by default; supports the dimensions parameter). Billed by input tokens via POST /v1/embeddings.",
 		"i18n": {
 			"en": "OpenAI's small, efficient text embedding model (1536 dimensions by default; supports the dimensions parameter). Billed by input tokens via POST /v1/embeddings.",
-			"zh": "OpenAI 高性价比文本向量模型（默认 1536 维，支持 dimensions 参数）。通过 POST /v1/embeddings 调用，仅按输入 Token 计费。"
+			"zh": "OpenAI 高性价比文本向量模型（默认 1536 维，支持 dimensions 参数）。通过 POST /v1/embeddings 调用，仅按输入 Token 计费。",
+			"ja": "OpenAI の小さく効率のよいテキスト埋め込みです（初期値は 1536 次元。dimensions を指定できます）。POST /v1/embeddings から呼び出し、入力トークンだけが課金対象です。",
+			"ko": "OpenAI의 작고 효율적인 텍스트 임베딩입니다(기본 1536차원, dimensions를 지정할 수 있습니다). POST /v1/embeddings로 호출하며, 입력 토큰만 과금됩니다."
 		},
 		"vendor": "openai",
 		"context_window": 8192,
@@ -49,7 +51,9 @@
 		"description": "OpenAI's most capable text embedding model (3072 dimensions by default; supports the dimensions parameter). Billed by input tokens via POST /v1/embeddings.",
 		"i18n": {
 			"en": "OpenAI's most capable text embedding model (3072 dimensions by default; supports the dimensions parameter). Billed by input tokens via POST /v1/embeddings.",
-			"zh": "OpenAI 效果最强的文本向量模型（默认 3072 维，支持 dimensions 参数）。通过 POST /v1/embeddings 调用，仅按输入 Token 计费。"
+			"zh": "OpenAI 效果最强的文本向量模型（默认 3072 维，支持 dimensions 参数）。通过 POST /v1/embeddings 调用，仅按输入 Token 计费。",
+			"ja": "OpenAI でいちばん性能の高いテキスト埋め込みです（初期値は 3072 次元。dimensions を指定できます）。POST /v1/embeddings から呼び出し、入力トークンだけが課金対象です。",
+			"ko": "OpenAI에서 성능이 가장 높은 텍스트 임베딩입니다(기본 3072차원, dimensions를 지정할 수 있습니다). POST /v1/embeddings로 호출하며, 입력 토큰만 과금됩니다."
 		},
 		"vendor": "openai",
 		"context_window": 8192,
@@ -93,7 +97,9 @@
 		"description": "OpenAI's legacy text embedding model (1536 dimensions). Billed by input tokens via POST /v1/embeddings.",
 		"i18n": {
 			"en": "OpenAI's legacy text embedding model (1536 dimensions). Billed by input tokens via POST /v1/embeddings.",
-			"zh": "OpenAI 上一代文本向量模型（1536 维）。通过 POST /v1/embeddings 调用，仅按输入 Token 计费。"
+			"zh": "OpenAI 上一代文本向量模型（1536 维）。通过 POST /v1/embeddings 调用，仅按输入 Token 计费。",
+			"ja": "OpenAI の前世代テキスト埋め込みです（1536 次元）。POST /v1/embeddings から呼び出し、入力トークンだけが課金対象です。",
+			"ko": "OpenAI의 이전 세대 텍스트 임베딩입니다(1536차원). POST /v1/embeddings로 호출하며, 입력 토큰만 과금됩니다."
 		},
 		"vendor": "openai",
 		"context_window": 8192,

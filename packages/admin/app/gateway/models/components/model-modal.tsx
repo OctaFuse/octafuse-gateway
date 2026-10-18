@@ -1,25 +1,38 @@
 'use client';
 
-import { formatPerMillionTokenUnit, formatPerCharacterUnit, formatPerSecondUnit } from '@/lib/format-gateway-currency';
-import { PricingInfoHint } from '@/components/PricingInfoHint';
-import { useMemo, useState } from 'react';
-import { CodeBracketIcon, DocumentDuplicateIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import {
+	cloneElement,
+	isValidElement,
+	useEffect,
+	useId,
+	useMemo,
+	useRef,
+	useState,
+	type KeyboardEvent,
+	type ReactNode,
+} from 'react';
+import {
+	AdjustmentsHorizontalIcon,
+	CodeBracketIcon,
+	DocumentDuplicateIcon,
+	InformationCircleIcon,
+	ShareIcon,
+	TrashIcon,
+	XMarkIcon,
+} from '@heroicons/react/24/outline';
 import { useLocale, useTranslations } from 'next-intl';
-import { DailyScheduleEditor } from '@/components/daily-schedule-editor';
 import {
 	MODEL_INPUT_MODALITIES,
 	MODEL_OUTPUT_MODALITIES,
 } from '@octafuse/core/db/model-modalities';
+import { InfoHintPopover } from '@/components/InfoHintPopover';
+import { VendorIcon } from '@/components/model-vendor-icon';
 import { ModelModalitiesBadgeFromRaw } from '@/components/model-modalities-badge';
-import { PricingTiersEditor } from '@/components/pricing-tiers-editor';
 import { MODEL_VENDOR_OPTIONS } from '@/lib/model-vendor';
+import { pickProviderCatalogText } from '@/lib/provider-kind';
 import {
-	createDefaultAudioCharacterPricingDraft,
-	createDefaultAudioPricingDraft,
-	createDefaultAudioTokenPricingDraft,
 	createDefaultImagePerImageDraft,
 	formatCatalogPricingProfilePreview,
-	type AudioBillingModeDraft,
 	type AudioPricingDraftState,
 	type CatalogScheduleFormWindow,
 	type ImageBillingModeDraft,
@@ -28,8 +41,12 @@ import {
 } from '@/lib/pricing-tiers-draft';
 import { tagBadgeClass } from '../model-utils';
 import type { ModelFormData, ModelFormKind, ModelListItem } from '../types';
+import { RelatedRoutesPanel } from '@/components/related-routes-panel';
+import { useModelRoutes } from '../use-model-routes';
+import { ModelPricingPanel } from './model-pricing-panel';
+import { ModelPricingJsonPreview } from './model-pricing-json-preview';
 
-type Props = {
+export type ModelModalProps = {
 	open: boolean;
 	editingModel: ModelListItem | null;
 	duplicateSourceModelId: string | null;
@@ -38,7 +55,9 @@ type Props = {
 	formKind: ModelFormKind;
 	pricingTierRows: PricingTierDraftRow[];
 	catalogScheduleWindows?: CatalogScheduleFormWindow[];
-	onCatalogScheduleWindowsChange?: (windows: CatalogScheduleFormWindow[]) => void;
+	onCatalogScheduleWindowsChange?: (
+		windows: CatalogScheduleFormWindow[]
+	) => void;
 	imageBillingMode?: ImageBillingModeDraft;
 	onImageBillingModeChange?: (mode: ImageBillingModeDraft) => void;
 	imagePerImageDraft?: ImagePerImageDraft;
@@ -56,15 +75,40 @@ type Props = {
 	onTagInputChange: (value: string) => void;
 	onAddTag: () => void;
 	onRemoveTag: (tag: string) => void;
-	onToggleModality: (kind: 'input_modalities' | 'output_modalities', modality: string) => void;
+	onToggleModality: (
+		kind: 'input_modalities' | 'output_modalities',
+		modality: string
+	) => void;
 	/** 切换 LLM / Image / Audio Kind（同步 modalities 与默认 pricing） */
 	onKindChange: (kind: ModelFormKind) => void;
 	onSave: () => void;
 	onDelete: (id: string) => void;
 	onDuplicate: () => void;
+	onRoutesChanged: () => Promise<void>;
 };
 
-export function ModelModal(props: Props) {
+const inputClass =
+	'h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 disabled:bg-gray-50 disabled:text-gray-500';
+type Tab = 'basic' | 'pricing' | 'metadata' | 'routes';
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+	const id = useId();
+	return (
+		<div className="min-w-0">
+			<label
+				htmlFor={id}
+				className="mb-1.5 block text-xs font-medium text-gray-600"
+			>
+				{label}
+			</label>
+			{isValidElement<{ id?: string; 'aria-label'?: string }>(children)
+				? cloneElement(children, { id, 'aria-label': label })
+				: children}
+		</div>
+	);
+}
+
+export function ModelModal(props: ModelModalProps) {
 	const {
 		open,
 		editingModel,
@@ -73,21 +117,15 @@ export function ModelModal(props: Props) {
 		formKind,
 		pricingTierRows,
 		catalogScheduleWindows = [],
-		onCatalogScheduleWindowsChange,
 		imageBillingMode = 'token',
-		onImageBillingModeChange,
 		imagePerImageDraft,
-		onImagePerImageDraftChange,
 		audioPricingDraft,
-		onAudioPricingDraftChange,
 		tagInput,
 		saveError,
 		isSaving,
 		isDeleting,
-		billingCurrency,
 		onClose,
 		onFormChange,
-		onPricingTierRowsChange,
 		onTagInputChange,
 		onAddTag,
 		onRemoveTag,
@@ -97,29 +135,76 @@ export function ModelModal(props: Props) {
 		onDelete,
 		onDuplicate,
 	} = props;
-
 	const t = useTranslations('models.modal');
 	const tCommon = useTranslations('common');
 	const locale = useLocale();
-	const catalogIntro = (() => {
-		const catalog = editingModel?.catalog_i18n;
-		if (!catalog) return '';
-		return locale.toLowerCase().startsWith('zh') ? catalog.zh || catalog.en : catalog.en || catalog.zh;
-	})();
-	const tRoutes = useTranslations('routes.modal');
+	const dialogRef = useRef<HTMLDivElement>(null);
+	const contentRef = useRef<HTMLDivElement>(null);
+	const id = useId();
+	const routesState = useModelRoutes(
+		open && editingModel ? editingModel.id : null,
+		props.onRoutesChanged
+	);
+	const busy = isSaving || isDeleting || routesState.isDeleting;
+	const deleteDisabled =
+		busy || !routesState.ready || routesState.routes.length > 0;
+	const deleteReason = routesState.error
+		? t('relatedRoutes.loadFailed')
+		: !routesState.ready
+		? tCommon('loading')
+		: routesState.routes.length
+		? t('routesBlocked', { count: routesState.routes.length })
+		: busy
+		? isSaving
+			? tCommon('saving')
+			: tCommon('deleting')
+		: undefined;
+	const sessionKey = `${open}:${editingModel?.id ?? 'new'}:${
+		duplicateSourceModelId ?? ''
+	}`;
+	const [session, setSession] = useState(sessionKey);
+	const [activeTab, setActiveTab] = useState<Tab>('basic');
+	const [showPricingJson, setShowPricingJson] = useState(false);
+	if (session !== sessionKey) {
+		setSession(sessionKey);
+		setActiveTab('basic');
+		setShowPricingJson(false);
+	}
 	const isImageModel = formKind === 'image';
 	const isAudioModel = formKind === 'asr' || formKind === 'tts';
-	const isEmbeddingModel = formKind === 'embedding';
-	const pricingProfileJsonSessionKey = `${open ? '1' : '0'}:${editingModel?.id ?? 'new'}`;
-	const [pricingProfileJsonSession, setPricingProfileJsonSession] = useState(pricingProfileJsonSessionKey);
-	const [pricingProfileJsonOpen, setPricingProfileJsonOpen] = useState(false);
-	const [pricingProfileJsonCopied, setPricingProfileJsonCopied] = useState(false);
-	if (pricingProfileJsonSession !== pricingProfileJsonSessionKey) {
-		setPricingProfileJsonSession(pricingProfileJsonSessionKey);
-		setPricingProfileJsonOpen(false);
-		setPricingProfileJsonCopied(false);
-	}
-	const pricingProfilePreview = useMemo(
+	const hideTokenLimits = isImageModel || isAudioModel;
+	const intro = pickProviderCatalogText(editingModel?.catalog_i18n, locale);
+	const kinds = [
+		{ id: 'llm', label: t('kindLlm'), hint: t('kindHintLlm') },
+		{ id: 'image', label: t('kindImage'), hint: t('kindHintImage') },
+		{ id: 'asr', label: t('kindAsr'), hint: t('kindHintAsr') },
+		{ id: 'tts', label: t('kindTts'), hint: t('kindHintTts') },
+		{
+			id: 'embedding',
+			label: t('kindEmbedding'),
+			hint: t('kindHintEmbedding'),
+		},
+	] as const;
+	const selectedKind = kinds.find((kind) => kind.id === formKind)!;
+	const tabs = [
+		{ key: 'basic', label: t('basicTab'), icon: InformationCircleIcon },
+		{
+			key: 'pricing',
+			label: t('pricingProfile'),
+			icon: AdjustmentsHorizontalIcon,
+		},
+		{ key: 'metadata', label: t('metadataTab'), icon: CodeBracketIcon },
+		...(editingModel
+			? [
+					{
+						key: 'routes',
+						label: t('relatedRoutes.title'),
+						icon: ShareIcon,
+					} as const,
+			  ]
+			: []),
+	] as const;
+	const pricingPreview = useMemo(
 		() =>
 			formatCatalogPricingProfilePreview({
 				kind: formKind,
@@ -129,7 +214,7 @@ export function ModelModal(props: Props) {
 							mode: imageBillingMode,
 							tiers: pricingTierRows,
 							perImage: imagePerImageDraft ?? createDefaultImagePerImageDraft(),
-						}
+					  }
 					: undefined,
 				audioDraft: audioPricingDraft,
 				schedule: catalogScheduleWindows,
@@ -144,27 +229,123 @@ export function ModelModal(props: Props) {
 			catalogScheduleWindows,
 		]
 	);
-	/** ASR 按秒 / Token，TTS 只按字符；由 Kind 决定，不再单独选择音频能力。 */
-	const audioCapability = formKind === 'tts' ? 'speech' : 'transcription';
-	const hideTokenLimits = isImageModel || isAudioModel;
 
+	useEffect(() => {
+		if (!open) return;
+		const previous =
+			document.activeElement instanceof HTMLElement
+				? document.activeElement
+				: null;
+		const previousOverflow = document.body.style.overflow;
+		document.body.style.overflow = 'hidden';
+		const autofocus = dialogRef.current?.querySelector<HTMLInputElement>(
+			'[data-duplicate-id]'
+		);
+		(autofocus ?? dialogRef.current)?.focus();
+		return () => {
+			document.body.style.overflow = previousOverflow;
+			previous?.focus();
+		};
+	}, [open, duplicateSourceModelId]);
+	useEffect(() => {
+		contentRef.current?.scrollTo(0, 0);
+	}, [activeTab, showPricingJson, sessionKey]);
+
+	useEffect(() => {
+		if (open && !busy && document.activeElement === document.body)
+			dialogRef.current?.focus();
+	}, [open, busy]);
+
+	const selectTab = (key: Tab) => {
+		setActiveTab(key);
+		setShowPricingJson(false);
+	};
+	const navigateTabs = (event: KeyboardEvent<HTMLButtonElement>, key: Tab) => {
+		if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+		event.preventDefault();
+		const index = tabs.findIndex((tab) => tab.key === key);
+		const next =
+			event.key === 'Home'
+				? 0
+				: event.key === 'End'
+				? tabs.length - 1
+				: (index + (event.key === 'ArrowLeft' ? -1 : 1) + tabs.length) %
+				  tabs.length;
+		selectTab(tabs[next].key);
+		document.getElementById(`${id}-${tabs[next].key}-tab`)?.focus();
+	};
+	const handleKeys = (event: KeyboardEvent<HTMLDivElement>) => {
+		if (document.querySelector('[role="alertdialog"]')) return;
+		if (event.key === 'Escape' && !busy) {
+			event.stopPropagation();
+			onClose();
+		}
+		if (event.key !== 'Tab') return;
+		const focusable = Array.from(
+			event.currentTarget.querySelectorAll<HTMLElement>(
+				'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]'
+			)
+		).filter(
+			(element) => element.tabIndex >= 0 && element.getClientRects().length > 0
+		);
+		const first = focusable[0],
+			last = focusable[focusable.length - 1];
+		if (
+			event.shiftKey &&
+			(document.activeElement === first ||
+				document.activeElement === event.currentTarget)
+		) {
+			event.preventDefault();
+			last?.focus();
+		} else if (
+			!event.shiftKey &&
+			(document.activeElement === last ||
+				document.activeElement === event.currentTarget)
+		) {
+			event.preventDefault();
+			first?.focus();
+		}
+	};
+	const deleteButton = editingModel ? (
+		<button
+			type="button"
+			onClick={() => {
+				if (!deleteDisabled) onDelete(editingModel.id);
+			}}
+			disabled={deleteDisabled}
+			className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:pointer-events-none disabled:opacity-50"
+		>
+			<TrashIcon className="h-4 w-4" aria-hidden />
+			{isDeleting ? tCommon('deleting') : t('deleteModel')}
+		</button>
+	) : null;
 	if (!open) return null;
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-			onMouseDown={(e) => {
-				if (e.target === e.currentTarget && !isSaving && !isDeleting) {
-					onClose();
-				}
+			className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-2 sm:p-6"
+			onMouseDown={(event) => {
+				if (event.target === event.currentTarget && !busy) onClose();
 			}}
 		>
-			<div className="flex max-h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5">
-				<div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-4">
-					<div>
-						<h2 className="text-lg font-semibold text-gray-900">
+			<div
+				ref={dialogRef}
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby={`${id}-title`}
+				tabIndex={-1}
+				onKeyDown={handleKeys}
+				className="flex h-[min(760px,90dvh)] max-h-[calc(100dvh-1rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl outline-none"
+			>
+				<header className="flex shrink-0 items-start justify-between gap-4 px-5 pb-5 pt-6 sm:px-7">
+					<div className="min-w-0">
+						<h2
+							id={`${id}-title`}
+							className="text-lg font-semibold text-gray-900"
+						>
 							{editingModel ? t('editTitle') : t('newTitle')}
 						</h2>
+						<p className="mt-1.5 text-sm text-gray-500">{t('editHint')}</p>
 						{!editingModel && duplicateSourceModelId ? (
 							<p className="mt-1 text-xs text-gray-500">
 								{t('prefilledFrom', { id: duplicateSourceModelId })}
@@ -174,717 +355,507 @@ export function ModelModal(props: Props) {
 					<button
 						type="button"
 						onClick={onClose}
-						className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
-						disabled={isSaving || isDeleting}
+						disabled={busy}
 						aria-label={tCommon('close')}
+						className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
 					>
-						×
+						<XMarkIcon className="h-5 w-5" aria-hidden />
 					</button>
-				</div>
-
-				<div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-					{saveError && (
-						<div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-							{saveError}
-						</div>
-					)}
-
-					<div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-						{!editingModel ? (
-						<div className="col-span-2 lg:col-span-3">
-							<label className="block text-sm font-medium text-gray-700 mb-1.5">
-								{t('kind')}
-							</label>
-							<div
-								className="inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5"
-								role="group"
-								aria-label={t('kind')}
-							>
-								{(
-									[
-										{ id: 'llm' as const, label: t('kindLlm') },
-										{ id: 'image' as const, label: t('kindImage') },
-										{ id: 'asr' as const, label: t('kindAsr') },
-										{ id: 'tts' as const, label: t('kindTts') },
-										{ id: 'embedding' as const, label: t('kindEmbedding') },
-									] as const
-								).map((opt) => {
-									const active = formKind === opt.id;
-									return (
-										<button
-											key={opt.id}
-											type="button"
-											disabled={isSaving || isDeleting}
-											onClick={() => {
-												if (formKind !== opt.id) onKindChange(opt.id);
-											}}
-											className={
-												active
-													? 'rounded px-3 py-1.5 text-sm font-medium bg-white text-gray-900 shadow-sm'
-													: 'rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900'
-											}
-										>
-											{opt.label}
-										</button>
-									);
-								})}
-							</div>
-							<p className="mt-1.5 text-[11px] text-gray-500 leading-relaxed">
-								{formKind === 'asr'
-									? t('kindHintAsr')
-									: formKind === 'tts'
-										? t('kindHintTts')
-										: isEmbeddingModel
-										? t('kindHintEmbedding')
-										: isImageModel
-										? t('kindHintImage')
-										: t('kindHintLlm')}
-							</p>
-						</div>
-						) : null}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-1">{t('modelIdRequired')}</label>
-							<input
-								key={duplicateSourceModelId ?? 'model-id'}
-								type="text"
-								value={formData.id}
-								onChange={(e) => onFormChange({ ...formData, id: e.target.value })}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder={t('modelIdPlaceholder')}
-								required
-								disabled={!!editingModel}
-								autoFocus={Boolean(duplicateSourceModelId) && !editingModel}
-							/>
-						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-1">{t('displayName')}</label>
-							<input
-								type="text"
-								value={formData.display_name}
-								onChange={(e) => onFormChange({ ...formData, display_name: e.target.value })}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder={t('displayNamePlaceholder')}
-							/>
-						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-1">{t('vendor')}</label>
-							<select
-								value={
-									MODEL_VENDOR_OPTIONS.some((o) => o.key === formData.vendor)
-										? formData.vendor
-										: 'other'
-								}
-								onChange={(e) => onFormChange({ ...formData, vendor: e.target.value })}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-							>
-								{MODEL_VENDOR_OPTIONS.map((o) => (
-									<option key={o.key} value={o.key}>
-										{o.label}
-									</option>
-								))}
-							</select>
-						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-1">{t('released')}</label>
-							<input
-								type="date"
-								value={formData.released_at}
-								onChange={(e) => onFormChange({ ...formData, released_at: e.target.value })}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-							/>
-						</div>
-						{!hideTokenLimits ? (
-							<>
-								<div>
-									<label className="block text-sm font-medium text-gray-700 mb-1">
-										{t('contextWindow')}
-									</label>
-									<input
-										type="number"
-										value={formData.context_window}
-										onChange={(e) =>
-											onFormChange({ ...formData, context_window: e.target.value })
-										}
-										className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-										placeholder={t('contextWindowPlaceholder')}
-									/>
-								</div>
-								{isEmbeddingModel ? null : (
-								<div>
-									<label className="block text-sm font-medium text-gray-700 mb-1">
-										{t('maxTokens')}
-									</label>
-									<input
-										type="number"
-										value={formData.max_tokens}
-										onChange={(e) =>
-											onFormChange({ ...formData, max_tokens: e.target.value })
-										}
-										className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-										placeholder={t('maxTokensPlaceholder')}
-									/>
-								</div>
-								)}
-							</>
-						) : (
-							<div className="col-span-2 rounded-md border border-amber-100 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 lg:col-span-3">
-								{isAudioModel ? t('audioNoTokenLimits') : t('imageNoTokenLimits')}
-							</div>
-						)}
-					</div>
-
-					<div className="mt-5 rounded-md border border-gray-200 bg-gray-50/80 px-3 py-2.5">
-							<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-								<div className="min-w-0 flex-1 space-y-2.5">
-									<div className="grid gap-2 sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:items-center">
-										<p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-											{t('input')}
-										</p>
-										<div className="flex flex-wrap gap-2">
-											{MODEL_INPUT_MODALITIES.map((m) => (
-												<label
-													key={m}
-													className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700"
-												>
-											<input
-												type="checkbox"
-												checked={formData.input_modalities.includes(m)}
-												onChange={() => onToggleModality('input_modalities', m)}
-												disabled={isAudioModel || isSaving || isDeleting}
-												className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-													/>
-													{m}
-												</label>
-											))}
-										</div>
-									</div>
-									<div className="grid gap-2 sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:items-center">
-										<p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-											{t('output')}
-										</p>
-										<div className="flex flex-wrap gap-2">
-											{MODEL_OUTPUT_MODALITIES.map((m) => (
-												<label
-													key={m}
-													className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700"
-												>
-											<input
-												type="checkbox"
-												checked={formData.output_modalities.includes(m)}
-												onChange={() => onToggleModality('output_modalities', m)}
-												disabled={isAudioModel || isSaving || isDeleting}
-												className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-													/>
-													{m}
-												</label>
-											))}
-										</div>
-									</div>
-								</div>
-								<div className="shrink-0 rounded-md border border-gray-200 bg-white px-3 py-2 sm:min-w-32">
-									<p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-										{t('preview')}
-									</p>
-									<div className="mt-1.5">
-										<ModelModalitiesBadgeFromRaw
-											inputRaw={JSON.stringify(formData.input_modalities)}
-											outputRaw={JSON.stringify(formData.output_modalities)}
-											size="sm"
-											spacing="relaxed"
-										/>
-									</div>
-								</div>
-							</div>
-						</div>
-
-					<section className="mt-5 rounded-lg border border-sky-100 bg-sky-50 p-4">
-						<div className="mb-3 flex items-center justify-between gap-2">
-							<h3 className="text-sm font-medium text-gray-800">{t('pricingProfile')}</h3>
+				</header>
+				<div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-5 sm:px-7">
+					<div
+						role="tablist"
+						aria-label={t('settingsLabel')}
+						className="flex min-w-0 flex-1 gap-5 overflow-x-auto [scrollbar-width:none]"
+					>
+						{tabs.map(({ key, label, icon: Icon }) => (
 							<button
+								key={key}
+								id={`${id}-${key}-tab`}
 								type="button"
-								onClick={() => setPricingProfileJsonOpen((openJson) => !openJson)}
-								aria-expanded={pricingProfileJsonOpen}
-								aria-controls="model-pricing-profile-json"
-								title={
-									pricingProfileJsonOpen ? t('hidePricingProfileJson') : t('viewPricingProfileJson')
-								}
-								className={`inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 ${
-									pricingProfileJsonOpen
-										? 'border-blue-300 bg-blue-50 text-blue-800'
-										: 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+								role="tab"
+								aria-selected={activeTab === key}
+								aria-controls={`${id}-${key}-panel`}
+								tabIndex={activeTab === key ? 0 : -1}
+								onClick={() => selectTab(key)}
+								onKeyDown={(event) => navigateTabs(event, key)}
+								className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 pb-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${
+									activeTab === key
+										? 'border-blue-600 font-medium text-blue-600'
+										: 'border-transparent text-gray-500 hover:text-gray-800'
 								}`}
 							>
-								<CodeBracketIcon className="h-3.5 w-3.5" aria-hidden />
-								JSON
+								<Icon className="h-4 w-4" aria-hidden />
+								{label}
+								{key === 'routes' ? (
+									<span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] tabular-nums text-gray-500">
+										{routesState.ready ? routesState.routes.length : '…'}
+									</span>
+								) : null}
 							</button>
-						</div>
-						{pricingProfileJsonOpen ? (
-							<div
-								id="model-pricing-profile-json"
-								className="mb-3 space-y-1.5 rounded-md border border-dashed border-gray-300 bg-gray-50/90 p-2"
-							>
-								<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-									<code className="rounded bg-white px-1 py-0.5 text-[10px] font-semibold text-gray-600">
-										pricing_profile
-									</code>
-									{pricingProfilePreview.ok ? (
-										<button
-											type="button"
-											onClick={() => {
-												if (!navigator.clipboard?.writeText) return;
-												void navigator.clipboard.writeText(pricingProfilePreview.text).then(
-													() => {
-														setPricingProfileJsonCopied(true);
-														window.setTimeout(() => setPricingProfileJsonCopied(false), 1500);
-													},
-													() => {},
-												);
-											}}
-											className="text-[11px] font-medium text-blue-600 hover:text-blue-800"
-										>
-											{pricingProfileJsonCopied ? tCommon('copied') : tCommon('copy')}
-										</button>
-									) : null}
-								</div>
-								<textarea
-									readOnly
-									rows={Math.min(
-										16,
-										6 + pricingTierRows.length * 3 + catalogScheduleWindows.length * 3
-									)}
-									value={pricingProfilePreview.text}
-									className={`w-full resize-y rounded-md border bg-white px-2 py-1.5 font-mono text-[11px] leading-relaxed ${
-										pricingProfilePreview.ok
-											? 'border-gray-200 text-gray-800'
-											: 'border-red-200 text-red-700'
-									}`}
-									spellCheck={false}
-									aria-label={t('viewPricingProfileJson')}
-								/>
-							</div>
-						) : null}
-						<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-							<div className="min-w-0 rounded-md border border-slate-200/80 bg-white p-3">
-							{isAudioModel && audioPricingDraft && onAudioPricingDraftChange ? (
-								<div className="space-y-3">
-									<p className="text-sm font-medium text-gray-800">{t('audioPricing')}</p>
-									<div className="space-y-1.5">
-										<p className="text-[11px] font-medium text-gray-600">
-											{t('audioBillingMode')}
-										</p>
-										<div
-											className="inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5"
-											role="group"
-											aria-label={t('audioBillingMode')}
-										>
-										{(audioCapability === 'speech'
-											? [
-												{
-													id: 'per_character' as const,
-													label: t('audioBillingModePerCharacter'),
-												},
-											]
-											: [
-												{
-													id: 'per_second' as const,
-												label: t('audioBillingModePerSecond'),
-											},
-											{
-													id: 'token' as const,
-													label: t('audioBillingModeToken'),
-												},
-											]).map((opt) => {
-												const active = audioPricingDraft.mode === opt.id;
-												return (
-													<button
-														key={opt.id}
-														type="button"
-														onClick={() => {
-															if (audioPricingDraft.mode === opt.id) return;
-															const nextMode: AudioBillingModeDraft = opt.id;
-															if (nextMode === 'per_second') {
-																onAudioPricingDraftChange({
-																	...createDefaultAudioPricingDraft(),
-																	price_per_second:
-																		audioPricingDraft.price_per_second.trim() !== ''
-																			? audioPricingDraft.price_per_second
-																			: createDefaultAudioPricingDraft()
-																					.price_per_second,
-																	minimum_seconds:
-																		audioPricingDraft.minimum_seconds.trim() !== ''
-																			? audioPricingDraft.minimum_seconds
-																			: createDefaultAudioPricingDraft()
-																					.minimum_seconds,
-																});
-														return;
-													}
-													if (nextMode === 'per_character') {
-														onAudioPricingDraftChange({
-															...createDefaultAudioCharacterPricingDraft(),
-															price_per_character:
-																audioPricingDraft.price_per_character.trim() !== ''
-																	? audioPricingDraft.price_per_character
-																	: '',
-															minimum_characters:
-																audioPricingDraft.minimum_characters.trim() !== ''
-																	? audioPricingDraft.minimum_characters
-																	: '0',
-														});
-														return;
-													}
-															onAudioPricingDraftChange(
-																audioPricingDraft.tiers.length > 0
-																	? {
-																			...audioPricingDraft,
-																			mode: 'token',
-																		}
-																	: createDefaultAudioTokenPricingDraft()
-															);
-														}}
-														className={
-															active
-																? 'rounded px-3 py-1.5 text-sm font-medium bg-white text-gray-900 shadow-sm'
-																: 'rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900'
-														}
+						))}
+					</div>
+					{activeTab === 'pricing' ? (
+						<button
+							type="button"
+							onClick={() => setShowPricingJson((value) => !value)}
+							aria-label={
+								showPricingJson
+									? t('hidePricingProfileJson')
+									: t('viewPricingProfileJson')
+							}
+							aria-pressed={showPricingJson}
+							className={`mb-2 inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium ${
+								showPricingJson
+									? 'bg-blue-50 text-blue-600'
+									: 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+							}`}
+						>
+							<CodeBracketIcon className="h-4 w-4" aria-hidden />
+							{showPricingJson ? t('backToForm') : 'JSON'}
+						</button>
+					) : null}
+				</div>
+				{saveError ? (
+					<div
+						role="alert"
+						className="mx-5 mt-4 shrink-0 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 sm:mx-7"
+					>
+						{saveError}
+					</div>
+				) : null}
+				<div
+					ref={contentRef}
+					className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+				>
+					<fieldset disabled={busy} className="m-0 h-full min-w-0 border-0 p-0">
+						<section
+							id={`${id}-${activeTab}-panel`}
+							role="tabpanel"
+							aria-labelledby={`${id}-${activeTab}-tab`}
+							className={`min-h-full px-5 py-6 sm:px-7 ${
+								activeTab === 'basic' ? 'md:h-full md:min-h-0' : ''
+							} ${
+								activeTab === 'metadata' ||
+								(activeTab === 'pricing' && showPricingJson)
+									? 'flex flex-col'
+									: ''
+							}`}
+						>
+							{activeTab === 'basic' ? (
+								<div className="grid min-h-full gap-7 md:h-full md:min-h-0 md:grid-cols-[1.1fr_1fr]">
+									<div className="min-w-0 space-y-3 md:min-h-0 md:overflow-y-auto md:overscroll-contain md:pr-1">
+										<div className="flex items-start gap-3">
+											<div className="min-w-0 flex-1">
+												<div className="mb-1.5 flex items-center gap-1.5">
+													<span className="text-xs font-medium text-gray-600">
+														{t('kind')}
+													</span>
+													<InfoHintPopover
+														label={t('kind')}
+														openOnHover
+														openOnFocus
+														portal
+														align="start"
 													>
-														{opt.label}
-													</button>
-												);
-											})}
+														<p className="leading-6">{selectedKind.hint}</p>
+													</InfoHintPopover>
+												</div>
+												{editingModel ? (
+													<p className="text-sm font-medium leading-6 text-gray-900">
+														{selectedKind.label}
+													</p>
+												) : (
+													<div
+														role="group"
+														aria-label={t('kind')}
+														className="flex flex-wrap gap-1.5"
+													>
+														{kinds.map((kind) => (
+															<button
+																key={kind.id}
+																type="button"
+																aria-pressed={formKind === kind.id}
+																onClick={() => {
+																	if (formKind !== kind.id)
+																		onKindChange(kind.id);
+																}}
+																className={`rounded-md border px-2.5 py-1.5 text-xs font-medium ${
+																	formKind === kind.id
+																		? 'border-blue-200 bg-blue-50 text-blue-700'
+																		: 'border-gray-200 text-gray-600 hover:bg-gray-50'
+																}`}
+															>
+																{kind.label}
+															</button>
+														))}
+													</div>
+												)}
+											</div>
+											<VendorIcon vendor={formData.vendor} size="identity" />
+										</div>
+										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+											<Field label={t('modelIdRequired')}>
+												<input
+													type="text"
+													value={formData.id}
+													onChange={(event) =>
+														onFormChange({
+															...formData,
+															id: event.target.value,
+														})
+													}
+													disabled={!!editingModel}
+													data-duplicate-id={
+														!editingModel && duplicateSourceModelId
+															? ''
+															: undefined
+													}
+													className={`${inputClass} font-mono`}
+													placeholder={t('modelIdPlaceholder')}
+													required
+												/>
+											</Field>
+											<Field label={t('displayName')}>
+												<input
+													type="text"
+													value={formData.display_name}
+													onChange={(event) =>
+														onFormChange({
+															...formData,
+															display_name: event.target.value,
+														})
+													}
+													className={inputClass}
+													placeholder={t('displayNamePlaceholder')}
+												/>
+											</Field>
+										</div>
+										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+											<Field label={t('vendor')}>
+												<select
+													value={
+														MODEL_VENDOR_OPTIONS.some(
+															(option) => option.key === formData.vendor
+														)
+															? formData.vendor
+															: 'other'
+													}
+													onChange={(event) =>
+														onFormChange({
+															...formData,
+															vendor: event.target.value,
+														})
+													}
+													className={inputClass}
+												>
+													{MODEL_VENDOR_OPTIONS.map((option) => (
+														<option key={option.key} value={option.key}>
+															{option.label}
+														</option>
+													))}
+												</select>
+											</Field>
+											<Field label={t('released')}>
+												<input
+													type="date"
+													value={formData.released_at}
+													onChange={(event) =>
+														onFormChange({
+															...formData,
+															released_at: event.target.value,
+														})
+													}
+													className={inputClass}
+												/>
+											</Field>
+										</div>
+										{!hideTokenLimits ? (
+											<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+												<Field label={t('contextWindow')}>
+													<input
+														type="number"
+														min="0"
+														value={formData.context_window}
+														onChange={(event) =>
+															onFormChange({
+																...formData,
+																context_window: event.target.value,
+															})
+														}
+														className={`${inputClass} font-mono`}
+														placeholder={t('contextWindowPlaceholder')}
+													/>
+												</Field>
+												{formKind !== 'embedding' ? (
+													<Field label={t('maxTokens')}>
+														<input
+															type="number"
+															min="0"
+															value={formData.max_tokens}
+															onChange={(event) =>
+																onFormChange({
+																	...formData,
+																	max_tokens: event.target.value,
+																})
+															}
+															className={`${inputClass} font-mono`}
+															placeholder={t('maxTokensPlaceholder')}
+														/>
+													</Field>
+												) : null}
+											</div>
+										) : null}
+										<div className="rounded-xl border border-gray-200">
+											<div className="flex items-center justify-between gap-3 border-b border-gray-100 px-3 py-2.5">
+												<span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700">
+													{t('modalities')}
+													<InfoHintPopover
+														label={t('modalities')}
+														openOnHover
+														openOnFocus
+														portal
+														align="start"
+													>
+														<p className="leading-6">{selectedKind.hint}</p>
+													</InfoHintPopover>
+												</span>
+												<ModelModalitiesBadgeFromRaw
+													inputRaw={JSON.stringify(formData.input_modalities)}
+													outputRaw={JSON.stringify(formData.output_modalities)}
+													size="sm"
+													spacing="relaxed"
+												/>
+											</div>
+											<div className="space-y-2.5 p-3">
+												{(
+													['input_modalities', 'output_modalities'] as const
+												).map((direction) => (
+													<div
+														role="group"
+														aria-label={t(
+															direction === 'input_modalities'
+																? 'input'
+																: 'output'
+														)}
+														key={direction}
+														className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2"
+													>
+														<span className="w-6 shrink-0 text-xs text-gray-500">
+															{t(
+																direction === 'input_modalities'
+																	? 'input'
+																	: 'output'
+															)}
+														</span>
+														<div className="flex flex-wrap gap-1.5">
+															{(direction === 'input_modalities'
+																? MODEL_INPUT_MODALITIES
+																: MODEL_OUTPUT_MODALITIES
+															).map((modality) => (
+																<label
+																	key={modality}
+																	className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${
+																		formData[direction].includes(modality)
+																			? 'border-blue-200 bg-blue-50/70 text-blue-700'
+																			: 'border-gray-200 text-gray-500'
+																	} ${
+																		isAudioModel
+																			? 'opacity-60'
+																			: 'cursor-pointer'
+																	}`}
+																>
+																	<input
+																		type="checkbox"
+																		checked={formData[direction].includes(
+																			modality
+																		)}
+																		onChange={() =>
+																			onToggleModality(direction, modality)
+																		}
+																		disabled={isAudioModel}
+																		className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+																	/>
+																	{t(`modalityLabels.${modality}`)}
+																</label>
+															))}
+														</div>
+													</div>
+												))}
+											</div>
+										</div>
+										<div>
+											<label
+												htmlFor={`${id}-tag`}
+												className="mb-1.5 block text-xs font-medium text-gray-600"
+											>
+												{t('tags')}
+											</label>
+											{formData.tags.length ? (
+												<div className="mb-2 flex flex-wrap gap-1.5">
+													{formData.tags.map((tag) => (
+														<span
+															key={tag}
+															className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs ${tagBadgeClass(
+																tag
+															)}`}
+														>
+															{tag}
+															<button
+																type="button"
+																onClick={() => onRemoveTag(tag)}
+																aria-label={t('removeTag', { tag })}
+																className="rounded text-gray-400 hover:text-red-600"
+															>
+																<XMarkIcon
+																	className="h-3.5 w-3.5"
+																	aria-hidden
+																/>
+															</button>
+														</span>
+													))}
+												</div>
+											) : null}
+											<div className="flex gap-2">
+												<input
+													id={`${id}-tag`}
+													type="text"
+													value={tagInput}
+													onChange={(event) =>
+														onTagInputChange(event.target.value)
+													}
+													onKeyDown={(event) => {
+														if (event.key === 'Enter' || event.key === ',') {
+															event.preventDefault();
+															onAddTag();
+														}
+													}}
+													className={inputClass}
+													placeholder={t('tagsPlaceholder')}
+												/>
+												<button
+													type="button"
+													onClick={onAddTag}
+													disabled={!tagInput.trim()}
+													className="shrink-0 whitespace-nowrap rounded-lg border border-gray-200 px-3 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+												>
+													{tCommon('add')}
+												</button>
+											</div>
 										</div>
 									</div>
-									{audioPricingDraft.mode === 'token' ? (
-										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-											<div>
-												<label className="mb-1 block text-xs font-medium text-gray-600">
-													{t('audioInputPricePerM')}
-													<span className="ml-1 font-normal text-gray-400">
-														({formatPerMillionTokenUnit(billingCurrency)})
-													</span>
-												</label>
-												<input
-													type="number"
-													step="any"
-													min="0"
-													value={audioPricingDraft.tiers[0]?.input_price ?? ''}
-													onChange={(e) => {
-														const base =
-															audioPricingDraft.tiers[0] ??
-															createDefaultAudioTokenPricingDraft().tiers[0]!;
-														onAudioPricingDraftChange({
-															...audioPricingDraft,
-															mode: 'token',
-															tiers: [
-																{
-																	...base,
-																	input_price: e.target.value,
-																},
-															],
-														});
-													}}
-													className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-												/>
+									<div className="flex min-w-0 flex-col gap-5 md:h-full md:min-h-0">
+										{intro ? (
+											<div className="flex flex-col rounded-xl border border-gray-200 bg-gray-50/40 p-4 md:min-h-0 md:flex-1">
+												<h3 className="shrink-0 text-xs font-medium text-gray-500">
+													{t('catalogIntro')}
+												</h3>
+												<p
+													tabIndex={0}
+													className="mt-2 max-h-40 md:min-h-0 md:max-h-none md:flex-1 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words text-sm leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+												>
+													{intro}
+												</p>
 											</div>
-											<div>
-												<label className="mb-1 block text-xs font-medium text-gray-600">
-													{t('audioOutputPricePerM')}
-													<span className="ml-1 font-normal text-gray-400">
-														({formatPerMillionTokenUnit(billingCurrency)})
-													</span>
-												</label>
-												<input
-													type="number"
-													step="any"
-													min="0"
-													value={audioPricingDraft.tiers[0]?.output_price ?? ''}
-													onChange={(e) => {
-														const base =
-															audioPricingDraft.tiers[0] ??
-															createDefaultAudioTokenPricingDraft().tiers[0]!;
-														onAudioPricingDraftChange({
-															...audioPricingDraft,
-															mode: 'token',
-															tiers: [
-																{
-																	...base,
-																	output_price: e.target.value,
-																},
-															],
-														});
-													}}
-													className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-												/>
-											</div>
+										) : null}
+										<div className="shrink-0">
+											<label
+												htmlFor={`${id}-note`}
+												className="mb-2 block text-xs font-medium text-gray-700"
+											>
+												{t('note')}
+											</label>
+											<textarea
+												id={`${id}-note`}
+												value={formData.note}
+												onChange={(event) =>
+													onFormChange({
+														...formData,
+														note: event.target.value,
+													})
+												}
+												rows={4}
+												className="block h-32 max-h-32 w-full resize-none overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+												placeholder={t('notePlaceholder')}
+											/>
 										</div>
-									) : audioPricingDraft.mode === 'per_character' ? (
-										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-											<div>
-												<label className="mb-1 block text-xs font-medium text-gray-600">
-													{t('audioPricePerCharacter')}
-													<span className="ml-1 font-normal text-gray-400">
-														({formatPerCharacterUnit(billingCurrency)})
-													</span>
-												</label>
-												<input
-													type="number"
-													step="any"
-													min="0"
-													value={audioPricingDraft.price_per_character}
-													onChange={(e) =>
-														onAudioPricingDraftChange({
-															...audioPricingDraft,
-															mode: 'per_character',
-															price_per_character: e.target.value,
-														})
-													}
-													className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-												/>
-											</div>
-											<div>
-												<label className="mb-1 block text-xs font-medium text-gray-600">
-													{t('audioMinimumCharacters')}
-												</label>
-												<input
-													type="number"
-													step="1"
-													min="0"
-													value={audioPricingDraft.minimum_characters}
-													onChange={(e) =>
-														onAudioPricingDraftChange({
-															...audioPricingDraft,
-															mode: 'per_character',
-															minimum_characters: e.target.value,
-														})
-													}
-													className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-												/>
-											</div>
-										</div>
-									) : (
-										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-											<div>
-												<label className="mb-1 block text-xs font-medium text-gray-600">
-													{t('audioPricePerSecond')}
-													<span className="ml-1 font-normal text-gray-400">
-														({formatPerSecondUnit(billingCurrency)})
-													</span>
-												</label>
-												<input
-													type="number"
-													step="any"
-													min="0"
-													value={audioPricingDraft.price_per_second}
-													onChange={(e) =>
-														onAudioPricingDraftChange({
-															...audioPricingDraft,
-															mode: 'per_second',
-															price_per_second: e.target.value,
-														})
-													}
-													className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-												/>
-											</div>
-											<div>
-												<label className="mb-1 block text-xs font-medium text-gray-600">
-													{t('audioMinimumSeconds')}
-												</label>
-												<input
-													type="number"
-													step="any"
-													min="0"
-													value={audioPricingDraft.minimum_seconds}
-													onChange={(e) =>
-														onAudioPricingDraftChange({
-															...audioPricingDraft,
-															mode: 'per_second',
-															minimum_seconds: e.target.value,
-														})
-													}
-													className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-												/>
-											</div>
-										</div>
-									)}
+									</div>
 								</div>
-							) : isImageModel ? (
-								<PricingTiersEditor
-									title={t('imageTokenPricing')}
-									rows={pricingTierRows}
-									onChange={onPricingTierRowsChange}
-									billingCurrencyCode={billingCurrency}
-									minRows={0}
-									variant="image"
-									imageBillingMode={imageBillingMode}
-									onImageBillingModeChange={onImageBillingModeChange}
-									perImageDraft={imagePerImageDraft}
-									onPerImageDraftChange={onImagePerImageDraftChange}
-								/>
-							) : isEmbeddingModel ? (
-								<PricingTiersEditor
-									title={t('embeddingPricing')}
-									rows={pricingTierRows}
-									onChange={onPricingTierRowsChange}
-									billingCurrencyCode={billingCurrency}
-									minRows={0}
-									variant="embedding"
+							) : activeTab === 'pricing' ? (
+								showPricingJson ? (
+									<ModelPricingJsonPreview preview={pricingPreview} />
+								) : (
+									<ModelPricingPanel {...props} />
+								)
+							) : activeTab === 'routes' ? (
+								<RelatedRoutesPanel
+									key={editingModel?.id}
+									state={routesState}
+									perspective="model"
+									disabled={busy}
 								/>
 							) : (
-								<PricingTiersEditor
-									title={t('standardPricing')}
-									rows={pricingTierRows}
-									onChange={onPricingTierRowsChange}
-									billingCurrencyCode={billingCurrency}
-									minRows={0}
-								/>
-							)}
-							</div>
-							{onCatalogScheduleWindowsChange ? (
-								<div className="min-w-0 rounded-md border border-slate-200/80 bg-white p-3">
-									<div className="mb-3">
-										<div className="flex items-start justify-between gap-2">
-											<h4 className="flex items-center gap-2 text-sm font-medium text-gray-800">{t('catalogSchedule')}<PricingInfoHint kind="catalog" align="start" /></h4>
-											<button
-												type="button"
-												onClick={() =>
-													onCatalogScheduleWindowsChange([
-														...catalogScheduleWindows,
-														{ start: '00:00', end: '08:00', factor: '1', days: [] },
-													])
-												}
-												className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-dashed border-gray-400 bg-white text-gray-600 shadow-sm transition hover:border-gray-500 hover:bg-gray-50 hover:text-gray-900"
-												aria-label={t('addCatalogScheduleWindow')}
-												title={t('addCatalogScheduleWindow')}
-											>
-												<PlusIcon className="h-3.5 w-3.5" aria-hidden />
-											</button>
-										</div>
-										<p className="mt-1 text-xs leading-5 text-slate-500">
-											{t('catalogScheduleHint')}
-										</p>
+								<div className="flex min-h-80 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200">
+									<div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50/70 px-4 py-3">
+										<label
+											htmlFor={`${id}-metadata`}
+											className="text-sm font-semibold text-gray-800"
+										>
+											{t('metadataJson')}
+										</label>
+										<InfoHintPopover
+											label={t('metadataTab')}
+											openOnHover
+											openOnFocus
+											portal
+											align="start"
+										>
+											<p className="leading-6">{t('metadataHint')}</p>
+										</InfoHintPopover>
 									</div>
-									<DailyScheduleEditor
-										variant="single"
-										windows={catalogScheduleWindows}
-										onChange={onCatalogScheduleWindowsChange}
-										emptyLabel={t('catalogScheduleEmpty')}
-										startLabel={tRoutes('scheduleStart')}
-										endLabel={tRoutes('scheduleEnd')}
-										factorLabel={t('catalogScheduleFactor')}
-										removeLabel={tCommon('delete')}
-										dayLabels={{
-											days: tRoutes('scheduleDays'),
-											everyday: tRoutes('scheduleEveryday'),
-											weekdays: tRoutes('scheduleWeekdays'),
-											weekend: tRoutes('scheduleWeekend'),
-											weekdayShort: [
-												tRoutes('weekdayMon'),
-												tRoutes('weekdayTue'),
-												tRoutes('weekdayWed'),
-												tRoutes('weekdayThu'),
-												tRoutes('weekdayFri'),
-												tRoutes('weekdaySat'),
-												tRoutes('weekdaySun'),
-											],
-										}}
+									<textarea
+										id={`${id}-metadata`}
+										value={formData.metadata}
+										onChange={(event) =>
+											onFormChange({
+												...formData,
+												metadata: event.target.value,
+											})
+										}
+										className="min-h-64 w-full flex-1 resize-none bg-gray-50/30 p-4 font-mono text-xs leading-6 text-gray-800 outline-none focus:ring-2 focus:ring-inset focus:ring-blue-200"
+										placeholder={t('metadataPlaceholder')}
+										spellCheck={false}
 									/>
 								</div>
-							) : null}
-						</div>
-					</section>
-
-					<div className="mt-5">
-						<label className="mb-1 block text-sm font-medium text-gray-700">{t('tags')}</label>
-						<div className="mb-2 flex flex-wrap gap-2">
-							{formData.tags.map((tag) => (
-								<span
-									key={tag}
-									className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-sm ${tagBadgeClass(tag)}`}
-								>
-									{tag}
-									<button
-										type="button"
-										onClick={() => onRemoveTag(tag)}
-										className="text-gray-500 hover:text-red-600"
-										aria-label={t('removeTag', { tag })}
-									>
-										×
-									</button>
-								</span>
-							))}
-						</div>
-						<div className="flex gap-2">
-							<input
-								type="text"
-								value={tagInput}
-								onChange={(e) => onTagInputChange(e.target.value)}
-								onKeyDown={(e) => {
-									if (e.key === 'Enter' || e.key === ',') {
-										e.preventDefault();
-										onAddTag();
-									}
-								}}
-								className="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder={t('tagsPlaceholder')}
-							/>
-							<button
-								type="button"
-								onClick={onAddTag}
-								className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-							>
-								{tCommon('add')}
-							</button>
-						</div>
-					</div>
-					<div className="mt-5 grid grid-cols-1 items-stretch gap-5 xl:grid-cols-2">
-						<div className="flex min-h-36 flex-col">
-							{catalogIntro ? (
-								<div className="mb-3 rounded-md bg-gray-50 px-3 py-2">
-									<p className="text-xs font-medium text-gray-500">{t('catalogIntro')}</p>
-									<p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">{catalogIntro}</p>
-								</div>
-							) : null}
-							<label className="mb-1 block text-sm font-medium text-gray-700">{t('note')}</label>
-							<textarea
-								rows={4}
-								value={formData.note}
-								onChange={(e) => onFormChange({ ...formData, note: e.target.value })}
-								className="min-h-0 w-full flex-1 rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder={t('notePlaceholder')}
-							/>
-						</div>
-						<div className="flex min-h-36 flex-col">
-							<label className="mb-1 block text-sm font-medium text-gray-700">{t('metadataJson')}</label>
-							<textarea
-								rows={4}
-								value={formData.metadata}
-								onChange={(e) => onFormChange({ ...formData, metadata: e.target.value })}
-								className="min-h-0 w-full flex-1 rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-								placeholder={t('metadataPlaceholder')}
-							/>
-						</div>
-					</div>
+							)}
+						</section>
+					</fieldset>
 				</div>
-
-				<div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
+				<footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50/80 px-5 py-4 sm:px-7">
 					<div>
-						{editingModel && (
-							<button
-								type="button"
-								onClick={() => onDelete(editingModel.id)}
-								disabled={isSaving || isDeleting}
-								className="inline-flex items-center gap-1.5 px-3 py-2 border border-red-200 rounded-md text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
-							>
-								<TrashIcon className="h-4 w-4" />
-								{isDeleting ? tCommon('deleting') : t('deleteModel')}
-							</button>
-						)}
+						{editingModel ? (
+							deleteReason ? (
+								<InfoHintPopover
+									label={t('deleteModel')}
+									disabledTrigger={deleteButton}
+									openOnHover
+									openOnFocus
+									portal
+									align="start"
+								>
+									<p className="leading-5">{deleteReason}</p>
+								</InfoHintPopover>
+							) : (
+								deleteButton
+							)
+						) : null}
 					</div>
-					<div className="flex gap-3 ml-auto">
+					<div className="ml-auto flex gap-2">
 						<button
 							type="button"
 							onClick={onClose}
-							className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-							disabled={isSaving || isDeleting}
+							disabled={busy}
+							className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
 						>
 							{tCommon('cancel')}
 						</button>
@@ -892,8 +863,8 @@ export function ModelModal(props: Props) {
 							<button
 								type="button"
 								onClick={onDuplicate}
-								disabled={isSaving || isDeleting}
-								className="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+								disabled={busy}
+								className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
 							>
 								<DocumentDuplicateIcon className="h-4 w-4" aria-hidden />
 								{tCommon('duplicate')}
@@ -902,13 +873,13 @@ export function ModelModal(props: Props) {
 						<button
 							type="button"
 							onClick={onSave}
-							disabled={isSaving || isDeleting}
-							className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+							disabled={busy}
+							className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
 						>
 							{isSaving ? tCommon('savingDots') : tCommon('save')}
 						</button>
 					</div>
-				</div>
+				</footer>
 			</div>
 		</div>
 	);

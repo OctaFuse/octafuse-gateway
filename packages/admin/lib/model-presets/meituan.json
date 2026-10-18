@@ -5,7 +5,9 @@
 		"description": "A sparse expert model from Meituan for coding, repository work, and long-horizon agents. Its sparse expert architecture is built for repository-scale coding, long-horizon problem solving, and agentic execution.",
 		"i18n": {
 			"en": "A sparse expert model from Meituan for coding, repository work, and long-horizon agents. Its sparse expert architecture is built for repository-scale coding, long-horizon problem solving, and agentic execution.",
-			"zh": "美团稀疏专家模型，适合编程、代码仓库任务与长周期 Agent。稀疏专家架构面向仓库级编程、长周期问题求解和 Agent 执行。"
+			"zh": "美团稀疏专家模型，适合编程、代码仓库任务与长周期 Agent。稀疏专家架构面向仓库级编程、长周期问题求解和 Agent 执行。",
+			"ja": "Meituan のスパースエキスパートモデルです。コーディング、リポジトリ単位の作業、長い期間のエージェントに向いています。リポジトリ規模のコーディング、長い問題の解決、エージェントの実行を想定した構成です。",
+			"ko": "Meituan의 희소 전문가 모델입니다. 코딩, 저장소 단위 작업, 긴 주기의 에이전트에 맞습니다. 저장소 규모의 코딩, 긴 문제 풀이, 에이전트 실행을 전제로 한 구조입니다."
 		},
 		"vendor": "meituan",
 		"context_window": 1000000,

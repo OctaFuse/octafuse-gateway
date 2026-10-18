@@ -103,15 +103,9 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 			return updated.length;
 		},
 
-		async deleteModelCascade(id: string): Promise<number> {
-			let n = 0;
-			await pg.begin(async (sqlTx) => {
-				await sqlTx`DELETE FROM model_routes WHERE model_id = ${id}`;
-				await sqlTx`DELETE FROM model_tags WHERE model_id = ${id}`;
-				const deleted = await sqlTx<{ id: string }[]>`DELETE FROM models WHERE id = ${id} RETURNING id`;
-				n = deleted.length;
-			});
-			return n;
+		async deleteModelIfUnrouted(id: string): Promise<number> {
+			const deleted = await pg<{ id: string }[]>`DELETE FROM models WHERE id = ${id} AND NOT EXISTS (SELECT 1 FROM model_routes WHERE model_id = ${id}) RETURNING id`;
+			return deleted.length;
 		},
 	};
 }

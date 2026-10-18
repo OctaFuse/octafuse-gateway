@@ -5,7 +5,9 @@
 		"description": "Alibaba Cloud Model Studio text embedding model. Billed by input tokens only. Use the OpenAI-compatible POST /v1/embeddings.",
 		"i18n": {
 			"en": "Alibaba Cloud Model Studio text embedding model. Billed by input tokens only. Use the OpenAI-compatible POST /v1/embeddings.",
-			"zh": "阿里云百炼文本向量模型，仅按输入 Token 计费。通过 OpenAI 兼容的 POST /v1/embeddings 调用。"
+			"zh": "阿里云百炼文本向量模型，仅按输入 Token 计费。通过 OpenAI 兼容的 POST /v1/embeddings 调用。",
+			"ja": "Alibaba Cloud Model Studio のテキスト埋め込みモデルです。入力トークンだけが課金対象で、OpenAI 互換の POST /v1/embeddings から呼び出します。",
+			"ko": "Alibaba Cloud Model Studio의 텍스트 임베딩 모델입니다. 입력 토큰만 과금되며, OpenAI 호환 POST /v1/embeddings로 호출합니다."
 		},
 		"vendor": "aliyun",
 		"context_window": null,
@@ -49,7 +51,9 @@
 		"description": "Alibaba Cloud Model Studio text embedding V4 (successor of V3). Billed by input tokens only. Use the OpenAI-compatible POST /v1/embeddings.",
 		"i18n": {
 			"en": "Alibaba Cloud Model Studio text embedding V4 (successor of V3). Billed by input tokens only. Use the OpenAI-compatible POST /v1/embeddings.",
-			"zh": "阿里云百炼文本向量 V4（V3 的替代模型）。仅按输入 Token 计费。通过 OpenAI 兼容的 POST /v1/embeddings 调用。"
+			"zh": "阿里云百炼文本向量 V4（V3 的替代模型）。仅按输入 Token 计费。通过 OpenAI 兼容的 POST /v1/embeddings 调用。",
+			"ja": "Alibaba Cloud Model Studio のテキスト埋め込み V4 です（V3 の後継）。入力トークンだけが課金対象で、OpenAI 互換の POST /v1/embeddings から呼び出します。",
+			"ko": "Alibaba Cloud Model Studio 텍스트 임베딩 V4입니다(V3의 후속). 입력 토큰만 과금되며, OpenAI 호환 POST /v1/embeddings로 호출합니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 8192,

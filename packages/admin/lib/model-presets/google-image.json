@@ -5,7 +5,9 @@
 		"description": "An update to Nano Banana 2, built for high-efficiency image generation and conversational editing with improved visual quality, multi-turn character consistency, accurate text rendering, and search-grounded generation across 1K, 2K, and 4K resolutions.",
 		"i18n": {
 			"en": "An update to Nano Banana 2, built for high-efficiency image generation and conversational editing with improved visual quality, multi-turn character consistency, accurate text rendering, and search-grounded generation across 1K, 2K, and 4K resolutions.",
-			"zh": "Nano Banana 2 的升级版本，专为高效图片生成与对话式编辑打造，提升了视觉质量、多轮角色一致性、精准文字渲染，并支持 1K、2K、4K 分辨率的搜索增强生成。"
+			"zh": "Nano Banana 2 的升级版本，专为高效图片生成与对话式编辑打造，提升了视觉质量、多轮角色一致性、精准文字渲染，并支持 1K、2K、4K 分辨率的搜索增强生成。",
+			"ja": "Nano Banana 2 の更新版で、効率のよい画像生成と会話形式の編集向けです。画質、複数ターンでのキャラクターの一貫性、文字の正確さが上がり、1K・2K・4K で検索に基づく生成もできます。",
+			"ko": "Nano Banana 2의 업데이트로, 효율적인 이미지 생성과 대화형 편집용입니다. 화질, 여러 턴에 걸친 캐릭터 일관성, 글자 정확도가 올라갔고, 1K·2K·4K에서 검색에 기반한 생성도 됩니다."
 		},
 		"vendor": "google",
 		"context_window": null,
@@ -59,7 +61,9 @@
 		"description": "A fast Google model for high-quality image generation and editing with multimodal reasoning. Also known as Nano Banana 2, it combines fast generation with advanced editing and multimodal visual reasoning.",
 		"i18n": {
 			"en": "A fast Google model for high-quality image generation and editing with multimodal reasoning. Also known as Nano Banana 2, it combines fast generation with advanced editing and multimodal visual reasoning.",
-			"zh": "结合多模态推理能力的高速 Google 图片生成与编辑模型。亦称 Nano Banana 2，将高速生成与高级编辑和多模态视觉推理结合起来。"
+			"zh": "结合多模态推理能力的高速 Google 图片生成与编辑模型。亦称 Nano Banana 2，将高速生成与高级编辑和多模态视觉推理结合起来。",
+			"ja": "マルチモーダルな推論を備えた、速い Google の画像生成・編集モデルです。Nano Banana 2 とも呼ばれ、速い生成に高度な編集と視覚的な推論を組み合わせています。",
+			"ko": "멀티모달 추론을 갖춘 빠른 Google 이미지 생성·편집 모델입니다. Nano Banana 2로도 불리며, 빠른 생성에 고급 편집과 시각 추론을 묶었습니다."
 		},
 		"vendor": "google",
 		"context_window": null,
@@ -113,7 +117,9 @@
 		"description": "Google's advanced image generation preview for grounded creation and detailed visual editing. Built on Gemini 3 Pro, it emphasizes grounded creation, stronger multimodal reasoning, and detailed image editing.",
 		"i18n": {
 			"en": "Google's advanced image generation preview for grounded creation and detailed visual editing. Built on Gemini 3 Pro, it emphasizes grounded creation, stronger multimodal reasoning, and detailed image editing.",
-			"zh": "Google 高级图片生成预览模型，擅长有依据的创作与精细视觉编辑。基于 Gemini 3 Pro，强调有依据的创作、更强的多模态推理和精细图像编辑。"
+			"zh": "Google 高级图片生成预览模型，擅长有依据的创作与精细视觉编辑。基于 Gemini 3 Pro，强调有依据的创作、更强的多模态推理和精细图像编辑。",
+			"ja": "根拠のある制作と細かい視覚編集が得意な、Google の上位画像生成プレビューです。Gemini 3 Pro を基に、根拠のある制作、より強いマルチモーダル推論、細かい画像編集を重視しています。",
+			"ko": "근거 있는 제작과 세밀한 시각 편집에 강한 Google 상위 이미지 생성 프리뷰입니다. Gemini 3 Pro를 바탕으로, 근거 있는 제작, 더 강한 멀티모달 추론, 세밀한 이미지 편집을 중시합니다."
 		},
 		"vendor": "google",
 		"context_window": null,

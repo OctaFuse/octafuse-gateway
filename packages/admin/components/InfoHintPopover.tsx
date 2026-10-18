@@ -3,7 +3,14 @@
 /**
  * 列头 / 标签旁的说明浮层：点击开合，Esc 与点击外部关闭。
  */
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import {
+	useEffect,
+	useId,
+	useLayoutEffect,
+	useRef,
+	useState,
+	type ReactNode,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 
@@ -12,30 +19,40 @@ export function InfoHintPopover({
 	children,
 	align = 'end',
 	openOnHover = false,
+	openOnFocus = false,
 	panelClassName = '',
 	portal = false,
 	icon,
+	disabledTrigger,
 	onActivate,
 }: {
 	label: string;
 	children: ReactNode;
 	align?: 'start' | 'end';
 	openOnHover?: boolean;
+	openOnFocus?: boolean;
 	panelClassName?: string;
 	/** Escape clipped tables and avoid inserting a block panel inside a text label. */
 	portal?: boolean;
 	icon?: ReactNode;
+	/** A disabled action; its focusable wrapper owns hover and keyboard hints. */
+	disabledTrigger?: ReactNode;
 	/** Keep hover details while using the trigger to open an editor. */
 	onActivate?: () => void;
 }) {
 	const [open, setOpen] = useState(false);
 	const [hovered, setHovered] = useState(false);
-	const visible = open || hovered;
+	const [focused, setFocused] = useState(false);
+	const visible = open || hovered || focused;
 	const rootRef = useRef<HTMLSpanElement>(null);
 	const panelId = useId();
 	const panelRef = useRef<HTMLDivElement>(null);
 	const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const [position, setPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+	const [position, setPosition] = useState<{
+		top: number;
+		left: number;
+		width: number;
+	} | null>(null);
 	const enter = () => {
 		if (hoverTimer.current) clearTimeout(hoverTimer.current);
 		setHovered(true);
@@ -56,16 +73,24 @@ export function InfoHintPopover({
 			const anchor = rootRef.current?.getBoundingClientRect();
 			if (!anchor) return;
 			const width = Math.min(288, window.innerWidth - 32);
-			const height = Math.min(panelRef.current?.getBoundingClientRect().height ?? 0, window.innerHeight - 32);
+			const height = Math.min(
+				panelRef.current?.getBoundingClientRect().height ?? 0,
+				window.innerHeight - 32
+			);
 			const left = Math.max(
 				16,
-				Math.min(align === 'end' ? anchor.right - width : anchor.left, window.innerWidth - width - 16)
+				Math.min(
+					align === 'end' ? anchor.right - width : anchor.left,
+					window.innerWidth - width - 16
+				)
 			);
 			const below = anchor.bottom + 6;
 			const top = Math.max(
 				16,
 				Math.min(
-					below + height <= window.innerHeight - 16 ? below : anchor.top - height - 6,
+					below + height <= window.innerHeight - 16
+						? below
+						: anchor.top - height - 6,
 					window.innerHeight - height - 16
 				)
 			);
@@ -89,6 +114,7 @@ export function InfoHintPopover({
 			) {
 				setOpen(false);
 				setHovered(false);
+				setFocused(false);
 			}
 		};
 		const onKey = (event: KeyboardEvent) => {
@@ -96,6 +122,7 @@ export function InfoHintPopover({
 				event.stopPropagation();
 				setOpen(false);
 				setHovered(false);
+				setFocused(false);
 			}
 		};
 		document.addEventListener('mousedown', onPointer);
@@ -124,7 +151,9 @@ export function InfoHintPopover({
 			className={`${
 				portal
 					? 'fixed z-[100] max-h-[calc(100dvh-32px)] overflow-y-auto'
-					: `absolute top-full z-30 mt-1.5 w-72 ${align === 'end' ? 'right-0' : 'left-0'}`
+					: `absolute top-full z-30 mt-1.5 w-72 ${
+							align === 'end' ? 'right-0' : 'left-0'
+					  }`
 			} rounded-lg border border-gray-200 bg-white p-3 text-left text-xs font-normal normal-case tracking-normal text-gray-600 shadow-lg ${panelClassName}`}
 			onPointerEnter={(event) => {
 				if (openOnHover && event.pointerType === 'mouse') enter();
@@ -139,42 +168,66 @@ export function InfoHintPopover({
 	return (
 		<span
 			ref={rootRef}
+			tabIndex={disabledTrigger ? 0 : undefined}
+			role={disabledTrigger ? 'group' : undefined}
+			aria-label={disabledTrigger ? label : undefined}
+			aria-describedby={disabledTrigger && visible ? panelId : undefined}
 			className={`relative inline-flex items-center ${
-				openOnHover ? 'after:absolute after:inset-x-0 after:top-full after:h-2' : ''
+				disabledTrigger
+					? 'cursor-not-allowed rounded-md outline-none focus-visible:ring-2 focus-visible:ring-sky-400'
+					: ''
+			} ${
+				openOnHover
+					? 'after:absolute after:inset-x-0 after:top-full after:h-2'
+					: ''
 			}`}
 			onPointerEnter={(event) => {
 				if (openOnHover && event.pointerType === 'mouse') enter();
 			}}
 			onPointerLeave={leave}
+			onFocus={() => {
+				if (openOnFocus) setFocused(true);
+			}}
+			onBlur={(event) => {
+				if (!event.currentTarget.contains(event.relatedTarget))
+					setFocused(false);
+			}}
 			onKeyDown={(event) => {
 				if (event.key === 'Escape' && visible) {
 					event.stopPropagation();
 					setOpen(false);
 					setHovered(false);
+					setFocused(false);
 				}
 			}}
 		>
-			<button
-				type="button"
-				className="inline-flex rounded-full text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
-				aria-expanded={onActivate ? undefined : visible}
-				aria-controls={onActivate ? undefined : panelId}
-				aria-haspopup={onActivate ? 'dialog' : undefined}
-				aria-describedby={visible ? panelId : undefined}
-				aria-label={label}
-				onClick={(event) => {
-					event.stopPropagation();
-					if (onActivate) {
-						setOpen(false);
-						setHovered(false);
-						onActivate();
-					} else {
-						setOpen((prev) => !prev);
-					}
-				}}
-			>
-				{icon ?? <InformationCircleIcon className="h-3.5 w-3.5" aria-hidden />}
-			</button>
+			{disabledTrigger ?? (
+				<button
+					type="button"
+					className="inline-flex rounded-full text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+					aria-expanded={onActivate ? undefined : visible}
+					aria-controls={onActivate ? undefined : panelId}
+					aria-haspopup={onActivate ? 'dialog' : undefined}
+					aria-describedby={visible ? panelId : undefined}
+					aria-label={label}
+					onClick={(event) => {
+						event.stopPropagation();
+						if (onActivate) {
+							setOpen(false);
+							setHovered(false);
+							setFocused(false);
+							onActivate();
+						} else {
+							setFocused(false);
+							setOpen((prev) => !prev);
+						}
+					}}
+				>
+					{icon ?? (
+						<InformationCircleIcon className="h-3.5 w-3.5" aria-hidden />
+					)}
+				</button>
+			)}
 			{visible && (portal ? createPortal(panel, document.body) : panel)}
 		</span>
 	);

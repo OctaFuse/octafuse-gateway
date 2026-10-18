@@ -5,7 +5,9 @@
 		"description": "A MiniMax model for practical productivity, coding, and real-world digital work. Training across varied digital work environments extends its coding foundation into practical, end-to-end productivity tasks.",
 		"i18n": {
 			"en": "A MiniMax model for practical productivity, coding, and real-world digital work. Training across varied digital work environments extends its coding foundation into practical, end-to-end productivity tasks.",
-			"zh": "面向实际生产力、编程与真实数字化工作的 MiniMax 模型。通过多样化数字工作环境训练，将编程基础能力扩展到实用的端到端生产力任务。"
+			"zh": "面向实际生产力、编程与真实数字化工作的 MiniMax 模型。通过多样化数字工作环境训练，将编程基础能力扩展到实用的端到端生产力任务。",
+			"ja": "実務、コーディング、現場のデジタル作業向けの MiniMax です。さまざまなデジタル業務での学習で、コーディングの土台を、最初から最後まで通せる実務に広げています。",
+			"ko": "실무, 코딩, 현장의 디지털 작업용 MiniMax입니다. 여러 디지털 업무에서의 학습으로, 코딩의 바탕을 처음부터 끝까지 이어지는 실무로 넓혔습니다."
 		},
 		"vendor": "minimax",
 		"context_window": 196000,
@@ -51,7 +53,9 @@
 		"description": "An agentic MiniMax model for autonomous productivity and multi-agent collaboration. It emphasizes autonomous productivity, multi-agent collaboration, and continuous improvement in real-world work.",
 		"i18n": {
 			"en": "An agentic MiniMax model for autonomous productivity and multi-agent collaboration. It emphasizes autonomous productivity, multi-agent collaboration, and continuous improvement in real-world work.",
-			"zh": "面向自主生产力与多 Agent 协作的 Agent 型 MiniMax 模型。强调真实工作场景中的自主生产力、多 Agent 协作和持续改进。"
+			"zh": "面向自主生产力与多 Agent 协作的 Agent 型 MiniMax 模型。强调真实工作场景中的自主生产力、多 Agent 协作和持续改进。",
+			"ja": "自律的な実務と、複数エージェントの協働向けの MiniMax です。現場の仕事での自律性、複数エージェントの連携、継続的な改善を重視しています。",
+			"ko": "스스로 진행하는 실무와 여러 에이전트의 협업용 MiniMax입니다. 현장 업무에서의 자율성, 여러 에이전트 연계, 지속적인 개선을 중시합니다."
 		},
 		"vendor": "minimax",
 		"context_window": 196000,
@@ -97,7 +101,9 @@
 		"description": "A high-speed variant of MiniMax M2.7 for faster inference at the same capability level. Optimized for latency-sensitive productivity and agent workflows.",
 		"i18n": {
 			"en": "A high-speed variant of MiniMax M2.7 for faster inference at the same capability level. Optimized for latency-sensitive productivity and agent workflows.",
-			"zh": "MiniMax M2.7 高速版，相同能力下推理速度更快。针对延迟敏感的生产力任务与 Agent 工作流优化。"
+			"zh": "MiniMax M2.7 高速版，相同能力下推理速度更快。针对延迟敏感的生产力任务与 Agent 工作流优化。",
+			"ja": "MiniMax M2.7 の高速版です。能力は同じで推論が速く、レイテンシを気にする実務とエージェント向けに調整されています。",
+			"ko": "MiniMax M2.7 고속 버전입니다. 능력은 같고 추론이 더 빠르며, 지연에 민감한 실무와 에이전트에 맞춰져 있습니다."
 		},
 		"vendor": "minimax",
 		"retired": "2026-11-18",
@@ -142,7 +148,9 @@
 		"description": "A long-context multimodal MiniMax model for coding, knowledge work, and agents. The multimodal foundation is designed for long-horizon agents, coding, and knowledge work over extended context.",
 		"i18n": {
 			"en": "A long-context multimodal MiniMax model for coding, knowledge work, and agents. The multimodal foundation is designed for long-horizon agents, coding, and knowledge work over extended context.",
-			"zh": "适合编程、知识工作与 Agent 的长上下文 MiniMax 多模态模型。多模态基础能力面向长周期 Agent、编程和长上下文知识工作。"
+			"zh": "适合编程、知识工作与 Agent 的长上下文 MiniMax 多模态模型。多模态基础能力面向长周期 Agent、编程和长上下文知识工作。",
+			"ja": "コーディング、知識作業、エージェント向けの、長いコンテキストを持つ MiniMax マルチモーダルです。長い期間のエージェント、コーディング、長い文脈の知識作業を想定しています。",
+			"ko": "코딩, 지식 작업, 에이전트용으로 긴 컨텍스트를 가진 MiniMax 멀티모달입니다. 긴 주기의 에이전트, 코딩, 긴 맥락의 지식 작업을 전제로 합니다."
 		},
 		"vendor": "minimax",
 		"context_window": 1000000,
@@ -203,7 +211,9 @@
 		"description": "Frontier multimodal MiniMax coding model. The 1,000,000-token window counts input and output together. Upstream model name is MiniMax-M3.1-Flash-Preview. Recommended max_completion_tokens is 131072; the hard output cap stored here is 524288. Input is text, image, and video; audio input is not supported. Thinking stays on: thinking.type disabled and reasoning_effort none return 400. Chat reasoning_effort accepts low, medium, high, xhigh, and max, and defaults to max. Anthropic uses output_config.effort with the same values. Available only through M Plan and MiniMax Code. MiniMax has not published a pay-as-you-go list price; USD and CNY prices here are copied from the MiniMax M3 standard list price until an official list price is published.",
 		"i18n": {
 			"en": "Frontier multimodal MiniMax coding model. The 1,000,000-token window counts input and output together. Upstream model name is MiniMax-M3.1-Flash-Preview. Recommended max_completion_tokens is 131072; the hard output cap stored here is 524288. Input is text, image, and video; audio input is not supported. Thinking stays on: thinking.type disabled and reasoning_effort none return 400. Chat reasoning_effort accepts low, medium, high, xhigh, and max, and defaults to max. Anthropic uses output_config.effort with the same values. Available only through M Plan and MiniMax Code. MiniMax has not published a pay-as-you-go list price; USD and CNY prices here are copied from the MiniMax M3 standard list price until an official list price is published.",
-			"zh": "面向编程与 Agent 的 MiniMax 多模态预览模型。100 万 token 上下文包含输入与输出。上游模型名为 MiniMax-M3.1-Flash-Preview。建议 max_completion_tokens 为 131072，这里记录的输出硬上限为 524288。输入为文本、图像和视频，不支持音频。思考不能关闭：thinking.type 为 disabled 或 reasoning_effort 为 none 会返回 400。Chat 的 reasoning_effort 取 low、medium、high、xhigh、max，默认 max。Anthropic 用 output_config.effort，取值相同。目前只通过 M Plan 与 MiniMax Code 提供。官方未公布按量刊例价，美元与人民币价格先按 MiniMax M3 标准刊例预填，官方刊例公布后应替换。"
+			"zh": "面向编程与 Agent 的 MiniMax 多模态预览模型。100 万 token 上下文包含输入与输出。上游模型名为 MiniMax-M3.1-Flash-Preview。建议 max_completion_tokens 为 131072，这里记录的输出硬上限为 524288。输入为文本、图像和视频，不支持音频。思考不能关闭：thinking.type 为 disabled 或 reasoning_effort 为 none 会返回 400。Chat 的 reasoning_effort 取 low、medium、high、xhigh、max，默认 max。Anthropic 用 output_config.effort，取值相同。目前只通过 M Plan 与 MiniMax Code 提供。官方未公布按量刊例价，美元与人民币价格先按 MiniMax M3 标准刊例预填，官方刊例公布后应替换。",
+			"ja": "コーディングとエージェント向けの MiniMax マルチモーダル・プレビューです。100万トークンのコンテキストは入力と出力の合計です。上流のモデル名は MiniMax-M3.1-Flash-Preview です。max_completion_tokens の推奨は 131072、ここに記録した出力のハード上限は 524288 です。入力はテキスト、画像、動画で、音声は非対応です。思考は切れません。thinking.type を disabled にするか、reasoning_effort を none にすると 400 が返ります。Chat の reasoning_effort は low、medium、high、xhigh、max で、初期値は max です。Anthropic は output_config.effort で、値は同じです。いま提供されるのは M Plan と MiniMax Code だけです。従量の定価は未公表で、米ドルと人民元の価格は MiniMax M3 の標準定価を仮に入れています。公式の定価が出たら差し替えてください。",
+			"ko": "코딩과 에이전트용 MiniMax 멀티모달 프리뷰입니다. 100만 토큰 컨텍스트는 입력과 출력을 합친 값입니다. 업스트림 모델명은 MiniMax-M3.1-Flash-Preview입니다. max_completion_tokens 권장값은 131072, 여기에 적어 둔 출력 하드 상한은 524288입니다. 입력은 텍스트, 이미지, 영상이고 오디오는 지원하지 않습니다. 사고는 끌 수 없습니다. thinking.type을 disabled로 두거나 reasoning_effort를 none으로 두면 400이 반환됩니다. Chat의 reasoning_effort는 low, medium, high, xhigh, max이고 기본값은 max입니다. Anthropic은 output_config.effort를 쓰며 값은 같습니다. 지금은 M Plan과 MiniMax Code로만 제공됩니다. 종량 정가는 아직 없고, 미국 달러와 위안화 가격은 MiniMax M3 표준 정가를 임시로 넣었습니다. 공식 정가가 나오면 바꿔야 합니다."
 		},
 		"vendor": "minimax",
 		"context_window": 1000000,
@@ -263,7 +273,9 @@
 		"description": "MiniMax file speech recognition (asr-1.0) via POST /v1/speech_to_text. Set the route provider model name to asr-1.0 and the adapter to minimax-asr-file. Billed per second of upstream duration, with no minimum.",
 		"i18n": {
 			"en": "MiniMax file speech recognition (asr-1.0) via POST /v1/speech_to_text. Set the route provider model name to asr-1.0 and the adapter to minimax-asr-file. Billed per second of upstream duration, with no minimum.",
-			"zh": "MiniMax 文件语音识别（asr-1.0），走 POST /v1/speech_to_text。路由的供应商模型名填 asr-1.0，适配器选 MiniMax 文件转写。按上游时长按秒计费，没有最低时长。"
+			"zh": "MiniMax 文件语音识别（asr-1.0），走 POST /v1/speech_to_text。路由的供应商模型名填 asr-1.0，适配器选 MiniMax 文件转写。按上游时长按秒计费，没有最低时长。",
+			"ja": "MiniMax のファイル音声認識（asr-1.0）で、POST /v1/speech_to_text を使います。ルートのプロバイダーモデル名は asr-1.0、アダプターは MiniMax のファイル文字起こしです。上流が返した長さを秒単位で課金し、最低秒数はありません。",
+			"ko": "MiniMax 파일 음성 인식(asr-1.0)으로, POST /v1/speech_to_text를 씁니다. 라우트의 공급자 모델명은 asr-1.0, 어댑터는 MiniMax 파일 받아쓰기입니다. 업스트림이 돌려준 길이를 초 단위로 과금하며, 최소 길이는 없습니다."
 		},
 		"vendor": "minimax",
 		"pricing": {
@@ -293,7 +305,9 @@
 		"description": "MiniMax sync speech synthesis (speech-2.8-hd) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-hd. Use minimax-tts for OpenAI /v1/audio/speech, or MiniMax audio.speech passthrough for the native endpoint. Billed per upstream usage_characters.",
 		"i18n": {
 			"en": "MiniMax sync speech synthesis (speech-2.8-hd) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-hd. Use minimax-tts for OpenAI /v1/audio/speech, or MiniMax audio.speech passthrough for the native endpoint. Billed per upstream usage_characters.",
-			"zh": "MiniMax 同步语音合成（speech-2.8-hd），走 POST /v1/t2a_v2。供应商模型名填 speech-2.8-hd。OpenAI /v1/audio/speech 用适配器 minimax-tts，原生端点用 audio.speech 透传。按上游 usage_characters 计费。"
+			"zh": "MiniMax 同步语音合成（speech-2.8-hd），走 POST /v1/t2a_v2。供应商模型名填 speech-2.8-hd。OpenAI /v1/audio/speech 用适配器 minimax-tts，原生端点用 audio.speech 透传。按上游 usage_characters 计费。",
+			"ja": "MiniMax の同期音声合成（speech-2.8-hd）で、POST /v1/t2a_v2 を使います。プロバイダーモデル名は speech-2.8-hd です。OpenAI /v1/audio/speech はアダプター minimax-tts、ネイティブは audio.speech のパススルーです。上流の usage_characters で課金します。",
+			"ko": "MiniMax 동기 음성 합성(speech-2.8-hd)으로, POST /v1/t2a_v2를 씁니다. 공급자 모델명은 speech-2.8-hd입니다. OpenAI /v1/audio/speech는 어댑터 minimax-tts, 네이티브는 audio.speech 패스스루입니다. 업스트림 usage_characters로 과금합니다."
 		},
 		"vendor": "minimax",
 		"pricing": {
@@ -323,7 +337,9 @@
 		"description": "MiniMax low-latency sync speech synthesis (speech-2.8-turbo) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-turbo. Use minimax-tts for OpenAI /v1/audio/speech, or MiniMax audio.speech passthrough for the native endpoint. Billed per upstream usage_characters.",
 		"i18n": {
 			"en": "MiniMax low-latency sync speech synthesis (speech-2.8-turbo) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-turbo. Use minimax-tts for OpenAI /v1/audio/speech, or MiniMax audio.speech passthrough for the native endpoint. Billed per upstream usage_characters.",
-			"zh": "MiniMax 低延迟同步语音合成（speech-2.8-turbo），走 POST /v1/t2a_v2。供应商模型名填 speech-2.8-turbo。OpenAI /v1/audio/speech 用适配器 minimax-tts，原生端点用 audio.speech 透传。按上游 usage_characters 计费。"
+			"zh": "MiniMax 低延迟同步语音合成（speech-2.8-turbo），走 POST /v1/t2a_v2。供应商模型名填 speech-2.8-turbo。OpenAI /v1/audio/speech 用适配器 minimax-tts，原生端点用 audio.speech 透传。按上游 usage_characters 计费。",
+			"ja": "MiniMax の低レイテンシ同期音声合成（speech-2.8-turbo）で、POST /v1/t2a_v2 を使います。プロバイダーモデル名は speech-2.8-turbo です。OpenAI /v1/audio/speech はアダプター minimax-tts、ネイティブは audio.speech のパススルーです。上流の usage_characters で課金します。",
+			"ko": "MiniMax 저지연 동기 음성 합성(speech-2.8-turbo)으로, POST /v1/t2a_v2를 씁니다. 공급자 모델명은 speech-2.8-turbo입니다. OpenAI /v1/audio/speech는 어댑터 minimax-tts, 네이티브는 audio.speech 패스스루입니다. 업스트림 usage_characters로 과금합니다."
 		},
 		"vendor": "minimax",
 		"pricing": {
@@ -353,7 +369,9 @@
 		"description": "MiniMax text-to-image and subject-reference image generation (image-01) via POST /v1/image_generation. Set the route provider model name to image-01. Use minimax-image for OpenAI /v1/images/generations, or MiniMax images.generations passthrough for the native endpoint. Billed per successful image.",
 		"i18n": {
 			"en": "MiniMax text-to-image and subject-reference image generation (image-01) via POST /v1/image_generation. Set the route provider model name to image-01. Use minimax-image for OpenAI /v1/images/generations, or MiniMax images.generations passthrough for the native endpoint. Billed per successful image.",
-			"zh": "MiniMax 文生图与主体参考图生图（image-01），走 POST /v1/image_generation。供应商模型名填 image-01。OpenAI /v1/images/generations 用适配器 minimax-image，原生端点用 images.generations 透传。按成功张数计费。"
+			"zh": "MiniMax 文生图与主体参考图生图（image-01），走 POST /v1/image_generation。供应商模型名填 image-01。OpenAI /v1/images/generations 用适配器 minimax-image，原生端点用 images.generations 透传。按成功张数计费。",
+			"ja": "MiniMax のテキストからの画像生成と、被写体参照の画像生成（image-01）で、POST /v1/image_generation を使います。プロバイダーモデル名は image-01 です。OpenAI /v1/images/generations はアダプター minimax-image、ネイティブは images.generations のパススルーです。成功した枚数で課金します。",
+			"ko": "MiniMax 텍스트 투 이미지와 피사체 참조 이미지 생성(image-01)으로, POST /v1/image_generation을 씁니다. 공급자 모델명은 image-01입니다. OpenAI /v1/images/generations는 어댑터 minimax-image, 네이티브는 images.generations 패스스루입니다. 성공한 장수로 과금합니다."
 		},
 		"vendor": "minimax",
 		"pricing": {
@@ -383,7 +401,9 @@
 		"description": "MiniMax image-01-live generation via POST /v1/image_generation, including the live style. Set the route provider model name to image-01-live. Use minimax-image for OpenAI /v1/images/generations, or MiniMax images.generations passthrough for the native endpoint. Billed per successful image.",
 		"i18n": {
 			"en": "MiniMax image-01-live generation via POST /v1/image_generation, including the live style. Set the route provider model name to image-01-live. Use minimax-image for OpenAI /v1/images/generations, or MiniMax images.generations passthrough for the native endpoint. Billed per successful image.",
-			"zh": "MiniMax image-01-live 生图，走 POST /v1/image_generation，支持 live 风格。供应商模型名填 image-01-live。OpenAI /v1/images/generations 用适配器 minimax-image，原生端点用 images.generations 透传。按成功张数计费。"
+			"zh": "MiniMax image-01-live 生图，走 POST /v1/image_generation，支持 live 风格。供应商模型名填 image-01-live。OpenAI /v1/images/generations 用适配器 minimax-image，原生端点用 images.generations 透传。按成功张数计费。",
+			"ja": "MiniMax image-01-live の画像生成で、POST /v1/image_generation を使い、live スタイルに対応します。プロバイダーモデル名は image-01-live です。OpenAI /v1/images/generations はアダプター minimax-image、ネイティブは images.generations のパススルーです。成功した枚数で課金します。",
+			"ko": "MiniMax image-01-live 이미지 생성으로, POST /v1/image_generation을 쓰고 live 스타일을 지원합니다. 공급자 모델명은 image-01-live입니다. OpenAI /v1/images/generations는 어댑터 minimax-image, 네이티브는 images.generations 패스스루입니다. 성공한 장수로 과금합니다."
 		},
 		"vendor": "minimax",
 		"pricing": {

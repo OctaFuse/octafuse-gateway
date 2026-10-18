@@ -158,12 +158,14 @@ function ProvidersContent() {
 				formData={state.formData}
 				saveError={state.saveError}
 				isSaving={state.isSaving}
+				isApiKeyLoading={state.isApiKeyLoading}
 				isDeleting={state.isDeleting}
 				onClose={state.closeProviderModal}
-				onFormChange={state.setFormData}
+				onFormChange={state.handleFormChange}
 				onSave={state.handleSave}
 				onDelete={state.handleDelete}
 				onDuplicate={state.handleDuplicate}
+				onRoutesChanged={state.refreshProviders}
 			/>
 		</div>
 	);

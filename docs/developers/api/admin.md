@@ -647,19 +647,19 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 一个 Provider = **一把** `api_key` + **`status`**（`active` \| `disabled`）+ **`kind`**。**无** `/admin/providers/:id/keys*` 子资源（迁移 0015 已删除 `provider_api_keys`）。
 
-`name` 是账号别名。`kind` 取导入模板的稳定英文 `name`（如 `OpenCode Zen`），或显式自定义 `__custom__`。已有行默认 `''`，表示尚未分类。唯一约束是 `(name, kind)`：同一别名可以属于不同类型；同一类型下同名返回 **409**，正文为 `A provider with this name and type already exists`。列表与详情会附带运行时解析的 `kind_labels`、`kind_descriptions`（中英文介绍，无模板时为 `null`）、`vendor_key`、`icon_key`、`catalog_links`（均不落库）。`note` 是运营手写备注。已设置 `kind` 时图标、介绍与链接只跟模板走；`__custom__` 使用通用图标且没有官方介绍；空 `kind` 仍按名称与 Endpoint 推断图标，介绍为 `null`。
+`name` 是账号别名。`kind` 取导入模板的稳定英文 `name`（如 `OpenCode Zen`），或显式自定义 `__custom__`。已有行默认 `''`，表示尚未分类。唯一约束是 `(name, kind)`：同一别名可以属于不同类型；同一类型下同名返回 **409**，正文为 `A provider with this name and type already exists`。列表与详情会附带运行时解析的 `kind_labels`、`kind_descriptions`（中、英、日、韩介绍，无模板时为 `null`）、`vendor_key`、`icon_key`、`catalog_links`（均不落库）。`note` 是运营手写备注。已设置 `kind` 时图标、介绍与链接只跟模板走；`__custom__` 使用通用图标且没有官方介绍；空 `kind` 仍按名称与 Endpoint 推断图标，介绍为 `null`。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/admin/providers` | 列表；`api_key` **脱敏**；含 `kind`、`endpoints`、`status`、`has_pending_key`、`quota_supported`、`routes_count`、`active_routes_count` |
 | POST | `/admin/providers` | 创建；**`name` + `api_key` + `kind` 必填**；`kind` 须为已知模板英文名或 `__custom__`；管理后台不提交 `id`，由服务端生成 UUID。API 仍可传可选 `id`。另可传 `note`、`endpoints`、`status` |
 | GET | `/admin/providers/:id` | 详情（脱敏 `api_key`） |
-| PATCH | `/admin/providers/:id` | 部分更新；省略 `kind` = 不改类型；`kind: ""` = 标为尚未分类；`api_key` 空串/未传 = **不改密钥**；`status` 仅 `active` \| `disabled`。改 `kind` 不覆盖已有 `endpoints` |
+| PATCH | `/admin/providers/:id` | 部分更新；省略 `kind` = 不改类型；`kind: ""` = 标为尚未分类；省略 `api_key` = **不改密钥**；显式 `api_key: ""`（或 `null`）= **清空密钥**；`status` 仅 `active` \| `disabled`。改 `kind` 不覆盖已有 `endpoints` |
 | DELETE | `/admin/providers/:id` | 删除；仍被 `model_routes` 引用时返回 **409**，须先删除或改绑对应 Target |
 | GET | `/admin/providers/:id/api-key` | **揭示明文** `api_key`（`{ success, data: { api_key } }`） |
 | GET | `/admin/providers/:id/quota` | 用该账号现有 `api_key` 实时查询额度。权限是 `providers.read`，响应不含密钥。不支持的 `kind`、空密钥或导入占位密钥返回 **400**。上游非 2xx 或响应无法解析返回 **502**（`message` 只有状态码，没有响应体）。超时返回 **504** |
 | GET / POST | `/admin/providers/sync/diff`、`/sync/apply` | 与官方模板同步：`diff` 只读，只比对端点；`note` 不参与。差异只在管理员手动检查时计算，列表接口不带 |
-| GET / POST | `/admin/providers/import/catalog`、`/import` | 静态模板导入（占位 key，须手动替换）。写入 `kind =` 模板英文名；`name` 按 `locale`（`zh` 中文，其余英文）；介绍不入库。仅同一 `kind` 下同名才追加 `(2)` 后缀 |
+| GET / POST | `/admin/providers/import/catalog`、`/import` | 静态模板导入（占位 key，须手动替换）。写入 `kind =` 模板英文名；`name` 按 `locale`（`zh` 中文，`ja` 日文，`ko` 韩文，其余英文）；介绍不入库。仅同一 `kind` 下同名才追加 `(2)` 后缀 |
 
 `GET /admin/providers/:id/quota` 的 `data` 是归一化快照，不保存。请求发往与该 `kind` 默认域名同一注册域的 https origin；保存的 Endpoint 若换了注册域，则回退默认 origin。
 
@@ -732,7 +732,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 ### Models / Routes
 
-- **`/admin/models`**：CRUD；`PATCH` 可写 **`route_policy`**（TEXT JSON 或 `null` 清空）和运营备注 **`note`**。列表与详情另附 **`catalog_i18n`**（按 `models.id` 从静态目录解析的中英文介绍，不落库；目录没有该模型时为 `null`）。含 **`GET /admin/models/import/catalog`** 与 **`POST /admin/models/import`**。Image 路由使用 OpenAI 协议；Audio 路由支持 OpenAI 与 DashScope，按 operation / adapter 校验。
+- **`/admin/models`**：CRUD；`PATCH` 可写 **`route_policy`**（TEXT JSON 或 `null` 清空）和运营备注 **`note`**。列表与详情另附 **`catalog_i18n`**（按 `models.id` 从静态目录解析的中、英、日、韩介绍，不落库；目录没有该模型时为 `null`）。含 **`GET /admin/models/import/catalog`** 与 **`POST /admin/models/import`**。Image 路由使用 OpenAI 协议；Audio 路由支持 OpenAI 与 DashScope，按 operation / adapter 校验。
 - **`/admin/routes`**：REST `GET/POST`、`GET/PATCH/DELETE /:id`；列表支持 `?model_id=&provider_id=`。创建时校验 provider 对该协议是否配置了 `endpoints` base 或任一 capability，并创建或复用对应 Request Surface / Route Pool。
   - **`priority`**：层（Proxy 按 **DESC** 硬序）。
   - **`weight`**：同层权重，整数 **≥ 1**（默认 1）；非法 → **400**。
@@ -1161,3 +1161,7 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 `providers` 与 `modelProviders` 另含 `failover_request_count`、`failover_request_rate`；`failover_rate` 含义不变。归属规则与供应商用量相同：按日志最终 `provider_id` 统计，不代表上游逐次尝试可用率。
 
 `recentErrors` 为所选区间（仍受 180 天上限约束）内最近 10 条 `status = error` 日志，字段与全局请求日志相同。
+
+### 删除模型的路由约束
+
+`DELETE /admin/models/:id`（公开管理前缀 `/api/admin/models/:id`）仅删除无关联路由的模型。仍有任何路由（包括停用路由）时返回 `409`，不再级联删除路由。需先通过 `GET /admin/routes?model_id=...` 查看引用，并通过路由删除接口逐条移除；不存在的模型返回 `404`。数据库写入时再次检查引用，避免检查之后新建路由被误删；模型标签和空路由池/入口按现有外键级联清理。

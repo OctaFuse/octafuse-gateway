@@ -26,7 +26,7 @@
  * Grok 4.7 目录价与 Grok 4.6 相同（200K 阶梯，$2 / $6 与 $4 / $12）。不含仅 Cursor / Grok Build 提供的 Fast 双倍价。官方未公布文本输出上限，`max_tokens` 沿用同系 128000。
  * Xiaomi MiMo-V2.6 目录价为实时推理刊例（USD / CNY 分源）。Pro 与 Flash 的批量推理半价不写入 preset；UltraSpeed 无批量推理。缓存写入官网标明限时免费，`cache_write_price` 保持 null。
  * MiniMax-M3.1-Flash-Preview 已写入规格。官方未公布按量刊例（仅 M Plan / MiniMax Code），美元与人民币价格暂按 MiniMax M3 标准刊例预填，官方刊例公布后应替换。
- * 面向管理后台的英文摘要与中英文介绍均与模型预设共同维护，按界面语言只读展示，不写入数据库。
+ * 面向管理后台的英文摘要与中、英、日、韩介绍均与模型预设共同维护，按界面语言只读展示，不写入数据库。
  *
  * 合并顺序：与下方 import 列表一致（尚未录入价目的厂商保留 `[]` 占位文件；image 文件紧挨同 vendor 的 LLM 之后）。
  */
@@ -78,6 +78,8 @@ export type StaticModelPresetRow = {
 	i18n?: {
 		en: string;
 		zh: string;
+		ja: string;
+		ko: string;
 	};
 	vendor?: string | null;
 	context_window?: number | null;
@@ -149,26 +151,47 @@ export function getStaticModelPresetRetired(modelId: string): string | null {
 	return retiredByModelId.get(modelId.trim()) ?? null;
 }
 
-/** 目录介绍的中英文。英文缺省时用顶层 `description`；中文缺省时回退英文。 */
+export type ModelCatalogCopy = {
+	en: string | null;
+	zh: string | null;
+	ja: string | null;
+	ko: string | null;
+};
+
+/** 目录介绍。英文缺省时用顶层 `description`；其他语言缺省时回退英文。 */
 export function modelPresetCatalogCopy(
 	preset: Pick<StaticModelPresetRow, 'description' | 'i18n'>
-): { en: string | null; zh: string | null } {
+): ModelCatalogCopy {
 	const en = preset.i18n?.en?.trim() || preset.description?.trim() || '';
 	const zh = preset.i18n?.zh?.trim() || en;
-	return { en: en || null, zh: zh || null };
+	const ja = preset.i18n?.ja?.trim() || en;
+	const ko = preset.i18n?.ko?.trim() || en;
+	return {
+		en: en || null,
+		zh: zh || null,
+		ja: ja || null,
+		ko: ko || null,
+	};
 }
 
-let catalogCopyByModelId: Map<string, { en: string; zh: string }> | null = null;
+let catalogCopyByModelId: Map<string, { en: string; zh: string; ja: string; ko: string }> | null = null;
 
-/** 按 `models.id` 取静态介绍。目录没有该模型，或两种语言都为空时返回 null。 */
-export function getStaticModelCatalogCopy(modelId: string): { en: string; zh: string } | null {
+/** 按 `models.id` 取静态介绍。目录没有该模型，或四种语言都为空时返回 null。 */
+export function getStaticModelCatalogCopy(
+	modelId: string
+): { en: string; zh: string; ja: string; ko: string } | null {
 	if (!catalogCopyByModelId) {
 		catalogCopyByModelId = new Map();
 		for (const preset of listStaticModelPresets()) {
 			const id = String(preset.id ?? '').trim();
 			const copy = modelPresetCatalogCopy(preset);
-			if (!id || (!copy.en && !copy.zh)) continue;
-			catalogCopyByModelId.set(id, { en: copy.en ?? '', zh: copy.zh ?? '' });
+			if (!id || (!copy.en && !copy.zh && !copy.ja && !copy.ko)) continue;
+			catalogCopyByModelId.set(id, {
+				en: copy.en ?? '',
+				zh: copy.zh ?? '',
+				ja: copy.ja ?? '',
+				ko: copy.ko ?? '',
+			});
 		}
 	}
 	return catalogCopyByModelId.get(modelId.trim()) ?? null;

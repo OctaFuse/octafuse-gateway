@@ -1,5 +1,5 @@
 /**
- * 管理后台 `models` + `model_tags`：列表/详情（含路由计数）、创建、部分更新、级联删除、静态目录导入。
+ * 管理后台 `models` + `model_tags`：列表/详情（含路由计数）、创建、部分更新、无路由删除、静态目录导入。
  */
 import type { GatewayRepositories } from '@octafuse/core';
 import { catalogScheduleKeysEqual } from '@octafuse/core/db/pricing-schedule';
@@ -27,7 +27,7 @@ import {
 	listStaticModelPresets,
 	pickPresetPricingRawForBillingCurrency,
 } from '@/lib/model-preset';
-import { badRequest, notFound } from './errors';
+import { badRequest, conflict, notFound } from './errors';
 import {
 	catalogScheduleFromPricingProfile,
 	coerceModelPricingProfileInput,
@@ -368,10 +368,17 @@ export async function updateModelService(repos: GatewayRepositories, id: string,
 	}
 }
 
-/** 级联删除模型及其路由、标签。 */
+/** Require all routes, including disabled ones, to be removed explicitly before deleting a model. */
 export async function deleteModelService(repos: GatewayRepositories, id: string): Promise<void> {
-	const changes = await repos.models.deleteModelCascade(id);
-	if (!changes) throw notFound('Model not found');
+	const routes = await repos.routes.listModelRoutesWithJoins({ modelId: id });
+	if (routes.length) throw conflict(`Cannot delete model: ${routes.length} route(s) still reference it. Delete those routes first.`);
+	// The condition is checked again in the DELETE statement to cover concurrent route creation.
+	const changes = await repos.models.deleteModelIfUnrouted(id);
+	if (!changes) {
+		if (await repos.models.getModelDetailWithRouteCounts(id))
+			throw conflict('Cannot delete model: routes still reference it. Refresh the routes and try again.');
+		throw notFound('Model not found');
+	}
 }
 
 /**

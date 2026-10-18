@@ -5,7 +5,9 @@
 		"description": "A compact Doubao model for fast, cost-sensitive chat and lightweight reasoning.",
 		"i18n": {
 			"en": "A compact Doubao model for fast, cost-sensitive chat and lightweight reasoning.",
-			"zh": "面向快速对话、成本敏感与轻量推理场景的紧凑型豆包模型。"
+			"zh": "面向快速对话、成本敏感与轻量推理场景的紧凑型豆包模型。",
+			"ja": "速い対話、コストを抑えたい処理、軽い推論向けの、小さめの Doubao です。",
+			"ko": "빠른 대화, 비용을 아끼는 처리, 가벼운 추론용 소형 Doubao입니다."
 		},
 		"vendor": "bytedance",
 		"context_window": 256000,
@@ -73,7 +75,9 @@
 		"description": "A compact all-modal Doubao model for deep thinking across text, image, video, and audio. Successor to doubao-seed-2-0-mini-260215. Context window is 256k, maximum input is 224k, and maximum answer is 128k. Official audio-input list prices are not stored in this preset: CNY 3 / 6 / 12 per million tokens (cache hit 0.6 / 1.2 / 2.4) for input up to 32k / 128k / 256k; USD 1.50 / 3.00 (cache hit 0.30 / 0.60) for input up to 128k / 256k.",
 		"i18n": {
 			"en": "A compact all-modal Doubao model for deep thinking across text, image, video, and audio. Successor to doubao-seed-2-0-mini-260215. Context window is 256k, maximum input is 224k, and maximum answer is 128k. Official audio-input list prices are not stored in this preset: CNY 3 / 6 / 12 per million tokens (cache hit 0.6 / 1.2 / 2.4) for input up to 32k / 128k / 256k; USD 1.50 / 3.00 (cache hit 0.30 / 0.60) for input up to 128k / 256k.",
-			"zh": "面向文本、图像、视频与音频的紧凑全模态豆包模型，支持深度思考，继任即将下线的 doubao-seed-2-0-mini-260215。上下文窗口 256k，最大输入 224k，最大回答 128k。音频输入刊例价未写入价格档：人民币 3 / 6 / 12 元每百万 token（缓存命中 0.6 / 1.2 / 2.4，对应输入不超过 32k / 128k / 256k）；美元 1.50 / 3.00（缓存命中 0.30 / 0.60，对应输入不超过 128k / 256k）。"
+			"zh": "面向文本、图像、视频与音频的紧凑全模态豆包模型，支持深度思考，继任即将下线的 doubao-seed-2-0-mini-260215。上下文窗口 256k，最大输入 224k，最大回答 128k。音频输入刊例价未写入价格档：人民币 3 / 6 / 12 元每百万 token（缓存命中 0.6 / 1.2 / 2.4，对应输入不超过 32k / 128k / 256k）；美元 1.50 / 3.00（缓存命中 0.30 / 0.60，对应输入不超过 128k / 256k）。",
+			"ja": "テキスト、画像、動画、音声を扱う小型のオムニモーダル Doubao で、深い思考に対応します。まもなく終了する doubao-seed-2-0-mini-260215 の後継です。コンテキストは 256k、入力の上限は 224k、回答の上限は 128k です。音声入力の定価は料金ティアに入れていません。人民元は100万トークンあたり 3 / 6 / 12 元（キャッシュヒット 0.6 / 1.2 / 2.4。入力が 32k / 128k / 256k 以下のとき）。米ドルは 1.50 / 3.00（キャッシュヒット 0.30 / 0.60。入力が 128k / 256k 以下のとき）です。",
+			"ko": "텍스트, 이미지, 영상, 오디오를 다루는 소형 옴니모달 Doubao로, 깊은 사고를 지원합니다. 곧 종료되는 doubao-seed-2-0-mini-260215의 후속입니다. 컨텍스트는 256k, 입력 상한은 224k, 답변 상한은 128k입니다. 오디오 입력 정가는 가격 구간에 넣지 않았습니다. 위안화는 100만 토큰당 3 / 6 / 12위안(캐시 적중 0.6 / 1.2 / 2.4, 입력이 32k / 128k / 256k 이하일 때)입니다. 미국 달러는 1.50 / 3.00(캐시 적중 0.30 / 0.60, 입력이 128k / 256k 이하일 때)입니다."
 		},
 		"vendor": "bytedance",
 		"context_window": 256000,
@@ -142,7 +146,9 @@
 		"description": "A lightweight Doubao model optimized for high-throughput text and vision workloads.",
 		"i18n": {
 			"en": "A lightweight Doubao model optimized for high-throughput text and vision workloads.",
-			"zh": "针对高吞吐文本与视觉工作负载优化的轻量豆包模型。"
+			"zh": "针对高吞吐文本与视觉工作负载优化的轻量豆包模型。",
+			"ja": "スループットの高いテキストと視覚処理向けに絞った、軽量な Doubao です。",
+			"ko": "처리량이 큰 텍스트와 시각 작업에 맞춘 경량 Doubao입니다."
 		},
 		"vendor": "bytedance",
 		"context_window": 256000,
@@ -212,7 +218,9 @@
 		"description": "A lightweight all-modal Doubao model for deep thinking across text, image, video, and audio. Successor to doubao-seed-2-0-lite-260215. Context window is 256k, maximum input is 224k, and maximum answer is 128k. Official audio-input list prices are not stored in this preset: CNY 9 / 13.5 / 27 per million tokens (cache hit 1.8 / 2.7 / 5.4) for input up to 32k / 128k / 256k; USD 3.75 / 7.50 (cache hit 0.75 / 1.50) for input up to 128k / 256k.",
 		"i18n": {
 			"en": "A lightweight all-modal Doubao model for deep thinking across text, image, video, and audio. Successor to doubao-seed-2-0-lite-260215. Context window is 256k, maximum input is 224k, and maximum answer is 128k. Official audio-input list prices are not stored in this preset: CNY 9 / 13.5 / 27 per million tokens (cache hit 1.8 / 2.7 / 5.4) for input up to 32k / 128k / 256k; USD 3.75 / 7.50 (cache hit 0.75 / 1.50) for input up to 128k / 256k.",
-			"zh": "面向文本、图像、视频与音频的轻量全模态豆包模型，支持深度思考、工具调用、结构化输出与 GUI 任务，继任即将下线的 doubao-seed-2-0-lite-260215。上下文窗口 256k，最大输入 224k，最大回答 128k。音频输入刊例价未写入价格档：人民币 9 / 13.5 / 27 元每百万 token（缓存命中 1.8 / 2.7 / 5.4，对应输入不超过 32k / 128k / 256k）；美元 3.75 / 7.50（缓存命中 0.75 / 1.50，对应输入不超过 128k / 256k）。"
+			"zh": "面向文本、图像、视频与音频的轻量全模态豆包模型，支持深度思考、工具调用、结构化输出与 GUI 任务，继任即将下线的 doubao-seed-2-0-lite-260215。上下文窗口 256k，最大输入 224k，最大回答 128k。音频输入刊例价未写入价格档：人民币 9 / 13.5 / 27 元每百万 token（缓存命中 1.8 / 2.7 / 5.4，对应输入不超过 32k / 128k / 256k）；美元 3.75 / 7.50（缓存命中 0.75 / 1.50，对应输入不超过 128k / 256k）。",
+			"ja": "テキスト、画像、動画、音声を扱う軽量なオムニモーダル Doubao です。深い思考、ツール呼び出し、構造化出力、GUI タスクに対応し、まもなく終了する doubao-seed-2-0-lite-260215 の後継です。コンテキストは 256k、入力の上限は 224k、回答の上限は 128k です。音声入力の定価は料金ティアに入れていません。人民元は100万トークンあたり 9 / 13.5 / 27 元（キャッシュヒット 1.8 / 2.7 / 5.4。入力が 32k / 128k / 256k 以下のとき）。米ドルは 3.75 / 7.50（キャッシュヒット 0.75 / 1.50。入力が 128k / 256k 以下のとき）です。",
+			"ko": "텍스트, 이미지, 영상, 오디오를 다루는 경량 옴니모달 Doubao입니다. 깊은 사고, 도구 호출, 구조화 출력, GUI 작업을 지원하며, 곧 종료되는 doubao-seed-2-0-lite-260215의 후속입니다. 컨텍스트는 256k, 입력 상한은 224k, 답변 상한은 128k입니다. 오디오 입력 정가는 가격 구간에 넣지 않았습니다. 위안화는 100만 토큰당 9 / 13.5 / 27위안(캐시 적중 1.8 / 2.7 / 5.4, 입력이 32k / 128k / 256k 이하일 때)입니다. 미국 달러는 3.75 / 7.50(캐시 적중 0.75 / 1.50, 입력이 128k / 256k 이하일 때)입니다."
 		},
 		"vendor": "bytedance",
 		"context_window": 256000,
@@ -281,7 +289,9 @@
 		"description": "A capable Doubao model for advanced reasoning, multimodal understanding, and agents.",
 		"i18n": {
 			"en": "A capable Doubao model for advanced reasoning, multimodal understanding, and agents.",
-			"zh": "适合高级推理、多模态理解与 Agent 场景的高性能豆包模型。"
+			"zh": "适合高级推理、多模态理解与 Agent 场景的高性能豆包模型。",
+			"ja": "高度な推論、マルチモーダル理解、エージェント向けの高性能 Doubao です。",
+			"ko": "고급 추론, 멀티모달 이해, 에이전트용 고성능 Doubao입니다."
 		},
 		"vendor": "bytedance",
 		"context_window": 256000,
@@ -350,7 +360,9 @@
 		"description": "A newer Doubao Pro model for complex reasoning, coding, and multimodal production use.",
 		"i18n": {
 			"en": "A newer Doubao Pro model for complex reasoning, coding, and multimodal production use.",
-			"zh": "面向复杂推理、编程与多模态生产应用的新一代豆包 Pro 模型。"
+			"zh": "面向复杂推理、编程与多模态生产应用的新一代豆包 Pro 模型。",
+			"ja": "難しい推論、コーディング、マルチモーダルな本番利用向けの、新しい Doubao Pro です。",
+			"ko": "복잡한 추론, 코딩, 멀티모달 프로덕션용 새 Doubao Pro입니다."
 		},
 		"vendor": "bytedance",
 		"context_window": 256000,
@@ -397,7 +409,9 @@
 		"description": "A Doubao Seed 2.1 Pro model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, and video. Context window is 1024k and maximum answer is 256k. BytePlus ModelArk does not list this model, so there is no USD price.",
 		"i18n": {
 			"en": "A Doubao Seed 2.1 Pro model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, and video. Context window is 1024k and maximum answer is 256k. BytePlus ModelArk does not list this model, so there is no USD price.",
-			"zh": "面向深度思考、工具调用、结构化输出、GUI 任务，以及文本、图像与视频多模态理解的豆包 Seed 2.1 Pro。上下文窗口 1024k，最大回答 256k。BytePlus ModelArk 未上架该模型，因此没有美元刊例价。"
+			"zh": "面向深度思考、工具调用、结构化输出、GUI 任务，以及文本、图像与视频多模态理解的豆包 Seed 2.1 Pro。上下文窗口 1024k，最大回答 256k。BytePlus ModelArk 未上架该模型，因此没有美元刊例价。",
+			"ja": "深い思考、ツール呼び出し、構造化出力、GUI タスク、それにテキスト・画像・動画の理解向けの Doubao Seed 2.1 Pro です。コンテキストは 1024k、回答の上限は 256k です。BytePlus ModelArk には載っていないため、米ドルの定価はありません。",
+			"ko": "깊은 사고, 도구 호출, 구조화 출력, GUI 작업, 그리고 텍스트·이미지·영상 이해용 Doubao Seed 2.1 Pro입니다. 컨텍스트는 1024k, 답변 상한은 256k입니다. BytePlus ModelArk에 올라 있지 않아 미국 달러 정가는 없습니다."
 		},
 		"vendor": "bytedance",
 		"context_window": 1000000,
@@ -433,7 +447,9 @@
 		"description": "A Doubao Seed 2.1 Lite model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, video, and audio. Context window is 1024k and maximum answer is 256k. Official audio-input list price is not stored in this preset: CNY 12 per million tokens (cache hit 2.4). BytePlus ModelArk does not list this model, so there is no USD price.",
 		"i18n": {
 			"en": "A Doubao Seed 2.1 Lite model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, video, and audio. Context window is 1024k and maximum answer is 256k. Official audio-input list price is not stored in this preset: CNY 12 per million tokens (cache hit 2.4). BytePlus ModelArk does not list this model, so there is no USD price.",
-			"zh": "面向深度思考、工具调用、结构化输出、GUI 任务，以及文本、图像、视频与音频多模态理解的豆包 Seed 2.1 Lite。上下文窗口 1024k，最大回答 256k。音频输入刊例价未写入价格档：人民币 12 元每百万 token（缓存命中 2.4）。BytePlus ModelArk 未上架该模型，因此没有美元刊例价。"
+			"zh": "面向深度思考、工具调用、结构化输出、GUI 任务，以及文本、图像、视频与音频多模态理解的豆包 Seed 2.1 Lite。上下文窗口 1024k，最大回答 256k。音频输入刊例价未写入价格档：人民币 12 元每百万 token（缓存命中 2.4）。BytePlus ModelArk 未上架该模型，因此没有美元刊例价。",
+			"ja": "深い思考、ツール呼び出し、構造化出力、GUI タスク、それにテキスト・画像・動画・音声の理解向けの Doubao Seed 2.1 Lite です。コンテキストは 1024k、回答の上限は 256k です。音声入力の定価は料金ティアに入れていません。人民元は100万トークンあたり 12 元（キャッシュヒット 2.4）です。BytePlus ModelArk には載っていないため、米ドルの定価はありません。",
+			"ko": "깊은 사고, 도구 호출, 구조화 출력, GUI 작업, 그리고 텍스트·이미지·영상·오디오 이해용 Doubao Seed 2.1 Lite입니다. 컨텍스트는 1024k, 답변 상한은 256k입니다. 오디오 입력 정가는 가격 구간에 넣지 않았습니다. 위안화는 100만 토큰당 12위안(캐시 적중 2.4)입니다. BytePlus ModelArk에 올라 있지 않아 미국 달러 정가는 없습니다."
 		},
 		"vendor": "bytedance",
 		"context_window": 1000000,
@@ -470,7 +486,9 @@
 		"description": "A low-latency Doubao model for responsive multimodal applications and agents.",
 		"i18n": {
 			"en": "A low-latency Doubao model for responsive multimodal applications and agents.",
-			"zh": "面向高响应多模态应用与 Agent 的低延迟豆包模型。"
+			"zh": "面向高响应多模态应用与 Agent 的低延迟豆包模型。",
+			"ja": "応答を速くしたいマルチモーダルアプリとエージェント向けの、低レイテンシ Doubao です。",
+			"ko": "응답이 빨라야 하는 멀티모달 앱과 에이전트용 저지연 Doubao입니다."
 		},
 		"vendor": "bytedance",
 		"context_window": 256000,
@@ -517,7 +535,9 @@
 		"description": "An evolving Doubao model intended for adaptive reasoning and agentic experimentation.",
 		"i18n": {
 			"en": "An evolving Doubao model intended for adaptive reasoning and agentic experimentation.",
-			"zh": "面向自适应推理与 Agent 实验场景的持续演进型豆包模型。"
+			"zh": "面向自适应推理与 Agent 实验场景的持续演进型豆包模型。",
+			"ja": "適応的な推論と、エージェントの実験向けに、能力が更新され続ける Doubao です。",
+			"ko": "적응형 추론과 에이전트 실험용으로, 능력이 계속 갱신되는 Doubao입니다."
 		},
 		"vendor": "bytedance",
 		"context_window": 1000000,

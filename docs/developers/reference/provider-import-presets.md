@@ -16,7 +16,7 @@ Admin 在 **Providers** 页面提供「从模板导入」：预填各协议的 B
 - `GET /api/admin/providers/import/catalog`（内部 `/admin/providers/import/catalog`）：返回可导入摘要，**不含**密钥。每条 `id` 为 **catalog 行键**（JSON 数组下标字符串），**不是**入库后的 `providers.id`。
 - `POST /api/admin/providers/import`（内部 `/admin/providers/import`）：请求体 `{ "ids": ["0", "1", ...] }`（catalog 键列表）。
   - **每次导入均新增** provider 行；`providers.id` 由服务端 `crypto.randomUUID()` 生成。
-  - 新行的 `providers.kind` 写成该模板的英文 `name`。显示名 `providers.name` 按请求体 `locale` 取目录名称：以 `zh` 开头写入中文名称，其余语言写入英文。未传 `locale` 按英文。目录介绍不写入数据库，列表按 `kind` 附带 `kind_descriptions`。**同一 `kind` 下同名**（忽略大小写）才自动追加 `(2)`、`(3)` 等后缀。不同模板可以共用同一个账号别名。数据库唯一约束是 `(name, kind)`，比较区分大小写。
+  - 新行的 `providers.kind` 写成该模板的英文 `name`。显示名 `providers.name` 按请求体 `locale` 取目录名称：`zh` 写中文，`ja` 写日文，`ko` 写韩文，其余语言写英文。未传 `locale` 按英文。目录介绍不写入数据库，列表按 `kind` 附带 `kind_descriptions`。**同一 `kind` 下同名**（忽略大小写）才自动追加 `(2)`、`(3)` 等后缀。不同模板可以共用同一个账号别名。数据库唯一约束是 `(name, kind)`，比较区分大小写。
   - 新行不含 API Key，须在 UI 中打开对应卡片并手动添加后方可用于上游调用。
 
 ### 与官方模板同步

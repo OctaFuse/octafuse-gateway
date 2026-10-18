@@ -5,7 +5,9 @@
 		"description": "OpenAI's fastest model for high-quality, everyday image generation. It accepts text and image inputs and produces image outputs. Quality supports low, medium, high, xhigh, max, and auto. Use the Images API or the Responses API image generation tool.",
 		"i18n": {
 			"en": "OpenAI's fastest model for high-quality, everyday image generation. It accepts text and image inputs and produces image outputs. Quality supports low, medium, high, xhigh, max, and auto. Use the Images API or the Responses API image generation tool.",
-			"zh": "OpenAI 面向日常高质量出图的最快模型。接受文本与图片输入，输出图片。quality 支持 low、medium、high、xhigh、max 和 auto。可通过 Images API 或 Responses API 的 image generation 工具调用。"
+			"zh": "OpenAI 面向日常高质量出图的最快模型。接受文本与图片输入，输出图片。quality 支持 low、medium、high、xhigh、max 和 auto。可通过 Images API 或 Responses API 的 image generation 工具调用。",
+			"ja": "日常的に高品質な画像を出すための、OpenAI でいちばん速いモデルです。テキストと画像を受け取り、画像を出します。quality は low、medium、high、xhigh、max、auto です。Images API か、Responses API の image generation ツールから呼び出します。",
+			"ko": "일상적으로 고품질 이미지를 내기 위한, OpenAI에서 가장 빠른 모델입니다. 텍스트와 이미지를 받고 이미지를 냅니다. quality는 low, medium, high, xhigh, max, auto입니다. Images API 또는 Responses API의 image generation 도구로 호출합니다."
 		},
 		"vendor": "openai",
 		"context_window": null,
@@ -59,7 +61,9 @@
 		"description": "OpenAI's GPT Image 2.5 Sunburst generates and edits images from text and image inputs. Use it for workflows where editing precision matters most. Quality supports low, medium, high, xhigh, max, and auto. Use the Images API or the Responses API image generation tool.",
 		"i18n": {
 			"en": "OpenAI's GPT Image 2.5 Sunburst generates and edits images from text and image inputs. Use it for workflows where editing precision matters most. Quality supports low, medium, high, xhigh, max, and auto. Use the Images API or the Responses API image generation tool.",
-			"zh": "OpenAI 面向精细编辑的图片生成与编辑模型。接受文本与图片输入，输出图片，适合对编辑精度要求更高的工作流。quality 支持 low、medium、high、xhigh、max 和 auto。可通过 Images API 或 Responses API 的 image generation 工具调用。"
+			"zh": "OpenAI 面向精细编辑的图片生成与编辑模型。接受文本与图片输入，输出图片，适合对编辑精度要求更高的工作流。quality 支持 low、medium、high、xhigh、max 和 auto。可通过 Images API 或 Responses API 的 image generation 工具调用。",
+			"ja": "編集の精度を重視するときの、OpenAI の画像生成・編集モデルです。テキストと画像を受け取り、画像を出します。quality は low、medium、high、xhigh、max、auto です。Images API か、Responses API の image generation ツールから呼び出します。",
+			"ko": "편집 정밀도가 중요할 때의 OpenAI 이미지 생성·편집 모델입니다. 텍스트와 이미지를 받고 이미지를 냅니다. quality는 low, medium, high, xhigh, max, auto입니다. Images API 또는 Responses API의 image generation 도구로 호출합니다."
 		},
 		"vendor": "openai",
 		"context_window": null,
@@ -113,7 +117,9 @@
 		"description": "OpenAI's high-fidelity image generation and editing model for the dedicated Images API.",
 		"i18n": {
 			"en": "OpenAI's high-fidelity image generation and editing model for the dedicated Images API.",
-			"zh": "用于专用 Images API 的 OpenAI 高保真图片生成与编辑模型。"
+			"zh": "用于专用 Images API 的 OpenAI 高保真图片生成与编辑模型。",
+			"ja": "専用の Images API 向けの、OpenAI の高忠実度な画像生成・編集モデルです。",
+			"ko": "전용 Images API용 OpenAI 고충실도 이미지 생성·편집 모델입니다."
 		},
 		"vendor": "openai",
 		"context_window": null,

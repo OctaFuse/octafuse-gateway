@@ -118,8 +118,12 @@ describe('provider import preset catalog metadata', () => {
 		assert.equal(providerImportCatalogCopy(catalog, 'zh').name, '金山云星流');
 		assert.match(providerImportCatalogCopy(catalog, 'zh').description ?? '', /国内版/);
 		assert.equal(providerImportCatalogCopy(catalog, 'en').name, 'Kingsoft StarFlow');
-		assert.equal(providerImportCatalogCopy(catalog, 'ja').name, 'Kingsoft StarFlow');
+		assert.equal(providerImportCatalogCopy(catalog, 'ja').name, 'Kingsoft Cloud StarFlow');
+		assert.match(providerImportCatalogCopy(catalog, 'ja').description ?? '', /global-kspmas\.ksyun\.com/);
+		assert.equal(providerImportCatalogCopy(catalog, 'ko').name, '킹소프트클라우드 StarFlow');
 		assert.equal(providerImportCatalogMatchesQuery(catalog, '金山云'), true);
+		assert.equal(providerImportCatalogMatchesQuery(catalog, 'Kingsoft Cloud'), true);
+		assert.equal(providerImportCatalogMatchesQuery(catalog, '킹소프트클라우드'), true);
 		assert.equal(providerImportCatalogMatchesQuery(catalog, 'kspmas.ksyun.com'), true);
 		assert.equal(inferStaticProviderVendorKey({ name: '星流生产账号' }), 'kingsoft');
 		assert.equal(
@@ -298,10 +302,10 @@ describe('provider import preset catalog metadata', () => {
 
 		assert.ok(rows.length > 0);
 		for (const row of rows) {
-			assert.ok(row.catalog?.i18n.zh.name.trim(), row.name);
-			assert.ok(row.catalog?.i18n.zh.description.trim(), row.name);
-			assert.ok(row.catalog?.i18n.en.name.trim(), row.name);
-			assert.ok(row.catalog?.i18n.en.description.trim(), row.name);
+			for (const locale of ['zh', 'en', 'ja', 'ko'] as const) {
+				assert.ok(row.catalog?.i18n[locale].name.trim(), `${row.name} ${locale}`);
+				assert.ok(row.catalog?.i18n[locale].description.trim(), `${row.name} ${locale}`);
+			}
 			assert.match(row.catalog?.links?.platform ?? '', /^https:\/\//, row.name);
 			if (row.catalog?.links?.api_keys) {
 				assert.match(row.catalog.links.api_keys, /^https:\/\//, row.name);
@@ -742,8 +746,15 @@ describe('provider import preset catalog metadata', () => {
 		assert.equal(en.description, row.catalog?.i18n.en.description);
 
 		const ja = providerImportStoredFields(row, 'ja');
-		assert.equal(ja.name, en.name);
-		assert.equal(ja.description, en.description);
+		assert.equal(ja.kind, 'Volcengine Ark');
+		assert.equal(ja.name, row.catalog?.i18n.ja.name);
+		assert.equal(ja.name, 'Volcengine Ark（火山方舟）');
+		assert.equal(ja.description, row.catalog?.i18n.ja.description);
+		assert.notEqual(ja.description, en.description);
+
+		const ko = providerImportStoredFields(row, 'ko');
+		assert.equal(ko.name, 'Volcengine Ark');
+		assert.equal(ko.description, row.catalog?.i18n.ko.description);
 	});
 
 	it('suffixes import names only within the same kind', () => {

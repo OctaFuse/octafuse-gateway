@@ -14,6 +14,7 @@ import bailianIcon from '@lobehub/icons-static-svg/icons/bailian.svg';
 import bytedanceIcon from '@lobehub/icons-static-svg/icons/bytedance.svg';
 import cerebrasIcon from '@lobehub/icons-static-svg/icons/cerebras.svg';
 import cohereIcon from '@lobehub/icons-static-svg/icons/cohere.svg';
+import commandCodeIcon from './icons/commandcode.svg';
 import deepinfraIcon from '@lobehub/icons-static-svg/icons/deepinfra.svg';
 import deepseekIcon from '@lobehub/icons-static-svg/icons/deepseek.svg';
 import elevenlabsIcon from '@lobehub/icons-static-svg/icons/elevenlabs.svg';
@@ -25,6 +26,7 @@ import huaweiCloudIcon from '@lobehub/icons-static-svg/icons/huaweicloud.svg';
 import hunyuanIcon from '@lobehub/icons-static-svg/icons/hunyuan.svg';
 import ibmIcon from '@lobehub/icons-static-svg/icons/ibm.svg';
 import kimiIcon from '@lobehub/icons-static-svg/icons/kimi.svg';
+import kingsoftIcon from './icons/kingsoft.svg';
 import longcatIcon from '@lobehub/icons-static-svg/icons/longcat.svg';
 import metaIcon from '@lobehub/icons-static-svg/icons/meta.svg';
 import minimaxIcon from '@lobehub/icons-static-svg/icons/minimax.svg';
@@ -34,12 +36,14 @@ import novitaIcon from '@lobehub/icons-static-svg/icons/novita.svg';
 import nvidiaIcon from '@lobehub/icons-static-svg/icons/nvidia.svg';
 import ollamaIcon from '@lobehub/icons-static-svg/icons/ollama.svg';
 import openaiIcon from '@lobehub/icons-static-svg/icons/openai.svg';
+import openDesignIcon from './icons/opendesign.svg';
 import opencodeIcon from '@lobehub/icons-static-svg/icons/opencode.svg';
 import openrouterIcon from '@lobehub/icons-static-svg/icons/openrouter.svg';
 import perplexityIcon from '@lobehub/icons-static-svg/icons/perplexity.svg';
 import qiniuIcon from '@lobehub/icons-static-svg/icons/qiniu.svg';
 import qwenIcon from '@lobehub/icons-static-svg/icons/qwen.svg';
 import sambanovaIcon from '@lobehub/icons-static-svg/icons/sambanova.svg';
+import scnetIcon from './icons/scnet.svg';
 import siliconCloudIcon from '@lobehub/icons-static-svg/icons/siliconcloud.svg';
 import stabilityIcon from '@lobehub/icons-static-svg/icons/stability.svg';
 import stepfunIcon from '@lobehub/icons-static-svg/icons/stepfun.svg';
@@ -70,6 +74,7 @@ export const vendorIconAssets: Readonly<Record<string, string>> = {
 	bytedance: assetUrl(bytedanceIcon),
 	cerebras: assetUrl(cerebrasIcon),
 	cohere: assetUrl(cohereIcon),
+	commandcode: assetUrl(commandCodeIcon),
 	deepinfra: assetUrl(deepinfraIcon),
 	deepseek: assetUrl(deepseekIcon),
 	elevenlabs: assetUrl(elevenlabsIcon),
@@ -79,6 +84,7 @@ export const vendorIconAssets: Readonly<Record<string, string>> = {
 	huggingface: assetUrl(huggingfaceIcon),
 	huawei: assetUrl(huaweiCloudIcon),
 	ibm: assetUrl(ibmIcon),
+	kingsoft: assetUrl(kingsoftIcon),
 	meituan: assetUrl(longcatIcon),
 	meta: assetUrl(metaIcon),
 	minimax: assetUrl(minimaxIcon),
@@ -88,11 +94,13 @@ export const vendorIconAssets: Readonly<Record<string, string>> = {
 	nvidia: assetUrl(nvidiaIcon),
 	ollama: assetUrl(ollamaIcon),
 	openai: assetUrl(openaiIcon),
+	opendesign: assetUrl(openDesignIcon),
 	opencode: assetUrl(opencodeIcon),
 	openrouter: assetUrl(openrouterIcon),
 	perplexity: assetUrl(perplexityIcon),
 	qiniu: assetUrl(qiniuIcon),
 	sambanova: assetUrl(sambanovaIcon),
+	scnet: assetUrl(scnetIcon),
 	siliconflow: assetUrl(siliconCloudIcon),
 	stability: assetUrl(stabilityIcon),
 	stepfun: assetUrl(stepfunIcon),

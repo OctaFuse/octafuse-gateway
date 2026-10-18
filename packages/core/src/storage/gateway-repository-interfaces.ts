@@ -214,7 +214,8 @@ export interface ModelsRepository {
 	}): Promise<void>;
 	replaceModelTags(modelId: string, tags: string[]): Promise<void>;
 	updateModelByPatch(id: string, rest: Record<string, unknown>): Promise<number>;
-	deleteModelCascade(id: string): Promise<number>;
+	/** Delete only when no active or disabled routes reference the model. Tags cascade via FK. */
+	deleteModelIfUnrouted(id: string): Promise<number>;
 }
 
 /** 推理路径：模型行（含 tags）、活跃路由列表、按 modelId 取路由 */

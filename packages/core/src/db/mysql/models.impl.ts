@@ -104,21 +104,9 @@ export function createMySqlModelsRepository(db: MySqlDatabaseClient): ModelsRepo
 			return result.affectedRows;
 		},
 
-		async deleteModelCascade(id: string): Promise<number> {
-			const conn = await pool.getConnection();
-			try {
-				await conn.beginTransaction();
-				await conn.execute('DELETE FROM model_routes WHERE model_id = ?', [id]);
-				await conn.execute('DELETE FROM model_tags WHERE model_id = ?', [id]);
-				const [result] = await conn.execute<ResultSetHeader>('DELETE FROM models WHERE id = ?', [id]);
-				await conn.commit();
-				return result.affectedRows;
-			} catch (error) {
-				await conn.rollback();
-				throw error;
-			} finally {
-				conn.release();
-			}
+		async deleteModelIfUnrouted(id: string): Promise<number> {
+			const [result] = await pool.execute<ResultSetHeader>('DELETE FROM models WHERE id = ? AND NOT EXISTS (SELECT 1 FROM model_routes WHERE model_id = ?)', [id, id]);
+			return result.affectedRows;
 		},
 	};
 }

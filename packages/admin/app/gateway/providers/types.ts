@@ -35,6 +35,8 @@ export type ProviderImportCatalogRow = {
 	labels?: {
 		en: { name: string; description: string };
 		zh: { name: string; description: string };
+		ja: { name: string; description: string };
+		ko: { name: string; description: string };
 	};
 	links?: {
 		platform?: string;
@@ -65,8 +67,11 @@ export type GeminiLegacyPerActionEndpoints = {
 	streamGenerateContent: string;
 };
 
-/** 单协议表单：base + Advanced capability 覆盖 */
+/** 单协议表单；模式、能力选择与草稿标记仅用于编辑器，不写入 API。 */
 export type ProtocolEndpointForm = {
+	mode?: 'all' | 'partial';
+	/** 未设置时从已有完整端点推断；取消勾选保留 URL 草稿但不提交。 */
+	selectedCapabilities?: ProviderEndpointCapability[];
 	base: string;
 	chat: string;
 	responses: string;
@@ -108,7 +113,7 @@ export type ProviderFormData = {
 	name: string;
 	/** 导入模板英文名、`__custom__`，或空字符串（尚未分类）。 */
 	kind: string;
-	/** 创建必填；编辑时空 = 不改 */
+	/** 创建必填；编辑时显式清空并保存 = 清空密钥 */
 	api_key: string;
 	/** `active` | `disabled` */
 	status: 'active' | 'disabled';
@@ -207,7 +212,9 @@ export const PROVIDER_LIST_FILTERS: readonly ProviderListFilter[] = [
 	'elevenlabs',
 ] as const;
 
-export function parseProviderListFilterParam(raw: string | null): ProviderListFilter {
+export function parseProviderListFilterParam(
+	raw: string | null
+): ProviderListFilter {
 	if (!raw) return DEFAULT_PROVIDER_LIST_FILTER;
 	return (PROVIDER_LIST_FILTERS as readonly string[]).includes(raw)
 		? (raw as ProviderListFilter)
@@ -215,4 +222,8 @@ export function parseProviderListFilterParam(raw: string | null): ProviderListFi
 }
 
 /** 卡片状态行：密钥 / 启停摘要。 */
-export type ProviderKeyStatusKind = 'pending' | 'disabled' | 'no_key' | 'key_set';
+export type ProviderKeyStatusKind =
+	| 'pending'
+	| 'disabled'
+	| 'no_key'
+	| 'key_set';

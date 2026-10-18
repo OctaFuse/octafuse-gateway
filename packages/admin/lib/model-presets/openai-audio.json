@@ -5,7 +5,9 @@
 		"description": "OpenAI Whisper (whisper-1) speech-to-text for /v1/audio/transcriptions. Official price $0.006/minute; gateway meters by duration (per second).",
 		"i18n": {
 			"en": "OpenAI Whisper (whisper-1) speech-to-text for /v1/audio/transcriptions. Official price $0.006/minute; gateway meters by duration (per second).",
-			"zh": "OpenAI Whisper（whisper-1）语音转写，用于 /v1/audio/transcriptions。官方价 $0.006/分钟；网关按秒计量。"
+			"zh": "OpenAI Whisper（whisper-1）语音转写，用于 /v1/audio/transcriptions。官方价 $0.006/分钟；网关按秒计量。",
+			"ja": "OpenAI Whisper（whisper-1）の音声文字起こしで、/v1/audio/transcriptions に使います。公式価格は1分 $0.006 です。ゲートウェイは秒で計量します。",
+			"ko": "OpenAI Whisper(whisper-1) 음성 받아쓰기로, /v1/audio/transcriptions에 씁니다. 공식 가격은 분당 $0.006입니다. 게이트웨이는 초로 계량합니다."
 		},
 		"vendor": "openai",
 		"context_window": null,
@@ -39,7 +41,9 @@
 		"description": "OpenAI GPT-4o mini speech-to-text for /v1/audio/transcriptions (json/text). Official rates $1.25/$5 per 1M audio tokens; gateway meters by tokens.",
 		"i18n": {
 			"en": "OpenAI GPT-4o mini speech-to-text for /v1/audio/transcriptions (json/text). Official rates $1.25/$5 per 1M audio tokens; gateway meters by tokens.",
-			"zh": "OpenAI GPT-4o mini 语音转写（/v1/audio/transcriptions，json/text）。官方价 $1.25/$5 /1M audio token；网关按 token 计量。"
+			"zh": "OpenAI GPT-4o mini 语音转写（/v1/audio/transcriptions，json/text）。官方价 $1.25/$5 /1M audio token；网关按 token 计量。",
+			"ja": "OpenAI GPT-4o mini の音声文字起こしです（/v1/audio/transcriptions、json/text）。公式単価は音声100万トークンあたり $1.25 / $5 です。ゲートウェイはトークンで計量します。",
+			"ko": "OpenAI GPT-4o mini 음성 받아쓰기입니다(/v1/audio/transcriptions, json/text). 공식 단가는 오디오 100만 토큰당 $1.25 / $5입니다. 게이트웨이는 토큰으로 계량합니다."
 		},
 		"vendor": "openai",
 		"context_window": 16000,
@@ -79,7 +83,9 @@
 		"description": "OpenAI GPT-4o speech-to-text for /v1/audio/transcriptions (json/text). Official rates $2.50/$10 per 1M audio tokens; gateway meters by tokens.",
 		"i18n": {
 			"en": "OpenAI GPT-4o speech-to-text for /v1/audio/transcriptions (json/text). Official rates $2.50/$10 per 1M audio tokens; gateway meters by tokens.",
-			"zh": "OpenAI GPT-4o 语音转写（/v1/audio/transcriptions，json/text）。官方价 $2.50/$10 /1M audio token；网关按 token 计量。"
+			"zh": "OpenAI GPT-4o 语音转写（/v1/audio/transcriptions，json/text）。官方价 $2.50/$10 /1M audio token；网关按 token 计量。",
+			"ja": "OpenAI GPT-4o の音声文字起こしです（/v1/audio/transcriptions、json/text）。公式単価は音声100万トークンあたり $2.50 / $10 です。ゲートウェイはトークンで計量します。",
+			"ko": "OpenAI GPT-4o 음성 받아쓰기입니다(/v1/audio/transcriptions, json/text). 공식 단가는 오디오 100만 토큰당 $2.50 / $10입니다. 게이트웨이는 토큰으로 계량합니다."
 		},
 		"vendor": "openai",
 		"context_window": 16000,
@@ -119,7 +125,9 @@
 		"description": "OpenAI GPT-4o transcription with speaker diarization (/v1/audio/transcriptions; json/text/diarized_json). Same token rates as gpt-4o-transcribe ($2.50/$10 per 1M); gateway meters by tokens.",
 		"i18n": {
 			"en": "OpenAI GPT-4o transcription with speaker diarization (/v1/audio/transcriptions; json/text/diarized_json). Same token rates as gpt-4o-transcribe ($2.50/$10 per 1M); gateway meters by tokens.",
-			"zh": "OpenAI GPT-4o 带说话人分离的语音转写（/v1/audio/transcriptions；json/text/diarized_json）。单价同 gpt-4o-transcribe（$2.50/$10 /1M）；网关按 token 计量。"
+			"zh": "OpenAI GPT-4o 带说话人分离的语音转写（/v1/audio/transcriptions；json/text/diarized_json）。单价同 gpt-4o-transcribe（$2.50/$10 /1M）；网关按 token 计量。",
+			"ja": "話者分離つきの OpenAI GPT-4o 音声文字起こしです（/v1/audio/transcriptions。json/text/diarized_json）。単価は gpt-4o-transcribe と同じ（100万トークンあたり $2.50 / $10）です。ゲートウェイはトークンで計量します。",
+			"ko": "화자 분리가 있는 OpenAI GPT-4o 음성 받아쓰기입니다(/v1/audio/transcriptions, json/text/diarized_json). 단가는 gpt-4o-transcribe와 같습니다(100만 토큰당 $2.50 / $10). 게이트웨이는 토큰으로 계량합니다."
 		},
 		"vendor": "openai",
 		"context_window": 16000,

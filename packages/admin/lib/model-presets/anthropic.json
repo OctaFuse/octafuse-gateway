@@ -5,7 +5,9 @@
 		"description": "Anthropic's faster Sonnet for coding, agents, and professional work. Adaptive thinking is on by default and cannot be fully disabled; the default effort is high, and between_tools turns off up-front thinking at high effort or below. Forced tool_choice values any and tool return an error, as do non-default temperature, top_p, and top_k.",
 		"i18n": {
 			"en": "Anthropic's faster Sonnet for coding, agents, and professional work. Adaptive thinking is on by default and cannot be fully disabled; the default effort is high, and between_tools turns off up-front thinking at high effort or below. Forced tool_choice values any and tool return an error, as do non-default temperature, top_p, and top_k.",
-			"zh": "更快的 Sonnet，面向编程、Agent 与专业工作。自适应思考默认开启且不能完全关闭，默认 effort 为 high；between_tools 可在 high 及以下关闭前置思考。tool_choice 的 any 与 tool，以及非默认的 temperature、top_p、top_k 都会返回错误。"
+			"zh": "更快的 Sonnet，面向编程、Agent 与专业工作。自适应思考默认开启且不能完全关闭，默认 effort 为 high；between_tools 可在 high 及以下关闭前置思考。tool_choice 的 any 与 tool，以及非默认的 temperature、top_p、top_k 都会返回错误。",
+			"ja": "コーディング、エージェント、専門的な仕事向けの、より速い Sonnet です。適応的思考は標準でオンになり、完全には切れません。effort の初期値は high です。between_tools を使うと、high 以下では先に考える処理を切れます。tool_choice の any と tool、および初期値でない temperature、top_p、top_k はエラーになります。",
+			"ko": "코딩, 에이전트, 전문 작업용으로 더 빠른 Sonnet입니다. 적응형 사고는 기본으로 켜져 있고 완전히 끌 수 없습니다. effort 기본값은 high입니다. between_tools를 쓰면 high 이하에서 앞선 사고를 끌 수 있습니다. tool_choice의 any와 tool, 그리고 기본값이 아닌 temperature, top_p, top_k는 오류를 반환합니다."
 		},
 		"vendor": "anthropic",
 		"context_window": 1000000,
@@ -52,7 +54,9 @@
 		"description": "Anthropic's fastest Claude 5 model for latency-sensitive tasks. Adaptive thinking is on by default with medium effort and supports low through max; thinking can be disabled at high effort or below. Prompts over 100K tokens are billed at a higher tier. Manual budget_tokens returns 400, as do non-default temperature, top_p, and top_k.",
 		"i18n": {
 			"en": "Anthropic's fastest Claude 5 model for latency-sensitive tasks. Adaptive thinking is on by default with medium effort and supports low through max; thinking can be disabled at high effort or below. Prompts over 100K tokens are billed at a higher tier. Manual budget_tokens returns 400, as do non-default temperature, top_p, and top_k.",
-			"zh": "Anthropic 最快的 Claude 5 模型，适合延迟敏感任务。自适应思考默认开启，effort 默认 medium，支持 low 到 max；high 及以下可关闭思考。超过 100K tokens 的提示按更高层级计费。手动设置 budget_tokens 会返回 400，非默认的 temperature、top_p、top_k 也会返回错误。"
+			"zh": "Anthropic 最快的 Claude 5 模型，适合延迟敏感任务。自适应思考默认开启，effort 默认 medium，支持 low 到 max；high 及以下可关闭思考。超过 100K tokens 的提示按更高层级计费。手动设置 budget_tokens 会返回 400，非默认的 temperature、top_p、top_k 也会返回错误。",
+			"ja": "Anthropic でいちばん速い Claude 5 で、レイテンシを気にする処理向けです。適応的思考は標準でオン、effort の初期値は medium、low から max まで指定できます。high 以下では思考を切れます。10万トークンを超えるプロンプトは上位の料金になります。budget_tokens を手で指定すると 400 が返り、初期値でない temperature、top_p、top_k もエラーになります。",
+			"ko": "Anthropic에서 가장 빠른 Claude 5로, 지연에 민감한 작업용입니다. 적응형 사고는 기본으로 켜져 있고 effort 기본값은 medium이며 low부터 max까지 지정할 수 있습니다. high 이하에서는 사고를 끌 수 있습니다. 10만 토큰을 넘는 프롬프트는 더 높은 요금 구간입니다. budget_tokens를 직접 넣으면 400이 반환되고, 기본값이 아닌 temperature, top_p, top_k도 오류입니다."
 		},
 		"vendor": "anthropic",
 		"context_window": 1000000,
@@ -112,7 +116,9 @@
 		"description": "Anthropic's model for long-running agentic coding and knowledge work. Adaptive thinking is always on and cannot be disabled; the default effort is medium. Forced tool_choice values any and tool return an error.",
 		"i18n": {
 			"en": "Anthropic's model for long-running agentic coding and knowledge work. Adaptive thinking is always on and cannot be disabled; the default effort is medium. Forced tool_choice values any and tool return an error.",
-			"zh": "面向长时间 Agent 编程与知识工作的 Anthropic 模型。自适应思考始终开启且不能关闭，默认 effort 为 medium。tool_choice 的 any 与 tool 会返回错误，应使用 auto 或 none。"
+			"zh": "面向长时间 Agent 编程与知识工作的 Anthropic 模型。自适应思考始终开启且不能关闭，默认 effort 为 medium。tool_choice 的 any 与 tool 会返回错误，应使用 auto 或 none。",
+			"ja": "長時間のエージェント開発と知識作業向けの Anthropic モデルです。適応的思考は常にオンで切れず、effort の初期値は medium です。tool_choice の any と tool はエラーになるので、auto か none を使います。",
+			"ko": "오래 이어지는 에이전트 개발과 지식 작업용 Anthropic 모델입니다. 적응형 사고는 항상 켜져 있고 끌 수 없으며, effort 기본값은 medium입니다. tool_choice의 any와 tool은 오류가 나므로 auto 또는 none을 씁니다."
 		},
 		"vendor": "anthropic",
 		"context_window": 1000000,
@@ -159,7 +165,9 @@
 		"description": "Anthropic's successor to Claude Fable 5 for long-running agentic coding, multistep research, and document work. Adaptive thinking is always on; input and output prices match Fable 5, with cheaper prompt-cache reads.",
 		"i18n": {
 			"en": "Anthropic's successor to Claude Fable 5 for long-running agentic coding, multistep research, and document work. Adaptive thinking is always on; input and output prices match Fable 5, with cheaper prompt-cache reads.",
-			"zh": "Claude Fable 5 的后继模型，面向长时间 Agent 编程、多步研究与文档工作。自适应思考始终开启；输入输出单价与 Fable 5 相同，提示缓存读取更便宜。"
+			"zh": "Claude Fable 5 的后继模型，面向长时间 Agent 编程、多步研究与文档工作。自适应思考始终开启；输入输出单价与 Fable 5 相同，提示缓存读取更便宜。",
+			"ja": "Claude Fable 5 の後継で、長時間のエージェント開発、段階の多い調査、文書作業向けです。適応的思考は常にオンです。入出力の単価は Fable 5 と同じで、プロンプトキャッシュの読み出しはより安くなっています。",
+			"ko": "Claude Fable 5의 후속으로, 오래 이어지는 에이전트 개발, 여러 단계의 조사, 문서 작업용입니다. 적응형 사고는 항상 켜져 있습니다. 입출력 단가는 Fable 5와 같고, 프롬프트 캐시 읽기는 더 쌉니다."
 		},
 		"vendor": "anthropic",
 		"context_window": 1000000,
@@ -206,7 +214,9 @@
 		"description": "An Anthropic model built for autonomous knowledge work, coding, and multimodal agents. It is positioned for autonomous knowledge work and coding with multimodal input, reasoning, and tool-oriented workflows.",
 		"i18n": {
 			"en": "An Anthropic model built for autonomous knowledge work, coding, and multimodal agents. It is positioned for autonomous knowledge work and coding with multimodal input, reasoning, and tool-oriented workflows.",
-			"zh": "面向自主知识工作、编程和多模态 Agent 的 Anthropic 模型。定位于自主知识工作与编程，支持多模态输入、推理及工具驱动工作流。"
+			"zh": "面向自主知识工作、编程和多模态 Agent 的 Anthropic 模型。定位于自主知识工作与编程，支持多模态输入、推理及工具驱动工作流。",
+			"ja": "自律的な知識作業、コーディング、マルチモーダルなエージェント向けの Anthropic モデルです。マルチモーダル入力、推論、ツールを使う流れに置かれています。",
+			"ko": "스스로 진행하는 지식 작업, 코딩, 멀티모달 에이전트용 Anthropic 모델입니다. 멀티모달 입력, 추론, 도구를 쓰는 흐름에 맞춰져 있습니다."
 		},
 		"vendor": "anthropic",
 		"context_window": 1000000,
@@ -253,7 +263,9 @@
 		"description": "A frontier Sonnet model for coding, professional work, and adaptive agentic reasoning. Adaptive reasoning levels let applications balance frontier coding and agent performance against latency and token use.",
 		"i18n": {
 			"en": "A frontier Sonnet model for coding, professional work, and adaptive agentic reasoning. Adaptive reasoning levels let applications balance frontier coding and agent performance against latency and token use.",
-			"zh": "适合编程、专业工作与自适应 Agent 推理的前沿 Sonnet 模型。自适应推理等级可在前沿编程与 Agent 能力、延迟和 Token 消耗之间灵活取舍。"
+			"zh": "适合编程、专业工作与自适应 Agent 推理的前沿 Sonnet 模型。自适应推理等级可在前沿编程与 Agent 能力、延迟和 Token 消耗之间灵活取舍。",
+			"ja": "コーディング、専門的な仕事、適応的なエージェント推論向けの上位 Sonnet です。適応的な推論レベルで、コーディングとエージェントの強さ、レイテンシ、トークン消費のバランスを取れます。",
+			"ko": "코딩, 전문 작업, 적응형 에이전트 추론용 상위 Sonnet입니다. 적응형 추론 단계로 코딩·에이전트 성능, 지연, 토큰 사용량의 균형을 맞출 수 있습니다."
 		},
 		"vendor": "anthropic",
 		"context_window": 1000000,
@@ -300,7 +312,9 @@
 		"description": "Anthropic's flagship for demanding reasoning, coding, visual analysis, and long-running agents. It is especially capable at end-to-end software tasks, code review and bug finding, document and chart analysis, complex office deliverables, tool use, and coordinating parallel subagents.",
 		"i18n": {
 			"en": "Anthropic's flagship for demanding reasoning, coding, visual analysis, and long-running agents. It is especially capable at end-to-end software tasks, code review and bug finding, document and chart analysis, complex office deliverables, tool use, and coordinating parallel subagents.",
-			"zh": "Anthropic 旗舰模型，面向复杂推理、编程、视觉分析与长时间 Agent 任务。尤其擅长端到端软件任务、代码审查与缺陷定位、文档和图表分析、复杂办公交付、工具调用及并行子 Agent 协作。"
+			"zh": "Anthropic 旗舰模型，面向复杂推理、编程、视觉分析与长时间 Agent 任务。尤其擅长端到端软件任务、代码审查与缺陷定位、文档和图表分析、复杂办公交付、工具调用及并行子 Agent 协作。",
+			"ja": "難しい推論、コーディング、視覚的な分析、長時間のエージェント向けの Anthropic フラッグシップです。ソフトを最初から最後まで作る作業、コードレビューと不具合の特定、文書や図表の分析、込み入った事務成果物、ツール呼び出し、並列のサブエージェント連携が特に強いです。",
+			"ko": "어려운 추론, 코딩, 시각 분석, 오래 이어지는 에이전트용 Anthropic 플래그십입니다. 소프트웨어를 처음부터 끝까지 만드는 작업, 코드 리뷰와 결함 위치 찾기, 문서와 도표 분석, 복잡한 사무 산출물, 도구 호출, 병렬 하위 에이전트 협업이 특히 강합니다."
 		},
 		"vendor": "anthropic",
 		"context_window": 1000000,
@@ -347,7 +361,9 @@
 		"description": "A high-capability Opus model for long-context reasoning, coding, and multimodal analysis. It combines multimodal input, reasoning support, and a long context window for demanding general-purpose workflows.",
 		"i18n": {
 			"en": "A high-capability Opus model for long-context reasoning, coding, and multimodal analysis. It combines multimodal input, reasoning support, and a long context window for demanding general-purpose workflows.",
-			"zh": "适合长上下文推理、编程与多模态分析的高性能 Opus 模型。结合多模态输入、推理能力与长上下文窗口，适合高要求的通用工作流。"
+			"zh": "适合长上下文推理、编程与多模态分析的高性能 Opus 模型。结合多模态输入、推理能力与长上下文窗口，适合高要求的通用工作流。",
+			"ja": "長いコンテキストでの推論、コーディング、マルチモーダル分析向けの高性能 Opus です。マルチモーダル入力、推論、長いコンテキストを組み合わせ、要求の高い一般的な作業に使えます。",
+			"ko": "긴 컨텍스트 추론, 코딩, 멀티모달 분석용 고성능 Opus입니다. 멀티모달 입력, 추론, 긴 컨텍스트를 묶어 요구가 높은 일반 작업에 씁니다."
 		},
 		"vendor": "anthropic",
 		"context_window": 1000000,
@@ -394,7 +410,9 @@
 		"description": "An Opus model designed for long-running asynchronous agents and complex software workflows. The model is designed for asynchronous agents that sustain coding and professional work over extended runs.",
 		"i18n": {
 			"en": "An Opus model designed for long-running asynchronous agents and complex software workflows. The model is designed for asynchronous agents that sustain coding and professional work over extended runs.",
-			"zh": "面向长时间异步 Agent 与复杂软件工作流的 Opus 模型。面向需要长时间持续执行编程与专业任务的异步 Agent。"
+			"zh": "面向长时间异步 Agent 与复杂软件工作流的 Opus 模型。面向需要长时间持续执行编程与专业任务的异步 Agent。",
+			"ja": "長時間動く非同期エージェントと、込み入ったソフトの流れ向けの Opus です。短いやり取りではなく、コーディングや専門作業を長く続けて走らせるエージェントを想定しています。",
+			"ko": "오래 도는 비동기 에이전트와 복잡한 소프트웨어 흐름용 Opus입니다. 짧은 주고받기가 아니라, 코딩과 전문 작업을 길게 이어 실행하는 에이전트를 전제로 합니다."
 		},
 		"vendor": "anthropic",
 		"context_window": 1000000,
@@ -441,7 +459,9 @@
 		"description": "A powerful Claude model for end-to-end coding and long-running professional workflows. It is optimized for agents that operate across complete software and professional workflows instead of isolated prompts.",
 		"i18n": {
 			"en": "A powerful Claude model for end-to-end coding and long-running professional workflows. It is optimized for agents that operate across complete software and professional workflows instead of isolated prompts.",
-			"zh": "面向端到端编程与长时间专业工作流的高性能 Claude 模型。针对贯穿完整软件与专业工作流的 Agent 优化，而不仅是处理孤立提示词。"
+			"zh": "面向端到端编程与长时间专业工作流的高性能 Claude 模型。针对贯穿完整软件与专业工作流的 Agent 优化，而不仅是处理孤立提示词。",
+			"ja": "最初から最後までのコーディングと、長く続く専門的な作業向けの高性能 Claude です。単発のプロンプトではなく、ソフトや専門作業の流れ全体を通すエージェント向けに調整されています。",
+			"ko": "처음부터 끝까지의 코딩과 오래 이어지는 전문 작업용 고성능 Claude입니다. 단발 프롬프트가 아니라, 소프트웨어와 전문 작업의 흐름 전체를 맡는 에이전트에 맞춰져 있습니다."
 		},
 		"vendor": "anthropic",
 		"context_window": 1000000,
@@ -488,7 +508,9 @@
 		"description": "A balanced frontier model for iterative development, agents, and professional knowledge work. Strengths include iterative development, complex codebase navigation, and end-to-end project execution with tools.",
 		"i18n": {
 			"en": "A balanced frontier model for iterative development, agents, and professional knowledge work. Strengths include iterative development, complex codebase navigation, and end-to-end project execution with tools.",
-			"zh": "适合迭代开发、Agent 与专业知识工作的均衡型前沿模型。优势包括迭代开发、复杂代码库导航，以及借助工具完成端到端项目执行。"
+			"zh": "适合迭代开发、Agent 与专业知识工作的均衡型前沿模型。优势包括迭代开发、复杂代码库导航，以及借助工具完成端到端项目执行。",
+			"ja": "反復的な開発、エージェント、専門的な知識作業向けのバランス型モデルです。反復開発、大きなコードベースの把握、ツールを使ったプロジェクトの完遂が強いです。",
+			"ko": "반복 개발, 에이전트, 전문 지식 작업용 균형형 모델입니다. 반복 개발, 큰 코드베이스 파악, 도구를 써서 프로젝트를 끝까지 마치는 일이 강점입니다."
 		},
 		"vendor": "anthropic",
 		"context_window": 1000000,
@@ -535,7 +557,9 @@
 		"description": "A fast, efficient Claude model for latency-sensitive chat, coding, and agent tasks. It targets near-frontier intelligence at substantially lower latency and cost for high-volume interactive workloads.",
 		"i18n": {
 			"en": "A fast, efficient Claude model for latency-sensitive chat, coding, and agent tasks. It targets near-frontier intelligence at substantially lower latency and cost for high-volume interactive workloads.",
-			"zh": "适合低延迟对话、编程和 Agent 任务的高速高效 Claude 模型。以显著更低的延迟和成本提供接近前沿水平的能力，适合高并发交互式任务。"
+			"zh": "适合低延迟对话、编程和 Agent 任务的高速高效 Claude 模型。以显著更低的延迟和成本提供接近前沿水平的能力，适合高并发交互式任务。",
+			"ja": "低レイテンシの対話、コーディング、エージェント向けの、速くて効率のよい Claude です。遅延とコストをかなり抑えつつ、上位に近い能力を、量の多い対話型の処理に出します。",
+			"ko": "저지연 대화, 코딩, 에이전트용으로 빠르고 효율적인 Claude입니다. 지연과 비용을 크게 낮추면서 상위에 가까운 능력을, 양이 많은 대화형 작업에 냅니다."
 		},
 		"vendor": "anthropic",
 		"context_window": 200000,

@@ -5,7 +5,9 @@
 		"description": "OpenAI's most capable model for demanding end-to-end work: reasoning, coding, computer use, research, and document creation. reasoning.effort supports low, medium, high, xhigh, and max (none is not supported). Tool calling should use the Responses API; Chat Completions remains available for text-only requests.",
 		"i18n": {
 			"en": "OpenAI's most capable model for demanding end-to-end work: reasoning, coding, computer use, research, and document creation. reasoning.effort supports low, medium, high, xhigh, and max (none is not supported). Tool calling should use the Responses API; Chat Completions remains available for text-only requests.",
-			"zh": "OpenAI 面向高难度端到端工作的旗舰模型，适合推理、编程、计算机使用、研究与文档创作。reasoning.effort 支持 low、medium、high、xhigh 和 max，不支持 none。带工具调用请走 Responses API；纯文本仍可用 Chat Completions。"
+			"zh": "OpenAI 面向高难度端到端工作的旗舰模型，适合推理、编程、计算机使用、研究与文档创作。reasoning.effort 支持 low、medium、high、xhigh 和 max，不支持 none。带工具调用请走 Responses API；纯文本仍可用 Chat Completions。",
+			"ja": "難度の高い、最初から最後までの仕事向けの OpenAI フラッグシップです。推論、コーディング、コンピュータ操作、調査、文書作成に向いています。reasoning.effort は low、medium、high、xhigh、max で、none は非対応です。ツール呼び出しは Responses API を使ってください。テキストだけなら Chat Completions も使えます。",
+			"ko": "난도가 높고 처음부터 끝까지 이어지는 작업용 OpenAI 플래그십입니다. 추론, 코딩, 컴퓨터 사용, 조사, 문서 작성에 맞습니다. reasoning.effort는 low, medium, high, xhigh, max이고 none은 지원하지 않습니다. 도구 호출은 Responses API를 쓰세요. 텍스트만이면 Chat Completions도 됩니다."
 		},
 		"vendor": "openai",
 		"context_window": 1050000,
@@ -65,7 +67,9 @@
 		"description": "A GPT-6 model for complex coding and agentic workflows. reasoning.effort supports none, low, medium (default), high, xhigh, and max. Built-in tools and function calling should use the Responses API; Chat Completions supports function calling only when reasoning_effort is none.",
 		"i18n": {
 			"en": "A GPT-6 model for complex coding and agentic workflows. reasoning.effort supports none, low, medium (default), high, xhigh, and max. Built-in tools and function calling should use the Responses API; Chat Completions supports function calling only when reasoning_effort is none.",
-			"zh": "面向复杂编程与 Agent 工作流的 GPT-6 模型。reasoning.effort 支持 none、low、medium（默认）、high、xhigh 和 max。内置工具与函数调用应走 Responses API；Chat Completions 仅在 reasoning_effort 为 none 时支持函数调用。"
+			"zh": "面向复杂编程与 Agent 工作流的 GPT-6 模型。reasoning.effort 支持 none、low、medium（默认）、high、xhigh 和 max。内置工具与函数调用应走 Responses API；Chat Completions 仅在 reasoning_effort 为 none 时支持函数调用。",
+			"ja": "難しいコーディングとエージェントの流れ向けの GPT-6 です。reasoning.effort は none、low、medium（初期値）、high、xhigh、max です。組み込みツールと関数呼び出しは Responses API を使ってください。Chat Completions が関数呼び出しを受け付けるのは、reasoning_effort が none のときだけです。",
+			"ko": "어려운 코딩과 에이전트 흐름용 GPT-6입니다. reasoning.effort는 none, low, medium(기본값), high, xhigh, max입니다. 내장 도구와 함수 호출은 Responses API를 쓰세요. Chat Completions가 함수 호출을 받는 것은 reasoning_effort가 none일 때뿐입니다."
 		},
 		"vendor": "openai",
 		"context_window": 1050000,
@@ -125,7 +129,9 @@
 		"description": "An upgrade to GPT-6 Sol with near-Astra performance for complex coding, computer use, and professional work. reasoning.effort supports low, medium (default), high, xhigh, and max (none and minimal are not supported). Tool calling requires the Responses API; Chat Completions supports requests without tools.",
 		"i18n": {
 			"en": "An upgrade to GPT-6 Sol with near-Astra performance for complex coding, computer use, and professional work. reasoning.effort supports low, medium (default), high, xhigh, and max (none and minimal are not supported). Tool calling requires the Responses API; Chat Completions supports requests without tools.",
-			"zh": "GPT-6 Sol 的升级型号，在复杂编程、计算机使用与专业工作上接近 Astra。reasoning.effort 支持 low、medium（默认）、high、xhigh 和 max，不支持 none 与 minimal。带工具调用必须走 Responses API；Chat Completions 仅支持不带工具的请求。"
+			"zh": "GPT-6 Sol 的升级型号，在复杂编程、计算机使用与专业工作上接近 Astra。reasoning.effort 支持 low、medium（默认）、high、xhigh 和 max，不支持 none 与 minimal。带工具调用必须走 Responses API；Chat Completions 仅支持不带工具的请求。",
+			"ja": "GPT-6 Sol の改良版で、難しいコーディング、コンピュータ操作、専門的な仕事では Astra に近づいています。reasoning.effort は low、medium（初期値）、high、xhigh、max で、none と minimal は非対応です。ツール呼び出しは Responses API が必須です。Chat Completions はツールなしのリクエストだけです。",
+			"ko": "GPT-6 Sol의 상위 모델로, 어려운 코딩, 컴퓨터 사용, 전문 작업에서는 Astra에 가깝습니다. reasoning.effort는 low, medium(기본값), high, xhigh, max이고 none과 minimal은 지원하지 않습니다. 도구 호출은 Responses API가 필수입니다. Chat Completions는 도구 없는 요청만 됩니다."
 		},
 		"vendor": "openai",
 		"context_window": 1050000,
@@ -185,7 +191,9 @@
 		"description": "OpenAI's most efficient GPT-6 model for focused, high-volume tasks. reasoning.effort supports none, low, medium (default), high, xhigh, and max. Built-in tools and function calling should use the Responses API; Chat Completions supports function calling only when reasoning_effort is none.",
 		"i18n": {
 			"en": "OpenAI's most efficient GPT-6 model for focused, high-volume tasks. reasoning.effort supports none, low, medium (default), high, xhigh, and max. Built-in tools and function calling should use the Responses API; Chat Completions supports function calling only when reasoning_effort is none.",
-			"zh": "面向聚焦、高并发任务的高效 GPT-6 模型。reasoning.effort 支持 none、low、medium（默认）、high、xhigh 和 max。内置工具与函数调用应走 Responses API；Chat Completions 仅在 reasoning_effort 为 none 时支持函数调用。"
+			"zh": "面向聚焦、高并发任务的高效 GPT-6 模型。reasoning.effort 支持 none、low、medium（默认）、high、xhigh 和 max。内置工具与函数调用应走 Responses API；Chat Completions 仅在 reasoning_effort 为 none 时支持函数调用。",
+			"ja": "範囲を絞った、量の多い処理向けの、効率のよい GPT-6 です。reasoning.effort は none、low、medium（初期値）、high、xhigh、max です。組み込みツールと関数呼び出しは Responses API を使ってください。Chat Completions が関数呼び出しを受け付けるのは、reasoning_effort が none のときだけです。",
+			"ko": "범위를 좁힌, 양이 많은 처리용으로 효율 좋은 GPT-6입니다. reasoning.effort는 none, low, medium(기본값), high, xhigh, max입니다. 내장 도구와 함수 호출은 Responses API를 쓰세요. Chat Completions가 함수 호출을 받는 것은 reasoning_effort가 none일 때뿐입니다."
 		},
 		"vendor": "openai",
 		"context_window": 1050000,
@@ -245,7 +253,9 @@
 		"description": "A frontier GPT model with adaptive reasoning for coding, agents, and long-context work. Adaptive reasoning allocates computation according to task difficulty for stronger agent and long-context performance.",
 		"i18n": {
 			"en": "A frontier GPT model with adaptive reasoning for coding, agents, and long-context work. Adaptive reasoning allocates computation according to task difficulty for stronger agent and long-context performance.",
-			"zh": "具备自适应推理能力、适合编程、Agent 与长上下文工作的前沿 GPT 模型。自适应推理会根据任务难度分配计算资源，以提升 Agent 与长上下文表现。"
+			"zh": "具备自适应推理能力、适合编程、Agent 与长上下文工作的前沿 GPT 模型。自适应推理会根据任务难度分配计算资源，以提升 Agent 与长上下文表现。",
+			"ja": "適応的な推論を持つ上位 GPT で、コーディング、エージェント、長いコンテキスト向けです。タスクの難しさに応じて計算を振り、エージェントと長いコンテキストでの成績を上げます。",
+			"ko": "적응형 추론을 가진 상위 GPT로, 코딩, 에이전트, 긴 컨텍스트용입니다. 작업 난도에 따라 계산을 나눠, 에이전트와 긴 컨텍스트에서의 성적을 올립니다."
 		},
 		"vendor": "openai",
 		"context_window": 400000,
@@ -291,7 +301,9 @@
 		"description": "A flagship GPT model for advanced reasoning, coding, multimodal input, and professional workflows. It unifies general GPT and coding capabilities for large-context professional work and tool-driven execution.",
 		"i18n": {
 			"en": "A flagship GPT model for advanced reasoning, coding, multimodal input, and professional workflows. It unifies general GPT and coding capabilities for large-context professional work and tool-driven execution.",
-			"zh": "面向高级推理、编程、多模态输入与专业工作流的旗舰 GPT 模型。统一通用 GPT 与编程能力，面向大上下文专业工作和工具驱动执行。"
+			"zh": "面向高级推理、编程、多模态输入与专业工作流的旗舰 GPT 模型。统一通用 GPT 与编程能力，面向大上下文专业工作和工具驱动执行。",
+			"ja": "高度な推論、コーディング、マルチモーダル入力、専門的な作業向けの GPT フラッグシップです。一般的な GPT とコーディングをひとつにし、長いコンテキストの専門作業と、ツールで進める実行に向いています。",
+			"ko": "고급 추론, 코딩, 멀티모달 입력, 전문 작업용 GPT 플래그십입니다. 일반 GPT와 코딩을 하나로 묶어, 긴 컨텍스트의 전문 작업과 도구로 진행하는 실행에 맞습니다."
 		},
 		"vendor": "openai",
 		"context_window": 1000000,
@@ -351,7 +363,9 @@
 		"description": "A faster GPT-5.4 variant for high-throughput reasoning, coding, and multimodal applications. The smaller variant keeps strong reasoning and coding capabilities while improving speed and throughput.",
 		"i18n": {
 			"en": "A faster GPT-5.4 variant for high-throughput reasoning, coding, and multimodal applications. The smaller variant keeps strong reasoning and coding capabilities while improving speed and throughput.",
-			"zh": "面向高吞吐推理、编程与多模态应用的高速 GPT-5.4 变体。较小规模版本保留较强推理和编程能力，同时提高速度与吞吐量。"
+			"zh": "面向高吞吐推理、编程与多模态应用的高速 GPT-5.4 变体。较小规模版本保留较强推理和编程能力，同时提高速度与吞吐量。",
+			"ja": "スループットの高い推論、コーディング、マルチモーダル向けの、速い GPT-5.4 です。小さいぶん推論とコーディングの強さは残し、速度と処理量を上げています。",
+			"ko": "처리량이 큰 추론, 코딩, 멀티모달용 빠른 GPT-5.4입니다. 작아진 만큼 추론과 코딩의 강점은 남기고, 속도와 처리량을 올렸습니다."
 		},
 		"vendor": "openai",
 		"context_window": 400000,
@@ -397,7 +411,9 @@
 		"description": "A compact GPT model optimized for low-latency, high-volume, and cost-sensitive tasks. It is tuned for speed-critical classification, extraction, routing, and other high-volume lightweight tasks.",
 		"i18n": {
 			"en": "A compact GPT model optimized for low-latency, high-volume, and cost-sensitive tasks. It is tuned for speed-critical classification, extraction, routing, and other high-volume lightweight tasks.",
-			"zh": "针对低延迟、高流量与成本敏感任务优化的紧凑型 GPT 模型。针对强调速度的分类、抽取、路由及其他高并发轻量任务优化。"
+			"zh": "针对低延迟、高流量与成本敏感任务优化的紧凑型 GPT 模型。针对强调速度的分类、抽取、路由及其他高并发轻量任务优化。",
+			"ja": "低レイテンシ、量の多い処理、コストを抑えたいタスク向けの小型 GPT です。速度が重要な分類、抽出、振り分けなど、軽い高頻度の処理に合わせています。",
+			"ko": "저지연, 양이 많은 처리, 비용을 아끼는 작업용 소형 GPT입니다. 속도가 중요한 분류, 추출, 분기처럼 가볍고 잦은 처리에 맞춰져 있습니다."
 		},
 		"vendor": "openai",
 		"context_window": 400000,
@@ -444,7 +460,9 @@
 		"description": "A frontier GPT model for complex professional work with stronger reasoning and reliability. It strengthens reliability and token efficiency on difficult professional tasks while retaining long-context support.",
 		"i18n": {
 			"en": "A frontier GPT model for complex professional work with stronger reasoning and reliability. It strengthens reliability and token efficiency on difficult professional tasks while retaining long-context support.",
-			"zh": "面向复杂专业工作、强化推理能力与可靠性的前沿 GPT 模型。在保留长上下文能力的同时，提高困难专业任务上的可靠性和 Token 效率。"
+			"zh": "面向复杂专业工作、强化推理能力与可靠性的前沿 GPT 模型。在保留长上下文能力的同时，提高困难专业任务上的可靠性和 Token 效率。",
+			"ja": "難しい専門作業向けに、推論と安定性を強めた上位 GPT です。長いコンテキストは残したまま、難しい仕事での安定性とトークン効率を上げています。",
+			"ko": "어려운 전문 작업용으로 추론과 안정성을 강화한 상위 GPT입니다. 긴 컨텍스트는 유지한 채, 어려운 일에서의 안정성과 토큰 효율을 올렸습니다."
 		},
 		"vendor": "openai",
 		"context_window": 1000000,
@@ -504,7 +522,9 @@
 		"description": "A GPT-5.6 family model for advanced reasoning, coding, and general agent workflows.",
 		"i18n": {
 			"en": "A GPT-5.6 family model for advanced reasoning, coding, and general agent workflows.",
-			"zh": "面向高级推理、编程与通用 Agent 工作流的 GPT-5.6 系列模型。"
+			"zh": "面向高级推理、编程与通用 Agent 工作流的 GPT-5.6 系列模型。",
+			"ja": "高度な推論、コーディング、一般的なエージェント向けの GPT-5.6 シリーズです。",
+			"ko": "고급 추론, 코딩, 일반적인 에이전트용 GPT-5.6 시리즈입니다."
 		},
 		"vendor": "openai",
 		"context_window": 1050000,
@@ -564,7 +584,9 @@
 		"description": "The GPT-5.6 flagship for demanding reasoning, coding, and multi-step agent tasks. The flagship tier is particularly strong at command-line work and complex multi-step coding workflows.",
 		"i18n": {
 			"en": "The GPT-5.6 flagship for demanding reasoning, coding, and multi-step agent tasks. The flagship tier is particularly strong at command-line work and complex multi-step coding workflows.",
-			"zh": "GPT-5.6 旗舰模型，适合高难度推理、编程与多步骤 Agent 任务。旗舰档位尤其擅长命令行工作和复杂的多步骤编程流程。"
+			"zh": "GPT-5.6 旗舰模型，适合高难度推理、编程与多步骤 Agent 任务。旗舰档位尤其擅长命令行工作和复杂的多步骤编程流程。",
+			"ja": "GPT-5.6 のフラッグシップです。難度の高い推論、コーディング、複数ステップのエージェントに向いています。コマンドライン作業と、手順の多いコーディングの流れが特に強いです。",
+			"ko": "GPT-5.6 플래그십입니다. 난도 높은 추론, 코딩, 여러 단계 에이전트에 맞습니다. 명령줄 작업과 단계가 많은 코딩 흐름이 특히 강합니다."
 		},
 		"vendor": "openai",
 		"context_window": 1050000,
@@ -624,7 +646,9 @@
 		"description": "A balanced GPT-5.6 model for everyday coding, reasoning, and agentic applications. The balanced tier sits between flagship quality and cost efficiency for everyday coding, reasoning, and agents.",
 		"i18n": {
 			"en": "A balanced GPT-5.6 model for everyday coding, reasoning, and agentic applications. The balanced tier sits between flagship quality and cost efficiency for everyday coding, reasoning, and agents.",
-			"zh": "面向日常编程、推理与 Agent 应用的均衡型 GPT-5.6 模型。平衡档位在旗舰质量与成本效率之间取舍，适合日常编程、推理和 Agent。"
+			"zh": "面向日常编程、推理与 Agent 应用的均衡型 GPT-5.6 模型。平衡档位在旗舰质量与成本效率之间取舍，适合日常编程、推理和 Agent。",
+			"ja": "日常のコーディング、推論、エージェント向けの、バランス型 GPT-5.6 です。フラッグシップの品質とコストのあいだに置き、普段のコーディング、推論、エージェントに向いています。",
+			"ko": "일상적인 코딩, 추론, 에이전트용 균형형 GPT-5.6입니다. 플래그십 품질과 비용 사이에 두고, 평소의 코딩, 추론, 에이전트에 맞습니다."
 		},
 		"vendor": "openai",
 		"context_window": 1050000,
@@ -684,7 +708,9 @@
 		"description": "A fast, efficient GPT-5.6 model for chat, classification, and lightweight agents. The efficient tier targets high-volume chat, classification, and lightweight agent workflows with low latency.",
 		"i18n": {
 			"en": "A fast, efficient GPT-5.6 model for chat, classification, and lightweight agents. The efficient tier targets high-volume chat, classification, and lightweight agent workflows with low latency.",
-			"zh": "面向对话、分类与轻量 Agent 的高速高效 GPT-5.6 模型。高效档位面向高并发对话、分类和轻量 Agent 工作流，强调低延迟。"
+			"zh": "面向对话、分类与轻量 Agent 的高速高效 GPT-5.6 模型。高效档位面向高并发对话、分类和轻量 Agent 工作流，强调低延迟。",
+			"ja": "対話、分類、軽いエージェント向けの、速くて効率のよい GPT-5.6 です。量の多い対話、分類、軽いエージェントで、レイテンシを抑える側です。",
+			"ko": "대화, 분류, 가벼운 에이전트용으로 빠르고 효율적인 GPT-5.6입니다. 양이 많은 대화, 분류, 가벼운 에이전트에서 지연을 낮추는 쪽입니다."
 		},
 		"vendor": "openai",
 		"context_window": 1050000,

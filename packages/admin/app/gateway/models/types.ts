@@ -25,6 +25,8 @@ export type PresetCatalogRow = {
 	i18n: {
 		en: string;
 		zh: string;
+		ja: string;
+		ko: string;
 	} | null;
 	/** Tier count for the billing-currency catalog branch. */
 	tier_count: number;

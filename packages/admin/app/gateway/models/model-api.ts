@@ -1,3 +1,5 @@
+import type { RouteListRow } from '../routes/types';
+import { deleteRoute } from '../routes/route-api';
 import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import { readApiJson } from '@/lib/api-json';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
@@ -158,4 +160,32 @@ export async function applyModelSync(
 	const data = await readApiJson<ModelSyncApplyOutput>(response);
 	if (data.success && data.data) return { success: true, data: data.data };
 	return { success: false, message: data.message || 'Sync failed' };
+}
+
+/** Load only the routes belonging to this model; never treat a failed request as an empty list. */
+export async function fetchModelRoutes(modelId: string, signal?: AbortSignal): Promise<RouteListRow[]> {
+	const query = new URLSearchParams({ model_id: modelId });
+	const response = await fetch(`/api/admin/routes?${query}`, { signal });
+	const data = await readApiJson<RouteListRow[]>(response);
+	if (data.success && Array.isArray(data.data)) return data.data.filter(route => route.model_id === modelId);
+	throw new Error(data.message || 'Failed to load routes');
+}
+
+/** Delete only selected routes owned by the current model, preserving per-route failures. */
+export async function deleteModelRoutes(modelId: string, routes: RouteListRow[], ids: string[]) {
+	const selected = new Set(ids);
+	const targets = new Map(routes.filter((route) => route.model_id === modelId && selected.has(route.id)).map((route) => [route.id, route]));
+	const deletedIds: string[] = [];
+	const failures: Array<{ route: RouteListRow; message: string }> = [];
+	// Sequential requests avoid a burst of concurrent database writes for large selections.
+	for (const route of targets.values()) {
+		try {
+			const result = await deleteRoute(route.id);
+			if (result.success) deletedIds.push(route.id);
+			else failures.push({ route, message: result.message });
+		} catch (cause) {
+			failures.push({ route, message: cause instanceof Error ? cause.message : '' });
+		}
+	}
+	return { deletedIds, failures };
 }

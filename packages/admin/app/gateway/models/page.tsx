@@ -145,6 +145,7 @@ function ModelsContent() {
 			<ModelSyncModal sync={sync} />
 
 			<ModelModal
+				onRoutesChanged={state.reloadModelsQuietly}
 				open={state.showModal}
 				editingModel={state.editingModel}
 				duplicateSourceModelId={state.duplicateSourceModelId}

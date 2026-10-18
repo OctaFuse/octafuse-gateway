@@ -5,7 +5,9 @@
 		"description": "A native multimodal Kimi model for visual coding and coordinated agent workflows. It pairs native multimodal understanding with visual coding and a self-directed agent-swarm approach.",
 		"i18n": {
 			"en": "A native multimodal Kimi model for visual coding and coordinated agent workflows. It pairs native multimodal understanding with visual coding and a self-directed agent-swarm approach.",
-			"zh": "面向视觉编程与协同 Agent 工作流的原生多模态 Kimi 模型。将原生多模态理解、视觉编程与自主 Agent 集群范式结合起来。"
+			"zh": "面向视觉编程与协同 Agent 工作流的原生多模态 Kimi 模型。将原生多模态理解、视觉编程与自主 Agent 集群范式结合起来。",
+			"ja": "視覚的なコーディングと、連携するエージェントの流れ向けの、最初からマルチモーダルな Kimi です。マルチモーダル理解、視覚コーディング、自分で進めるエージェント群のやり方を組み合わせています。",
+			"ko": "시각적 코딩과 함께 움직이는 에이전트 흐름용으로, 처음부터 멀티모달인 Kimi입니다. 멀티모달 이해, 시각 코딩, 스스로 진행하는 에이전트 군집 방식을 묶었습니다."
 		},
 		"vendor": "moonshot",
 		"context_window": 256000,
@@ -52,7 +54,9 @@
 		"description": "A multimodal Kimi model for long-horizon coding, UI generation, and agent orchestration. It targets long-horizon coding, code-driven UI generation, and coordinated multi-agent execution across complex projects.",
 		"i18n": {
 			"en": "A multimodal Kimi model for long-horizon coding, UI generation, and agent orchestration. It targets long-horizon coding, code-driven UI generation, and coordinated multi-agent execution across complex projects.",
-			"zh": "面向长周期编程、UI 生成与 Agent 编排的多模态 Kimi 模型。面向长周期编程、代码驱动的 UI 生成，以及复杂项目中的多 Agent 协同执行。"
+			"zh": "面向长周期编程、UI 生成与 Agent 编排的多模态 Kimi 模型。面向长周期编程、代码驱动的 UI 生成，以及复杂项目中的多 Agent 协同执行。",
+			"ja": "長い期間のコーディング、UI 生成、エージェントの編成向けのマルチモーダル Kimi です。長いコーディング、コードから作る UI、込み入ったプロジェクトでの複数エージェントの実行を狙っています。",
+			"ko": "긴 주기의 코딩, UI 생성, 에이전트 오케스트레이션용 멀티모달 Kimi입니다. 긴 코딩, 코드로 만드는 UI, 복잡한 프로젝트에서의 여러 에이전트 실행을 노립니다."
 		},
 		"vendor": "moonshot",
 		"context_window": 256000,
@@ -99,7 +103,9 @@
 		"description": "A coding-focused Kimi model for reliable end-to-end programming across long contexts. The coding-focused design aims to complete end-to-end programming tasks reliably across long contexts.",
 		"i18n": {
 			"en": "A coding-focused Kimi model for reliable end-to-end programming across long contexts. The coding-focused design aims to complete end-to-end programming tasks reliably across long contexts.",
-			"zh": "面向长上下文端到端编程任务、强调可靠性的 Kimi Code 模型。以编程为中心，旨在长上下文中可靠完成端到端开发任务。"
+			"zh": "面向长上下文端到端编程任务、强调可靠性的 Kimi Code 模型。以编程为中心，旨在长上下文中可靠完成端到端开发任务。",
+			"ja": "長いコンテキストで、最初から最後までのプログラミングを安定して終わらせることに振った Kimi Code です。",
+			"ko": "긴 컨텍스트에서 처음부터 끝까지의 프로그래밍을 안정적으로 끝내는 쪽에 맞춘 Kimi Code입니다."
 		},
 		"vendor": "moonshot",
 		"context_window": 256000,
@@ -146,7 +152,9 @@
 		"description": "A high-speed variant of Kimi K2.7 Code for faster inference on coding tasks. Optimized for latency-sensitive coding workflows and agent applications.",
 		"i18n": {
 			"en": "A high-speed variant of Kimi K2.7 Code for faster inference on coding tasks. Optimized for latency-sensitive coding workflows and agent applications.",
-			"zh": "Kimi K2.7 Code 高速版，面向编程任务的更快推理。针对延迟敏感的编程工作流与 Agent 应用优化。"
+			"zh": "Kimi K2.7 Code 高速版，面向编程任务的更快推理。针对延迟敏感的编程工作流与 Agent 应用优化。",
+			"ja": "Kimi K2.7 Code の高速版です。コーディングの推論がより速く、レイテンシを気にする開発の流れとエージェント向けです。",
+			"ko": "Kimi K2.7 Code 고속 버전입니다. 코딩 추론이 더 빠르고, 지연에 민감한 개발 흐름과 에이전트용입니다."
 		},
 		"vendor": "moonshot",
 		"context_window": 262144,
@@ -192,7 +200,9 @@
 		"description": "An open-weight multimodal Kimi model for complex coding, reasoning, and agentic work. The open-weight multimodal reasoning model is positioned for complex coding, knowledge work, and long-running agents.",
 		"i18n": {
 			"en": "An open-weight multimodal Kimi model for complex coding, reasoning, and agentic work. The open-weight multimodal reasoning model is positioned for complex coding, knowledge work, and long-running agents.",
-			"zh": "面向复杂编程、推理与 Agent 工作的开放权重 Kimi 多模态模型。这款开放权重多模态推理模型面向复杂编程、知识工作和长时间运行的 Agent。"
+			"zh": "面向复杂编程、推理与 Agent 工作的开放权重 Kimi 多模态模型。这款开放权重多模态推理模型面向复杂编程、知识工作和长时间运行的 Agent。",
+			"ja": "難しいコーディング、推論、エージェント向けの、オープンウェイトな Kimi マルチモーダルです。複雑なコーディング、知識作業、長く動くエージェントに置かれています。",
+			"ko": "어려운 코딩, 추론, 에이전트용 오픈 웨이트 Kimi 멀티모달입니다. 복잡한 코딩, 지식 작업, 오래 도는 에이전트에 맞춰져 있습니다."
 		},
 		"vendor": "moonshot",
 		"context_window": 1000000,

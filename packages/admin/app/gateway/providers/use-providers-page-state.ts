@@ -76,6 +76,7 @@ export function useProvidersPageState() {
 	const [formData, setFormData] = useState<ProviderFormData>(EMPTY_PROVIDER_FORM);
 	const [saveError, setSaveError] = useState('');
 	const [isSaving, setIsSaving] = useState(false);
+	const [isApiKeyLoading, setIsApiKeyLoading] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [copiedId, setCopiedId] = useState<string | null>(null);
 	const [showImportModal, setShowImportModal] = useState(false);
@@ -86,7 +87,7 @@ export function useProvidersPageState() {
 	const [importSelected, setImportSelected] = useState<Record<string, boolean>>({});
 	const [importSubmitting, setImportSubmitting] = useState(false);
 	const [statusTogglingId, setStatusTogglingId] = useState<string | null>(null);
-	const loadedApiKeyRef = useRef<string | null>(null);
+	const apiKeyTouchedRef = useRef(false);
 	const apiKeyLoadGenRef = useRef(0);
 
 	useEffect(() => {
@@ -218,8 +219,14 @@ export function useProvidersPageState() {
 		[notify, refreshProviders, tCommon]
 	);
 
+	const handleFormChange = useCallback((next: ProviderFormData) => {
+		if (next.api_key !== formData.api_key) apiKeyTouchedRef.current = true;
+		setFormData(next);
+	}, [formData.api_key]);
+
 	const handleCreate = useCallback(() => {
-		loadedApiKeyRef.current = null;
+		setIsApiKeyLoading(false);
+		apiKeyTouchedRef.current = false;
 		apiKeyLoadGenRef.current += 1;
 		setEditingProvider(null);
 		setDuplicateSourceId(null);
@@ -237,8 +244,9 @@ export function useProvidersPageState() {
 	}, []);
 
 	const handleEdit = useCallback((provider: GatewayProvider) => {
+		setIsApiKeyLoading(true);
 		const loadGen = ++apiKeyLoadGenRef.current;
-		loadedApiKeyRef.current = null;
+		apiKeyTouchedRef.current = false;
 		setEditingProvider(provider);
 		setDuplicateSourceId(null);
 		setFormData({
@@ -251,22 +259,25 @@ export function useProvidersPageState() {
 		setSaveError('');
 		void fetchProviderApiKeyPlaintext(provider.id)
 			.then((apiKey) => {
-				if (apiKeyLoadGenRef.current !== loadGen) return;
-				loadedApiKeyRef.current = apiKey;
+				if (apiKeyLoadGenRef.current !== loadGen || apiKeyTouchedRef.current) return;
 				setFormData((current) => {
-					if (current.id !== provider.id || current.api_key.trim()) return current;
+					if (current.id !== provider.id || apiKeyTouchedRef.current) return current;
 					return { ...current, api_key: apiKey };
 				});
 			})
 			.catch((error) => {
 				if (apiKeyLoadGenRef.current !== loadGen) return;
 				console.error('Load provider API key error:', error);
+			})
+			.finally(() => {
+				if (apiKeyLoadGenRef.current === loadGen) setIsApiKeyLoading(false);
 			});
 	}, []);
 
 	const handleDuplicate = useCallback(
 		(provider: GatewayProvider) => {
-			loadedApiKeyRef.current = null;
+			setIsApiKeyLoading(false);
+			apiKeyTouchedRef.current = false;
 			apiKeyLoadGenRef.current += 1;
 			setEditingProvider(null);
 			setDuplicateSourceId(provider.id);
@@ -403,14 +414,11 @@ export function useProvidersPageState() {
 		setSaveError('');
 		setIsSaving(true);
 		try {
-			const unchangedKey =
-				Boolean(editingProvider) &&
-				loadedApiKeyRef.current !== null &&
-				formData.api_key.trim() === loadedApiKeyRef.current;
-			const result = await saveProvider(
-				unchangedKey ? { ...formData, api_key: '' } : formData,
-				editingProvider?.id ?? null
-			);
+			const result = await saveProvider(formData, editingProvider?.id ?? null, {
+				// An untouched field may still be waiting for the reveal request, or its load may have failed.
+				// Omit it in that case; an explicit user edit sends the actual value, including an empty string.
+				updateApiKey: !editingProvider || apiKeyTouchedRef.current,
+			});
 			if (result.success) {
 				setShowModal(false);
 				void refreshProviders();
@@ -445,9 +453,10 @@ export function useProvidersPageState() {
 		editingProvider,
 		duplicateSourceId,
 		formData,
-		setFormData,
+		handleFormChange,
 		saveError,
 		isSaving,
+		isApiKeyLoading,
 		isDeleting,
 		showImportModal,
 		setShowImportModal,
