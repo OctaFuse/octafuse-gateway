@@ -654,7 +654,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 | GET | `/admin/providers` | 列表；`api_key` **脱敏**；含 `kind`、`endpoints`、`status`、`has_pending_key`、`quota_supported`、`routes_count`、`active_routes_count` |
 | POST | `/admin/providers` | 创建；**`name` + `api_key` + `kind` 必填**；`kind` 须为已知模板英文名或 `__custom__`；管理后台不提交 `id`，由服务端生成 UUID。API 仍可传可选 `id`。另可传 `note`、`endpoints`、`status` |
 | GET | `/admin/providers/:id` | 详情（脱敏 `api_key`） |
-| PATCH | `/admin/providers/:id` | 部分更新；省略 `kind` = 不改类型；`kind: ""` = 标为尚未分类；`api_key` 空串/未传 = **不改密钥**；`status` 仅 `active` \| `disabled`。改 `kind` 不覆盖已有 `endpoints` |
+| PATCH | `/admin/providers/:id` | 部分更新；省略 `kind` = 不改类型；`kind: ""` = 标为尚未分类；省略 `api_key` = **不改密钥**；显式 `api_key: ""`（或 `null`）= **清空密钥**；`status` 仅 `active` \| `disabled`。改 `kind` 不覆盖已有 `endpoints` |
 | DELETE | `/admin/providers/:id` | 删除；仍被 `model_routes` 引用时返回 **409**，须先删除或改绑对应 Target |
 | GET | `/admin/providers/:id/api-key` | **揭示明文** `api_key`（`{ success, data: { api_key } }`） |
 | GET | `/admin/providers/:id/quota` | 用该账号现有 `api_key` 实时查询额度。权限是 `providers.read`，响应不含密钥。不支持的 `kind`、空密钥或导入占位密钥返回 **400**。上游非 2xx 或响应无法解析返回 **502**（`message` 只有状态码，没有响应体）。超时返回 **504** |

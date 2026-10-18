@@ -26,6 +26,7 @@ import huaweiCloudIcon from '@lobehub/icons-static-svg/icons/huaweicloud.svg';
 import hunyuanIcon from '@lobehub/icons-static-svg/icons/hunyuan.svg';
 import ibmIcon from '@lobehub/icons-static-svg/icons/ibm.svg';
 import kimiIcon from '@lobehub/icons-static-svg/icons/kimi.svg';
+import kingsoftIcon from './icons/kingsoft.svg';
 import longcatIcon from '@lobehub/icons-static-svg/icons/longcat.svg';
 import metaIcon from '@lobehub/icons-static-svg/icons/meta.svg';
 import minimaxIcon from '@lobehub/icons-static-svg/icons/minimax.svg';
@@ -82,6 +83,7 @@ export const vendorIconAssets: Readonly<Record<string, string>> = {
 	huggingface: assetUrl(huggingfaceIcon),
 	huawei: assetUrl(huaweiCloudIcon),
 	ibm: assetUrl(ibmIcon),
+	kingsoft: assetUrl(kingsoftIcon),
 	meituan: assetUrl(longcatIcon),
 	meta: assetUrl(metaIcon),
 	minimax: assetUrl(minimaxIcon),

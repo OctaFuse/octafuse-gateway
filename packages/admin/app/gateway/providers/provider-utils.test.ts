@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import { parseProviderEndpoints } from '@octafuse/core/provider-endpoints';
 import { listStaticProviderImportCatalogForAdmin } from '@/lib/provider-import-preset';
 import {
+	providerApiKeyPreview,
 	formDataToEndpointsMap,
 	getProviderKeyStatus,
 	providerMatchesListFilter,
@@ -170,5 +171,28 @@ describe('Qiniu and ZenMux import presets', () => {
 			'https://zenmux.ai/api/vertex-ai/v1/publishers/google/models'
 		);
 		assert.equal(zenmuxMap.gemini?.auth, 'bearer');
+	});
+});
+
+
+describe('providerApiKeyPreview', () => {
+	it('shows only the first three and last four characters with a fixed middle mask', () => {
+		assert.equal(providerApiKeyPreview('sk-1234567890abcdef'), 'sk-••••••••••••cdef');
+		assert.equal(providerApiKeyPreview('  tok-1234567890  '), 'tok••••••••••••7890');
+	});
+
+	it('does not reveal any part of short credentials', () => {
+		for (const key of ['a', 'abcd', '12345678']) assert.equal(providerApiKeyPreview(key), '••••••••••••');
+	});
+
+	it('keeps an empty field empty instead of showing a fake credential', () => {
+		assert.equal(providerApiKeyPreview(''), '');
+		assert.equal(providerApiKeyPreview('   '), '');
+	});
+
+	it('shows the service-account identity without exposing its private key', () => {
+		const credential = JSON.stringify({ type: 'service_account', client_email: 'test@example.com', private_key: '-----BEGIN PRIVATE KEY-----\nprivate-test-material\n-----END PRIVATE KEY-----' });
+		assert.equal(providerApiKeyPreview(credential), 'sa:test@example.com');
+		assert.equal(providerApiKeyPreview(credential).includes('private-test-material'), false);
 	});
 });

@@ -166,7 +166,7 @@ export async function revealProviderApiKeyService(
 }
 
 /**
- * PATCH 供应商；`api_key` 空串/未传 = 不改；写 `endpoints`（权威）。
+ * PATCH 供应商；`api_key` 未传 = 不改，显式空串/null = 清空；写 `endpoints`（权威）。
  */
 export async function updateProviderService(
 	repos: GatewayRepositories,
@@ -196,10 +196,7 @@ export async function updateProviderService(
 		patch.status = normalizeProviderStatus(body.status);
 	}
 	if (body.api_key !== undefined) {
-		const apiKey = String(body.api_key ?? '').trim();
-		if (apiKey) {
-			patch.api_key = apiKey;
-		}
+		patch.api_key = String(body.api_key ?? '').trim();
 	}
 
 	if (Object.keys(patch).length === 0) return;

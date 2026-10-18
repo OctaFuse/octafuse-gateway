@@ -122,7 +122,7 @@ export type AdminProviderMutationInput = {
 	kind?: unknown;
 	/** `{ openai?: { base?, endpoints? }, … }` 对象或 JSON 字符串 */
 	endpoints?: unknown;
-	/** 创建必填；PATCH 时空串/省略 = 不改 */
+	/** 创建必填；PATCH 省略 = 不改，空串/null = 清空 */
 	api_key?: unknown;
 	/** `active` | `disabled` */
 	status?: unknown;

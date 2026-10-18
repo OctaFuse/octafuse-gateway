@@ -1,31 +1,58 @@
 "use client";
 
 import {
-	ChevronDownIcon,
-	ChevronRightIcon,
 	ClipboardDocumentIcon,
 	DocumentDuplicateIcon,
 	EyeIcon,
 	EyeSlashIcon,
 	TrashIcon,
+	XMarkIcon,
+	InformationCircleIcon,
+	AdjustmentsHorizontalIcon,
+	ShareIcon,
 } from "@heroicons/react/24/outline";
 import { CheckIcon } from "@heroicons/react/24/solid";
 import { useTranslations, useLocale } from "next-intl";
-import { getStaticProviderPresetByKind, providerPresetCatalogCopy } from "@/lib/provider-import-preset";
-import { useEffect, useId, useMemo, useState } from "react";
-import { protocolFormHasOverrides, protocolFormIsConfigured } from "../provider-utils";
-import { listProviderKindChoices, resolveStoredProviderPresentation } from "@/lib/provider-import-preset";
-import { CUSTOM_PROVIDER_KIND, pickProviderCatalogText, pickProviderKindLabel } from "@/lib/provider-kind";
+import {
+	getStaticProviderPresetByKind,
+	providerPresetCatalogCopy,
+} from "@/lib/provider-import-preset";
+import {
+	useEffect,
+	useId,
+	useMemo,
+	useRef,
+	useState,
+	type KeyboardEvent,
+} from "react";
+import {
+	providerApiKeyPreview,
+	getProtocolEndpointMode,
+	partialProtocolForm,
+	switchProtocolEndpointMode,
+	protocolFormIsConfigured,
+} from "../provider-utils";
+import {
+	listProviderKindChoices,
+	resolveStoredProviderPresentation,
+} from "@/lib/provider-import-preset";
+import {
+	CUSTOM_PROVIDER_KIND,
+	pickProviderCatalogText,
+	pickProviderKindLabel,
+} from "@/lib/provider-kind";
 import { VendorIcon } from "@/components/model-vendor-icon";
 import type { UpstreamProtocol } from "@octafuse/core/upstream-protocol";
 import type {
 	GatewayProvider,
 	ProtocolEndpointForm,
 	ProviderFormData,
-	ProviderProtocolSummary,
 } from "../types";
 import { ProviderCatalogOutboundLink } from "./provider-catalog-outbound-link";
+import { useProviderRoutes } from "../use-provider-routes";
+import { ProviderRelatedRoutes } from "./provider-related-routes";
 import { ProviderProtocolIcon } from "./provider-protocol-icon";
+import { PROVIDER_ENDPOINT_FIELDS } from "../provider-endpoint-fields";
 
 type ProviderModalProps = {
 	open: boolean;
@@ -34,12 +61,14 @@ type ProviderModalProps = {
 	formData: ProviderFormData;
 	saveError: string;
 	isSaving: boolean;
+	isApiKeyLoading: boolean;
 	isDeleting: boolean;
 	onClose: () => void;
 	onFormChange: (form: ProviderFormData) => void;
 	onSave: () => void;
 	onDelete: (id: string) => void;
 	onDuplicate: (provider: GatewayProvider) => void;
+	onRoutesChanged: () => Promise<void>;
 };
 
 const inputClass =
@@ -65,529 +94,282 @@ const PROTOCOL_TABS: Array<{
 	{ key: "elevenlabs", labelKey: "elevenlabsOptional" },
 ];
 
-type DashScopeOverrideField =
-	| "images_generations_multimodal"
-	| "audio_transcriptions"
-	| "audio_transcriptions_multimodal"
-	| "audio_transcriptions_tasks"
-	| "audio_speech"
-	| "audio_speech_multimodal"
-	| "audio_realtime_inference"
-	| "audio_realtime_session"
-	| "audio_hotwords"
-	| "audio_voices";
+/** Arrow/Home/End navigation for both levels of tabs. */
+function navigateTabs(event: KeyboardEvent<HTMLButtonElement>) {
+	if (
+		![
+			"ArrowLeft",
+			"ArrowRight",
+			"ArrowUp",
+			"ArrowDown",
+			"Home",
+			"End",
+		].includes(event.key)
+	)
+		return;
+	const tabs = Array.from(
+		event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+			'[role="tab"]'
+		) ?? []
+	);
+	if (!tabs.length) return;
+	const index = tabs.indexOf(event.currentTarget);
+	const next =
+		event.key === "Home"
+			? 0
+			: event.key === "End"
+			? tabs.length - 1
+			: (index +
+					(event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1) +
+					tabs.length) %
+			  tabs.length;
+	event.preventDefault();
+	tabs[next].focus();
+	tabs[next].click();
+}
 
-function ProtocolFields(props: {
-	baseUrlLabel: string;
-	basePlaceholder: string;
-	baseHint?: string;
+function EndpointUrlField({
+	id,
+	path,
+	description,
+	value,
+	placeholder,
+	websocket,
+	onChange,
+}: {
+	id: string;
+	path: string;
+	description: string;
+	value: string;
+	placeholder: string;
+	websocket?: boolean;
+	onChange: (value: string) => void;
+}) {
+	const filled = Boolean(value.trim());
+	return (
+		<div className="min-w-0 px-4 py-4">
+			<label
+				htmlFor={id}
+				className="mb-2.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5"
+			>
+				<code
+					className={`break-all rounded px-1.5 py-0.5 text-xs font-semibold leading-5 ${
+						filled ? "bg-blue-50 text-blue-700" : "bg-gray-100 text-gray-700"
+					}`}
+				>
+					{path}
+				</code>
+				{websocket ? (
+					<span className="text-[10px] font-semibold tracking-wide text-gray-400">
+						WSS
+					</span>
+				) : null}
+				<span className="text-xs leading-5 text-gray-500">{description}</span>
+			</label>
+			<input
+				id={id}
+				type="url"
+				value={value}
+				onChange={(event) => onChange(event.target.value)}
+				className={`w-full rounded-lg border px-3 py-2.5 font-mono text-[13px] leading-5 text-gray-900 transition-colors placeholder:text-gray-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 ${
+					filled
+						? "border-blue-200 bg-blue-50/30"
+						: "border-gray-200 bg-white hover:border-gray-300"
+				}`}
+				autoComplete="off"
+				spellCheck={false}
+				placeholder={placeholder}
+			/>
+		</div>
+	);
+}
+
+function ProtocolFields({
+	form,
+	protocol,
+	onChange,
+}: {
 	form: ProtocolEndpointForm;
-	protocol: ProviderProtocolSummary["key"];
-	advancedToggle: string;
-	advancedHint: string;
-	capLabels: {
-		chat: string;
-		responses: string;
-		imagesGenerations: string;
-		imagesGenerationsMultimodal: string;
-		imagesEdits: string;
-		audioTranscriptions: string;
-		audioTranscriptionsMultimodal: string;
-		audioTranscriptionsTasks: string;
-		audioSpeech: string;
-		audioSpeechRealtime: string;
-		audioTranscriptionsRealtime: string;
-		audioSpeechMultimodal: string;
-		audioRealtimeInference: string;
-		audioRealtimeSession: string;
-		audioHotwords: string;
-		audioVoices: string;
-		messages: string;
-		modelsGenerate: string;
-		embeddings: string;
-		modelsEmbed: string;
-		legacyPerActionNotice: string;
-	};
-	dashscopeCapHints?: Record<DashScopeOverrideField, string>;
-	minimaxCapHint?: string;
-	minimaxSpeechHint?: string;
-	minimaxImageHint?: string;
-	volcengineImageHint?: string;
-	elevenlabsTranscriptionHint?: string;
-	elevenlabsSpeechHint?: string;
-	elevenlabsRealtimeHints?: { speech: string; transcription: string };
-	authLabels?: {
-		label: string;
-		auto: string;
-		queryKey: string;
-		bearer: string;
-		hint: string;
-	};
+	protocol: UpstreamProtocol;
 	onChange: (next: ProtocolEndpointForm) => void;
 }) {
-	const {
-		baseUrlLabel,
-		basePlaceholder,
-		baseHint,
-		form,
-		protocol,
-		advancedToggle,
-		advancedHint,
-		capLabels,
-		dashscopeCapHints,
-		minimaxCapHint,
-		minimaxSpeechHint,
-		minimaxImageHint,
-		volcengineImageHint,
-		elevenlabsTranscriptionHint,
-		elevenlabsSpeechHint,
-		elevenlabsRealtimeHints,
-		authLabels,
-		onChange,
-	} = props;
-	const [advancedOpen, setAdvancedOpen] = useState(() =>
-		protocolFormHasOverrides(protocol, form)
-	);
-	const overridesPanelId = useId();
+	const t = useTranslations("providers.modal");
+	const mode = getProtocolEndpointMode(protocol, form);
+	const partialForm =
+		mode === "partial" ? partialProtocolForm(protocol, form) : form;
+	const updatePartial = (next: ProtocolEndpointForm) =>
+		onChange({ ...next, mode: "partial", partialDraftReady: true });
+	const panelId = useId();
+	const baseNote =
+		protocol === "gemini"
+			? t("geminiHint")
+			: protocol === "dashscope"
+			? t("dashscopeHint")
+			: protocol === "elevenlabs"
+			? t("elevenlabsHint")
+			: null;
 
 	return (
-		<div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-			<div className="space-y-2">
-				<label className="mb-1 block text-xs font-medium text-gray-600">
-					{baseUrlLabel}
-				</label>
-				<input
-					type="url"
-					value={form.base}
-					onChange={(e) => onChange({ ...form, base: e.target.value })}
-					className={inputClass}
-					placeholder={basePlaceholder}
-					autoComplete="off"
-				/>
-				{baseHint ? <p className="text-xs text-gray-500">{baseHint}</p> : null}
-			</div>
-			{protocol === "gemini" && authLabels ? (
-				<div className="mt-3 space-y-2">
-					<label className="mb-1 block text-xs font-medium text-gray-600">
-						{authLabels.label}
-					</label>
-					<select
-						value={form.auth}
-						onChange={(e) =>
-							onChange({
-								...form,
-								auth:
-									e.target.value === "query-key" || e.target.value === "bearer"
-										? e.target.value
-										: "auto",
-							})
-						}
-						className={inputClass}
-					>
-						<option value="auto">{authLabels.auto}</option>
-						<option value="query-key">{authLabels.queryKey}</option>
-						<option value="bearer">{authLabels.bearer}</option>
-					</select>
-					<p className="text-xs text-gray-500">{authLabels.hint}</p>
-				</div>
-			) : null}
-
-			<div className="mt-3">
-				<button
-					type="button"
-					className="flex w-full items-center gap-1.5 rounded-md px-1 py-1.5 text-left text-xs font-medium text-blue-600 hover:bg-blue-50 hover:text-blue-800"
-					onClick={() => setAdvancedOpen((v) => !v)}
-					aria-expanded={advancedOpen}
-					aria-controls={overridesPanelId}
+		<div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+			<div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-gray-200 bg-gray-50/70 px-4 py-3">
+				<fieldset className="shrink-0">
+					<legend className="sr-only">{t("endpointMode")}</legend>
+					<div className="inline-flex gap-1 rounded-lg bg-gray-100 p-1">
+						{(["all", "partial"] as const).map((value) => (
+							<label
+								key={value}
+								className={`relative cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+									mode === value
+										? "bg-white text-blue-700 shadow-sm ring-1 ring-gray-200/80"
+										: "text-gray-500 hover:text-gray-800"
+								}`}
+							>
+								<input
+									type="radio"
+									name={`${panelId}-mode`}
+									value={value}
+									checked={mode === value}
+									onChange={() =>
+										onChange(switchProtocolEndpointMode(protocol, form, value))
+									}
+									className="peer sr-only"
+									aria-describedby={`${panelId}-mode-hint`}
+								/>
+								<span
+									className="absolute inset-0 rounded-md peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500"
+									aria-hidden
+								/>
+								{t(value === "all" ? "allCapabilities" : "partialCapabilities")}
+							</label>
+						))}
+					</div>
+				</fieldset>
+				<p
+					id={`${panelId}-mode-hint`}
+					className="text-xs leading-5 text-gray-500"
 				>
-					{advancedOpen ? (
-						<ChevronDownIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-					) : (
-						<ChevronRightIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-					)}
-					<span>{advancedToggle}</span>
-				</button>
-				{advancedOpen ? (
-					<div
-						id={overridesPanelId}
-						className="mt-2 space-y-3 rounded-md border border-gray-100 bg-gray-50/80 p-3"
+					{t(mode === "all" ? "baseUrlHint" : "partialCapabilitiesHint")}
+				</p>
+			</div>
+			{mode === "all" ? (
+				<div className="px-4 py-5">
+					<label
+						htmlFor={`${panelId}-base`}
+						className="mb-2.5 block text-sm font-semibold text-gray-800"
 					>
-						<p className="text-xs text-gray-500">{advancedHint}</p>
-						{protocol === "openai" ? (
-							<>
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.chat}
-									</label>
-									<input
-										type="url"
-										value={form.chat}
-										onChange={(e) =>
-											onChange({ ...form, chat: e.target.value })
-										}
-										className={inputClass}
-										autoComplete="off"
-									/>
-								</div>
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.responses}
-									</label>
-									<input
-										type="url"
-										value={form.responses}
-										onChange={(e) =>
-											onChange({ ...form, responses: e.target.value })
-										}
-										className={inputClass}
-										autoComplete="off"
-									/>
-								</div>
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.imagesGenerations}
-									</label>
-									<input
-										type="url"
-										value={form.images_generations}
-										onChange={(e) =>
-											onChange({ ...form, images_generations: e.target.value })
-										}
-										className={inputClass}
-										autoComplete="off"
-									/>
-								</div>
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.imagesEdits}
-									</label>
-									<input
-										type="url"
-										value={form.images_edits}
-										onChange={(e) =>
-											onChange({ ...form, images_edits: e.target.value })
-										}
-										className={inputClass}
-										autoComplete="off"
-									/>
-								</div>
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.embeddings}
-									</label>
-									<input
-										type="url"
-										value={form.embeddings}
-										onChange={(e) => onChange({ ...form, embeddings: e.target.value })}
-										className={inputClass}
-										autoComplete="off"
-									/>
-								</div>
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.audioTranscriptions}
-									</label>
-									<input
-										type="url"
-										value={form.audio_transcriptions}
-										onChange={(e) =>
-											onChange({
-												...form,
-												audio_transcriptions: e.target.value,
+						{t("baseUrl")}
+					</label>
+					<input
+						id={`${panelId}-base`}
+						type="url"
+						value={form.base}
+						onChange={(event) =>
+							onChange({ ...form, base: event.target.value })
+						}
+						className="w-full rounded-lg border border-blue-200 bg-blue-50/30 px-3 py-2.5 font-mono text-[13px] leading-5 text-gray-900 placeholder:text-gray-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+						placeholder={t(`${protocol}Placeholder`)}
+						autoComplete="off"
+						spellCheck={false}
+					/>
+					{baseNote ? (
+						<p className="mt-2 text-xs leading-5 text-gray-500">{baseNote}</p>
+					) : null}
+				</div>
+			) : (
+				<div className="divide-y divide-gray-100">
+					{protocol === "gemini" && partialForm.legacyPerAction ? (
+						<>
+							<p className="mx-4 my-3 rounded-md bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+								{t("legacyPerActionNotice")}
+							</p>
+							{(["generateContent", "streamGenerateContent"] as const).map(
+								(action) => (
+									<EndpointUrlField
+										key={action}
+										id={`${panelId}-${action}`}
+										path={`/{model}:${action}`}
+										description={t(
+											`endpointCapabilities.${
+												action === "generateContent"
+													? "geminiGenerate"
+													: "geminiStream"
+											}`
+										)}
+										value={partialForm.legacyPerAction?.[action] ?? ""}
+										placeholder={t("endpointUrlPlaceholder")}
+										onChange={(value) =>
+											updatePartial({
+												...partialForm,
+												legacyPerAction: {
+													...partialForm.legacyPerAction!,
+													[action]: value,
+												},
 											})
 										}
-										className={inputClass}
-										autoComplete="off"
 									/>
-								</div>
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.audioSpeech}
-									</label>
-									<input
-										type="url"
-										value={form.audio_speech}
-										onChange={(e) =>
-											onChange({ ...form, audio_speech: e.target.value })
-										}
-										className={inputClass}
-										autoComplete="off"
-									/>
-								</div>
-							</>
-						) : null}
-						{protocol === "anthropic" ? (
-							<div>
-								<label className="mb-1 block text-xs text-gray-600">
-									{capLabels.messages}
-								</label>
-								<input
-									type="url"
-									value={form.messages}
-									onChange={(e) =>
-										onChange({ ...form, messages: e.target.value })
-									}
-									className={inputClass}
-									autoComplete="off"
-								/>
-							</div>
-						) : null}
-						{protocol === "gemini" ? (
-							<>
-								{form.legacyPerAction ? (
-									<div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-										<p className="font-medium">{capLabels.legacyPerActionNotice}</p>
-										<ul className="mt-1 list-inside list-disc break-all">
-											{form.legacyPerAction.generateContent ? (
-												<li>
-													generateContent: {form.legacyPerAction.generateContent}
-												</li>
-											) : null}
-											{form.legacyPerAction.streamGenerateContent ? (
-												<li>
-													streamGenerateContent:{' '}
-													{form.legacyPerAction.streamGenerateContent}
-												</li>
-											) : null}
-										</ul>
-									</div>
-								) : (
-									<div>
-										<label className="mb-1 block text-xs text-gray-600">
-											{capLabels.modelsGenerate}
-										</label>
-										<input
-											type="url"
-											value={form.modelsGenerate}
-											onChange={(e) =>
-												onChange({
-													...form,
-													modelsGenerate: e.target.value,
-													legacyPerAction: null,
-												})
-											}
-											className={inputClass}
-											placeholder="https://…/models/{model}:{action}"
-											autoComplete="off"
-										/>
-									</div>
-								)}
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.modelsEmbed}
-									</label>
-									<input
-										type="url"
-										value={form.modelsEmbed}
-										onChange={(e) => onChange({ ...form, modelsEmbed: e.target.value })}
-										className={inputClass}
-										placeholder="https://…/models/{model}:{action}"
-										autoComplete="off"
-									/>
-								</div>
-							</>
-						) : null}
-						{protocol === "minimax" ? (
-							<>
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.audioTranscriptions}
-									</label>
-									<input
-										type="url"
-										value={form.audio_transcriptions}
-										onChange={(e) =>
-											onChange({ ...form, audio_transcriptions: e.target.value })
-										}
-										className={inputClass}
-										autoComplete="off"
-									/>
-									{minimaxCapHint ? (
-										<p className="mt-1 text-xs text-gray-500">{minimaxCapHint}</p>
-									) : null}
-								</div>
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.audioSpeech}
-									</label>
-									<input
-										type="url"
-										value={form.audio_speech}
-										onChange={(e) => onChange({ ...form, audio_speech: e.target.value })}
-										className={inputClass}
-										autoComplete="off"
-									/>
-									{minimaxSpeechHint ? (
-										<p className="mt-1 text-xs text-gray-500">{minimaxSpeechHint}</p>
-									) : null}
-								</div>
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.imagesGenerations}
-									</label>
-									<input
-										type="url"
-										value={form.images_generations}
-										onChange={(e) =>
-											onChange({ ...form, images_generations: e.target.value })
-										}
-										className={inputClass}
-										autoComplete="off"
-									/>
-									{minimaxImageHint ? (
-										<p className="mt-1 text-xs text-gray-500">{minimaxImageHint}</p>
-									) : null}
-								</div>
-							</>
-						) : null}
-						{protocol === "volcengine" ? (
-							<div>
-								<label className="mb-1 block text-xs text-gray-600">
-									{capLabels.imagesGenerations}
-								</label>
-								<input
-									type="url"
-									value={form.images_generations}
-									onChange={(e) =>
-										onChange({ ...form, images_generations: e.target.value })
-									}
-									className={inputClass}
-									autoComplete="off"
-								/>
-								{volcengineImageHint ? (
-									<p className="mt-1 text-xs text-gray-500">{volcengineImageHint}</p>
-								) : null}
-							</div>
-						) : null}
-						{protocol === "elevenlabs" ? (
-							<>
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.audioTranscriptions}
-									</label>
-									<input
-										type="url"
-										value={form.audio_transcriptions}
-										onChange={(e) =>
-											onChange({ ...form, audio_transcriptions: e.target.value })
-										}
-										className={inputClass}
-										autoComplete="off"
-									/>
-									{elevenlabsTranscriptionHint ? (
-										<p className="mt-1 text-xs text-gray-500">{elevenlabsTranscriptionHint}</p>
-									) : null}
-								</div>
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.audioSpeech}
-									</label>
-									<input
-										type="url"
-										value={form.audio_speech}
-										onChange={(e) => onChange({ ...form, audio_speech: e.target.value })}
-										className={inputClass}
-										placeholder="https://…/text-to-speech/{voice_id}"
-										autoComplete="off"
-									/>
-									{elevenlabsSpeechHint ? (
-										<p className="mt-1 text-xs text-gray-500">{elevenlabsSpeechHint}</p>
-									) : null}
-								</div>
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.audioTranscriptionsRealtime}
-									</label>
-									<input
-										type="url"
-										value={form.audio_transcriptions_realtime}
-										onChange={(e) =>
-											onChange({ ...form, audio_transcriptions_realtime: e.target.value })
-										}
-										className={inputClass}
-										placeholder="wss://…/speech-to-text/realtime"
-										autoComplete="off"
-									/>
-									{elevenlabsRealtimeHints ? (
-										<p className="mt-1 text-xs text-gray-500">{elevenlabsRealtimeHints.transcription}</p>
-									) : null}
-								</div>
-								<div>
-									<label className="mb-1 block text-xs text-gray-600">
-										{capLabels.audioSpeechRealtime}
-									</label>
-									<input
-										type="url"
-										value={form.audio_speech_realtime}
-										onChange={(e) =>
-											onChange({ ...form, audio_speech_realtime: e.target.value })
-										}
-										className={inputClass}
-										placeholder="wss://…/text-to-speech/{voice_id}/stream-input"
-										autoComplete="off"
-									/>
-									{elevenlabsRealtimeHints ? (
-										<p className="mt-1 text-xs text-gray-500">{elevenlabsRealtimeHints.speech}</p>
-									) : null}
-								</div>
-							</>
-						) : null}
-						{protocol === "dashscope" ? (
-							<>
-								{(
-									[
-										[
-											"images_generations_multimodal",
-											capLabels.imagesGenerationsMultimodal,
-										],
-										["audio_transcriptions", capLabels.audioTranscriptions],
-										[
-											"audio_transcriptions_multimodal",
-											capLabels.audioTranscriptionsMultimodal,
-										],
-										[
-											"audio_transcriptions_tasks",
-											capLabels.audioTranscriptionsTasks,
-										],
-										["audio_speech", capLabels.audioSpeech],
-										[
-											"audio_speech_multimodal",
-											capLabels.audioSpeechMultimodal,
-										],
-										[
-											"audio_realtime_inference",
-											capLabels.audioRealtimeInference,
-										],
-										["audio_realtime_session", capLabels.audioRealtimeSession],
-										["audio_hotwords", capLabels.audioHotwords],
-										["audio_voices", capLabels.audioVoices],
-									] as const
-								).map(([field, label]) => (
-									<div key={field}>
-										<label className="mb-1 block text-xs text-gray-600">
-											{label}
-										</label>
-										<input
-											type="url"
-											value={form[field]}
-											onChange={(e) =>
-												onChange({ ...form, [field]: e.target.value })
-											}
-											className={inputClass}
-											autoComplete="off"
-										/>
-										{dashscopeCapHints?.[field] ? (
-											<p className="mt-1 text-xs text-gray-500">
-												{dashscopeCapHints[field]}
-											</p>
-										) : null}
-									</div>
-								))}
-							</>
-						) : null}
+								)
+							)}
+						</>
+					) : null}
+					{PROVIDER_ENDPOINT_FIELDS[protocol]
+						.filter(
+							({ field }) =>
+								!(
+									protocol === "gemini" &&
+									partialForm.legacyPerAction &&
+									field === "modelsGenerate"
+								)
+						)
+						.map(({ field, path, description, websocket }) => (
+							<EndpointUrlField
+								key={field}
+								id={`${panelId}-${field}`}
+								path={path}
+								description={t(`endpointCapabilities.${description}`)}
+								value={partialForm[field]}
+								placeholder={t("endpointUrlPlaceholder")}
+								websocket={websocket}
+								onChange={(value) =>
+									updatePartial({ ...partialForm, [field]: value })
+								}
+							/>
+						))}
+				</div>
+			)}
+			{protocol === "gemini" ? (
+				<div className="border-t border-gray-200 bg-gray-50/50 px-4 py-4">
+					<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+						<label
+							htmlFor={`${panelId}-auth`}
+							className="shrink-0 text-xs font-medium text-gray-700"
+						>
+							{t("geminiAuth")}
+						</label>
+						<select
+							id={`${panelId}-auth`}
+							value={form.auth}
+							onChange={(event) =>
+								onChange({
+									...form,
+									auth:
+										event.target.value === "query-key" ||
+										event.target.value === "bearer"
+											? event.target.value
+											: "auto",
+								})
+							}
+							className="min-w-0 flex-1 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-100"
+						>
+							<option value="auto">{t("geminiAuthAuto")}</option>
+							<option value="query-key">{t("geminiAuthQueryKey")}</option>
+							<option value="bearer">{t("geminiAuthBearer")}</option>
+						</select>
 					</div>
-				) : null}
-			</div>
+					<p className="mt-2 text-xs leading-5 text-gray-500">
+						{t("geminiAuthHint")}
+					</p>
+				</div>
+			) : null}
 		</div>
 	);
 }
@@ -600,29 +382,71 @@ export function ProviderModal(props: ProviderModalProps) {
 		formData,
 		saveError,
 		isSaving,
+		isApiKeyLoading,
 		isDeleting,
 		onClose,
 		onFormChange,
 		onSave,
 		onDelete,
 		onDuplicate,
+		onRoutesChanged,
 	} = props;
 
 	const t = useTranslations("providers.modal");
 	const tKind = useTranslations("providers.kind");
 	const tCommon = useTranslations("common");
 	const locale = useLocale();
+	const routesState = useProviderRoutes(
+		open ? editingProvider?.id ?? null : null,
+		onRoutesChanged
+	);
+	const busy = isSaving || isDeleting || routesState.isDeleting;
+	const [activeTab, setActiveTab] = useState<"basic" | "endpoints" | "routes">(
+		"basic"
+	);
+	const dialogRef = useRef<HTMLDivElement>(null);
 	const titleId = useId();
+	const tabsId = useId();
 	const [endpointTab, setEndpointTab] = useState<UpstreamProtocol>("openai");
 	const [showApiKey, setShowApiKey] = useState(false);
+	const [apiKeyFocused, setApiKeyFocused] = useState(false);
+	const previewApiKey =
+		Boolean(editingProvider) && !showApiKey && !apiKeyFocused;
 	const [apiKeyCopied, setApiKeyCopied] = useState(false);
+	const mainTabs: Array<{
+		key: "basic" | "endpoints" | "routes";
+		label: string;
+		Icon: typeof InformationCircleIcon;
+	}> = [
+		{ key: "basic", label: t("basicInfo"), Icon: InformationCircleIcon },
+		{
+			key: "endpoints",
+			label: t("endpointSettings"),
+			Icon: AdjustmentsHorizontalIcon,
+		},
+		...(editingProvider
+			? [
+					{
+						key: "routes" as const,
+						label: t("relatedRoutes.title"),
+						Icon: ShareIcon,
+					},
+			  ]
+			: []),
+	];
 	const kindChoices = useMemo(() => {
 		return listProviderKindChoices()
-			.map((choice) => ({ ...choice, label: pickProviderKindLabel(choice.labels, locale) }))
+			.map((choice) => ({
+				...choice,
+				label: pickProviderKindLabel(choice.labels, locale),
+			}))
 			.sort((a, b) => a.label.localeCompare(b.label, locale));
 	}, [locale]);
-	const selectedKind = kindChoices.find((choice) => choice.kind === formData.kind);
-	const showUnclassified = Boolean(editingProvider) && !String(editingProvider?.kind ?? "").trim();
+	const selectedKind = kindChoices.find(
+		(choice) => choice.kind === formData.kind
+	);
+	const showUnclassified =
+		Boolean(editingProvider) && !String(editingProvider?.kind ?? "").trim();
 	const catalogIntro = useMemo(() => {
 		const preset = getStaticProviderPresetByKind(formData.kind);
 		if (!preset) return "";
@@ -630,7 +454,9 @@ export function ProviderModal(props: ProviderModalProps) {
 	}, [formData.kind, locale]);
 
 	useEffect(() => {
+		setActiveTab("basic");
 		setShowApiKey(false);
+		setApiKeyFocused(false);
 		setApiKeyCopied(false);
 	}, [open, editingProvider?.id, duplicateSourceId]);
 
@@ -644,74 +470,92 @@ export function ProviderModal(props: ProviderModalProps) {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [open, editingProvider?.id, duplicateSourceId]);
 
-	if (!open) return null;
+	useEffect(() => {
+		if (!open) return;
+		const previous =
+			document.activeElement instanceof HTMLElement
+				? document.activeElement
+				: null;
+		const previousOverflow = document.body.style.overflow;
+		document.body.style.overflow = "hidden";
+		dialogRef.current?.focus();
+		return () => {
+			document.body.style.overflow = previousOverflow;
+			previous?.focus();
+		};
+	}, [open]);
 
-	const capLabels = {
-		chat: t('capChat'),
-		responses: t('capResponses'),
-		imagesGenerations: t('capImagesGenerations'),
-		imagesGenerationsMultimodal: t('capImagesGenerationsMultimodal'),
-		imagesEdits: t('capImagesEdits'),
-		audioTranscriptions: t('capAudioTranscriptions'),
-		audioTranscriptionsMultimodal: t('capAudioTranscriptionsMultimodal'),
-		audioTranscriptionsTasks: t('capAudioTranscriptionsTasks'),
-		audioSpeech: t('capAudioSpeech'),
-		audioSpeechRealtime: t('capAudioSpeechRealtime'),
-		audioTranscriptionsRealtime: t('capAudioTranscriptionsRealtime'),
-		audioSpeechMultimodal: t('capAudioSpeechMultimodal'),
-		audioRealtimeInference: t('capAudioRealtimeInference'),
-		audioRealtimeSession: t('capAudioRealtimeSession'),
-		audioHotwords: t('capAudioHotwords'),
-		audioVoices: t('capAudioVoices'),
-		messages: t('capMessages'),
-		modelsGenerate: t('capModelsGenerate'),
-		embeddings: t('capEmbeddings'),
-		modelsEmbed: t('capModelsEmbed'),
-		legacyPerActionNotice: t('legacyPerActionNotice'),
-	};
-	const minimaxCapHint = t("capHintMiniMaxAudioTranscriptions");
-	const minimaxSpeechHint = t("capHintMiniMaxAudioSpeech");
-	const minimaxImageHint = t("capHintMiniMaxImagesGenerations");
-	const volcengineImageHint = t("capHintVolcengineImagesGenerations");
-	const elevenlabsTranscriptionHint = t("capHintElevenLabsAudioTranscriptions");
-	const elevenlabsSpeechHint = t("capHintElevenLabsAudioSpeech");
-	const elevenlabsRealtimeHints = {
-		speech: t("capHintElevenLabsAudioSpeechRealtime"),
-		transcription: t("capHintElevenLabsAudioTranscriptionsRealtime"),
-	};
-	const dashscopeCapHints: Record<DashScopeOverrideField, string> = {
-		images_generations_multimodal: t('capHintImagesGenerationsMultimodal'),
-		audio_transcriptions: t('capHintAudioTranscriptions'),
-		audio_transcriptions_multimodal: t('capHintAudioTranscriptionsMultimodal'),
-		audio_transcriptions_tasks: t('capHintAudioTranscriptionsTasks'),
-		audio_speech: t('capHintAudioSpeech'),
-		audio_speech_multimodal: t('capHintAudioSpeechMultimodal'),
-		audio_realtime_inference: t('capHintAudioRealtimeInference'),
-		audio_realtime_session: t('capHintAudioRealtimeSession'),
-		audio_hotwords: t('capHintAudioHotwords'),
-		audio_voices: t('capHintAudioVoices'),
-	};
+	useEffect(() => {
+		// Shared confirmation dialogs remove their focused button when dismissed.
+		if (open && !busy && document.activeElement === document.body) {
+			dialogRef.current?.focus();
+		}
+	}, [open, busy]);
+
+	if (!open) return null;
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-2 sm:p-6"
 			onMouseDown={(e) => {
-				if (e.target === e.currentTarget && !isSaving && !isDeleting) {
+				if (e.target === e.currentTarget && !busy) {
 					onClose();
 				}
 			}}
 		>
 			<div
-				className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+				ref={dialogRef}
+				tabIndex={-1}
+				onKeyDown={(event) => {
+					if (
+						event.key === "Escape" &&
+						!busy &&
+						!document.querySelector('[role="alertdialog"]')
+					) {
+						event.stopPropagation();
+						onClose();
+					}
+					if (
+						event.key !== "Tab" ||
+						document.querySelector('[role="alertdialog"]')
+					)
+						return;
+					const focusable = Array.from(
+						event.currentTarget.querySelectorAll<HTMLElement>(
+							'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]'
+						)
+					).filter((element) => element.getClientRects().length > 0);
+					const first = focusable[0];
+					const last = focusable[focusable.length - 1];
+					if (
+						event.shiftKey &&
+						(document.activeElement === first ||
+							document.activeElement === event.currentTarget)
+					) {
+						event.preventDefault();
+						last?.focus();
+					} else if (
+						!event.shiftKey &&
+						(document.activeElement === last ||
+							document.activeElement === event.currentTarget)
+					) {
+						event.preventDefault();
+						first?.focus();
+					}
+				}}
+				className="flex h-[min(760px,90dvh)] max-h-[calc(100dvh-1rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl outline-none"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby={titleId}
 			>
-				<div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
+				<div className="flex shrink-0 items-start justify-between gap-4 px-5 pb-5 pt-6 sm:px-7">
 					<div>
-						<h2 id={titleId} className="text-xl font-bold text-gray-900">
+						<h2 id={titleId} className="text-lg font-semibold text-gray-900">
 							{editingProvider ? t("editTitle") : t("newTitle")}
 						</h2>
+						<p className="mt-1.5 text-sm text-gray-500">
+							{editingProvider ? t("editHint") : t("newHint")}
+						</p>
 						{!editingProvider && duplicateSourceId && (
 							<p className="mt-1 text-xs text-gray-500">
 								{t("prefilledFrom", { id: duplicateSourceId })}
@@ -720,372 +564,434 @@ export function ProviderModal(props: ProviderModalProps) {
 					</div>
 					<button
 						type="button"
-						onClick={onClose}
-						className="text-gray-400 hover:text-gray-600"
-						disabled={isSaving || isDeleting}
+						onClick={() => {
+							if (!busy) onClose();
+						}}
+						className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+						disabled={busy}
 						aria-label={tCommon("close")}
 					>
-						×
+						<XMarkIcon className="h-5 w-5" aria-hidden />
 					</button>
 				</div>
 
-				<div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+				<div
+					role="tablist"
+					aria-label={t("modalTabs")}
+					className="flex shrink-0 gap-5 border-b border-gray-200 px-5 sm:px-7"
+				>
+					{mainTabs.map(({ key, label, Icon }) => (
+						<button
+							key={key}
+							type="button"
+							role="tab"
+							id={`${tabsId}-${key}`}
+							aria-selected={activeTab === key}
+							aria-controls={`${tabsId}-${key}-panel`}
+							onClick={() => setActiveTab(key)}
+							onKeyDown={navigateTabs}
+							tabIndex={activeTab === key ? 0 : -1}
+							className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 pb-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+								activeTab === key
+									? "border-blue-600 text-blue-700"
+									: "border-transparent text-gray-500 hover:text-gray-900"
+							}`}
+						>
+							<Icon className="hidden h-4 w-4 sm:block" aria-hidden />
+							{label}
+							{key === "routes" && routesState.ready ? (
+								<span
+									className={`rounded-full px-2 py-0.5 text-xs ${
+										activeTab === key
+											? "bg-blue-50 text-blue-700"
+											: "bg-gray-100 text-gray-600"
+									}`}
+								>
+									{routesState.routes.length}
+								</span>
+							) : null}
+						</button>
+					))}
+				</div>
+				<div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-6 sm:px-7">
 					{saveError && (
-						<div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+						<div className="mb-4 shrink-0 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">
 							{saveError}
 						</div>
 					)}
 
-					<div className="space-y-8">
-						<section className="grid items-stretch gap-6 md:grid-cols-2">
-							<div className="space-y-3">
-								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">
-										{editingProvider ? t("kind") : t("kindRequired")}
-									</label>
-									<div className="flex items-center gap-2">
-										{formData.kind === CUSTOM_PROVIDER_KIND ? (
-											<VendorIcon vendor="other" iconKey="other" size="compact" />
-										) : selectedKind ? (
-											<VendorIcon
-												vendor={selectedKind.vendorKey}
-												iconKey={selectedKind.iconKey}
-												size="compact"
-											/>
-										) : null}
-										<select
-											value={formData.kind}
+					<div className="flex min-h-0 flex-1 flex-col">
+						<section
+							className="min-h-0 flex-1"
+							hidden={activeTab !== "basic"}
+							role="tabpanel"
+							id={`${tabsId}-basic-panel`}
+							aria-labelledby={`${tabsId}-basic`}
+						>
+							<div className="grid gap-8 md:min-h-full md:grid-cols-[1fr_0.9fr]">
+								<div className="space-y-5">
+									<div>
+										<label
+											htmlFor={`${tabsId}-kind`}
+											className="mb-1 block text-sm font-medium text-gray-700"
+										>
+											{editingProvider ? t("kind") : t("kindRequired")}
+										</label>
+										<div className="flex items-center gap-2">
+											<select
+												id={`${tabsId}-kind`}
+												value={formData.kind}
+												onChange={(e) =>
+													onFormChange({ ...formData, kind: e.target.value })
+												}
+												className="h-10 min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+												required={!editingProvider}
+											>
+												<option value="" disabled={!showUnclassified}>
+													{showUnclassified
+														? tKind("unclassified")
+														: t("kindPlaceholder")}
+												</option>
+												<option value={CUSTOM_PROVIDER_KIND}>
+													{tKind("custom")}
+												</option>
+												{kindChoices.map((choice) => (
+													<option key={choice.kind} value={choice.kind}>
+														{choice.label}
+													</option>
+												))}
+											</select>
+											{formData.kind === CUSTOM_PROVIDER_KIND ? (
+												<VendorIcon
+													vendor="other"
+													iconKey="other"
+													size="default"
+													className="!h-10 !w-10 [&>span:first-child]:!h-6 [&>span:first-child]:!w-6"
+												/>
+											) : selectedKind ? (
+												<VendorIcon
+													vendor={selectedKind.vendorKey}
+													iconKey={selectedKind.iconKey}
+													size="default"
+													className="!h-10 !w-10 [&>span:first-child]:!h-6 [&>span:first-child]:!w-6"
+												/>
+											) : null}
+										</div>
+										<p className="mt-1.5 text-xs text-gray-500">
+											{t("kindHint")}
+										</p>
+									</div>
+									<div>
+										<label
+											htmlFor={`${tabsId}-name`}
+											className="mb-1 block text-sm font-medium text-gray-700"
+										>
+											{t("nameRequired")}
+										</label>
+										<input
+											type="text"
+											id={`${tabsId}-name`}
+											value={formData.name}
 											onChange={(e) =>
-												onFormChange({ ...formData, kind: e.target.value })
+												onFormChange({ ...formData, name: e.target.value })
 											}
 											className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-											required={!editingProvider}
-										>
-											<option value="" disabled={!showUnclassified}>
-												{showUnclassified ? tKind("unclassified") : t("kindPlaceholder")}
-											</option>
-											<option value={CUSTOM_PROVIDER_KIND}>{tKind("custom")}</option>
-											{kindChoices.map((choice) => (
-												<option key={choice.kind} value={choice.kind}>
-													{choice.label}
-												</option>
-											))}
-										</select>
+											placeholder={t("namePlaceholder")}
+											autoComplete="off"
+											required
+										/>
 									</div>
-									<p className="mt-1 text-xs text-gray-500">{t("kindHint")}</p>
+									<div>
+										<div className="mb-1 flex items-center justify-between gap-2">
+											<label
+												htmlFor={`${tabsId}-api-key`}
+												className="block text-sm font-medium text-gray-700"
+											>
+												{editingProvider
+													? t("apiKeyOptional")
+													: t("apiKeyRequired")}
+											</label>
+											<ProviderCatalogOutboundLink
+												links={
+													resolveStoredProviderPresentation({
+														kind: formData.kind,
+														name: formData.name,
+														endpoints: editingProvider?.endpoints,
+													}).catalogLinks
+												}
+												className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800"
+											/>
+										</div>
+										<div className="relative">
+											<input
+												id={`${tabsId}-api-key`}
+												disabled={isApiKeyLoading}
+												aria-busy={isApiKeyLoading}
+												type={
+													previewApiKey || (editingProvider && showApiKey)
+														? "text"
+														: "password"
+												}
+												value={
+													previewApiKey
+														? providerApiKeyPreview(formData.api_key)
+														: formData.api_key
+												}
+												onFocus={() => setApiKeyFocused(true)}
+												onBlur={() => setApiKeyFocused(false)}
+												spellCheck={false}
+												autoCapitalize="none"
+												onChange={(e) =>
+													onFormChange({ ...formData, api_key: e.target.value })
+												}
+												className={`${inputClass} font-mono ${
+													editingProvider && formData.api_key ? "pr-16" : ""
+												}`}
+												placeholder={
+													isApiKeyLoading
+														? tCommon("loading")
+														: editingProvider
+														? t("apiKeyEditPlaceholder")
+														: t("apiKeyPlaceholder")
+												}
+												autoComplete="new-password"
+											/>
+											{editingProvider && formData.api_key ? (
+												<div className="absolute inset-y-0 right-1 flex items-center">
+													<button
+														type="button"
+														onClick={() => setShowApiKey((current) => !current)}
+														className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700"
+														aria-pressed={showApiKey}
+														aria-label={
+															showApiKey ? tCommon("hide") : tCommon("show")
+														}
+														title={
+															showApiKey ? tCommon("hide") : tCommon("show")
+														}
+													>
+														{showApiKey ? (
+															<EyeSlashIcon className="h-4 w-4" aria-hidden />
+														) : (
+															<EyeIcon className="h-4 w-4" aria-hidden />
+														)}
+													</button>
+													<button
+														type="button"
+														onClick={() => {
+															const value = formData.api_key.trim();
+															if (!value || !navigator.clipboard?.writeText)
+																return;
+															void navigator.clipboard
+																.writeText(value)
+																.then(() => {
+																	setApiKeyCopied(true);
+																	window.setTimeout(
+																		() => setApiKeyCopied(false),
+																		2000
+																	);
+																});
+														}}
+														className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700"
+														aria-label={
+															apiKeyCopied ? tCommon("copied") : tCommon("copy")
+														}
+														title={
+															apiKeyCopied ? tCommon("copied") : tCommon("copy")
+														}
+													>
+														{apiKeyCopied ? (
+															<CheckIcon
+																className="h-4 w-4 text-emerald-600"
+																aria-hidden
+															/>
+														) : (
+															<ClipboardDocumentIcon
+																className="h-4 w-4"
+																aria-hidden
+															/>
+														)}
+													</button>
+												</div>
+											) : null}
+										</div>
+										<p className="mt-1 text-xs text-gray-500">
+											{editingProvider ? t("apiKeyEditHint") : t("apiKeyHint")}
+										</p>
+									</div>
 								</div>
-								<div>
-									<label className="mb-1 block text-sm font-medium text-gray-700">
-										{t("nameRequired")}
-									</label>
-									<input
-										type="text"
-										value={formData.name}
+								<div className="flex min-h-0 flex-col rounded-xl border border-gray-200 bg-gray-50/60 p-5">
+									{catalogIntro ? (
+										<div className="mb-5 border-b border-gray-200 pb-5">
+											<p className="text-xs font-medium text-gray-500">
+												{t("catalogIntro")}
+											</p>
+											<p className="mt-2 max-h-32 overflow-y-auto whitespace-pre-wrap text-sm leading-6 text-gray-600">
+												{catalogIntro}
+											</p>
+										</div>
+									) : null}
+									<div>
+										<h3
+											id="provider-note-heading"
+											className="text-sm font-semibold text-gray-900"
+										>
+											{t("note")}
+										</h3>
+									</div>
+									<textarea
+										rows={3}
+										value={formData.note}
 										onChange={(e) =>
-											onFormChange({ ...formData, name: e.target.value })
+											onFormChange({ ...formData, note: e.target.value })
 										}
-										className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-										placeholder={t("namePlaceholder")}
+										className="mt-3 min-h-[10rem] w-full flex-1 resize-y md:resize-none rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+										placeholder={t("notePlaceholder")}
 										autoComplete="off"
-										required
+										aria-labelledby="provider-note-heading"
 									/>
 								</div>
-								<div>
-									<div className="mb-1 flex items-center justify-between gap-2">
-										<label className="block text-sm font-medium text-gray-700">
-											{editingProvider ? t("apiKeyOptional") : t("apiKeyRequired")}
-										</label>
-										<ProviderCatalogOutboundLink
-											links={
-												resolveStoredProviderPresentation({
-													kind: formData.kind,
-													name: formData.name,
-													endpoints: editingProvider?.endpoints,
-												}).catalogLinks
-											}
-											className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800"
-										/>
-									</div>
-									<div className="relative">
-										<input
-											type={editingProvider && showApiKey ? "text" : "password"}
-											value={formData.api_key}
-											onChange={(e) =>
-												onFormChange({ ...formData, api_key: e.target.value })
-											}
-											className={`${inputClass} font-mono ${editingProvider && formData.api_key ? "pr-16" : ""}`}
-											placeholder={
-												editingProvider
-													? t("apiKeyEditPlaceholder")
-													: t("apiKeyPlaceholder")
-											}
-											autoComplete="new-password"
-										/>
-										{editingProvider && formData.api_key ? (
-											<div className="absolute inset-y-0 right-1 flex items-center">
-												<button
-													type="button"
-													onClick={() => setShowApiKey((current) => !current)}
-													className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700"
-													aria-pressed={showApiKey}
-													aria-label={showApiKey ? tCommon("hide") : tCommon("show")}
-													title={showApiKey ? tCommon("hide") : tCommon("show")}
-												>
-													{showApiKey ? (
-														<EyeSlashIcon className="h-4 w-4" aria-hidden />
-													) : (
-														<EyeIcon className="h-4 w-4" aria-hidden />
-													)}
-												</button>
-												<button
-													type="button"
-													onClick={() => {
-														const value = formData.api_key.trim();
-														if (!value || !navigator.clipboard?.writeText) return;
-														void navigator.clipboard.writeText(value).then(() => {
-															setApiKeyCopied(true);
-															window.setTimeout(() => setApiKeyCopied(false), 2000);
-														});
-													}}
-													className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700"
-													aria-label={apiKeyCopied ? tCommon("copied") : tCommon("copy")}
-													title={apiKeyCopied ? tCommon("copied") : tCommon("copy")}
-												>
-													{apiKeyCopied ? (
-														<CheckIcon className="h-4 w-4 text-emerald-600" aria-hidden />
-													) : (
-														<ClipboardDocumentIcon className="h-4 w-4" aria-hidden />
-													)}
-												</button>
-											</div>
-										) : null}
-									</div>
-									<p className="mt-1 text-xs text-gray-500">
-										{editingProvider ? t("apiKeyEditHint") : t("apiKeyHint")}
-									</p>
-								</div>
-							</div>
-							<div className="flex min-h-0 flex-col">
-								{catalogIntro ? (
-									<div className="mb-3 rounded-md bg-gray-50 px-3 py-2">
-										<p className="text-xs font-medium text-gray-500">{t("catalogIntro")}</p>
-										<p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">{catalogIntro}</p>
-									</div>
-								) : null}
-								<div>
-									<h3
-										id="provider-note-heading"
-										className="text-sm font-semibold text-gray-900"
-									>
-										{t("note")}
-									</h3>
-									<p className="mt-0.5 text-xs text-gray-500">
-										{t("noteHint")}
-									</p>
-								</div>
-								<textarea
-									rows={3}
-									value={formData.note}
-									onChange={(e) =>
-										onFormChange({ ...formData, note: e.target.value })
-									}
-									className="mt-3 min-h-[7.5rem] w-full flex-1 resize-y rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder={t("notePlaceholder")}
-									autoComplete="off"
-									aria-labelledby="provider-note-heading"
-								/>
 							</div>
 						</section>
 
-						<section className="space-y-4 border-t border-gray-100 pt-6">
-							<div>
-								<h3 className="text-sm font-semibold text-gray-900">
-									{t("endpoints")}
-								</h3>
-								<p className="mt-0.5 text-xs text-gray-500">
-									{t("endpointsHint")}
-								</p>
-							</div>
-							<div
-								className="flex flex-wrap gap-1 rounded-lg border border-gray-200 bg-slate-50 p-1"
-								role="tablist"
-								aria-label={t("endpointsTabsAria")}
-							>
-								{PROTOCOL_TABS.map(({ key, labelKey }) => {
-									const selected = endpointTab === key;
-									const configured = protocolFormIsConfigured(key, formData[key]);
-									return (
-										<button
-											key={key}
-											type="button"
-											role="tab"
-											id={`provider-endpoint-tab-${key}`}
-											aria-selected={selected}
-											aria-controls={`provider-endpoint-panel-${key}`}
-											onClick={() => setEndpointTab(key)}
-											className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-												selected
-													? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
-													: "text-gray-600 hover:bg-white/70 hover:text-gray-900"
-											}`}
-										>
-											<span className="h-4 w-4 shrink-0">
-												<ProviderProtocolIcon protocol={key} />
-											</span>
-											{t(labelKey)}
-											{configured ? (
-												<span
-													className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"
-													title={t("configured")}
-													aria-label={t("configured")}
-												/>
-											) : null}
-										</button>
-									);
-								})}
-							</div>
-							<div
-								role="tabpanel"
-								id={`provider-endpoint-panel-${endpointTab}`}
-								aria-labelledby={`provider-endpoint-tab-${endpointTab}`}
-							>
-								{endpointTab === "openai" ? (
+						<section
+							hidden={activeTab !== "endpoints"}
+							role="tabpanel"
+							id={`${tabsId}-endpoints-panel`}
+							aria-labelledby={`${tabsId}-endpoints`}
+						>
+							<div className="grid items-start gap-5 md:grid-cols-[160px_minmax(0,1fr)]">
+								<div
+									className="flex flex-wrap gap-1 rounded-xl bg-gray-50 p-2 md:flex-col"
+									role="tablist"
+									aria-label={t("endpointsTabsAria")}
+								>
+									{PROTOCOL_TABS.map(({ key, labelKey }) => {
+										const selected = endpointTab === key;
+										const configured = protocolFormIsConfigured(
+											key,
+											formData[key]
+										);
+										return (
+											<button
+												key={key}
+												type="button"
+												role="tab"
+												id={`provider-endpoint-tab-${key}`}
+												aria-selected={selected}
+												aria-controls={`provider-endpoint-panel-${key}`}
+												onClick={() => setEndpointTab(key)}
+												onKeyDown={navigateTabs}
+												tabIndex={selected ? 0 : -1}
+												className={`inline-flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+													selected
+														? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
+														: "text-gray-600 hover:bg-white/70 hover:text-gray-900"
+												}`}
+											>
+												<span className="h-4 w-4 shrink-0">
+													<ProviderProtocolIcon protocol={key} />
+												</span>
+												{t(labelKey)}
+												{configured ? (
+													<span
+														className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"
+														title={t("configured")}
+														aria-label={t("configured")}
+													/>
+												) : null}
+											</button>
+										);
+									})}
+								</div>
+								<div
+									key={endpointTab}
+									className="min-w-0"
+									role="tabpanel"
+									id={`provider-endpoint-panel-${endpointTab}`}
+									aria-labelledby={`provider-endpoint-tab-${endpointTab}`}
+								>
 									<ProtocolFields
-										baseUrlLabel={t("baseUrl")}
-										basePlaceholder={t("openaiPlaceholder")}
-										form={formData.openai}
-										protocol="openai"
-										advancedToggle={t("advancedToggle")}
-										advancedHint={t("advancedHint")}
-										capLabels={{
-											...capLabels,
-											audioTranscriptions: t("capAudioTranscriptionsOpenai"),
-											audioSpeech: t("capAudioSpeechOpenai"),
-										}}
-										onChange={(openai) => onFormChange({ ...formData, openai })}
-									/>
-								) : null}
-								{endpointTab === "anthropic" ? (
-									<ProtocolFields
-										baseUrlLabel={t("baseUrl")}
-										basePlaceholder={t("anthropicPlaceholder")}
-										form={formData.anthropic}
-										protocol="anthropic"
-										advancedToggle={t("advancedToggle")}
-										advancedHint={t("advancedHint")}
-										capLabels={capLabels}
-										onChange={(anthropic) =>
-											onFormChange({ ...formData, anthropic })
+										protocol={endpointTab}
+										form={formData[endpointTab]}
+										onChange={(next) =>
+											onFormChange({ ...formData, [endpointTab]: next })
 										}
 									/>
-								) : null}
-								{endpointTab === "gemini" ? (
-									<ProtocolFields
-										baseUrlLabel={t("baseUrl")}
-										basePlaceholder={t("geminiPlaceholder")}
-										baseHint={t("geminiHint")}
-										form={formData.gemini}
-										protocol="gemini"
-										advancedToggle={t("advancedToggle")}
-										advancedHint={t("advancedHintGemini")}
-										capLabels={capLabels}
-										authLabels={{
-											label: t("geminiAuth"),
-											auto: t("geminiAuthAuto"),
-											queryKey: t("geminiAuthQueryKey"),
-											bearer: t("geminiAuthBearer"),
-											hint: t("geminiAuthHint"),
-										}}
-										onChange={(gemini) => onFormChange({ ...formData, gemini })}
-									/>
-								) : null}
-								{endpointTab === "dashscope" ? (
-									<ProtocolFields
-										baseUrlLabel={t("baseUrl")}
-										basePlaceholder={t("dashscopePlaceholder")}
-										baseHint={t("dashscopeHint")}
-										form={formData.dashscope}
-										protocol="dashscope"
-										advancedToggle={t("advancedToggle")}
-										advancedHint={t("advancedHintDashscope")}
-										capLabels={capLabels}
-										dashscopeCapHints={dashscopeCapHints}
-										onChange={(dashscope) =>
-											onFormChange({ ...formData, dashscope })
-										}
-									/>
-								) : null}
-								{endpointTab === "minimax" ? (
-									<ProtocolFields
-										baseUrlLabel={t("baseUrl")}
-										basePlaceholder={t("minimaxPlaceholder")}
-										baseHint={t("minimaxHint")}
-										form={formData.minimax}
-										protocol="minimax"
-										advancedToggle={t("advancedToggle")}
-										advancedHint={t("advancedHintMinimax")}
-										capLabels={capLabels}
-										minimaxCapHint={minimaxCapHint}
-										minimaxSpeechHint={minimaxSpeechHint}
-										minimaxImageHint={minimaxImageHint}
-										onChange={(minimax) => onFormChange({ ...formData, minimax })}
-									/>
-								) : null}
-								{endpointTab === "volcengine" ? (
-									<ProtocolFields
-										baseUrlLabel={t("baseUrl")}
-										basePlaceholder={t("volcenginePlaceholder")}
-										baseHint={t("volcengineHint")}
-										form={formData.volcengine}
-										protocol="volcengine"
-										advancedToggle={t("advancedToggle")}
-										advancedHint={t("advancedHintVolcengine")}
-										capLabels={capLabels}
-										volcengineImageHint={volcengineImageHint}
-										onChange={(volcengine) => onFormChange({ ...formData, volcengine })}
-									/>
-								) : null}
-								{endpointTab === "elevenlabs" ? (
-									<ProtocolFields
-										baseUrlLabel={t("baseUrl")}
-										basePlaceholder={t("elevenlabsPlaceholder")}
-										baseHint={t("elevenlabsHint")}
-										form={formData.elevenlabs}
-										protocol="elevenlabs"
-										advancedToggle={t("advancedToggle")}
-										advancedHint={t("advancedHintElevenlabs")}
-										capLabels={capLabels}
-										elevenlabsTranscriptionHint={elevenlabsTranscriptionHint}
-										elevenlabsSpeechHint={elevenlabsSpeechHint}
-										elevenlabsRealtimeHints={elevenlabsRealtimeHints}
-										onChange={(elevenlabs) => onFormChange({ ...formData, elevenlabs })}
-									/>
-								) : null}
+								</div>
 							</div>
 						</section>
+						{editingProvider ? (
+							<section
+								hidden={activeTab !== "routes"}
+								role="tabpanel"
+								id={`${tabsId}-routes-panel`}
+								aria-labelledby={`${tabsId}-routes`}
+							>
+								<ProviderRelatedRoutes
+									key={editingProvider.id}
+									state={routesState}
+									disabled={busy}
+								/>
+							</section>
+						) : null}
 					</div>
 				</div>
 
-				<div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t bg-gray-50 px-6 py-4">
+				<div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50 px-5 py-4 sm:px-7">
 					<div className="flex flex-wrap items-center gap-2">
 						{editingProvider && (
 							<button
 								type="button"
-								onClick={() => void onDelete(editingProvider.id)}
-								disabled={isSaving || isDeleting}
+								onClick={() => {
+									if (routesState.ready && !routesState.routes.length)
+										void onDelete(editingProvider.id);
+								}}
+								title={
+									routesState.error
+										? t("relatedRoutes.loadFailed")
+										: routesState.loading
+										? tCommon("loading")
+										: routesState.routes.length
+										? t("routesBlocked", { count: routesState.routes.length })
+										: undefined
+								}
+								disabled={
+									busy || !routesState.ready || routesState.routes.length > 0
+								}
 								className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								<TrashIcon className="h-4 w-4" aria-hidden />
 								{isDeleting ? tCommon("deleting") : t("deleteProvider")}
 							</button>
 						)}
+						{editingProvider && routesState.error ? (
+							<button
+								type="button"
+								onClick={() => setActiveTab("routes")}
+								className="text-xs text-red-600 hover:underline"
+							>
+								{t("relatedRoutes.loadFailed")}
+							</button>
+						) : null}
+						{editingProvider && routesState.routes.length > 0 ? (
+							<button
+								type="button"
+								onClick={() => setActiveTab("routes")}
+								className="text-xs text-gray-500 hover:text-blue-600"
+							>
+								{t("routesBlocked", { count: routesState.routes.length })}
+							</button>
+						) : null}
 					</div>
-					<div className="ml-auto flex gap-3">
+					<div className="ml-auto flex gap-2">
 						<button
 							type="button"
-							onClick={onClose}
+							onClick={() => {
+								if (!busy) onClose();
+							}}
 							className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
-							disabled={isSaving || isDeleting}
+							disabled={busy}
 						>
 							{tCommon("cancel")}
 						</button>
@@ -1093,7 +999,7 @@ export function ProviderModal(props: ProviderModalProps) {
 							<button
 								type="button"
 								onClick={() => onDuplicate(editingProvider)}
-								disabled={isSaving || isDeleting}
+								disabled={busy}
 								className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								<DocumentDuplicateIcon className="h-4 w-4" aria-hidden />
@@ -1103,7 +1009,7 @@ export function ProviderModal(props: ProviderModalProps) {
 						<button
 							type="button"
 							onClick={() => void onSave()}
-							disabled={isSaving || isDeleting}
+							disabled={busy}
 							className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{isSaving
