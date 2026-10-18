@@ -25,6 +25,7 @@
  * Claude Opus 5.5 目录价为 $4 / $20；缓存读取 $0.20，`cache_write_price` 取 5 分钟写入 $5（1 小时写入 $8 不单列）。
  * Grok 4.7 目录价与 Grok 4.6 相同（200K 阶梯，$2 / $6 与 $4 / $12）。不含仅 Cursor / Grok Build 提供的 Fast 双倍价。官方未公布文本输出上限，`max_tokens` 沿用同系 128000。
  * Xiaomi MiMo-V2.6 目录价为实时推理刊例（USD / CNY 分源）。Pro 与 Flash 的批量推理半价不写入 preset；UltraSpeed 无批量推理。缓存写入官网标明限时免费，`cache_write_price` 保持 null。
+ * MiniMax-M3.1-Flash-Preview 已写入规格。官方未公布按量刊例（仅 M Plan / MiniMax Code），美元与人民币价格暂按 MiniMax M3 标准刊例预填，官方刊例公布后应替换。
  * 面向管理后台的英文摘要与中英文介绍均与模型预设共同维护，按界面语言只读展示，不写入数据库。
  *
  * 合并顺序：与下方 import 列表一致（尚未录入价目的厂商保留 `[]` 占位文件；image 文件紧挨同 vendor 的 LLM 之后）。

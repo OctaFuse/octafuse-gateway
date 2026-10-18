@@ -198,6 +198,66 @@
 		"released": "2026-06-01"
 	},
 	{
+		"id": "minimax-m3.1-flash-preview",
+		"display_name": "MiniMax M3.1 Flash Preview",
+		"description": "Frontier multimodal MiniMax coding model. The 1,000,000-token window counts input and output together. Upstream model name is MiniMax-M3.1-Flash-Preview. Recommended max_completion_tokens is 131072; the hard output cap stored here is 524288. Input is text, image, and video; audio input is not supported. Thinking stays on: thinking.type disabled and reasoning_effort none return 400. Chat reasoning_effort accepts low, medium, high, xhigh, and max, and defaults to max. Anthropic uses output_config.effort with the same values. Available only through M Plan and MiniMax Code. MiniMax has not published a pay-as-you-go list price; USD and CNY prices here are copied from the MiniMax M3 standard list price until an official list price is published.",
+		"i18n": {
+			"en": "Frontier multimodal MiniMax coding model. The 1,000,000-token window counts input and output together. Upstream model name is MiniMax-M3.1-Flash-Preview. Recommended max_completion_tokens is 131072; the hard output cap stored here is 524288. Input is text, image, and video; audio input is not supported. Thinking stays on: thinking.type disabled and reasoning_effort none return 400. Chat reasoning_effort accepts low, medium, high, xhigh, and max, and defaults to max. Anthropic uses output_config.effort with the same values. Available only through M Plan and MiniMax Code. MiniMax has not published a pay-as-you-go list price; USD and CNY prices here are copied from the MiniMax M3 standard list price until an official list price is published.",
+			"zh": "面向编程与 Agent 的 MiniMax 多模态预览模型。100 万 token 上下文包含输入与输出。上游模型名为 MiniMax-M3.1-Flash-Preview。建议 max_completion_tokens 为 131072，这里记录的输出硬上限为 524288。输入为文本、图像和视频，不支持音频。思考不能关闭：thinking.type 为 disabled 或 reasoning_effort 为 none 会返回 400。Chat 的 reasoning_effort 取 low、medium、high、xhigh、max，默认 max。Anthropic 用 output_config.effort，取值相同。目前只通过 M Plan 与 MiniMax Code 提供。官方未公布按量刊例价，美元与人民币价格先按 MiniMax M3 标准刊例预填，官方刊例公布后应替换。"
+		},
+		"vendor": "minimax",
+		"context_window": 1000000,
+		"max_tokens": 524288,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 512000,
+						"input_price": 0.6,
+						"output_price": 2.4,
+						"cache_read_price": 0.12,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 1.2,
+						"output_price": 4.8,
+						"cache_read_price": 0.24,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 512000,
+						"input_price": 4.2,
+						"output_price": 16.8,
+						"cache_read_price": 0.84,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 8.4,
+						"output_price": 33.6,
+						"cache_read_price": 1.68,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
 		"id": "minimax-asr-1.0",
 		"display_name": "MiniMax ASR 1.0",
 		"description": "MiniMax file speech recognition (asr-1.0) via POST /v1/speech_to_text. Set the route provider model name to asr-1.0 and the adapter to minimax-asr-file. Billed per second of upstream duration, with no minimum.",
