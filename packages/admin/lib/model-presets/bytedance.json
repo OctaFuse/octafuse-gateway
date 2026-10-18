@@ -428,6 +428,43 @@
 		"released": "2026-09-15"
 	},
 	{
+		"id": "doubao-seed-2-1-lite-260915",
+		"display_name": "Doubao Seed 2.1 Lite (260915)",
+		"description": "A Doubao Seed 2.1 Lite model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, video, and audio. Context window is 1024k and maximum answer is 256k. Official audio-input list price is not stored in this preset: CNY 12 per million tokens (cache hit 2.4). BytePlus ModelArk does not list this model, so there is no USD price.",
+		"i18n": {
+			"en": "A Doubao Seed 2.1 Lite model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, video, and audio. Context window is 1024k and maximum answer is 256k. Official audio-input list price is not stored in this preset: CNY 12 per million tokens (cache hit 2.4). BytePlus ModelArk does not list this model, so there is no USD price.",
+			"zh": "面向深度思考、工具调用、结构化输出、GUI 任务，以及文本、图像、视频与音频多模态理解的豆包 Seed 2.1 Lite。上下文窗口 1024k，最大回答 256k。音频输入刊例价未写入价格档：人民币 12 元每百万 token（缓存命中 2.4）。BytePlus ModelArk 未上架该模型，因此没有美元刊例价。"
+		},
+		"vendor": "bytedance",
+		"context_window": 1000000,
+		"max_tokens": 256000,
+		"pricing": {
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.8,
+						"output_price": 2.7,
+						"cache_read_price": 0.16,
+						"cache_write_price": 0.017
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video",
+				"audio"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-09-15"
+	},
+	{
 		"id": "doubao-seed-2-1-turbo-260628",
 		"display_name": "Doubao Seed 2.1 Turbo",
 		"description": "A low-latency Doubao model for responsive multimodal applications and agents.",

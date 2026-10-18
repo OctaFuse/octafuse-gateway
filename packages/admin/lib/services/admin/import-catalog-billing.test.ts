@@ -792,6 +792,46 @@ describe('Doubao Seed catalog list prices', () => {
 		assert.equal(tiers[0]?.cache_write_price, 0.017);
 	});
 
+	it('adds doubao-seed-2-1-lite-260915 with CNY only', () => {
+		const preset = doubaoPreset('doubao-seed-2-1-lite-260915');
+		assert.equal(preset.display_name, 'Doubao Seed 2.1 Lite (260915)');
+		assert.equal(preset.context_window, 1000000);
+		assert.equal(preset.max_tokens, 256000);
+		assert.equal(preset.released, '2026-09-15');
+		assert.equal(preset.retired, undefined);
+		assert.deepEqual(preset.modalities?.input, ['text', 'image', 'video', 'audio']);
+		assert.deepEqual(preset.modalities?.output, ['text']);
+		assert.match(preset.description ?? '', /not stored/i);
+		assert.match(preset.i18n?.zh ?? '', /未写入/);
+		assert.equal(
+			(preset as { suggested_provider_model_name?: unknown }).suggested_provider_model_name,
+			undefined
+		);
+		const pricing = preset.pricing as { usd?: unknown; cny?: { tiers: Array<Record<string, unknown>> } };
+		assert.equal(pricing.usd, undefined);
+		assert.deepEqual(Object.keys(pricing.cny!.tiers[0]!).sort(), TOKEN_TIER_KEYS);
+
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === preset.id);
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 256000);
+		assert.equal(usd!.pricing_available, false);
+		assert.equal(usd!.pricing_label, null);
+		assert.equal(cny!.pricing_label, '¥0.8 / ¥2.7 /M');
+		assert.equal(cny!.context_window, 1000000);
+		assert.equal(cny!.max_tokens, 256000);
+
+		const tiers = doubaoTiers(preset.id, 'CNY');
+		assert.equal(tiers.length, 1);
+		assert.equal(tiers[0]?.upto, null);
+		assert.equal(tiers[0]?.input_price, 0.8);
+		assert.equal(tiers[0]?.output_price, 2.7);
+		assert.equal(tiers[0]?.cache_read_price, 0.16);
+		assert.equal(tiers[0]?.cache_write_price, 0.017);
+	});
+
 	it('raises doubao-seed-evolving context window to 1024k without changing prices', () => {
 		const preset = doubaoPreset('doubao-seed-evolving');
 		assert.equal(preset.context_window, 1000000);
