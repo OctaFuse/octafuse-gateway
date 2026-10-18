@@ -5,7 +5,9 @@
 		"description": "xAI's Imagine Image 2.0 model for precise generation, editing, and multi-reference creative work. It follows detailed instructions, preserves identity across edits, and supports 1K/2K output.",
 		"i18n": {
 			"en": "xAI's Imagine Image 2.0 model for precise generation, editing, and multi-reference creative work. It follows detailed instructions, preserves identity across edits, and supports 1K/2K output.",
-			"zh": "xAI Imagine Image 2.0 模型，面向精确生成、编辑与多参考图创作。指令遵循更细，编辑时保持主体一致，并支持 1K/2K 输出。"
+			"zh": "xAI Imagine Image 2.0 模型，面向精确生成、编辑与多参考图创作。指令遵循更细，编辑时保持主体一致，并支持 1K/2K 输出。",
+			"ja": "xAI Imagine Image 2.0 です。精密な生成、編集、複数の参照画像を使う制作向けです。指示への追従が細かく、編集しても被写体が崩れにくく、1K / 2K 出力に対応します。",
+			"ko": "xAI Imagine Image 2.0입니다. 정밀한 생성, 편집, 여러 참조 이미지를 쓰는 제작용입니다. 지시를 더 세밀하게 따르고, 편집해도 피사체가 잘 유지되며, 1K / 2K 출력을 지원합니다."
 		},
 		"vendor": "xai",
 		"context_window": null,
@@ -83,7 +85,9 @@
 		"description": "A high-fidelity xAI model for fast image generation, editing, and reference-guided creation. Retires on 2026-11-02; requests are then served by Grok Imagine Image 2.0 at low quality.",
 		"i18n": {
 			"en": "A high-fidelity xAI model for fast image generation, editing, and reference-guided creation. Retires on 2026-11-02; requests are then served by Grok Imagine Image 2.0 at low quality.",
-			"zh": "面向快速图片生成、编辑与参考图创作的 xAI 高保真模型。2026-11-02 退役，之后由 Grok Imagine Image 2.0 以 low 质量出图。"
+			"zh": "面向快速图片生成、编辑与参考图创作的 xAI 高保真模型。2026-11-02 退役，之后由 Grok Imagine Image 2.0 以 low 质量出图。",
+			"ja": "速い画像生成、編集、参照画像を使う制作向けの、xAI の高忠実度モデルです。2026-11-02 に提供を終了し、その後は Grok Imagine Image 2.0 が low 品質で生成します。",
+			"ko": "빠른 이미지 생성, 편집, 참조 이미지를 쓰는 제작용 xAI 고충실도 모델입니다. 2026-11-02에 제공이 끝나고, 이후에는 Grok Imagine Image 2.0이 low 품질로 생성합니다."
 		},
 		"vendor": "xai",
 		"context_window": null,

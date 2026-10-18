@@ -5,7 +5,9 @@
 		"description": "A Xiaomi omni-modal model for unified text, image, audio, and video understanding.",
 		"i18n": {
 			"en": "A Xiaomi omni-modal model for unified text, image, audio, and video understanding.",
-			"zh": "面向文本、图像、音频与视频统一理解的小米 MiMo 全模态模型。"
+			"zh": "面向文本、图像、音频与视频统一理解的小米 MiMo 全模态模型。",
+			"ja": "テキスト、画像、音声、動画をまとめて理解する、Xiaomi MiMo のオムニモデルです。",
+			"ko": "텍스트, 이미지, 오디오, 영상을 함께 이해하는 Xiaomi MiMo 옴니 모델입니다."
 		},
 		"vendor": "xiaomi",
 		"context_window": 256000,
@@ -55,7 +57,9 @@
 		"description": "A capable Xiaomi MiMo model for complex reasoning, coding, and agentic workloads.",
 		"i18n": {
 			"en": "A capable Xiaomi MiMo model for complex reasoning, coding, and agentic workloads.",
-			"zh": "面向复杂推理、编程与 Agent 工作负载的小米 MiMo 高性能模型。"
+			"zh": "面向复杂推理、编程与 Agent 工作负载的小米 MiMo 高性能模型。",
+			"ja": "難しい推論、コーディング、エージェント向けの、高性能な Xiaomi MiMo です。",
+			"ko": "어려운 추론, 코딩, 에이전트용 고성능 Xiaomi MiMo입니다."
 		},
 		"vendor": "xiaomi",
 		"context_window": 1050000,
@@ -119,7 +123,9 @@
 		"description": "Xiaomi's flagship MiMo model for software engineering and long-horizon agent tasks. The flagship emphasizes general agent capability, complex software engineering, and long-horizon execution.",
 		"i18n": {
 			"en": "Xiaomi's flagship MiMo model for software engineering and long-horizon agent tasks. The flagship emphasizes general agent capability, complex software engineering, and long-horizon execution.",
-			"zh": "面向软件工程与长周期 Agent 任务的小米 MiMo 旗舰模型。旗舰版本重点强化通用 Agent 能力、复杂软件工程和长周期执行。"
+			"zh": "面向软件工程与长周期 Agent 任务的小米 MiMo 旗舰模型。旗舰版本重点强化通用 Agent 能力、复杂软件工程和长周期执行。",
+			"ja": "ソフト開発と長い期間のエージェント向けの、Xiaomi MiMo フラッグシップです。汎用のエージェント能力、難しいソフト開発、長い実行を特に強めています。",
+			"ko": "소프트웨어 개발과 긴 주기의 에이전트용 Xiaomi MiMo 플래그십입니다. 범용 에이전트 능력, 어려운 소프트웨어 개발, 긴 실행을 특히 강화했습니다."
 		},
 		"vendor": "xiaomi",
 		"context_window": 1050000,
@@ -169,7 +175,9 @@
 		"description": "A cost-efficient omni-modal MiMo model for agentic and visual understanding workloads. The native omni-modal design aims for Pro-level agent performance with more economical inference and stronger visual understanding.",
 		"i18n": {
 			"en": "A cost-efficient omni-modal MiMo model for agentic and visual understanding workloads. The native omni-modal design aims for Pro-level agent performance with more economical inference and stronger visual understanding.",
-			"zh": "兼顾成本与能力、适合 Agent 和视觉理解场景的 MiMo 全模态模型。原生全模态设计以更经济的推理成本提供接近 Pro 的 Agent 表现，并增强视觉理解。"
+			"zh": "兼顾成本与能力、适合 Agent 和视觉理解场景的 MiMo 全模态模型。原生全模态设计以更经济的推理成本提供接近 Pro 的 Agent 表现，并增强视觉理解。",
+			"ja": "コストと能力のバランスを取り、エージェントと視覚理解に使う MiMo オムニモデルです。最初からオムニモーダルで、推論コストを抑えつつ Pro に近いエージェント性能を出し、視覚理解も強めています。",
+			"ko": "비용과 능력의 균형을 맞추고, 에이전트와 시각 이해에 쓰는 MiMo 옴니 모델입니다. 처음부터 옴니모달이라, 추론 비용을 낮추면서 Pro에 가까운 에이전트 성능을 내고 시각 이해도 강화했습니다."
 		},
 		"vendor": "xiaomi",
 		"context_window": 1050000,
@@ -219,7 +227,9 @@
 		"description": "Xiaomi's flagship omni-modal MiMo model for professional, long-horizon, and complex workflows, including scientific research and cybersecurity.",
 		"i18n": {
 			"en": "Xiaomi's flagship omni-modal MiMo model for professional, long-horizon, and complex workflows, including scientific research and cybersecurity.",
-			"zh": "面向专业、长程与复杂工作流的小米 MiMo 全模态旗舰模型，兼顾科学研究与网络安全。"
+			"zh": "面向专业、长程与复杂工作流的小米 MiMo 全模态旗舰模型，兼顾科学研究与网络安全。",
+			"ja": "専門的で、期間が長く、手順の多い仕事向けの Xiaomi MiMo オムニ・フラッグシップです。科学研究とサイバーセキュリティもカバーします。",
+			"ko": "전문적이고 기간이 길며 절차가 많은 작업용 Xiaomi MiMo 옴니 플래그십입니다. 과학 연구와 사이버 보안도 다룹니다."
 		},
 		"vendor": "xiaomi",
 		"context_window": 1050000,
@@ -267,7 +277,9 @@
 		"description": "A cost-efficient omni-modal MiMo model for high-frequency professional work and large-scale tasks.",
 		"i18n": {
 			"en": "A cost-efficient omni-modal MiMo model for high-frequency professional work and large-scale tasks.",
-			"zh": "面向高频办公与规模化任务的小米 MiMo 全模态高性价比模型。"
+			"zh": "面向高频办公与规模化任务的小米 MiMo 全模态高性价比模型。",
+			"ja": "頻度の高い事務と、規模の大きい処理向けの、コスト性能のよい Xiaomi MiMo オムニモデルです。",
+			"ko": "잦은 사무와 규모가 큰 처리용으로, 비용 대비 성능이 좋은 Xiaomi MiMo 옴니 모델입니다."
 		},
 		"vendor": "xiaomi",
 		"context_window": 1050000,
@@ -315,7 +327,9 @@
 		"description": "The high-speed serving mode of MiMo V2.6 Pro. It keeps flagship quality and offers up to 20× output speed for latency-sensitive workloads.",
 		"i18n": {
 			"en": "The high-speed serving mode of MiMo V2.6 Pro. It keeps flagship quality and offers up to 20× output speed for latency-sensitive workloads.",
-			"zh": "保留 MiMo V2.6 Pro 旗舰能力的超高速服务模式，输出速度最高约 20 倍，面向强实时与时延敏感场景。"
+			"zh": "保留 MiMo V2.6 Pro 旗舰能力的超高速服务模式，输出速度最高约 20 倍，面向强实时与时延敏感场景。",
+			"ja": "MiMo V2.6 Pro のフラッグシップ能力を残した超高速サービングです。出力速度は最大約20倍で、リアルタイム性やレイテンシを強く気にする処理向けです。",
+			"ko": "MiMo V2.6 Pro의 플래그십 능력을 유지한 초고속 서빙입니다. 출력 속도는 최대 약 20배이며, 실시간성과 지연을 강하게 신경 쓰는 처리용입니다."
 		},
 		"vendor": "xiaomi",
 		"context_window": 1050000,

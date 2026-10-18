@@ -638,13 +638,17 @@ describe('import catalog pricing preview follows billing currency', () => {
 });
 
 describe('import catalog localized model metadata', () => {
-	it('provides English and Chinese descriptions for every static preset', () => {
+	it('provides English, Chinese, Japanese, and Korean descriptions for every static preset', () => {
 		const rows = listStaticModelPresetCatalogForAdmin('USD');
 		assert.ok(rows.length > 0);
 		for (const row of rows) {
 			assert.ok(row.description?.trim(), `${row.id}: English fallback`);
 			assert.ok(row.i18n?.en.trim(), `${row.id}: English catalog description`);
 			assert.ok(row.i18n?.zh.trim(), `${row.id}: Chinese catalog description`);
+			assert.match(row.i18n?.ja ?? '', /[ぁ-ん]/, `${row.id}: Japanese catalog description`);
+			assert.match(row.i18n?.ko ?? '', /[가-힣]/, `${row.id}: Korean catalog description`);
+			assert.notEqual(row.i18n?.ja, row.i18n?.en, `${row.id}: Japanese must not copy English`);
+			assert.notEqual(row.i18n?.ko, row.i18n?.en, `${row.id}: Korean must not copy English`);
 		}
 	});
 });
@@ -772,6 +776,8 @@ describe('MiniMax M3.1 Flash Preview catalog specs', () => {
 		assert.match(preset.description ?? '', /MiniMax-M3.1-Flash-Preview/);
 		assert.match(preset.description ?? '', /copied from the MiniMax M3 standard list price/i);
 		assert.match(preset.i18n?.zh ?? '', /按 MiniMax M3 标准刊例预填/);
+		assert.match(preset.i18n?.ja ?? '', /MiniMax M3 の標準定価を仮に入れています/);
+		assert.match(preset.i18n?.ko ?? '', /MiniMax M3 표준 정가를 임시로 넣었습니다/);
 		assert.deepEqual(preset.pricing, m3.pricing);
 		for (const billing of ['USD', 'CNY'] as const) {
 			const row = listStaticModelPresetCatalogForAdmin(billing).find((item) => item.id === presetId);
@@ -844,6 +850,8 @@ describe('Doubao Seed catalog list prices', () => {
 		assert.deepEqual(preset.modalities?.output, ['text']);
 		assert.match(preset.description ?? '', /not stored/i);
 		assert.match(preset.i18n?.zh ?? '', /未写入/);
+		assert.match(preset.i18n?.ja ?? '', /料金ティアに入れていません/);
+		assert.match(preset.i18n?.ko ?? '', /가격 구간에 넣지 않았습니다/);
 		assert.equal(
 			(preset as { suggested_provider_model_name?: unknown }).suggested_provider_model_name,
 			undefined
@@ -945,6 +953,8 @@ describe('Doubao Seed catalog list prices', () => {
 		assert.deepEqual(preset.modalities?.output, ['text']);
 		assert.match(preset.description ?? '', /not stored/i);
 		assert.match(preset.i18n?.zh ?? '', /未写入/);
+		assert.match(preset.i18n?.ja ?? '', /料金ティアに入れていません/);
+		assert.match(preset.i18n?.ko ?? '', /가격 구간에 넣지 않았습니다/);
 		assert.equal(
 			(preset as { suggested_provider_model_name?: unknown }).suggested_provider_model_name,
 			undefined
@@ -987,6 +997,8 @@ describe('Doubao Seed catalog list prices', () => {
 		assert.deepEqual(preset.modalities?.output, ['text']);
 		assert.match(preset.description ?? '', /not stored/i);
 		assert.match(preset.i18n?.zh ?? '', /未写入/);
+		assert.match(preset.i18n?.ja ?? '', /料金ティアに入れていません/);
+		assert.match(preset.i18n?.ko ?? '', /가격 구간에 넣지 않았습니다/);
 		const usdRow = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === preset.id);
 		const cnyRow = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
 		assert.equal(usdRow!.pricing_label, '$0.1 / $0.4 /M');

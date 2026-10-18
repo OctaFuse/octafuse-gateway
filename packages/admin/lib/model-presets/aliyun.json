@@ -5,7 +5,9 @@
 		"description": "A 2.4T-parameter MoE flagship for coding, office productivity, vision, and long-horizon agents. Native multimodal understanding supports long documents and video, with strong end-to-end delivery on professional tasks.",
 		"i18n": {
 			"en": "A 2.4T-parameter MoE flagship for coding, office productivity, vision, and long-horizon agents. Native multimodal understanding supports long documents and video, with strong end-to-end delivery on professional tasks.",
-			"zh": "2.4 万亿参数 MoE 旗舰，全面提升编程与办公能力，可胜任法律、金融、设计等专业任务，并端到端交付生产级成果。原生视觉理解覆盖规划、执行与验证，支持超长文档与长视频深度解析。"
+			"zh": "2.4 万亿参数 MoE 旗舰，全面提升编程与办公能力，可胜任法律、金融、设计等专业任务，并端到端交付生产级成果。原生视觉理解覆盖规划、执行与验证，支持超长文档与长视频深度解析。",
+			"ja": "総パラメータ 2.4兆の MoE フラッグシップです。コーディングと事務作業を底上げし、法律・金融・デザインなどの専門タスクから本番品質の成果物まで通して仕上げられます。視覚理解は計画、実行、検証までカバーし、非常に長い文書と長尺動画も読み解けます。",
+			"ko": "총 파라미터 2.4조 MoE 플래그십입니다. 코딩과 사무 능력을 끌어올려 법률, 금융, 디자인 같은 전문 작업부터 프로덕션 수준의 결과까지 이어서 끝낼 수 있습니다. 시각 이해는 계획, 실행, 검증까지 다루며, 매우 긴 문서와 장시간 영상도 깊게 읽습니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
@@ -52,7 +54,9 @@
 		"description": "A high-throughput variant of Qwen3.8 Max optimized for faster inference. Supports both reasoning and non-reasoning modes with the same 1M context window.",
 		"i18n": {
 			"en": "A high-throughput variant of Qwen3.8 Max optimized for faster inference. Supports both reasoning and non-reasoning modes with the same 1M context window.",
-			"zh": "Qwen3.8 Max 优速版，推理速度更快。支持思考与非思考双模式，同样具备 1M 上下文窗口。"
+			"zh": "Qwen3.8 Max 优速版，推理速度更快。支持思考与非思考双模式，同样具备 1M 上下文窗口。",
+			"ja": "Qwen3.8 Max の高速版です。推論が速く、思考モードと通常応答の両方に対応し、コンテキストは同じく 1M です。",
+			"ko": "Qwen3.8 Max의 고속 버전입니다. 추론이 더 빠르고, 사고 모드와 일반 응답을 모두 지원하며, 컨텍스트도 마찬가지로 1M입니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
@@ -98,7 +102,9 @@
 		"description": "A 2.4T-parameter open-source flagship for complex reasoning, coding, and knowledge work. Supports both reasoning and non-reasoning modes with a 1M context window.",
 		"i18n": {
 			"en": "A 2.4T-parameter open-source flagship for complex reasoning, coding, and knowledge work. Supports both reasoning and non-reasoning modes with a 1M context window.",
-			"zh": "2.4 万亿参数开源旗舰模型，面向复杂推理、编程与知识工作。支持思考与非思考双模式，具备 1M 上下文窗口。"
+			"zh": "2.4 万亿参数开源旗舰模型，面向复杂推理、编程与知识工作。支持思考与非思考双模式，具备 1M 上下文窗口。",
+			"ja": "総パラメータ 2.4兆のオープンソース・フラッグシップです。難しい推論、コーディング、知識作業向けで、思考モードと通常応答の両方に対応し、コンテキストは 1M です。",
+			"ko": "총 파라미터 2.4조 오픈소스 플래그십입니다. 복잡한 추론, 코딩, 지식 작업용이며, 사고 모드와 일반 응답을 모두 지원하고 컨텍스트는 1M입니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
@@ -143,7 +149,9 @@
 		"description": "A 27B-parameter multimodal Qwen model for efficient reasoning, coding, and visual understanding. Supports both reasoning and non-reasoning modes with image and video input.",
 		"i18n": {
 			"en": "A 27B-parameter multimodal Qwen model for efficient reasoning, coding, and visual understanding. Supports both reasoning and non-reasoning modes with image and video input.",
-			"zh": "270 亿参数 Qwen 多模态模型，面向高效推理、编程与视觉理解。支持思考与非思考双模式，接受图像与视频输入。"
+			"zh": "270 亿参数 Qwen 多模态模型，面向高效推理、编程与视觉理解。支持思考与非思考双模式，接受图像与视频输入。",
+			"ja": "270億パラメータの Qwen マルチモーダルモデルです。効率のよい推論、コーディング、視覚理解向けで、思考モードと通常応答の両方に対応し、画像と動画を受け取れます。",
+			"ko": "270억 파라미터 Qwen 멀티모달 모델입니다. 효율적인 추론, 코딩, 시각 이해용이며, 사고 모드와 일반 응답을 모두 지원하고 이미지와 영상을 받습니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
@@ -189,7 +197,9 @@
 		"description": "A multimodal Qwen model for text, image, audio, and video understanding. Supports deep thinking with adjustable reasoning intensity for complex tasks.",
 		"i18n": {
 			"en": "A multimodal Qwen model for text, image, audio, and video understanding. Supports deep thinking with adjustable reasoning intensity for complex tasks.",
-			"zh": "Qwen 全模态模型，支持文本、图像、音频与视频理解。默认开启深度思考，可调节思考强度以适应复杂任务。"
+			"zh": "Qwen 全模态模型，支持文本、图像、音频与视频理解。默认开启深度思考，可调节思考强度以适应复杂任务。",
+			"ja": "テキスト、画像、音声、動画をまとめて扱う Qwen のオムニモデルです。深い思考は標準でオンになり、難しいタスクに合わせて思考の強さを調整できます。",
+			"ko": "텍스트, 이미지, 오디오, 영상을 함께 다루는 Qwen 옴니 모델입니다. 깊은 사고는 기본으로 켜져 있고, 어려운 작업에 맞춰 사고 강도를 조절할 수 있습니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
@@ -236,7 +246,9 @@
 		"description": "A flagship Qwen preview for complex reasoning, coding, vision, and long-horizon agentic workloads. Preview channel for early access; production traffic should prefer qwen3.8-max.",
 		"i18n": {
 			"en": "A flagship Qwen preview for complex reasoning, coding, vision, and long-horizon agentic workloads. Preview channel for early access; production traffic should prefer qwen3.8-max.",
-			"zh": "面向复杂推理、编程、视觉理解与长程 Agent 任务的 Qwen 旗舰预览模型。适合抢先体验；生产调用建议优先使用 qwen3.8-max。"
+			"zh": "面向复杂推理、编程、视觉理解与长程 Agent 任务的 Qwen 旗舰预览模型。适合抢先体验；生产调用建议优先使用 qwen3.8-max。",
+			"ja": "難しい推論、コーディング、視覚理解、長いエージェント作業向けの Qwen フラッグシップ・プレビューです。先に試す用途に向いており、本番トラフィックは qwen3.8-max を優先してください。",
+			"ko": "복잡한 추론, 코딩, 시각 이해, 긴 에이전트 작업용 Qwen 플래그십 프리뷰입니다. 먼저 써 보는 용도에 맞고, 프로덕션 트래픽은 qwen3.8-max를 우선하는 편이 좋습니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
@@ -283,7 +295,9 @@
 		"description": "A fast multimodal Qwen3.8 model with a native 1M context window for coding, agents, documents, and visual understanding. Near-flagship quality at a fraction of Qwen3.8 Max cost, with image and video input.",
 		"i18n": {
 			"en": "A fast multimodal Qwen3.8 model with a native 1M context window for coding, agents, documents, and visual understanding. Near-flagship quality at a fraction of Qwen3.8 Max cost, with image and video input.",
-			"zh": "通义千问最新多模态 Flash 模型，兼具理解生成能力与响应速度。原生百万级上下文，适合编程辅助、智能体协作、超长文档与图文/长视频理解，以更低推理成本接近旗舰效果。"
+			"zh": "通义千问最新多模态 Flash 模型，兼具理解生成能力与响应速度。原生百万级上下文，适合编程辅助、智能体协作、超长文档与图文/长视频理解，以更低推理成本接近旗舰效果。",
+			"ja": "Qwen の新しいマルチモーダル Flash です。理解と生成の両方を持ち、応答も速いモデルです。コンテキストは最初から100万トークン規模で、コーディング支援、エージェント連携、長い文書、画像や長尺動画の理解に向きます。推論コストを抑えつつ、フラッグシップに近い仕上がりを狙えます。",
+			"ko": "Qwen의 새 멀티모달 Flash입니다. 이해와 생성을 함께 하면서 응답도 빠릅니다. 컨텍스트는 처음부터 100만 토큰 규모이고, 코딩 보조, 에이전트 협업, 긴 문서, 이미지와 장시간 영상 이해에 맞습니다. 추론 비용을 낮추면서 플래그십에 가까운 결과를 노립니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
@@ -330,7 +344,9 @@
 		"description": "A cost-efficient multimodal Qwen model for general reasoning, vision, and production applications. It combines text and image understanding with a cost-conscious design for production-scale multimodal reasoning.",
 		"i18n": {
 			"en": "A cost-efficient multimodal Qwen model for general reasoning, vision, and production applications. It combines text and image understanding with a cost-conscious design for production-scale multimodal reasoning.",
-			"zh": "兼顾成本与效果的 Qwen 多模态模型，适合通用推理、视觉理解与生产应用。兼顾文本与图像理解，并以更具成本效率的设计服务于生产级多模态推理。"
+			"zh": "兼顾成本与效果的 Qwen 多模态模型，适合通用推理、视觉理解与生产应用。兼顾文本与图像理解，并以更具成本效率的设计服务于生产级多模态推理。",
+			"ja": "コストと品質のバランスを取った Qwen のマルチモーダルモデルです。一般的な推論、視覚理解、本番利用に向いています。テキストと画像の両方を扱い、本番規模のマルチモーダル推論をコストを抑えて回せます。",
+			"ko": "비용과 품질의 균형을 맞춘 Qwen 멀티모달 모델입니다. 일반 추론, 시각 이해, 프로덕션에 맞습니다. 텍스트와 이미지를 함께 다루고, 프로덕션 규모의 멀티모달 추론을 비용을 낮춰 돌릴 수 있습니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
@@ -392,7 +408,9 @@
 		"description": "The Qwen3.7 flagship, optimized for coding, productivity, and agent-centric workloads. Its agent-oriented design emphasizes coding, office productivity, and complex multi-step work.",
 		"i18n": {
 			"en": "The Qwen3.7 flagship, optimized for coding, productivity, and agent-centric workloads. Its agent-oriented design emphasizes coding, office productivity, and complex multi-step work.",
-			"zh": "Qwen3.7 旗舰模型，重点优化编程、生产力任务与 Agent 工作流。其 Agent 导向设计重点覆盖编程、办公生产力和复杂多步骤任务。"
+			"zh": "Qwen3.7 旗舰模型，重点优化编程、生产力任务与 Agent 工作流。其 Agent 导向设计重点覆盖编程、办公生产力和复杂多步骤任务。",
+			"ja": "Qwen3.7 のフラッグシップです。コーディング、実務タスク、エージェントの流れに重点を置いています。設計もエージェント向けで、コーディング、事務作業、手順の多い仕事をカバーします。",
+			"ko": "Qwen3.7 플래그십입니다. 코딩, 실무, 에이전트 워크플로에 무게를 둡니다. 설계도 에이전트 중심이라 코딩, 사무, 단계가 많은 작업을 다룹니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
@@ -437,7 +455,9 @@
 		"description": "A fast multimodal Qwen3.7 model with stronger vision, agent execution, and coding throughput than Qwen3.6 Flash. Built for low-latency multimodal understanding and agent workflows.",
 		"i18n": {
 			"en": "A fast multimodal Qwen3.7 model with stronger vision, agent execution, and coding throughput than Qwen3.6 Flash. Built for low-latency multimodal understanding and agent workflows.",
-			"zh": "Qwen3.7 原生视觉语言 Flash 模型，相较 3.6-Flash 全面提升多模态理解与 Agent 执行能力，适合低延迟多模态理解与 Coding / Agent 场景。"
+			"zh": "Qwen3.7 原生视觉语言 Flash 模型，相较 3.6-Flash 全面提升多模态理解与 Agent 执行能力，适合低延迟多模态理解与 Coding / Agent 场景。",
+			"ja": "Qwen3.7 のネイティブ視覚言語 Flash です。3.6-Flash よりマルチモーダル理解とエージェント実行が全体的に上がっており、低レイテンシのマルチモーダル理解とコーディング、エージェント向けです。",
+			"ko": "Qwen3.7 네이티브 비전-언어 Flash입니다. 3.6-Flash보다 멀티모달 이해와 에이전트 실행이 전반적으로 올라갔고, 저지연 멀티모달 이해와 코딩, 에이전트에 맞습니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
@@ -512,7 +532,9 @@
 		"description": "A scalable long-context Qwen model balancing strong reasoning with efficient inference. A hybrid of efficient linear attention and sparse expert routing improves scalability and inference efficiency.",
 		"i18n": {
 			"en": "A scalable long-context Qwen model balancing strong reasoning with efficient inference. A hybrid of efficient linear attention and sparse expert routing improves scalability and inference efficiency.",
-			"zh": "兼顾推理能力与推理效率、适合长上下文任务的 Qwen 模型。通过高效线性注意力与稀疏专家路由的混合架构，提升扩展性和推理效率。"
+			"zh": "兼顾推理能力与推理效率、适合长上下文任务的 Qwen 模型。通过高效线性注意力与稀疏专家路由的混合架构，提升扩展性和推理效率。",
+			"ja": "推論の強さと効率を両立し、長いコンテキスト向けの Qwen です。線形アテンションと疎なエキスパート経路を組み合わせ、スケールと推論効率を上げています。",
+			"ko": "추론 능력과 효율을 같이 잡고, 긴 컨텍스트에 맞춘 Qwen입니다. 선형 어텐션과 희소 전문가 라우팅을 섞어 확장성과 추론 효율을 높였습니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
@@ -574,7 +596,9 @@
 		"description": "A high-capability Qwen model for demanding reasoning, coding, and knowledge work.",
 		"i18n": {
 			"en": "A high-capability Qwen model for demanding reasoning, coding, and knowledge work.",
-			"zh": "面向高难度推理、编程与知识工作的高性能 Qwen 模型。"
+			"zh": "面向高难度推理、编程与知识工作的高性能 Qwen 模型。",
+			"ja": "難度の高い推論、コーディング、知識作業向けの高性能 Qwen です。",
+			"ko": "어려운 추론, 코딩, 지식 작업용 고성능 Qwen입니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 256000,
@@ -633,7 +657,9 @@
 		"description": "A fast multimodal Qwen model with a large context window for high-throughput workloads. It handles text, image, and video inputs with a long context window for latency-sensitive multimodal applications.",
 		"i18n": {
 			"en": "A fast multimodal Qwen model with a large context window for high-throughput workloads. It handles text, image, and video inputs with a long context window for latency-sensitive multimodal applications.",
-			"zh": "具备大上下文能力的高速 Qwen 多模态模型，适合高吞吐工作负载。支持文本、图像和视频输入，并以长上下文能力面向延迟敏感的多模态应用。"
+			"zh": "具备大上下文能力的高速 Qwen 多模态模型，适合高吞吐工作负载。支持文本、图像和视频输入，并以长上下文能力面向延迟敏感的多模态应用。",
+			"ja": "長いコンテキストを持つ高速な Qwen マルチモーダルモデルで、スループットの高い処理に向いています。テキスト、画像、動画を受け取り、レイテンシを気にするマルチモーダル用途に使えます。",
+			"ko": "긴 컨텍스트를 가진 고속 Qwen 멀티모달 모델로, 처리량이 큰 작업에 맞습니다. 텍스트, 이미지, 영상을 받고, 지연에 민감한 멀티모달 용도로 씁니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
@@ -695,7 +721,9 @@
 		"description": "A balanced Qwen model for general chat, reasoning, coding, and multimodal tasks.",
 		"i18n": {
 			"en": "A balanced Qwen model for general chat, reasoning, coding, and multimodal tasks.",
-			"zh": "适合通用对话、推理、编程与多模态任务的均衡型 Qwen 模型。"
+			"zh": "适合通用对话、推理、编程与多模态任务的均衡型 Qwen 模型。",
+			"ja": "一般的な対話、推論、コーディング、マルチモーダルをひと通りこなす、バランス型の Qwen です。",
+			"ko": "일반 대화, 추론, 코딩, 멀티모달을 고루 다루는 균형형 Qwen입니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
@@ -764,7 +792,9 @@
 		"description": "A low-latency Qwen model for responsive chat, extraction, and lightweight agents.",
 		"i18n": {
 			"en": "A low-latency Qwen model for responsive chat, extraction, and lightweight agents.",
-			"zh": "面向低延迟对话、信息抽取与轻量 Agent 场景的 Qwen 模型。"
+			"zh": "面向低延迟对话、信息抽取与轻量 Agent 场景的 Qwen 模型。",
+			"ja": "応答を速くしたい対話、情報抽出、軽いエージェント向けの Qwen です。",
+			"ko": "응답이 빨라야 하는 대화, 정보 추출, 가벼운 에이전트용 Qwen입니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
@@ -826,7 +856,9 @@
 		"description": "A vision-language model for document, image, screen, and visual reasoning tasks.",
 		"i18n": {
 			"en": "A vision-language model for document, image, screen, and visual reasoning tasks.",
-			"zh": "面向文档、图像、屏幕理解与视觉推理任务的视觉语言模型。"
+			"zh": "面向文档、图像、屏幕理解与视觉推理任务的视觉语言模型。",
+			"ja": "文書、画像、画面の理解と視覚的な推論向けの視覚言語モデルです。",
+			"ko": "문서, 이미지, 화면 이해와 시각 추론용 비전-언어 모델입니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 256000,
@@ -901,7 +933,9 @@
 		"description": "A full-capability Qwen model for understanding text, images, audio, and video.",
 		"i18n": {
 			"en": "A full-capability Qwen model for understanding text, images, audio, and video.",
-			"zh": "可统一理解文本、图像、音频与视频的全能力 Qwen 多模态模型。"
+			"zh": "可统一理解文本、图像、音频与视频的全能力 Qwen 多模态模型。",
+			"ja": "テキスト、画像、音声、動画をひとつのモデルで理解する、フル機能の Qwen マルチモーダルです。",
+			"ko": "텍스트, 이미지, 오디오, 영상을 한 모델에서 이해하는 풀기능 Qwen 멀티모달입니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 256000,
@@ -950,7 +984,9 @@
 		"description": "A fast omni-modal Qwen model for real-time multimodal understanding and interaction.",
 		"i18n": {
 			"en": "A fast omni-modal Qwen model for real-time multimodal understanding and interaction.",
-			"zh": "面向实时多模态理解与交互的高速 Qwen Omni 模型。"
+			"zh": "面向实时多模态理解与交互的高速 Qwen Omni 模型。",
+			"ja": "リアルタイムのマルチモーダル理解とやり取り向けの、高速な Qwen Omni です。",
+			"ko": "실시간 멀티모달 이해와 상호작용용 고속 Qwen Omni입니다."
 		},
 		"vendor": "aliyun",
 		"context_window": 256000,
@@ -999,7 +1035,9 @@
 		"description": "DashScope real-time speech recognition for low-latency streaming audio.",
 		"i18n": {
 			"en": "DashScope real-time speech recognition for low-latency streaming audio.",
-			"zh": "DashScope 实时语音识别模型，适合低延迟流式音频输入。"
+			"zh": "DashScope 实时语音识别模型，适合低延迟流式音频输入。",
+			"ja": "DashScope のリアルタイム音声認識です。遅延を抑えたいストリーミング音声に向いています。",
+			"ko": "DashScope 실시간 음성 인식입니다. 지연을 줄여야 하는 스트리밍 오디오에 맞습니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1029,7 +1067,9 @@
 		"description": "DashScope asynchronous speech recognition for recorded audio files.",
 		"i18n": {
 			"en": "DashScope asynchronous speech recognition for recorded audio files.",
-			"zh": "DashScope 非实时语音识别模型，适合录音文件转写。"
+			"zh": "DashScope 非实时语音识别模型，适合录音文件转写。",
+			"ja": "DashScope の非同期音声認識です。録音ファイルの文字起こしに向いています。",
+			"ko": "DashScope 비동기 음성 인식입니다. 녹음 파일 받아쓰기에 맞습니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1059,7 +1099,9 @@
 		"description": "DashScope synchronous speech recognition for short recorded audio.",
 		"i18n": {
 			"en": "DashScope synchronous speech recognition for short recorded audio.",
-			"zh": "DashScope 同步语音识别模型，适合短录音转写。"
+			"zh": "DashScope 同步语音识别模型，适合短录音转写。",
+			"ja": "DashScope の同期音声認識です。短い録音の文字起こしに向いています。",
+			"ko": "DashScope 동기 음성 인식입니다. 짧은 녹음 받아쓰기에 맞습니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1089,7 +1131,9 @@
 		"description": "DashScope Qwen3 ASR real-time speech recognition over WebSocket sessions.",
 		"i18n": {
 			"en": "DashScope Qwen3 ASR real-time speech recognition over WebSocket sessions.",
-			"zh": "DashScope Qwen3 ASR 实时语音识别，使用 WebSocket 会话模式。"
+			"zh": "DashScope Qwen3 ASR 实时语音识别，使用 WebSocket 会话模式。",
+			"ja": "DashScope Qwen3 ASR のリアルタイム音声認識です。WebSocket セッションで使います。",
+			"ko": "DashScope Qwen3 ASR 실시간 음성 인식입니다. WebSocket 세션으로 사용합니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1119,7 +1163,9 @@
 		"description": "DashScope Qwen3 ASR asynchronous speech recognition for recorded audio files.",
 		"i18n": {
 			"en": "DashScope Qwen3 ASR asynchronous speech recognition for recorded audio files.",
-			"zh": "DashScope Qwen3 ASR 非实时语音识别，适合录音文件转写。"
+			"zh": "DashScope Qwen3 ASR 非实时语音识别，适合录音文件转写。",
+			"ja": "DashScope Qwen3 ASR の非同期音声認識です。録音ファイルの文字起こしに向いています。",
+			"ko": "DashScope Qwen3 ASR 비동기 음성 인식입니다. 녹음 파일 받아쓰기에 맞습니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1149,7 +1195,9 @@
 		"description": "DashScope Qwen3 ASR for synchronous audio transcription.",
 		"i18n": {
 			"en": "DashScope Qwen3 ASR for synchronous audio transcription.",
-			"zh": "DashScope Qwen3 ASR 同步语音识别模型。"
+			"zh": "DashScope Qwen3 ASR 同步语音识别模型。",
+			"ja": "DashScope Qwen3 ASR の同期音声認識です。",
+			"ko": "DashScope Qwen3 ASR 동기 음성 인식입니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1179,7 +1227,9 @@
 		"description": "DashScope Fun-ASR real-time speech recognition over WebSocket streaming.",
 		"i18n": {
 			"en": "DashScope Fun-ASR real-time speech recognition over WebSocket streaming.",
-			"zh": "DashScope Fun-ASR 实时语音识别，使用 WebSocket 流式输入。"
+			"zh": "DashScope Fun-ASR 实时语音识别，使用 WebSocket 流式输入。",
+			"ja": "DashScope Fun-ASR のリアルタイム音声認識です。WebSocket で音声を流し込みます。",
+			"ko": "DashScope Fun-ASR 실시간 음성 인식입니다. WebSocket으로 오디오를 흘려 보냅니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1209,7 +1259,9 @@
 		"description": "DashScope Fun-ASR asynchronous speech recognition for recorded audio files.",
 		"i18n": {
 			"en": "DashScope Fun-ASR asynchronous speech recognition for recorded audio files.",
-			"zh": "DashScope Fun-ASR 非实时语音识别，适合录音文件转写。"
+			"zh": "DashScope Fun-ASR 非实时语音识别，适合录音文件转写。",
+			"ja": "DashScope Fun-ASR の非同期音声認識です。録音ファイルの文字起こしに向いています。",
+			"ko": "DashScope Fun-ASR 비동기 음성 인식입니다. 녹음 파일 받아쓰기에 맞습니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1239,7 +1291,9 @@
 		"description": "DashScope high-quality text-to-speech model billed by generated characters.",
 		"i18n": {
 			"en": "DashScope high-quality text-to-speech model billed by generated characters.",
-			"zh": "DashScope 高质量语音合成模型，按生成字符数计费。"
+			"zh": "DashScope 高质量语音合成模型，按生成字符数计费。",
+			"ja": "DashScope の高品質な音声合成です。生成した文字数で課金します。",
+			"ko": "DashScope 고품질 음성 합성입니다. 생성한 글자 수로 과금합니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1269,7 +1323,9 @@
 		"description": "DashScope low-latency text-to-speech model billed by generated characters.",
 		"i18n": {
 			"en": "DashScope low-latency text-to-speech model billed by generated characters.",
-			"zh": "DashScope 低延迟语音合成模型，按生成字符数计费。"
+			"zh": "DashScope 低延迟语音合成模型，按生成字符数计费。",
+			"ja": "DashScope の低レイテンシ音声合成です。生成した文字数で課金します。",
+			"ko": "DashScope 저지연 음성 합성입니다. 생성한 글자 수로 과금합니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1299,7 +1355,9 @@
 		"description": "DashScope text-to-speech model with streaming synthesis support.",
 		"i18n": {
 			"en": "DashScope text-to-speech model with streaming synthesis support.",
-			"zh": "DashScope CosyVoice V1 语音合成模型，支持流式合成。"
+			"zh": "DashScope CosyVoice V1 语音合成模型，支持流式合成。",
+			"ja": "DashScope CosyVoice V1 の音声合成です。ストリーミング合成に対応しています。",
+			"ko": "DashScope CosyVoice V1 음성 합성입니다. 스트리밍 합성을 지원합니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1329,7 +1387,9 @@
 		"description": "DashScope text-to-speech model with streaming synthesis support.",
 		"i18n": {
 			"en": "DashScope text-to-speech model with streaming synthesis support.",
-			"zh": "DashScope CosyVoice V2 语音合成模型，支持流式合成。"
+			"zh": "DashScope CosyVoice V2 语音合成模型，支持流式合成。",
+			"ja": "DashScope CosyVoice V2 の音声合成です。ストリーミング合成に対応しています。",
+			"ko": "DashScope CosyVoice V2 음성 합성입니다. 스트리밍 합성을 지원합니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1359,7 +1419,9 @@
 		"description": "DashScope low-latency text-to-speech model billed by generated characters.",
 		"i18n": {
 			"en": "DashScope low-latency text-to-speech model billed by generated characters.",
-			"zh": "DashScope CosyVoice V3 Flash 低延迟语音合成模型。"
+			"zh": "DashScope CosyVoice V3 Flash 低延迟语音合成模型。",
+			"ja": "DashScope CosyVoice V3 Flash の低レイテンシ音声合成です。",
+			"ko": "DashScope CosyVoice V3 Flash 저지연 음성 합성입니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1389,7 +1451,9 @@
 		"description": "DashScope high-quality text-to-speech model billed by generated characters.",
 		"i18n": {
 			"en": "DashScope high-quality text-to-speech model billed by generated characters.",
-			"zh": "DashScope CosyVoice V3 Plus 高质量语音合成模型。"
+			"zh": "DashScope CosyVoice V3 Plus 高质量语音合成模型。",
+			"ja": "DashScope CosyVoice V3 Plus の高品質な音声合成です。",
+			"ko": "DashScope CosyVoice V3 Plus 고품질 음성 합성입니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1419,7 +1483,9 @@
 		"description": "DashScope CosyVoice 3.5 Flash TTS with voice cloning/design and instruction control; billed by generated characters.",
 		"i18n": {
 			"en": "DashScope CosyVoice 3.5 Flash TTS with voice cloning/design and instruction control; billed by generated characters.",
-			"zh": "DashScope CosyVoice V3.5 Flash 语音合成，支持声音复刻/设计与指令控制，按生成字符数计费。"
+			"zh": "DashScope CosyVoice V3.5 Flash 语音合成，支持声音复刻/设计与指令控制，按生成字符数计费。",
+			"ja": "DashScope CosyVoice V3.5 Flash の音声合成です。ボイスクローン、声のデザイン、指示による制御に対応し、生成した文字数で課金します。",
+			"ko": "DashScope CosyVoice V3.5 Flash 음성 합성입니다. 보이스 클로닝, 보이스 디자인, 지시 제어를 지원하고, 생성한 글자 수로 과금합니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {
@@ -1450,7 +1516,9 @@
 		"description": "DashScope CosyVoice 3.5 Plus high-expressiveness TTS with voice cloning/design and instruction control; billed by generated characters.",
 		"i18n": {
 			"en": "DashScope CosyVoice 3.5 Plus high-expressiveness TTS with voice cloning/design and instruction control; billed by generated characters.",
-			"zh": "DashScope CosyVoice V3.5 Plus 高表现力语音合成，支持声音复刻/设计与指令控制，按生成字符数计费。"
+			"zh": "DashScope CosyVoice V3.5 Plus 高表现力语音合成，支持声音复刻/设计与指令控制，按生成字符数计费。",
+			"ja": "DashScope CosyVoice V3.5 Plus の表現力の高い音声合成です。ボイスクローン、声のデザイン、指示による制御に対応し、生成した文字数で課金します。",
+			"ko": "DashScope CosyVoice V3.5 Plus의 표현력 높은 음성 합성입니다. 보이스 클로닝, 보이스 디자인, 지시 제어를 지원하고, 생성한 글자 수로 과금합니다."
 		},
 		"vendor": "aliyun",
 		"pricing": {

@@ -732,7 +732,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 ### Models / Routes
 
-- **`/admin/models`**：CRUD；`PATCH` 可写 **`route_policy`**（TEXT JSON 或 `null` 清空）和运营备注 **`note`**。列表与详情另附 **`catalog_i18n`**（按 `models.id` 从静态目录解析的中英文介绍，不落库；目录没有该模型时为 `null`）。含 **`GET /admin/models/import/catalog`** 与 **`POST /admin/models/import`**。Image 路由使用 OpenAI 协议；Audio 路由支持 OpenAI 与 DashScope，按 operation / adapter 校验。
+- **`/admin/models`**：CRUD；`PATCH` 可写 **`route_policy`**（TEXT JSON 或 `null` 清空）和运营备注 **`note`**。列表与详情另附 **`catalog_i18n`**（按 `models.id` 从静态目录解析的中、英、日、韩介绍，不落库；目录没有该模型时为 `null`）。含 **`GET /admin/models/import/catalog`** 与 **`POST /admin/models/import`**。Image 路由使用 OpenAI 协议；Audio 路由支持 OpenAI 与 DashScope，按 operation / adapter 校验。
 - **`/admin/routes`**：REST `GET/POST`、`GET/PATCH/DELETE /:id`；列表支持 `?model_id=&provider_id=`。创建时校验 provider 对该协议是否配置了 `endpoints` base 或任一 capability，并创建或复用对应 Request Surface / Route Pool。
   - **`priority`**：层（Proxy 按 **DESC** 硬序）。
   - **`weight`**：同层权重，整数 **≥ 1**（默认 1）；非法 → **400**。

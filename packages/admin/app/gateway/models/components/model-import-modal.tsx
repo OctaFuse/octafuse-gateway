@@ -4,6 +4,7 @@ import { ArrowPathIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { formatPerMillionTokenUnit } from '@/lib/format-gateway-currency';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
+import { pickProviderCatalogText } from '@/lib/provider-kind';
 import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -465,6 +466,15 @@ export function ModelImportModal(props: Props) {
 										const pricingDetail = row.pricing_preview ?? pricingLabel;
 										const selectable = !alreadyInGateway && !noPricing;
 										const checked = selectable && !!selected[row.id];
+										const intro = pickProviderCatalogText(
+											{
+												en: row.i18n?.en ?? row.description,
+												zh: row.i18n?.zh,
+												ja: row.i18n?.ja,
+												ko: row.i18n?.ko,
+											},
+											locale
+										);
 										return (
 											<tr
 												key={row.id}
@@ -521,13 +531,9 @@ export function ModelImportModal(props: Props) {
 												</td>
 												<td className="max-w-sm px-3 py-2 text-gray-900">
 													<div>{row.display_name || '—'}</div>
-													{(locale.startsWith('zh')
-														? row.i18n?.zh
-														: row.i18n?.en ?? row.description) ? (
+													{intro ? (
 														<p className="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-500">
-															{locale.startsWith('zh')
-																? row.i18n?.zh
-																: row.i18n?.en ?? row.description}
+															{intro}
 														</p>
 													) : null}
 												</td>

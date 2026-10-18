@@ -5,7 +5,9 @@
 		"description": "An xAI coding-specialty model for agentic software development. Supports reasoning at configurable effort levels. Optimized for sustained coding trajectories and tool-driven workflows.",
 		"i18n": {
 			"en": "An xAI coding-specialty model for agentic software development. Supports reasoning at configurable effort levels. Optimized for sustained coding trajectories and tool-driven workflows.",
-			"zh": "面向 Agent 软件开发的 xAI 编程专用模型。支持可配置推理强度。针对持续编程轨迹与工具驱动工作流优化。"
+			"zh": "面向 Agent 软件开发的 xAI 编程专用模型。支持可配置推理强度。针对持续编程轨迹与工具驱动工作流优化。",
+			"ja": "エージェントによるソフト開発向けの、xAI のコーディング専用モデルです。推論の強さを設定できます。長く続くコーディングの軌跡と、ツールで進める流れに合わせています。",
+			"ko": "에이전트 소프트웨어 개발용 xAI 코딩 전용 모델입니다. 추론 강도를 설정할 수 있습니다. 오래 이어지는 코딩 궤적과 도구로 진행하는 흐름에 맞춰져 있습니다."
 		},
 		"vendor": "xai",
 		"context_window": 256000,
@@ -64,7 +66,9 @@
 		"description": "A 1M-context xAI reasoning model for complex coding, agents, and knowledge work. Supports reasoning at configurable effort levels. Batch API available at 20% off standard pricing.",
 		"i18n": {
 			"en": "A 1M-context xAI reasoning model for complex coding, agents, and knowledge work. Supports reasoning at configurable effort levels. Batch API available at 20% off standard pricing.",
-			"zh": "1M 上下文 xAI 推理模型，面向复杂编程、Agent 与知识工作。支持可配置推理强度。Batch API 享标准价八折。"
+			"zh": "1M 上下文 xAI 推理模型，面向复杂编程、Agent 与知识工作。支持可配置推理强度。Batch API 享标准价八折。",
+			"ja": "1M コンテキストの xAI 推論モデルです。難しいコーディング、エージェント、知識作業向けで、推論の強さを設定できます。Batch API は定価から 20% 引きです。",
+			"ko": "1M 컨텍스트 xAI 추론 모델입니다. 어려운 코딩, 에이전트, 지식 작업용이며, 추론 강도를 설정할 수 있습니다. Batch API는 정가에서 20% 할인됩니다."
 		},
 		"vendor": "xai",
 		"context_window": 1000000,
@@ -124,7 +128,9 @@
 		"description": "A 1M-context xAI model for coding, agents, and knowledge work without extended reasoning. Same pricing as the reasoning variant. Batch API available at 20% off standard pricing.",
 		"i18n": {
 			"en": "A 1M-context xAI model for coding, agents, and knowledge work without extended reasoning. Same pricing as the reasoning variant. Batch API available at 20% off standard pricing.",
-			"zh": "1M 上下文 xAI 模型，面向编程、Agent 与知识工作，无扩展推理。定价与推理变体相同。Batch API 享标准价八折。"
+			"zh": "1M 上下文 xAI 模型，面向编程、Agent 与知识工作，无扩展推理。定价与推理变体相同。Batch API 享标准价八折。",
+			"ja": "1M コンテキストの xAI モデルです。コーディング、エージェント、知識作業向けで、長い推論はしません。価格は推論版と同じです。Batch API は定価から 20% 引きです。",
+			"ko": "1M 컨텍스트 xAI 모델입니다. 코딩, 에이전트, 지식 작업용이며, 긴 추론은 하지 않습니다. 가격은 추론 버전과 같습니다. Batch API는 정가에서 20% 할인됩니다."
 		},
 		"vendor": "xai",
 		"context_window": 1000000,
@@ -183,7 +189,9 @@
 		"description": "SpaceXAI's frontier model for coding, agentic tasks, and knowledge work. Reasoning effort supports low, medium, high (default), and xhigh. The Responses API always returns encrypted reasoning content, which later turns must send back unchanged.",
 		"i18n": {
 			"en": "SpaceXAI's frontier model for coding, agentic tasks, and knowledge work. Reasoning effort supports low, medium, high (default), and xhigh. The Responses API always returns encrypted reasoning content, which later turns must send back unchanged.",
-			"zh": "面向编程、Agent 与知识工作的前沿 Grok 模型。reasoning effort 支持 low、medium、high（默认）和 xhigh。Responses API 总会返回加密 reasoning，后续轮次须原样带回。"
+			"zh": "面向编程、Agent 与知识工作的前沿 Grok 模型。reasoning effort 支持 low、medium、high（默认）和 xhigh。Responses API 总会返回加密 reasoning，后续轮次须原样带回。",
+			"ja": "コーディング、エージェント、知識作業向けの上位 Grok です。reasoning effort は low、medium、high（初期値）、xhigh です。Responses API は暗号化された reasoning を必ず返します。次のターンでは、その内容を変えずに送り返してください。",
+			"ko": "코딩, 에이전트, 지식 작업용 상위 Grok입니다. reasoning effort는 low, medium, high(기본값), xhigh입니다. Responses API는 암호화된 reasoning을 항상 반환합니다. 다음 턴에서는 그 내용을 그대로 다시 보내야 합니다."
 		},
 		"vendor": "xai",
 		"context_window": 500000,
@@ -243,7 +251,9 @@
 		"description": "A frontier Grok model for long-running agents, coding, and knowledge work. It focuses on multi-step agents, ambitious interactive and visual work, and sustained coding trajectories.",
 		"i18n": {
 			"en": "A frontier Grok model for long-running agents, coding, and knowledge work. It focuses on multi-step agents, ambitious interactive and visual work, and sustained coding trajectories.",
-			"zh": "面向长时运行 Agent、编程与知识工作的前沿 Grok 模型。侧重多步 Agent、复杂交互与视觉任务，以及可持续推进的编程轨迹。"
+			"zh": "面向长时运行 Agent、编程与知识工作的前沿 Grok 模型。侧重多步 Agent、复杂交互与视觉任务，以及可持续推进的编程轨迹。",
+			"ja": "長く動くエージェント、コーディング、知識作業向けの上位 Grok です。複数ステップのエージェント、込み入った対話や視覚タスク、途中で止まらず進めるコーディングに寄っています。",
+			"ko": "오래 도는 에이전트, 코딩, 지식 작업용 상위 Grok입니다. 여러 단계 에이전트, 복잡한 상호작용과 시각 작업, 중간에 끊기지 않고 이어 가는 코딩 쪽에 기울어 있습니다."
 		},
 		"vendor": "xai",
 		"context_window": 500000,
@@ -303,7 +313,9 @@
 		"description": "A general-purpose Grok model for coding, knowledge work, STEM, and demanding reasoning. It supports both reasoning and non-reasoning modes for agentic software and workflow tasks.",
 		"i18n": {
 			"en": "A general-purpose Grok model for coding, knowledge work, STEM, and demanding reasoning. It supports both reasoning and non-reasoning modes for agentic software and workflow tasks.",
-			"zh": "面向编程、知识工作、STEM 与复杂推理的通用 Grok 模型。支持思考与非思考模式，适合 Agent 软件工程与工作流任务。"
+			"zh": "面向编程、知识工作、STEM 与复杂推理的通用 Grok 模型。支持思考与非思考模式，适合 Agent 软件工程与工作流任务。",
+			"ja": "コーディング、知識作業、STEM、難しい推論向けの汎用 Grok です。思考ありと思考なしの両方に対応し、エージェントのソフト開発と業務の流れに使えます。",
+			"ko": "코딩, 지식 작업, STEM, 어려운 추론용 범용 Grok입니다. 사고 있음과 사고 없음을 모두 지원하며, 에이전트 소프트웨어 개발과 업무 흐름에 씁니다."
 		},
 		"vendor": "xai",
 		"context_window": 500000,
@@ -363,7 +375,9 @@
 		"description": "A multimodal Grok reasoning model for agents, instruction following, and factual tasks. It combines visual input with reasoning for factual instruction following and agent-oriented applications.",
 		"i18n": {
 			"en": "A multimodal Grok reasoning model for agents, instruction following, and factual tasks. It combines visual input with reasoning for factual instruction following and agent-oriented applications.",
-			"zh": "面向 Agent、指令遵循与事实型任务的 Grok 多模态推理模型。结合视觉输入与推理能力，适合注重事实性的指令遵循和 Agent 应用。"
+			"zh": "面向 Agent、指令遵循与事实型任务的 Grok 多模态推理模型。结合视觉输入与推理能力，适合注重事实性的指令遵循和 Agent 应用。",
+			"ja": "エージェント、指示への追従、事実を重視するタスク向けの Grok マルチモーダル推論モデルです。視覚入力と推論を組み合わせ、事実性を気にする指示追従とエージェントに向いています。",
+			"ko": "에이전트, 지시 따르기, 사실을 중시하는 작업용 Grok 멀티모달 추론 모델입니다. 시각 입력과 추론을 묶어, 사실성이 중요한 지시 따르기와 에이전트에 맞습니다."
 		},
 		"vendor": "xai",
 		"context_window": 1000000,

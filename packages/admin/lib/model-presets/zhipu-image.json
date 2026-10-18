@@ -5,7 +5,9 @@
 		"description": "A Zhipu image model for text-guided generation and general visual creation.",
 		"i18n": {
 			"en": "A Zhipu image model for text-guided generation and general visual creation.",
-			"zh": "面向文本引导图片生成与通用视觉创作的智谱图像模型。"
+			"zh": "面向文本引导图片生成与通用视觉创作的智谱图像模型。",
+			"ja": "テキストに沿った画像生成と、一般的なビジュアル制作向けの Zhipu 画像モデルです。",
+			"ko": "텍스트에 맞춘 이미지 생성과 일반적인 비주얼 제작용 Zhipu 이미지 모델입니다."
 		},
 		"vendor": "zhipu",
 		"context_window": null,

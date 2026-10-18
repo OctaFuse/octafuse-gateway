@@ -5,7 +5,9 @@
 		"description": "The official DeepSeek V4.1 Flash model for fast long-context reasoning, coding, and agents. In internal and external evaluations, it comprehensively surpasses V4 Pro in performance, cost, speed, and total time.",
 		"i18n": {
 			"en": "The official DeepSeek V4.1 Flash model for fast long-context reasoning, coding, and agents. In internal and external evaluations, it comprehensively surpasses V4 Pro in performance, cost, speed, and total time.",
-			"zh": "DeepSeek V4.1 Flash 正式版，面向高速长上下文推理、编程与 Agent。经内部、外部多方测试，在性能、费用、速度、总用时等各项指标上已全面超越 V4 Pro。"
+			"zh": "DeepSeek V4.1 Flash 正式版，面向高速长上下文推理、编程与 Agent。经内部、外部多方测试，在性能、费用、速度、总用时等各项指标上已全面超越 V4 Pro。",
+			"ja": "DeepSeek V4.1 Flash の正式版です。速い長コンテキストの推論、コーディング、エージェント向けです。社内外の評価では、性能、費用、速度、総所要時間のどれも V4 Pro を上回っています。",
+			"ko": "DeepSeek V4.1 Flash 정식 버전입니다. 빠른 긴 컨텍스트 추론, 코딩, 에이전트용입니다. 사내외 평가에서 성능, 비용, 속도, 총 소요 시간 모두 V4 Pro를 앞섭니다."
 		},
 		"vendor": "deepseek",
 		"context_window": 1000000,
@@ -78,7 +80,9 @@
 		"description": "The official DeepSeek V4 Pro flagship for advanced reasoning, coding, and sustained agent workloads. The 0813 production checkpoint keeps 1M context and dual thinking modes under the same API name.",
 		"i18n": {
 			"en": "The official DeepSeek V4 Pro flagship for advanced reasoning, coding, and sustained agent workloads. The 0813 production checkpoint keeps 1M context and dual thinking modes under the same API name.",
-			"zh": "DeepSeek V4 Pro 正式版旗舰模型，面向高级推理、编程与持续 Agent 任务。0813 生产检查点沿用同一 API 名称，提供 1M 上下文与思考/非思考双模式。"
+			"zh": "DeepSeek V4 Pro 正式版旗舰模型，面向高级推理、编程与持续 Agent 任务。0813 生产检查点沿用同一 API 名称，提供 1M 上下文与思考/非思考双模式。",
+			"ja": "DeepSeek V4 Pro の正式版フラッグシップです。高度な推論、コーディング、長く続くエージェント作業向けです。0813 の本番チェックポイントは同じ API 名のまま、1M コンテキストと思考あり・思考なしの両モードを出します。",
+			"ko": "DeepSeek V4 Pro 정식 플래그십입니다. 고급 추론, 코딩, 오래 이어지는 에이전트 작업용입니다. 0813 프로덕션 체크포인트는 같은 API 이름을 유지한 채 1M 컨텍스트와 사고 있음·사고 없음 두 모드를 제공합니다."
 		},
 		"vendor": "deepseek",
 		"context_window": 1000000,
@@ -151,7 +155,9 @@
 		"description": "The official DeepSeek V4 Flash model for fast long-context reasoning, coding, and agents. The 0731 post-training refresh keeps the mixture-of-experts architecture while strengthening agentic coding and tool use.",
 		"i18n": {
 			"en": "The official DeepSeek V4 Flash model for fast long-context reasoning, coding, and agents. The 0731 post-training refresh keeps the mixture-of-experts architecture while strengthening agentic coding and tool use.",
-			"zh": "DeepSeek V4 Flash 正式版，面向高速长上下文推理、编程与 Agent。0731 后训练刷新保持混合专家架构，同时强化 Agent 编程与工具调用。"
+			"zh": "DeepSeek V4 Flash 正式版，面向高速长上下文推理、编程与 Agent。0731 后训练刷新保持混合专家架构，同时强化 Agent 编程与工具调用。",
+			"ja": "DeepSeek V4 Flash の正式版です。速い長コンテキストの推論、コーディング、エージェント向けです。0731 のポストトレーニング更新は混合エキスパート構成を保ったまま、エージェントのコーディングとツール呼び出しを強めています。",
+			"ko": "DeepSeek V4 Flash 정식 버전입니다. 빠른 긴 컨텍스트 추론, 코딩, 에이전트용입니다. 0731 포스트트레이닝 갱신은 혼합 전문가 구조를 유지한 채 에이전트 코딩과 도구 호출을 강화했습니다."
 		},
 		"vendor": "deepseek",
 		"context_window": 1000000,
@@ -224,7 +230,9 @@
 		"description": "An efficient DeepSeek model combining strong reasoning with agentic tool use. Its sparse-attention design targets efficient long-context reasoning while preserving strong tool-use performance.",
 		"i18n": {
 			"en": "An efficient DeepSeek model combining strong reasoning with agentic tool use. Its sparse-attention design targets efficient long-context reasoning while preserving strong tool-use performance.",
-			"zh": "兼顾推理效率、复杂推理与 Agent 工具调用能力的 DeepSeek 模型。稀疏注意力设计旨在提高长上下文推理效率，同时保持较强的工具调用表现。"
+			"zh": "兼顾推理效率、复杂推理与 Agent 工具调用能力的 DeepSeek 模型。稀疏注意力设计旨在提高长上下文推理效率，同时保持较强的工具调用表现。",
+			"ja": "推論の効率、難しい推論、エージェントのツール呼び出しを両立した DeepSeek です。スパースアテンションで長いコンテキストの推論効率を上げつつ、ツール呼び出しの強さは残しています。",
+			"ko": "추론 효율, 어려운 추론, 에이전트 도구 호출을 같이 잡은 DeepSeek입니다. 희소 어텐션으로 긴 컨텍스트 추론 효율을 올리면서 도구 호출 성능은 유지합니다."
 		},
 		"vendor": "deepseek",
 		"context_window": 128000,

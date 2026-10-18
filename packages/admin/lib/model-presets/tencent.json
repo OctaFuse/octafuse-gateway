@@ -5,7 +5,9 @@
 		"description": "Tencent's next-generation productivity model with significantly enhanced Agent and complex task execution capabilities. Hy4 preview features 770B total parameters with 49B active parameters and is optimized for agentic, coding, and productivity scenarios, with stronger capabilities in understanding, planning, tool use, and sustained execution for complex tasks.",
 		"i18n": {
 			"en": "Tencent's next-generation productivity model with significantly enhanced Agent and complex task execution capabilities. Hy4 preview features 770B total parameters with 49B active parameters and is optimized for agentic, coding, and productivity scenarios, with stronger capabilities in understanding, planning, tool use, and sustained execution for complex tasks.",
-			"zh": "腾讯新一代生产力模型，Agent 与复杂任务执行能力全面升级。Hy4 preview 总参数 770B、激活参数 49B，面向 Agent、Coding 与生产力场景优化，强化复杂任务中的理解、规划、工具调用与持续执行能力。"
+			"zh": "腾讯新一代生产力模型，Agent 与复杂任务执行能力全面升级。Hy4 preview 总参数 770B、激活参数 49B，面向 Agent、Coding 与生产力场景优化，强化复杂任务中的理解、规划、工具调用与持续执行能力。",
+			"ja": "Tencent の次世代の実務モデルで、エージェントと難しいタスクの実行が大きく上がっています。Hy4 preview は総パラメータ 770B、アクティブパラメータ 49B です。エージェント、コーディング、実務向けに、難しい仕事での理解、計画、ツール呼び出し、途中で止まらない実行を強めています。",
+			"ko": "Tencent의 차세대 실무 모델로, 에이전트와 어려운 작업 실행이 크게 올라갔습니다. Hy4 preview는 총 파라미터 770B, 활성 파라미터 49B입니다. 에이전트, 코딩, 실무에 맞춰, 어려운 일에서의 이해, 계획, 도구 호출, 중간에 끊기지 않는 실행을 강화했습니다."
 		},
 		"vendor": "tencent",
 		"context_window": 1024000,
@@ -50,7 +52,9 @@
 		"description": "A Tencent mixture-of-experts model for configurable reasoning and production agents. Configurable reasoning effort lets production systems trade latency for depth across agentic workloads.",
 		"i18n": {
 			"en": "A Tencent mixture-of-experts model for configurable reasoning and production agents. Configurable reasoning effort lets production systems trade latency for depth across agentic workloads.",
-			"zh": "面向可调节推理与生产级 Agent 的腾讯混合专家模型。可配置的推理强度让生产系统在 Agent 任务中灵活权衡延迟与推理深度。"
+			"zh": "面向可调节推理与生产级 Agent 的腾讯混合专家模型。可配置的推理强度让生产系统在 Agent 任务中灵活权衡延迟与推理深度。",
+			"ja": "推論の強さを調整でき、本番のエージェント向けの Tencent 混合エキスパートです。推論の強さを設定できるので、エージェント作業でレイテンシと深さのバランスを取れます。",
+			"ko": "추론 강도를 조절할 수 있고, 프로덕션 에이전트용 Tencent 혼합 전문가입니다. 추론 강도를 설정할 수 있어, 에이전트 작업에서 지연과 깊이의 균형을 맞출 수 있습니다."
 		},
 		"vendor": "tencent",
 		"context_window": 256000,
@@ -95,7 +99,9 @@
 		"description": "A high-efficiency Tencent preview model for agent workflows and production evaluation. The preview offers configurable reasoning levels for efficient evaluation and deployment of agent workflows.",
 		"i18n": {
 			"en": "A high-efficiency Tencent preview model for agent workflows and production evaluation. The preview offers configurable reasoning levels for efficient evaluation and deployment of agent workflows.",
-			"zh": "面向 Agent 工作流与生产评估的高效率腾讯预览模型。预览版提供可配置推理等级，便于高效评估和部署 Agent 工作流。"
+			"zh": "面向 Agent 工作流与生产评估的高效率腾讯预览模型。预览版提供可配置推理等级，便于高效评估和部署 Agent 工作流。",
+			"ja": "エージェントの流れと本番前の評価向けの、効率のよい Tencent プレビューです。推論レベルを設定でき、エージェントの評価と展開を効率よく進められます。",
+			"ko": "에이전트 흐름과 프로덕션 전 평가용으로 효율 좋은 Tencent 프리뷰입니다. 추론 단계를 설정할 수 있어, 에이전트 평가와 배포를 효율적으로 진행할 수 있습니다."
 		},
 		"vendor": "tencent",
 		"context_window": 256000,

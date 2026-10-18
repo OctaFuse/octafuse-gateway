@@ -248,6 +248,8 @@ export type AdminStaticModelPresetCatalogItem = {
 	i18n: {
 		en: string;
 		zh: string;
+		ja: string;
+		ko: string;
 	} | null;
 	/** Model release date `YYYY-MM-DD`. */
 	released: string | null;
@@ -342,8 +344,8 @@ export type AdminModelRow = {
 	retired_at?: string | null;
 	/** 运营备注。目录介绍见 `catalog_i18n`。 */
 	note: string | null;
-	/** 静态目录中英文介绍。自建模型为 null。 */
-	catalog_i18n?: { en: string; zh: string } | null;
+	/** 静态目录中、英、日、韩介绍。自建模型为 null。 */
+	catalog_i18n?: { en: string; zh: string; ja: string; ko: string } | null;
 	metadata: string | null;
 	/** 路由策略 JSON（`strategy` + `rules`）；null=回退全局 ROUTE_STRATEGY */
 	route_policy?: string | null;

@@ -174,6 +174,8 @@ export function useModelsPageState() {
 				row.description ?? '',
 				row.i18n?.en ?? '',
 				row.i18n?.zh ?? '',
+				row.i18n?.ja ?? '',
+				row.i18n?.ko ?? '',
 			]
 				.join(' ')
 				.toLowerCase();

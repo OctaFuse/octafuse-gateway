@@ -29,6 +29,7 @@ import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { VendorIcon } from '@/components/model-vendor-icon';
 import { ModelModalitiesBadgeFromRaw } from '@/components/model-modalities-badge';
 import { MODEL_VENDOR_OPTIONS } from '@/lib/model-vendor';
+import { pickProviderCatalogText } from '@/lib/provider-kind';
 import {
 	createDefaultImagePerImageDraft,
 	formatCatalogPricingProfilePreview,
@@ -172,12 +173,7 @@ export function ModelModal(props: ModelModalProps) {
 	const isImageModel = formKind === 'image';
 	const isAudioModel = formKind === 'asr' || formKind === 'tts';
 	const hideTokenLimits = isImageModel || isAudioModel;
-	const catalog = editingModel?.catalog_i18n;
-	const intro = catalog
-		? locale.toLowerCase().startsWith('zh')
-			? catalog.zh || catalog.en
-			: catalog.en || catalog.zh
-		: '';
+	const intro = pickProviderCatalogText(editingModel?.catalog_i18n, locale);
 	const kinds = [
 		{ id: 'llm', label: t('kindLlm'), hint: t('kindHintLlm') },
 		{ id: 'image', label: t('kindImage'), hint: t('kindHintImage') },

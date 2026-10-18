@@ -5,7 +5,9 @@
 		"description": "An efficient multimodal StepFun model for native image and video understanding. Its multimodal mixture-of-experts design combines a large language backbone with native image and video understanding.",
 		"i18n": {
 			"en": "An efficient multimodal StepFun model for native image and video understanding. Its multimodal mixture-of-experts design combines a large language backbone with native image and video understanding.",
-			"zh": "支持原生图像与视频理解的高效率阶跃星辰多模态模型。多模态混合专家设计将大型语言骨干与原生图像、视频理解结合起来。"
+			"zh": "支持原生图像与视频理解的高效率阶跃星辰多模态模型。多模态混合专家设计将大型语言骨干与原生图像、视频理解结合起来。",
+			"ja": "画像と動画を最初から理解できる、効率のよい StepFun マルチモーダルです。混合エキスパートで、大規模な言語モデル本体と、最初から備わった画像・動画理解を組み合わせています。",
+			"ko": "이미지와 영상을 처음부터 이해하는 효율 좋은 StepFun 멀티모달입니다. 혼합 전문가로, 큰 언어 모델 본체와 처음부터 갖춘 이미지·영상 이해를 묶었습니다."
 		},
 		"vendor": "stepfun",
 		"context_window": 256000,
