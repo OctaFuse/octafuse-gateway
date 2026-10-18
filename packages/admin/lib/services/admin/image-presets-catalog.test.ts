@@ -20,6 +20,7 @@ const EXPECTED_IMAGE_IDS = [
 	'minimax-image-01',
 	'minimax-image-01-live',
 	'qwen-image-2.1-pro',
+	'qwen-image-2.1-turbo',
 	'qwen-image-3.0',
 	'qwen-image-3.0-pro',
 	'wan2.7-image',
@@ -112,6 +113,13 @@ describe('static image model presets (*-image.json)', () => {
 		assert.equal(qwen21ProCny.image_billing_mode, 'per_image');
 		assert.equal(qwen21ProCny.image?.default, 0.25);
 		assert.equal(qwen21ProUsd.image?.default, 0.04);
+
+		const qwen21Turbo = byId.get('qwen-image-2.1-turbo')!;
+		const qwen21TurboCny = asPricing(qwen21Turbo.pricing.cny);
+		const qwen21TurboUsd = asPricing(qwen21Turbo.pricing.usd);
+		assert.equal(qwen21TurboCny.image_billing_mode, 'per_image');
+		assert.equal(qwen21TurboCny.image?.default, 0.1);
+		assert.equal(qwen21TurboUsd.image?.default, 0.016);
 
 		const wanPro = byId.get('wan2.7-image-pro')!;
 		assert.equal(asPricing(wanPro.pricing.cny).image?.default, 0.5);

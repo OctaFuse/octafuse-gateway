@@ -75,8 +75,8 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.ok(usd);
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'Gemini 4 Argon');
-		assert.equal(usd!.context_window, 1048576);
-		assert.equal(usd!.max_tokens, 1048576);
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 65536);
 		assert.equal(usd!.pricing_label, '$4 / $20 /M');
 		assert.equal(cny!.pricing_label, '¥28 / ¥140 /M');
 		const preset = listStaticModelPresets().find((p) => p.id === 'gemini-4-argon');
@@ -532,6 +532,38 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cnyProfile?.tiers[0]?.cache_write_price, 2.625);
 	});
 
+	it('includes kimi-k3 with platform.kimi list prices including 5min cache_write_price', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'kimi-k3');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'kimi-k3');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Kimi K3');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 1000000);
+		assert.equal(usd!.pricing_label, '$3 / $15 /M');
+		assert.equal(cny!.pricing_label, '¥20 / ¥100 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'kimi-k3');
+		assert.ok(preset);
+		const usdProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.equal(usdProfile?.tiers[0]?.input_price, 3);
+		assert.equal(usdProfile?.tiers[0]?.output_price, 15);
+		assert.equal(usdProfile?.tiers[0]?.cache_read_price, 0.3);
+		assert.equal(usdProfile?.tiers[0]?.cache_write_price, 3);
+		assert.equal(cnyProfile?.tiers[0]?.input_price, 20);
+		assert.equal(cnyProfile?.tiers[0]?.output_price, 100);
+		assert.equal(cnyProfile?.tiers[0]?.cache_read_price, 2);
+		assert.equal(cnyProfile?.tiers[0]?.cache_write_price, 20);
+	});
+
+	it('marks kimi-k2.5 retired on the official offline date', () => {
+		const preset = listStaticModelPresets().find((p) => p.id === 'kimi-k2.5');
+		assert.ok(preset);
+		assert.equal(preset!.retired, '2026-08-31');
+		assert.equal(preset!.context_window, 256000);
+		assert.equal(preset!.max_tokens, 256000);
+	});
+
 	it('includes kimi-k2.7-code-highspeed with platform.kimi.ai USD and CNY list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'kimi-k2.7-code-highspeed');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'kimi-k2.7-code-highspeed');
@@ -601,6 +633,36 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(usd!.display_name, 'Qwen3.8 Max Prime');
 		assert.equal(usd!.context_window, 1000000);
 		assert.equal(cny!.pricing_label, '¥24 / ¥72 /M');
+	});
+
+	it('includes qwen-image-2.1-turbo with DashScope per-image list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen-image-2.1-turbo');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen-image-2.1-turbo');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Qwen Image 2.1 Turbo');
+		assert.equal(usd!.kind, 'image');
+		assert.equal(usd!.context_window, null);
+		assert.equal(usd!.max_tokens, null);
+		const preset = listStaticModelPresets().find((p) => p.id === 'qwen-image-2.1-turbo');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-10-09');
+		assert.deepEqual(preset!.modalities?.input, ['text', 'image']);
+		assert.deepEqual(preset!.modalities?.output, ['image']);
+		const usdPricing = pickPresetPricingRawForBillingCurrency(preset!, 'USD') as {
+			image_billing_mode?: string;
+			image?: { default?: number };
+		};
+		assert.ok(usdPricing);
+		assert.equal(usdPricing.image_billing_mode, 'per_image');
+		assert.equal(usdPricing.image?.default, 0.016);
+		const cnyPricing = pickPresetPricingRawForBillingCurrency(preset!, 'CNY') as {
+			image_billing_mode?: string;
+			image?: { default?: number };
+		};
+		assert.ok(cnyPricing);
+		assert.equal(cnyPricing.image_billing_mode, 'per_image');
+		assert.equal(cnyPricing.image?.default, 0.1);
 	});
 
 	it('includes gemini-nano-banana-2.1 with Gemini API Standard list prices (CNY is USD × 7)', () => {
