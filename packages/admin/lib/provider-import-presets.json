@@ -23,6 +23,14 @@
 				"en": {
 					"name": "DeepSeek",
 					"description": "DeepSeek’s official platform with OpenAI Chat/Responses and Anthropic Messages."
+				},
+				"ja": {
+					"name": "DeepSeek",
+					"description": "DeepSeek 公式プラットフォーム。OpenAI Chat / Responses と Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "DeepSeek",
+					"description": "DeepSeek 공식 플랫폼. OpenAI Chat / Responses와 Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -59,6 +67,14 @@
 				"en": {
 					"name": "Volcengine Ark",
 					"description": "Standard pay-as-you-go Ark endpoints for OpenAI Chat/Responses, Anthropic Messages, and Seedream image generation."
+				},
+				"ja": {
+					"name": "Volcengine Ark（火山方舟）",
+					"description": "Volcengine Ark の標準従量課金エンドポイント。OpenAI Chat / Responses、Anthropic Messages、Seedream の画像生成に対応しています。"
+				},
+				"ko": {
+					"name": "Volcengine Ark",
+					"description": "Volcengine Ark 표준 종량제 엔드포인트. OpenAI Chat / Responses, Anthropic Messages, Seedream 이미지 생성을 제공합니다."
 				}
 			},
 			"links": {
@@ -91,6 +107,14 @@
 				"en": {
 					"name": "Volcengine Ark (Coding Plan)",
 					"description": "Coding Plan endpoints for OpenAI Chat, Responses, and Anthropic Messages."
+				},
+				"ja": {
+					"name": "Volcengine Ark（Coding Plan）",
+					"description": "Volcengine Ark の Coding Plan 専用エンドポイント。OpenAI Chat、Responses、Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "Volcengine Ark (Coding Plan)",
+					"description": "Volcengine Ark Coding Plan 전용 엔드포인트. OpenAI Chat, Responses, Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -123,6 +147,14 @@
 				"en": {
 					"name": "Volcengine Ark (Agent Plan)",
 					"description": "Agent Plan endpoints for OpenAI Chat, Responses, and Anthropic Messages."
+				},
+				"ja": {
+					"name": "Volcengine Ark（Agent Plan）",
+					"description": "Volcengine Ark の Agent Plan 専用エンドポイント。OpenAI Chat、Responses、Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "Volcengine Ark (Agent Plan)",
+					"description": "Volcengine Ark Agent Plan 전용 엔드포인트. OpenAI Chat, Responses, Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -158,6 +190,14 @@
 				"en": {
 					"name": "BytePlus ModelArk",
 					"description": "International Volcengine ModelArk endpoints for OpenAI Chat/Responses, Anthropic Messages, and image generation."
+				},
+				"ja": {
+					"name": "BytePlus ModelArk",
+					"description": "Volcengine 国際版（BytePlus）の従量課金エンドポイント。OpenAI Chat / Responses、Anthropic Messages、画像生成に対応しています。"
+				},
+				"ko": {
+					"name": "BytePlus ModelArk",
+					"description": "Volcengine 국제 사이트(BytePlus) 종량제 엔드포인트. OpenAI Chat / Responses, Anthropic Messages, 이미지 생성을 제공합니다."
 				}
 			},
 			"links": {
@@ -190,6 +230,14 @@
 				"en": {
 					"name": "BytePlus ModelArk (Coding Plan)",
 					"description": "Coding Plan endpoints for OpenAI Chat, Responses, and Anthropic Messages."
+				},
+				"ja": {
+					"name": "BytePlus ModelArk（Coding Plan）",
+					"description": "BytePlus ModelArk の Coding Plan 専用エンドポイント。OpenAI Chat、Responses、Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "BytePlus ModelArk (Coding Plan)",
+					"description": "BytePlus ModelArk Coding Plan 전용 엔드포인트. OpenAI Chat, Responses, Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -227,6 +275,14 @@
 				"en": {
 					"name": "Alibaba Cloud Model Studio",
 					"description": "China-region pay-as-you-go endpoints for OpenAI Chat/Responses, Anthropic Messages, and native DashScope audio and image generation."
+				},
+				"ja": {
+					"name": "Alibaba Cloud Model Studio",
+					"description": "Alibaba Cloud Model Studio の中国リージョン従量課金エンドポイント。OpenAI Chat / Responses、Anthropic Messages、DashScope ネイティブの音声と画像生成に対応しています。"
+				},
+				"ko": {
+					"name": "Alibaba Cloud Model Studio",
+					"description": "Alibaba Cloud Model Studio 중국 리전 종량제 엔드포인트. OpenAI Chat / Responses, Anthropic Messages, DashScope 네이티브 음성과 이미지 생성을 제공합니다."
 				}
 			},
 			"links": {
@@ -259,6 +315,14 @@
 				"en": {
 					"name": "Alibaba Cloud Model Studio (Coding Plan)",
 					"description": "Coding Plan endpoints that use plan-specific keys and quota."
+				},
+				"ja": {
+					"name": "Alibaba Cloud Model Studio（Coding Plan）",
+					"description": "Alibaba Cloud Model Studio の Coding Plan 専用エンドポイント。プラン専用のキーと利用枠を使います。"
+				},
+				"ko": {
+					"name": "Alibaba Cloud Model Studio (Coding Plan)",
+					"description": "Alibaba Cloud Model Studio Coding Plan 전용 엔드포인트. 플랜 전용 키와 한도를 사용합니다."
 				}
 			},
 			"links": {
@@ -296,6 +360,14 @@
 				"en": {
 					"name": "Alibaba Cloud Model Studio (International)",
 					"description": "International pay-as-you-go endpoints for OpenAI Chat/Responses, Anthropic Messages, and native DashScope audio and image generation."
+				},
+				"ja": {
+					"name": "Alibaba Cloud Model Studio（国際）",
+					"description": "Alibaba Cloud Model Studio 国際サイトの従量課金エンドポイント。OpenAI Chat / Responses、Anthropic Messages、DashScope ネイティブの音声と画像生成に対応しています。"
+				},
+				"ko": {
+					"name": "Alibaba Cloud Model Studio (국제)",
+					"description": "Alibaba Cloud Model Studio 국제 사이트 종량제 엔드포인트. OpenAI Chat / Responses, Anthropic Messages, DashScope 네이티브 음성과 이미지 생성을 제공합니다."
 				}
 			},
 			"links": {
@@ -327,6 +399,14 @@
 				"en": {
 					"name": "Alibaba Cloud Model Studio (Coding Plan International)",
 					"description": "International Coding Plan endpoints that use plan-specific keys and quota."
+				},
+				"ja": {
+					"name": "Alibaba Cloud Model Studio（Coding Plan 国際）",
+					"description": "Alibaba Cloud Model Studio 国際サイトの Coding Plan 専用エンドポイント。プラン専用のキーと利用枠を使います。"
+				},
+				"ko": {
+					"name": "Alibaba Cloud Model Studio (Coding Plan 국제)",
+					"description": "Alibaba Cloud Model Studio 국제 사이트 Coding Plan 전용 엔드포인트. 플랜 전용 키와 한도를 사용합니다."
 				}
 			},
 			"links": {
@@ -362,6 +442,14 @@
 				"en": {
 					"name": "Qwen AI Platform",
 					"description": "Pay-as-you-go endpoints on maas.qianwenaiapi.com for OpenAI Chat/Responses, Anthropic, and DashScope audio, image, and file transcription. Uses sk- or sk-ws- keys."
+				},
+				"ja": {
+					"name": "Qwen AI プラットフォーム",
+					"description": "Qwen の従量課金エンドポイント（maas.qianwenaiapi.com）。OpenAI Chat / Responses、Anthropic、DashScope の音声・画像・filetrans に対応しています。キーは sk- または sk-ws- を使います。"
+				},
+				"ko": {
+					"name": "Qwen AI 플랫폼",
+					"description": "Qwen 종량제 엔드포인트(maas.qianwenaiapi.com). OpenAI Chat / Responses, Anthropic, DashScope 음성·이미지·filetrans를 지원합니다. 키는 sk- 또는 sk-ws-입니다."
 				}
 			},
 			"links": {
@@ -403,6 +491,14 @@
 				"en": {
 					"name": "Qwen AI Platform (Token Plan)",
 					"description": "Personal and team Token Plan endpoints on token-plan.maas.qianwenaiapi.com for OpenAI Chat/Responses, Anthropic, and DashScope TTS/realtime/image. Includes qwen-audio-3.0-asr-flash sync HTTP. Does not include filetrans or video synthesis."
+				},
+				"ja": {
+					"name": "Qwen AI プラットフォーム（Token Plan）",
+					"description": "Qwen Token Plan の個人版・チーム版エンドポイント（token-plan.maas.qianwenaiapi.com）。OpenAI Chat / Responses、Anthropic、DashScope の TTS / リアルタイム音声 / 画像生成、および qwen-audio-3.0-asr-flash の同期 HTTP に対応しています。filetrans の非同期文字起こしと動画生成は含みません。"
+				},
+				"ko": {
+					"name": "Qwen AI 플랫폼 (Token Plan)",
+					"description": "Qwen Token Plan 개인·팀 엔드포인트(token-plan.maas.qianwenaiapi.com). OpenAI Chat / Responses, Anthropic, DashScope TTS / 실시간 음성 / 이미지 생성과 qwen-audio-3.0-asr-flash 동기 HTTP를 지원합니다. filetrans 비동기 전사와 동영상 생성은 포함하지 않습니다."
 				}
 			},
 			"links": {
@@ -435,6 +531,14 @@
 				"en": {
 					"name": "Tencent Hunyuan",
 					"description": "Hunyuan pay-as-you-go endpoints for OpenAI Chat and Anthropic Messages."
+				},
+				"ja": {
+					"name": "テンセント Hunyuan",
+					"description": "テンセント Hunyuan の従量課金エンドポイント。OpenAI Chat と Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "텐센트 Hunyuan",
+					"description": "텐센트 Hunyuan 종량제 엔드포인트. OpenAI Chat과 Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -466,6 +570,14 @@
 				"en": {
 					"name": "Tencent TokenHub (Hunyuan Token Plan)",
 					"description": "Hunyuan Token Plan endpoints that use the shared sk-tp-* plan key."
+				},
+				"ja": {
+					"name": "テンセント TokenHub（Hunyuan Token Plan）",
+					"description": "テンセント TokenHub の Hunyuan プラン専用エンドポイント。共通の sk-tp-* プランキーを使います。"
+				},
+				"ko": {
+					"name": "텐센트 TokenHub (Hunyuan Token Plan)",
+					"description": "텐센트 TokenHub Hunyuan 플랜 전용 엔드포인트. 공통 sk-tp-* 플랜 키를 사용합니다."
 				}
 			},
 			"links": {
@@ -498,6 +610,14 @@
 				"en": {
 					"name": "Baidu Qianfan",
 					"description": "Qianfan V2 endpoints for OpenAI Chat/Responses and Anthropic Messages."
+				},
+				"ja": {
+					"name": "バイドゥ Qianfan",
+					"description": "バイドゥ Qianfan V2。OpenAI Chat / Responses と Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "바이두 Qianfan",
+					"description": "바이두 Qianfan V2. OpenAI Chat / Responses와 Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -531,6 +651,14 @@
 				"en": {
 					"name": "Zhipu GLM",
 					"description": "China-region API for OpenAI Chat, Responses, Anthropic Messages, and GLM image generation."
+				},
+				"ja": {
+					"name": "智譜AI GLM",
+					"description": "智譜AIの中国リージョン標準 API。OpenAI Chat、Responses、Anthropic Messages、GLM の画像生成に対応しています。"
+				},
+				"ko": {
+					"name": "즈푸 AI GLM",
+					"description": "즈푸 AI 중국 리전 표준 API. OpenAI Chat, Responses, Anthropic Messages, GLM 이미지 생성을 지원합니다."
 				}
 			},
 			"links": {
@@ -563,6 +691,14 @@
 				"en": {
 					"name": "Zhipu GLM (Coding Plan)",
 					"description": "Coding Plan endpoints for OpenAI Chat/Responses and Anthropic Messages."
+				},
+				"ja": {
+					"name": "智譜AI GLM（Coding Plan）",
+					"description": "智譜AIの Coding Plan 専用エンドポイント。OpenAI Chat / Responses と Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "즈푸 AI GLM (Coding Plan)",
+					"description": "즈푸 AI Coding Plan 전용 엔드포인트. OpenAI Chat / Responses와 Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -593,6 +729,14 @@
 				"en": {
 					"name": "Z.AI GLM (International)",
 					"description": "International standard API for chat and GLM image generation."
+				},
+				"ja": {
+					"name": "Z.AI GLM（国際）",
+					"description": "Z.AI 国際サイトの標準 API。対話と GLM の画像生成に対応しています。"
+				},
+				"ko": {
+					"name": "Z.AI GLM (국제)",
+					"description": "Z.AI 국제 사이트 표준 API. 대화와 GLM 이미지 생성을 지원합니다."
 				}
 			},
 			"links": {
@@ -624,6 +768,14 @@
 				"en": {
 					"name": "Z.AI GLM (Coding Plan)",
 					"description": "International Coding Plan endpoints for supported coding tools."
+				},
+				"ja": {
+					"name": "Z.AI GLM（Coding Plan）",
+					"description": "Z.AI 国際サイトの Coding Plan 専用対話エンドポイント。対応するコーディングツール向けです。"
+				},
+				"ko": {
+					"name": "Z.AI GLM (Coding Plan)",
+					"description": "Z.AI 국제 사이트 Coding Plan 전용 대화 엔드포인트. 지원하는 코딩 도구용입니다."
 				}
 			},
 			"links": {
@@ -656,6 +808,14 @@
 				"en": {
 					"name": "Meituan LongCat",
 					"description": "LongCat endpoints for OpenAI Chat/Responses and Anthropic Messages."
+				},
+				"ja": {
+					"name": "美団 LongCat",
+					"description": "LongCat オープンプラットフォーム。OpenAI Chat / Responses と Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "메이투안 LongCat",
+					"description": "LongCat 오픈 플랫폼. OpenAI Chat / Responses와 Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -687,6 +847,14 @@
 				"en": {
 					"name": "Moonshot AI",
 					"description": "China-region pay-as-you-go endpoints for OpenAI Chat/Responses and Anthropic Messages."
+				},
+				"ja": {
+					"name": "Moonshot AI",
+					"description": "Moonshot AI の中国リージョン従量課金エンドポイント。OpenAI Chat / Responses と Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "문샷 AI (Moonshot AI)",
+					"description": "문샷 AI(Moonshot AI) 중국 리전 종량제 엔드포인트. OpenAI Chat / Responses와 Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -719,6 +887,14 @@
 				"en": {
 					"name": "Kimi Code (Coding API)",
 					"description": "Kimi Code endpoints for OpenAI Chat and Anthropic Messages."
+				},
+				"ja": {
+					"name": "Kimi Code（Coding API）",
+					"description": "Kimi Code と Coding Plan の専用エンドポイント。OpenAI Chat と Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "Kimi Code (Coding API)",
+					"description": "Kimi Code와 Coding Plan 전용 엔드포인트. OpenAI Chat과 Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -753,6 +929,14 @@
 				"en": {
 					"name": "MiniMax",
 					"description": "China-region MiniMax endpoints for OpenAI Chat/Responses, Anthropic Messages, and native file transcription, speech synthesis, and image generation."
+				},
+				"ja": {
+					"name": "MiniMax",
+					"description": "MiniMax 中国リージョン。OpenAI Chat / Responses、Anthropic Messages、ネイティブのファイル文字起こし、同期音声合成、画像生成に対応しています。"
+				},
+				"ko": {
+					"name": "MiniMax",
+					"description": "MiniMax 중국 리전. OpenAI Chat / Responses, Anthropic Messages, 네이티브 파일 전사, 동기 음성 합성과 이미지 생성을 지원합니다."
 				}
 			},
 			"links": {
@@ -787,6 +971,14 @@
 				"en": {
 					"name": "MiniMax (International)",
 					"description": "International MiniMax endpoints for OpenAI Chat/Responses, Anthropic Messages, and native file transcription, speech synthesis, and image generation."
+				},
+				"ja": {
+					"name": "MiniMax（国際）",
+					"description": "MiniMax 国際サイト。OpenAI Chat / Responses、Anthropic Messages、ネイティブのファイル文字起こし、同期音声合成、画像生成に対応しています。"
+				},
+				"ko": {
+					"name": "MiniMax (국제)",
+					"description": "MiniMax 국제 사이트. OpenAI Chat / Responses, Anthropic Messages, 네이티브 파일 전사, 동기 음성 합성과 이미지 생성을 지원합니다."
 				}
 			},
 			"links": {
@@ -812,6 +1004,14 @@
 				"en": {
 					"name": "ElevenLabs",
 					"description": "ElevenLabs official API with native file transcription (Scribe) and text-to-speech, plus OpenAI-compatible /v1/audio/* through adapters."
+				},
+				"ja": {
+					"name": "ElevenLabs",
+					"description": "ElevenLabs 公式 API。ネイティブのファイル文字起こし（Scribe）とテキスト読み上げに対応し、アダプター経由で OpenAI 互換の /v1/audio/* も提供します。"
+				},
+				"ko": {
+					"name": "ElevenLabs",
+					"description": "ElevenLabs 공식 API. 네이티브 파일 전사(Scribe)와 텍스트 음성 변환을 지원하고, 어댑터를 통해 OpenAI 호환 /v1/audio/* 엔드포인트도 제공합니다."
 				}
 			},
 			"links": {
@@ -837,6 +1037,14 @@
 				"en": {
 					"name": "OpenAI",
 					"description": "OpenAI’s official API root for chat, images, and other supported capabilities."
+				},
+				"ja": {
+					"name": "OpenAI",
+					"description": "OpenAI 公式 API のルート。対話、画像などの公開機能に対応しています。"
+				},
+				"ko": {
+					"name": "OpenAI",
+					"description": "OpenAI 공식 API 루트. 대화, 이미지 등 공개 기능을 다룹니다."
 				}
 			},
 			"links": {
@@ -863,6 +1071,14 @@
 				"en": {
 					"name": "Anthropic",
 					"description": "Anthropic’s official Messages API root."
+				},
+				"ja": {
+					"name": "Anthropic",
+					"description": "Anthropic 公式 Messages API のルート。"
+				},
+				"ko": {
+					"name": "Anthropic",
+					"description": "Anthropic 공식 Messages API 루트."
 				}
 			},
 			"links": {
@@ -895,6 +1111,14 @@
 				"en": {
 					"name": "Meta Model API",
 					"description": "Meta’s official Model API for Muse Spark, with OpenAI Chat/Responses and Anthropic Messages."
+				},
+				"ja": {
+					"name": "Meta Model API",
+					"description": "Meta 公式 Model API（Muse Spark）。OpenAI Chat / Responses と Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "Meta Model API",
+					"description": "Meta 공식 Model API(Muse Spark). OpenAI Chat / Responses와 Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -927,6 +1151,14 @@
 				"en": {
 					"name": "Google Gemini (Generative Language API)",
 					"description": "Gemini Developer API with native Gemini and OpenAI-compatible access."
+				},
+				"ja": {
+					"name": "Google Gemini（Generative Language API）",
+					"description": "Gemini Developer API。ネイティブ Gemini と OpenAI 互換プロトコルに対応しています。"
+				},
+				"ko": {
+					"name": "Google Gemini (Generative Language API)",
+					"description": "Gemini Developer API. 네이티브 Gemini와 OpenAI 호환 프로토콜을 지원합니다."
 				}
 			},
 			"links": {
@@ -954,6 +1186,14 @@
 				"en": {
 					"name": "Google Vertex AI (Express Mode · API Key)",
 					"description": "Native Gemini endpoint for Vertex AI Express mode with API key authentication."
+				},
+				"ja": {
+					"name": "Google Vertex AI（Express Mode · API Key）",
+					"description": "Vertex AI Express モードのネイティブ Gemini エンドポイント。API キーで認証します。"
+				},
+				"ko": {
+					"name": "Google Vertex AI (Express Mode · API Key)",
+					"description": "Vertex AI Express 모드의 네이티브 Gemini 엔드포인트. API 키로 인증합니다."
 				}
 			},
 			"links": {
@@ -986,6 +1226,14 @@
 				"en": {
 					"name": "Google Vertex AI",
 					"description": "Full Vertex: OpenAI Chat Completions plus native Gemini. Replace the project ID; paste a GCP service account JSON as the API key."
+				},
+				"ja": {
+					"name": "Google Vertex AI",
+					"description": "正式な Vertex。OpenAI Chat Completions とネイティブ Gemini。インポート後にプロジェクト ID を置き換え、API キー欄には GCP サービスアカウント JSON を貼り付けます。"
+				},
+				"ko": {
+					"name": "Google Vertex AI",
+					"description": "정식 Vertex. OpenAI Chat Completions와 네이티브 Gemini. 가져온 뒤 프로젝트 ID를 바꾸고, API 키 란에 GCP 서비스 계정 JSON을 붙여 넣습니다."
 				}
 			},
 			"links": {
@@ -1013,6 +1261,14 @@
 				"en": {
 					"name": "Mistral AI",
 					"description": "Mistral’s official OpenAI-compatible chat API."
+				},
+				"ja": {
+					"name": "Mistral AI",
+					"description": "Mistral 公式の OpenAI 互換チャット API。"
+				},
+				"ko": {
+					"name": "Mistral AI",
+					"description": "Mistral 공식 OpenAI 호환 대화 API."
 				}
 			},
 			"links": {
@@ -1040,6 +1296,14 @@
 				"en": {
 					"name": "Groq (OpenAI Compatible)",
 					"description": "GroqCloud’s high-speed OpenAI-compatible inference API."
+				},
+				"ja": {
+					"name": "Groq（OpenAI 互換）",
+					"description": "GroqCloud の高速 OpenAI 互換推論 API。"
+				},
+				"ko": {
+					"name": "Groq (OpenAI 호환)",
+					"description": "GroqCloud의 고속 OpenAI 호환 추론 API."
 				}
 			},
 			"links": {
@@ -1067,6 +1331,14 @@
 				"en": {
 					"name": "Cerebras",
 					"description": "Cerebras Inference’s high-speed OpenAI-compatible chat API."
+				},
+				"ja": {
+					"name": "Cerebras",
+					"description": "Cerebras Inference の高速 OpenAI 互換チャット API。"
+				},
+				"ko": {
+					"name": "Cerebras",
+					"description": "Cerebras Inference의 고속 OpenAI 호환 대화 API."
 				}
 			},
 			"links": {
@@ -1100,6 +1372,14 @@
 				"en": {
 					"name": "SambaNova Cloud",
 					"description": "SambaNova Cloud inference API with OpenAI Chat/Responses and Anthropic Messages."
+				},
+				"ja": {
+					"name": "SambaNova Cloud",
+					"description": "SambaNova Cloud 推論 API。OpenAI Chat / Responses と Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "SambaNova Cloud",
+					"description": "SambaNova Cloud 추론 API. OpenAI Chat / Responses와 Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -1130,6 +1410,14 @@
 				"en": {
 					"name": "xAI (Grok)",
 					"description": "xAI’s OpenAI-compatible API for Grok chat, Responses, and image generation."
+				},
+				"ja": {
+					"name": "xAI（Grok）",
+					"description": "xAI 公式の OpenAI 互換 API。Grok の対話、Responses、画像生成に対応しています。"
+				},
+				"ko": {
+					"name": "xAI (Grok)",
+					"description": "xAI 공식 OpenAI 호환 API. Grok 대화, Responses, 이미지 생성을 지원합니다."
 				}
 			},
 			"links": {
@@ -1161,6 +1449,14 @@
 				"en": {
 					"name": "Together AI",
 					"description": "Together AI’s OpenAI-compatible API for chat, images, speech transcription, and speech synthesis."
+				},
+				"ja": {
+					"name": "Together AI",
+					"description": "Together AI の OpenAI 互換 API。対話、画像、音声文字起こし、音声合成モデルに対応しています。"
+				},
+				"ko": {
+					"name": "Together AI",
+					"description": "Together AI의 OpenAI 호환 API. 대화, 이미지, 음성 전사, 음성 합성 모델을 다룹니다."
 				}
 			},
 			"links": {
@@ -1188,6 +1484,14 @@
 				"en": {
 					"name": "Fireworks AI",
 					"description": "Fireworks AI’s OpenAI-compatible inference API."
+				},
+				"ja": {
+					"name": "Fireworks AI",
+					"description": "Fireworks AI の OpenAI 互換推論 API。"
+				},
+				"ko": {
+					"name": "Fireworks AI",
+					"description": "Fireworks AI의 OpenAI 호환 추론 API."
 				}
 			},
 			"links": {
@@ -1216,6 +1520,14 @@
 				"en": {
 					"name": "DeepInfra",
 					"description": "DeepInfra’s OpenAI-compatible chat API for hosted open-source models."
+				},
+				"ja": {
+					"name": "DeepInfra",
+					"description": "DeepInfra がホストするオープンモデル向け OpenAI 互換チャット API。"
+				},
+				"ko": {
+					"name": "DeepInfra",
+					"description": "DeepInfra가 호스팅하는 오픈소스 모델용 OpenAI 호환 대화 API."
 				}
 			},
 			"links": {
@@ -1244,6 +1556,14 @@
 				"en": {
 					"name": "Novita AI",
 					"description": "Novita’s OpenAI-compatible chat API."
+				},
+				"ja": {
+					"name": "Novita AI",
+					"description": "Novita モデルクラウドの OpenAI 互換チャット API。"
+				},
+				"ko": {
+					"name": "Novita AI",
+					"description": "Novita 모델 클라우드의 OpenAI 호환 대화 API."
 				}
 			},
 			"links": {
@@ -1272,6 +1592,14 @@
 				"en": {
 					"name": "Perplexity",
 					"description": "OpenAI-compatible chat API for Perplexity’s web-connected Sonar models."
+				},
+				"ja": {
+					"name": "Perplexity",
+					"description": "Perplexity のウェブ接続 Sonar モデル向け OpenAI 互換チャット API。"
+				},
+				"ko": {
+					"name": "Perplexity",
+					"description": "Perplexity의 웹 연결 Sonar 모델용 OpenAI 호환 대화 API."
 				}
 			},
 			"links": {
@@ -1300,6 +1628,14 @@
 				"en": {
 					"name": "Cohere (OpenAI Compatibility)",
 					"description": "Cohere’s Compatibility API for integrations using the OpenAI SDK."
+				},
+				"ja": {
+					"name": "Cohere（OpenAI 互換）",
+					"description": "Cohere Compatibility API。OpenAI SDK のまま接続できます。"
+				},
+				"ko": {
+					"name": "Cohere (OpenAI 호환)",
+					"description": "Cohere Compatibility API. OpenAI SDK로 그대로 연결할 수 있습니다."
 				}
 			},
 			"links": {
@@ -1328,6 +1664,14 @@
 				"en": {
 					"name": "NVIDIA NIM (integrate.api)",
 					"description": "NVIDIA Build’s OpenAI-compatible NIM inference endpoint."
+				},
+				"ja": {
+					"name": "NVIDIA NIM（integrate.api）",
+					"description": "NVIDIA Build が提供する NIM の OpenAI 互換推論エンドポイント。"
+				},
+				"ko": {
+					"name": "NVIDIA NIM (integrate.api)",
+					"description": "NVIDIA Build가 제공하는 NIM OpenAI 호환 추론 엔드포인트."
 				}
 			},
 			"links": {
@@ -1353,6 +1697,14 @@
 				"en": {
 					"name": "Azure OpenAI",
 					"description": "Azure OpenAI v1 base URL. Replace the resource name after import. The Foundry host *.services.ai.azure.com/openai/v1 is the same template."
+				},
+				"ja": {
+					"name": "Azure OpenAI",
+					"description": "Azure OpenAI の OpenAI v1 アドレス。インポート後にリソース名を置き換えます。Foundry の *.services.ai.azure.com/openai/v1 も同じテンプレートです。"
+				},
+				"ko": {
+					"name": "Azure OpenAI",
+					"description": "Azure OpenAI의 OpenAI v1 주소. 가져온 뒤 리소스 이름을 바꿉니다. Foundry의 *.services.ai.azure.com/openai/v1도 같은 템플릿입니다."
 				}
 			},
 			"links": {
@@ -1384,6 +1736,14 @@
 				"en": {
 					"name": "StepFun",
 					"description": "StepFun pay-as-you-go endpoints for OpenAI Chat/Responses and Anthropic Messages."
+				},
+				"ja": {
+					"name": "StepFun（階躍星辰）",
+					"description": "階躍星辰の従量課金エンドポイント。OpenAI Chat / Responses と Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "스텝펀 (StepFun)",
+					"description": "스텝펀(StepFun) 종량제 엔드포인트. OpenAI Chat / Responses와 Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -1410,6 +1770,14 @@
 				"en": {
 					"name": "Baichuan AI",
 					"description": "Baichuan AI’s OpenAI-compatible chat API."
+				},
+				"ja": {
+					"name": "Baichuan AI",
+					"description": "Baichuan AI オープンプラットフォームの OpenAI 互換チャット API。"
+				},
+				"ko": {
+					"name": "Baichuan AI",
+					"description": "Baichuan AI 오픈 플랫폼의 OpenAI 호환 대화 API."
 				}
 			},
 			"links": {
@@ -1442,6 +1810,14 @@
 				"en": {
 					"name": "Xiaomi MiMo",
 					"description": "Xiaomi MiMo pay-as-you-go endpoints for OpenAI Chat/Responses and Anthropic Messages."
+				},
+				"ja": {
+					"name": "シャオミ MiMo",
+					"description": "シャオミ MiMo の従量課金オープンプラットフォーム。OpenAI Chat / Responses と Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "샤오미 MiMo",
+					"description": "샤오미 MiMo 종량제 오픈 플랫폼. OpenAI Chat / Responses와 Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -1474,6 +1850,14 @@
 				"en": {
 					"name": "Xiaomi MiMo (Token Plan)",
 					"description": "China-region Token Plan endpoints for OpenAI Chat/Responses and Anthropic."
+				},
+				"ja": {
+					"name": "シャオミ MiMo（Token Plan）",
+					"description": "シャオミ MiMo Token Plan の中国リージョンエンドポイント。OpenAI Chat / Responses と Anthropic に対応しています。"
+				},
+				"ko": {
+					"name": "샤오미 MiMo (Token Plan)",
+					"description": "샤오미 MiMo Token Plan 중국 리전 엔드포인트. OpenAI Chat / Responses와 Anthropic을 지원합니다."
 				}
 			},
 			"links": {
@@ -1509,6 +1893,14 @@
 				"en": {
 					"name": "Qiniu AI",
 					"description": "Qiniu AI Token API with OpenAI Chat, a GPT Responses bypass, Anthropic, and Gemini (Vertex-compatible, Bearer)."
+				},
+				"ja": {
+					"name": "Qiniu AI",
+					"description": "Qiniu AI（七牛）の大規模モデル推論（Token API）。OpenAI Chat、Responses パススルー、Anthropic、Gemini（Vertex 互換 + Bearer）に対応しています。"
+				},
+				"ko": {
+					"name": "Qiniu AI",
+					"description": "Qiniu AI(七牛) 대규모 모델 추론(Token API). OpenAI Chat, Responses 패스스루, Anthropic, Gemini(Vertex 호환 + Bearer)를 지원합니다."
 				}
 			},
 			"links": {
@@ -1540,6 +1932,14 @@
 				"en": {
 					"name": "OpenRouter",
 					"description": "A unified aggregation platform for chat and image models from many vendors."
+				},
+				"ja": {
+					"name": "OpenRouter",
+					"description": "OpenRouter の統合プラットフォーム。複数ベンダーの対話モデルと画像モデルをまとめて利用できます。"
+				},
+				"ko": {
+					"name": "OpenRouter",
+					"description": "OpenRouter 통합 플랫폼. 여러 공급사의 대화·이미지 모델을 한곳에서 사용할 수 있습니다."
 				}
 			},
 			"links": {
@@ -1574,6 +1974,14 @@
 				"en": {
 					"name": "OpenCode Zen",
 					"description": "OpenCode Zen pay-as-you-go gateway (/zen/v1) with OpenAI, Anthropic, and Gemini; do not mix with Go endpoints."
+				},
+				"ja": {
+					"name": "OpenCode Zen",
+					"description": "OpenCode Zen 従量課金ゲートウェイ（/zen/v1）。OpenAI、Anthropic、Gemini に対応しています。Go プランのエンドポイントと混在させないでください。"
+				},
+				"ko": {
+					"name": "OpenCode Zen",
+					"description": "OpenCode Zen 종량제 게이트웨이(/zen/v1). OpenAI, Anthropic, Gemini를 지원합니다. Go 플랜 엔드포인트와 섞어 쓰지 마세요."
 				}
 			},
 			"links": {
@@ -1605,6 +2013,14 @@
 				"en": {
 					"name": "OpenCode Go",
 					"description": "OpenCode Go subscription endpoints (/zen/go/v1) for OpenAI and Anthropic; do not mix with Zen pay-as-you-go."
+				},
+				"ja": {
+					"name": "OpenCode Go",
+					"description": "OpenCode Go サブスクリプション専用エンドポイント（/zen/go/v1）。OpenAI と Anthropic に対応しています。Zen の従量課金エンドポイントと混在させないでください。"
+				},
+				"ko": {
+					"name": "OpenCode Go",
+					"description": "OpenCode Go 구독 플랜 전용 엔드포인트(/zen/go/v1). OpenAI와 Anthropic을 지원합니다. Zen 종량제 엔드포인트와 섞어 쓰지 마세요."
 				}
 			},
 			"links": {
@@ -1637,6 +2053,14 @@
 				"en": {
 					"name": "Command Code",
 					"description": "Command Code Provider API. OpenAI and open models use Chat Completions and Responses; Claude uses Anthropic Messages."
+				},
+				"ja": {
+					"name": "Command Code",
+					"description": "Command Code Provider API。OpenAI とオープンモデルは Chat Completions と Responses、Claude は Anthropic Messages。"
+				},
+				"ko": {
+					"name": "Command Code",
+					"description": "Command Code Provider API. OpenAI와 오픈 모델은 Chat Completions와 Responses, Claude는 Anthropic Messages를 사용합니다."
 				}
 			},
 			"links": {
@@ -1665,6 +2089,14 @@
 				"en": {
 					"name": "Hugging Face Inference Providers",
 					"description": "Hugging Face’s OpenAI-compatible chat router across many inference providers."
+				},
+				"ja": {
+					"name": "Hugging Face Inference Providers",
+					"description": "Hugging Face 推論ルーターの OpenAI 互換チャット API。モデルごとに上流プロバイダーを指定できます。"
+				},
+				"ko": {
+					"name": "Hugging Face Inference Providers",
+					"description": "Hugging Face 추론 라우터의 OpenAI 호환 대화 API. 모델마다 업스트림 공급자를 지정할 수 있습니다."
 				}
 			},
 			"links": {
@@ -1698,6 +2130,14 @@
 				"en": {
 					"name": "Vercel AI Gateway",
 					"description": "Vercel AI Gateway with OpenAI-compatible and Anthropic Messages endpoints."
+				},
+				"ja": {
+					"name": "Vercel AI Gateway",
+					"description": "Vercel AI Gateway の統合ゲートウェイ。OpenAI 互換プロトコルと Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "Vercel AI Gateway",
+					"description": "Vercel AI Gateway 통합 게이트웨이. OpenAI 호환 프로토콜과 Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -1731,6 +2171,14 @@
 				"en": {
 					"name": "ZenMux",
 					"description": "ZenMux aggregation API (OpenAI, Anthropic, Gemini); Pay As You Go and Builder Plan share endpoints and differ by API key only."
+				},
+				"ja": {
+					"name": "ZenMux",
+					"description": "ZenMux 統合プラットフォーム（OpenAI / Anthropic / Gemini）。Pay As You Go と Builder サブスクリプションはエンドポイントを共有し、API キーで課金を分けます。"
+				},
+				"ko": {
+					"name": "ZenMux",
+					"description": "ZenMux 통합 플랫폼(OpenAI / Anthropic / Gemini). Pay As You Go와 Builder 구독은 엔드포인트를 공유하고, API 키로 과금을 나눕니다."
 				}
 			},
 			"links": {
@@ -1763,6 +2211,14 @@
 				"en": {
 					"name": "SCNet",
 					"description": "National Supercomputing Internet model API with OpenAI- and Anthropic-compatible endpoints."
+				},
+				"ja": {
+					"name": "SCNet",
+					"description": "国家スーパーコンピューティング・インターネット（SCNet）のモデル API。OpenAI と Anthropic 互換プロトコルに対応しています。"
+				},
+				"ko": {
+					"name": "SCNet",
+					"description": "국가 슈퍼컴퓨팅 인터넷(SCNet)의 모델 API. OpenAI 및 Anthropic 호환 프로토콜을 지원합니다."
 				}
 			},
 			"links": {
@@ -1798,6 +2254,14 @@
 				"en": {
 					"name": "SiliconFlow",
 					"description": "SiliconFlow China Model Cloud with OpenAI-compatible APIs and Anthropic Messages."
+				},
+				"ja": {
+					"name": "SiliconFlow",
+					"description": "SiliconFlow の中国サイト。OpenAI 互換 API と Anthropic Messages に対応しています。"
+				},
+				"ko": {
+					"name": "SiliconFlow (실리콘플로우)",
+					"description": "SiliconFlow(실리콘플로우) 중국 사이트. OpenAI 호환 API와 Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
@@ -1831,6 +2295,14 @@
 				"en": {
 					"name": "SiliconFlow (International)",
 					"description": "SiliconFlow’s international Model Cloud OpenAI-compatible API."
+				},
+				"ja": {
+					"name": "SiliconFlow（国際）",
+					"description": "SiliconFlow 国際サイトの OpenAI 互換 API。"
+				},
+				"ko": {
+					"name": "SiliconFlow (국제)",
+					"description": "SiliconFlow 국제 사이트의 OpenAI 호환 API."
 				}
 			},
 			"links": {
@@ -1860,6 +2332,14 @@
 				"en": {
 					"name": "Ollama (Local)",
 					"description": "Default local Ollama OpenAI-compatible endpoint; no platform API key is required."
+				},
+				"ja": {
+					"name": "Ollama（ローカル）",
+					"description": "ローカル Ollama の既定 OpenAI 互換エンドポイント。プラットフォーム API キーは不要です。"
+				},
+				"ko": {
+					"name": "Ollama (로컬)",
+					"description": "로컬 Ollama 기본 OpenAI 호환 엔드포인트. 플랫폼 API 키는 필요 없습니다."
 				}
 			},
 			"links": {
@@ -1891,6 +2371,14 @@
 				"en": {
 					"name": "Kingsoft StarFlow",
 					"description": "Kingsoft StarFlow in China, with OpenAI Chat, Responses, and Anthropic Messages."
+				},
+				"ja": {
+					"name": "Kingsoft Cloud StarFlow",
+					"description": "Kingsoft Cloud StarFlow の中国版。OpenAI Chat、Responses、Anthropic Messages に対応しています。国際版 global-kspmas.ksyun.com のキーと混在させないでください。"
+				},
+				"ko": {
+					"name": "킹소프트클라우드 StarFlow",
+					"description": "킹소프트클라우드 StarFlow 중국판. OpenAI Chat, Responses, Anthropic Messages를 지원합니다. 국제판 global-kspmas.ksyun.com 키와 섞어 쓰지 마세요."
 				}
 			},
 			"links": {
@@ -1923,6 +2411,14 @@
 				"en": {
 					"name": "Kingsoft StarFlow (International)",
 					"description": "Kingsoft StarFlow international endpoint at global-kspmas.ksyun.com, with OpenAI Chat, Responses, and Anthropic Messages."
+				},
+				"ja": {
+					"name": "Kingsoft Cloud StarFlow（国際版）",
+					"description": "Kingsoft Cloud StarFlow の国際版。https://global-kspmas.ksyun.com/v1 に接続し、OpenAI Chat、Responses、Anthropic Messages に対応しています。中国版 kspmas.ksyun.com のキーと混在させないでください。"
+				},
+				"ko": {
+					"name": "킹소프트클라우드 StarFlow (국제판)",
+					"description": "킹소프트클라우드 StarFlow 국제판. https://global-kspmas.ksyun.com/v1에 연결하며 OpenAI Chat, Responses, Anthropic Messages를 지원합니다. 중국판 kspmas.ksyun.com 키와 섞어 쓰지 마세요."
 				}
 			},
 			"links": {
@@ -1955,6 +2451,14 @@
 				"en": {
 					"name": "Open Design",
 					"description": "Open Design Cloud model API with OpenAI Chat, Responses, and Anthropic Messages. Keys are sk-amr- and share Design Plan credits."
+				},
+				"ja": {
+					"name": "Open Design",
+					"description": "Open Design Cloud のモデル API（amr-link.open-design.ai/v1）。ほとんどのモデルは OpenAI Chat、Codex 形式は Responses、glm-5.3-flash は Anthropic Messages。キーは sk-amr- で、アプリと Design Plan の枠を共有。画像・音声・埋め込みのエンドポイントは含みません。"
+				},
+				"ko": {
+					"name": "Open Design",
+					"description": "Open Design Cloud 모델 API(amr-link.open-design.ai/v1). 대부분 모델은 OpenAI Chat, Codex 형식은 Responses, glm-5.3-flash는 Anthropic Messages를 사용합니다. 키는 sk-amr-이며 앱과 Design Plan 한도를 공유합니다. 이미지, 오디오, 임베딩 엔드포인트는 포함하지 않습니다."
 				}
 			},
 			"links": {

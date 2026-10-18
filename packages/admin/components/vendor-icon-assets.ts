@@ -14,6 +14,7 @@ import bailianIcon from '@lobehub/icons-static-svg/icons/bailian.svg';
 import bytedanceIcon from '@lobehub/icons-static-svg/icons/bytedance.svg';
 import cerebrasIcon from '@lobehub/icons-static-svg/icons/cerebras.svg';
 import cohereIcon from '@lobehub/icons-static-svg/icons/cohere.svg';
+import commandCodeIcon from './icons/commandcode.svg';
 import deepinfraIcon from '@lobehub/icons-static-svg/icons/deepinfra.svg';
 import deepseekIcon from '@lobehub/icons-static-svg/icons/deepseek.svg';
 import elevenlabsIcon from '@lobehub/icons-static-svg/icons/elevenlabs.svg';
@@ -34,6 +35,7 @@ import novitaIcon from '@lobehub/icons-static-svg/icons/novita.svg';
 import nvidiaIcon from '@lobehub/icons-static-svg/icons/nvidia.svg';
 import ollamaIcon from '@lobehub/icons-static-svg/icons/ollama.svg';
 import openaiIcon from '@lobehub/icons-static-svg/icons/openai.svg';
+import openDesignIcon from './icons/opendesign.svg';
 import opencodeIcon from '@lobehub/icons-static-svg/icons/opencode.svg';
 import openrouterIcon from '@lobehub/icons-static-svg/icons/openrouter.svg';
 import perplexityIcon from '@lobehub/icons-static-svg/icons/perplexity.svg';
@@ -70,6 +72,7 @@ export const vendorIconAssets: Readonly<Record<string, string>> = {
 	bytedance: assetUrl(bytedanceIcon),
 	cerebras: assetUrl(cerebrasIcon),
 	cohere: assetUrl(cohereIcon),
+	commandcode: assetUrl(commandCodeIcon),
 	deepinfra: assetUrl(deepinfraIcon),
 	deepseek: assetUrl(deepseekIcon),
 	elevenlabs: assetUrl(elevenlabsIcon),
@@ -88,6 +91,7 @@ export const vendorIconAssets: Readonly<Record<string, string>> = {
 	nvidia: assetUrl(nvidiaIcon),
 	ollama: assetUrl(ollamaIcon),
 	openai: assetUrl(openaiIcon),
+	opendesign: assetUrl(openDesignIcon),
 	opencode: assetUrl(opencodeIcon),
 	openrouter: assetUrl(openrouterIcon),
 	perplexity: assetUrl(perplexityIcon),

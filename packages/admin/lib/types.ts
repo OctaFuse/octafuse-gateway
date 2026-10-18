@@ -142,10 +142,12 @@ export interface GatewayProvider {
   name: string;
   /** 导入模板英文名、`__custom__`，或空字符串（尚未分类）。 */
   kind?: string;
-  /** 已保存类型的中英文展示名。自定义与未分类时省略。 */
+  /** 已保存类型的中、英、日、韩展示名。自定义与未分类时省略。 */
   kind_labels?: {
     en: string;
     zh: string;
+    ja?: string;
+    ko?: string;
   };
   /** 未设置 kind 时按预设 / Endpoint 推导；已设置 kind 时由模板决定。不单独写入 providers 表。 */
   vendor_key?: string;
@@ -165,10 +167,12 @@ export interface GatewayProvider {
   status?: string;
   /** 运营备注。类型介绍见 `kind_descriptions`。 */
   note: string | null;
-  /** 已保存类型的中英文介绍。自定义、未分类或模板没有介绍时省略。 */
+  /** 已保存类型的中、英、日、韩介绍。自定义、未分类或模板没有介绍时省略。 */
   kind_descriptions?: {
     en: string;
     zh: string;
+    ja?: string;
+    ko?: string;
   };
   created_at: string;
   has_pending_key?: boolean;

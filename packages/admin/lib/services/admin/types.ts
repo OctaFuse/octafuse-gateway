@@ -144,10 +144,12 @@ export type AdminProviderImportCatalogItem = {
 	endpoints: string | null;
 	/** 缺本地化摘要时导入列表回退展示的运维说明。不写入数据库。 */
 	description: string | null;
-	/** 导入列表与入库文案。中文界面用 `zh`，其余界面用 `en`。 */
+	/** 导入列表与入库显示名。按界面语言取 `en` / `zh` / `ja` / `ko`。 */
 	labels?: {
 		en: { name: string; description: string };
 		zh: { name: string; description: string };
+		ja: { name: string; description: string };
+		ko: { name: string; description: string };
 	};
 	/** 官网 / 密钥页 / 可选邀请链接；不写入 providers 表。 */
 	links?: {
@@ -160,7 +162,7 @@ export type AdminProviderImportCatalogItem = {
 /** `POST /admin/providers/import` 请求体：导入选中的 catalog 键（`GET .../catalog` 返回的 `id`）。 */
 export type AdminProvidersImportBody = {
 	ids: string[];
-	/** 当前界面语言。`zh` 开头用中文账号别名，其余用英文。缺省按英文。 */
+	/** 当前界面语言。`zh` / `ja` / `ko` 用对应目录名称，其余用英文。缺省按英文。 */
 	locale?: string;
 };
 
@@ -288,10 +290,12 @@ export type AdminProviderRow = {
 	icon_key?: string;
 	/** 导入模板英文名、`__custom__`，或空字符串（尚未分类）。 */
 	kind?: string;
-	/** 已保存类型的中英文展示名。自定义与未分类时省略。 */
+	/** 已保存类型的中、英、日、韩展示名。自定义与未分类时省略。 */
 	kind_labels?: {
 		en: string;
 		zh: string;
+		ja?: string;
+		ko?: string;
 	};
 	/** 由内置预设叠加的官网 / 密钥 / 邀请链接，不持久化。 */
 	catalog_links?: {
@@ -306,10 +310,12 @@ export type AdminProviderRow = {
 	status?: string;
 	/** 运营备注。类型介绍见 `kind_descriptions`。 */
 	note: string | null;
-	/** 已保存类型的中英文介绍。自定义、未分类或模板没有介绍时省略。 */
+	/** 已保存类型的中、英、日、韩介绍。自定义、未分类或模板没有介绍时省略。 */
 	kind_descriptions?: {
 		en: string;
 		zh: string;
+		ja?: string;
+		ko?: string;
 	};
 	created_at: string;
 	has_pending_key?: boolean;

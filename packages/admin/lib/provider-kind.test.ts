@@ -9,13 +9,39 @@ import {
 	compareProvidersByKindThenName,
 	formatProviderAccountLabel,
 	formatProviderPickerLabel,
+	pickProviderCatalogText,
+	pickProviderKindLabel,
 	providerAccountIdentity,
+	providerCatalogLocale,
+	providerKindDisplayLabel,
 	providerKindFilterKey,
 	sortProvidersByKindThenName,
 } from './provider-kind';
 
 const ark = { en: 'Volcengine Ark', zh: '火山方舟' };
 const studio = { en: 'Alibaba Cloud Model Studio', zh: '阿里云百炼' };
+
+describe('provider catalog locale', () => {
+	const labels = { en: 'Volcengine Ark', zh: '火山方舟', ja: '火山エンジン Ark', ko: '볼크엔진 Ark' };
+
+	it('maps interface languages and falls back to English', () => {
+		assert.equal(providerCatalogLocale('ja'), 'ja');
+		assert.equal(providerCatalogLocale('ko-KR'), 'ko');
+		assert.equal(providerCatalogLocale('zh-CN'), 'zh');
+		assert.equal(providerCatalogLocale('fr'), 'en');
+		assert.equal(pickProviderKindLabel(labels, 'ja'), '火山エンジン Ark');
+		assert.equal(pickProviderKindLabel(labels, 'ko'), '볼크엔진 Ark');
+		assert.equal(pickProviderKindLabel({ en: 'Volcengine Ark', zh: '火山方舟' }, 'ja'), 'Volcengine Ark');
+		assert.equal(
+			pickProviderCatalogText({ en: 'English', zh: '中文', ja: '日本語', ko: '한국어' }, 'ko'),
+			'한국어',
+		);
+		assert.equal(
+			providerKindDisplayLabel({ kind: 'Volcengine Ark', kind_labels: labels }, 'ja', 'Custom'),
+			'火山エンジン Ark',
+		);
+	});
+});
 
 describe('formatProviderPickerLabel', () => {
 	it('puts the type before the account alias', () => {

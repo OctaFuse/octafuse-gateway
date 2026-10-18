@@ -15,7 +15,7 @@ import { getStaticProviderPresetByKind, providerPresetCatalogCopy } from "@/lib/
 import { useEffect, useId, useMemo, useState } from "react";
 import { protocolFormHasOverrides, protocolFormIsConfigured } from "../provider-utils";
 import { listProviderKindChoices, resolveStoredProviderPresentation } from "@/lib/provider-import-preset";
-import { CUSTOM_PROVIDER_KIND } from "@/lib/provider-kind";
+import { CUSTOM_PROVIDER_KIND, pickProviderCatalogText, pickProviderKindLabel } from "@/lib/provider-kind";
 import { VendorIcon } from "@/components/model-vendor-icon";
 import type { UpstreamProtocol } from "@octafuse/core/upstream-protocol";
 import type {
@@ -617,10 +617,8 @@ export function ProviderModal(props: ProviderModalProps) {
 	const [showApiKey, setShowApiKey] = useState(false);
 	const [apiKeyCopied, setApiKeyCopied] = useState(false);
 	const kindChoices = useMemo(() => {
-		const labelOf = (labels: { en: string; zh: string }) =>
-			locale.toLowerCase().startsWith("zh") ? labels.zh || labels.en : labels.en || labels.zh;
 		return listProviderKindChoices()
-			.map((choice) => ({ ...choice, label: labelOf(choice.labels) }))
+			.map((choice) => ({ ...choice, label: pickProviderKindLabel(choice.labels, locale) }))
 			.sort((a, b) => a.label.localeCompare(b.label, locale));
 	}, [locale]);
 	const selectedKind = kindChoices.find((choice) => choice.kind === formData.kind);
@@ -628,9 +626,7 @@ export function ProviderModal(props: ProviderModalProps) {
 	const catalogIntro = useMemo(() => {
 		const preset = getStaticProviderPresetByKind(formData.kind);
 		if (!preset) return "";
-		const copy = providerPresetCatalogCopy(preset);
-		const text = locale.toLowerCase().startsWith("zh") ? copy.zh || copy.en : copy.en || copy.zh;
-		return text ?? "";
+		return pickProviderCatalogText(providerPresetCatalogCopy(preset), locale);
 	}, [formData.kind, locale]);
 
 	useEffect(() => {

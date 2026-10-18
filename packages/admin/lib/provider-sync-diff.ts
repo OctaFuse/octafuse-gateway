@@ -272,6 +272,8 @@ export type ProviderSyncKindGroup = {
 	kind: string;
 	label_en: string;
 	label_zh: string;
+	label_ja: string;
+	label_ko: string;
 	vendor_key: string;
 	icon_key: string;
 	providers: ProviderSyncProviderEntry[];
@@ -291,6 +293,8 @@ export type ProviderSyncKindChoice = {
 	kind: string;
 	label_en: string;
 	label_zh: string;
+	label_ja: string;
+	label_ko: string;
 	vendor_key: string;
 	icon_key: string;
 };

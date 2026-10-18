@@ -647,7 +647,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 一个 Provider = **一把** `api_key` + **`status`**（`active` \| `disabled`）+ **`kind`**。**无** `/admin/providers/:id/keys*` 子资源（迁移 0015 已删除 `provider_api_keys`）。
 
-`name` 是账号别名。`kind` 取导入模板的稳定英文 `name`（如 `OpenCode Zen`），或显式自定义 `__custom__`。已有行默认 `''`，表示尚未分类。唯一约束是 `(name, kind)`：同一别名可以属于不同类型；同一类型下同名返回 **409**，正文为 `A provider with this name and type already exists`。列表与详情会附带运行时解析的 `kind_labels`、`kind_descriptions`（中英文介绍，无模板时为 `null`）、`vendor_key`、`icon_key`、`catalog_links`（均不落库）。`note` 是运营手写备注。已设置 `kind` 时图标、介绍与链接只跟模板走；`__custom__` 使用通用图标且没有官方介绍；空 `kind` 仍按名称与 Endpoint 推断图标，介绍为 `null`。
+`name` 是账号别名。`kind` 取导入模板的稳定英文 `name`（如 `OpenCode Zen`），或显式自定义 `__custom__`。已有行默认 `''`，表示尚未分类。唯一约束是 `(name, kind)`：同一别名可以属于不同类型；同一类型下同名返回 **409**，正文为 `A provider with this name and type already exists`。列表与详情会附带运行时解析的 `kind_labels`、`kind_descriptions`（中、英、日、韩介绍，无模板时为 `null`）、`vendor_key`、`icon_key`、`catalog_links`（均不落库）。`note` 是运营手写备注。已设置 `kind` 时图标、介绍与链接只跟模板走；`__custom__` 使用通用图标且没有官方介绍；空 `kind` 仍按名称与 Endpoint 推断图标，介绍为 `null`。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
@@ -659,7 +659,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 | GET | `/admin/providers/:id/api-key` | **揭示明文** `api_key`（`{ success, data: { api_key } }`） |
 | GET | `/admin/providers/:id/quota` | 用该账号现有 `api_key` 实时查询额度。权限是 `providers.read`，响应不含密钥。不支持的 `kind`、空密钥或导入占位密钥返回 **400**。上游非 2xx 或响应无法解析返回 **502**（`message` 只有状态码，没有响应体）。超时返回 **504** |
 | GET / POST | `/admin/providers/sync/diff`、`/sync/apply` | 与官方模板同步：`diff` 只读，只比对端点；`note` 不参与。差异只在管理员手动检查时计算，列表接口不带 |
-| GET / POST | `/admin/providers/import/catalog`、`/import` | 静态模板导入（占位 key，须手动替换）。写入 `kind =` 模板英文名；`name` 按 `locale`（`zh` 中文，其余英文）；介绍不入库。仅同一 `kind` 下同名才追加 `(2)` 后缀 |
+| GET / POST | `/admin/providers/import/catalog`、`/import` | 静态模板导入（占位 key，须手动替换）。写入 `kind =` 模板英文名；`name` 按 `locale`（`zh` 中文，`ja` 日文，`ko` 韩文，其余英文）；介绍不入库。仅同一 `kind` 下同名才追加 `(2)` 后缀 |
 
 `GET /admin/providers/:id/quota` 的 `data` 是归一化快照，不保存。请求发往与该 `kind` 默认域名同一注册域的 https origin；保存的 Endpoint 若换了注册域，则回退默认 origin。
 

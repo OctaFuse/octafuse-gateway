@@ -35,6 +35,8 @@ export type ProviderImportCatalogRow = {
 	labels?: {
 		en: { name: string; description: string };
 		zh: { name: string; description: string };
+		ja: { name: string; description: string };
+		ko: { name: string; description: string };
 	};
 	links?: {
 		platform?: string;

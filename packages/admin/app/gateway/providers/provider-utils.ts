@@ -366,6 +366,8 @@ export function providerMatchesSearch(provider: GatewayProvider, query: string):
 		provider.note ?? '',
 		provider.kind_descriptions?.en ?? '',
 		provider.kind_descriptions?.zh ?? '',
+		provider.kind_descriptions?.ja ?? '',
+		provider.kind_descriptions?.ko ?? '',
 		provider.status ?? '',
 		endpointSearch,
 	]

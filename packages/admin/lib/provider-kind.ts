@@ -4,10 +4,47 @@ export const CUSTOM_PROVIDER_KIND = '__custom__';
 /** 筛选里表示「尚未分类」。不是入库的 kind，避免和「全部」的空查询参数冲突。 */
 export const UNCLASSIFIED_PROVIDER_KIND_FILTER = '__unclassified__';
 
+export const PROVIDER_CATALOG_LOCALES = ['en', 'zh', 'ja', 'ko'] as const;
+
+export type ProviderCatalogLocale = (typeof PROVIDER_CATALOG_LOCALES)[number];
+
 export type ProviderKindLabels = {
 	en: string;
 	zh: string;
+	ja?: string;
+	ko?: string;
 };
+
+/** 界面语言对应的目录文案。未识别的语言用英文。 */
+export function providerCatalogLocale(locale: string | null | undefined): ProviderCatalogLocale {
+	const value = String(locale ?? '').trim().toLowerCase();
+	if (value.startsWith('zh')) return 'zh';
+	if (value.startsWith('ja')) return 'ja';
+	if (value.startsWith('ko')) return 'ko';
+	return 'en';
+}
+
+/** 按界面语言取类型名。缺该语言时回退英文，再回退中文。 */
+export function pickProviderKindLabel(
+	labels: ProviderKindLabels | null | undefined,
+	locale: string | null | undefined,
+): string {
+	if (!labels) return '';
+	const chosen = labels[providerCatalogLocale(locale)]?.trim();
+	if (chosen) return chosen;
+	return labels.en.trim() || labels.zh.trim();
+}
+
+/** 按界面语言取介绍。缺该语言时回退英文，再回退中文。 */
+export function pickProviderCatalogText(
+	copy: Partial<Record<ProviderCatalogLocale, string | null | undefined>> | null | undefined,
+	locale: string | null | undefined,
+): string {
+	if (!copy) return '';
+	const chosen = copy[providerCatalogLocale(locale)]?.trim();
+	if (chosen) return chosen;
+	return copy.en?.trim() || copy.zh?.trim() || '';
+}
 
 export function providerNameKindKey(name: string, kind: string): string {
 	return `${name.trim().toLowerCase()}\0${kind.trim().toLowerCase()}`;
@@ -28,7 +65,7 @@ export function suggestUniqueProviderImportName(baseName: string, kind: string, 
 	throw new Error(`Unable to allocate unique provider name for: ${trimmed}`);
 }
 
-/** 未分类返回 null。自定义用调用方传入的文案。中文界面用模板中文名，其余用英文名。 */
+/** 未分类返回 null。自定义用调用方传入的文案。已分类按界面语言取模板名。 */
 export function providerKindDisplayLabel(
 	provider: { kind?: string | null; kind_labels?: ProviderKindLabels | null },
 	locale: string,
@@ -39,7 +76,7 @@ export function providerKindDisplayLabel(
 	if (kind === CUSTOM_PROVIDER_KIND) return customLabel;
 	const labels = provider.kind_labels;
 	if (!labels) return kind;
-	return locale.toLowerCase().startsWith('zh') ? labels.zh || labels.en : labels.en || labels.zh;
+	return pickProviderKindLabel(labels, locale) || kind;
 }
 
 /** 类型名与账号别名相同时不重复。账号在前，用于已经选定某一账号的展示。 */

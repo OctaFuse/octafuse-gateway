@@ -3,6 +3,7 @@
 import { ArrowPathIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { useLocale, useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
+import { pickProviderKindLabel } from '@/lib/provider-kind';
 import type {
 	ProviderSyncEndpointField,
 	ProviderSyncField,
@@ -19,6 +20,16 @@ import {
 type ProviderSyncModalProps = {
 	sync: ProviderSyncState;
 };
+
+function syncKindLabel(
+	item: { label_en: string; label_zh: string; label_ja: string; label_ko: string },
+	locale: string,
+): string {
+	return pickProviderKindLabel(
+		{ en: item.label_en, zh: item.label_zh, ja: item.label_ja, ko: item.label_ko },
+		locale,
+	);
+}
 
 const STATUS_STYLE: Record<ProviderSyncStatus, string> = {
 	added: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
@@ -187,7 +198,7 @@ function ProviderBlock(props: { sync: ProviderSyncState; provider: ProviderSyncP
 function GroupPanel({ sync, group }: { sync: ProviderSyncState; group: ProviderSyncKindGroup }) {
 	const t = useTranslations('providers.sync');
 	const locale = useLocale();
-	const label = locale.toLowerCase().startsWith('zh') ? group.label_zh : group.label_en;
+	const label = syncKindLabel(group, locale);
 	return (
 		<div className="space-y-4">
 			<div className="flex flex-wrap items-center gap-3">
@@ -228,7 +239,6 @@ function OrphansPanel({ sync }: { sync: ProviderSyncState }) {
 	const locale = useLocale();
 	const report = sync.report;
 	if (!report) return null;
-	const isZh = locale.toLowerCase().startsWith('zh');
 	return (
 		<div className="space-y-4">
 			<div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
@@ -263,7 +273,7 @@ function OrphansPanel({ sync }: { sync: ProviderSyncState }) {
 								<option value="">{t('pickTarget')}</option>
 								{report.kind_choices.map((choice) => (
 									<option key={choice.kind} value={choice.kind}>
-										{isZh ? choice.label_zh : choice.label_en}
+										{syncKindLabel(choice, locale)}
 										{choice.kind === orphan.suggested_kind ? ` (${t('suggested')})` : ''}
 									</option>
 								))}
@@ -292,7 +302,6 @@ export function ProviderSyncModal({ sync }: ProviderSyncModalProps) {
 	if (!sync.open) return null;
 
 	const report = sync.report;
-	const isZh = locale.toLowerCase().startsWith('zh');
 	const hasAnything = Boolean(report && (report.groups.length > 0 || report.orphans.length > 0));
 	const activeGroup =
 		report && sync.activeKey && sync.activeKey !== PROVIDER_SYNC_ORPHANS_KEY
@@ -365,7 +374,7 @@ export function ProviderSyncModal({ sync }: ProviderSyncModalProps) {
 												<VendorIcon vendor={group.vendor_key} iconKey={group.icon_key} size="compact" />
 												<span className="min-w-0 flex-1">
 													<span className="block truncate font-medium">
-														{isZh ? group.label_zh : group.label_en}
+														{syncKindLabel(group, locale)}
 													</span>
 													<span className="block text-[11px] text-gray-500">
 														{t('groupSummary', {
