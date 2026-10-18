@@ -245,7 +245,7 @@ export function useProvidersPageState() {
 			id: provider.id,
 			name: provider.name,
 			...providerToFormData(provider),
-			description: provider.description ?? '',
+			note: provider.note ?? '',
 		});
 		setShowModal(true);
 		setSaveError('');
@@ -276,7 +276,7 @@ export function useProvidersPageState() {
 				...providerToFormData(provider),
 				api_key: '',
 				status: 'disabled',
-				description: provider.description ?? '',
+				note: provider.note ?? '',
 			});
 			setShowModal(true);
 			setSaveError('');

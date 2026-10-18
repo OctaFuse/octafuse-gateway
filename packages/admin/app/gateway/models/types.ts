@@ -49,7 +49,7 @@ export type ModelFormData = {
 	output_modalities: string[];
 	released_at: string;
 	tags: string[];
-	description: string;
+	note: string;
 	metadata: string;
 };
 
@@ -116,7 +116,7 @@ export const EMPTY_MODEL_FORM: ModelFormData = {
 	output_modalities: ['text'],
 	released_at: '',
 	tags: [],
-	description: '',
+	note: '',
 	metadata: '',
 };
 

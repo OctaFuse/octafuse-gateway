@@ -1,10 +1,9 @@
 /**
  * Provider 与内置官方模板（`provider-import-presets.json`）的差异计算与应用。
  *
- * 纯函数：只做结构化比对，不读库、不依赖运行时。比对对象只有两类，因为 `kind` 之外
- * 只有这两类是导入时「拷贝」入库的：
- * - `description`（官方值是当前界面语言的目录摘要；另一种语言的介绍算差异）
- * - `endpoints`，以协议为单位（`endpoints.<protocol>`）
+ * 纯函数：只做结构化比对，不读库、不依赖运行时。
+ * 比对 `endpoints`，以协议为单位（`endpoints.<protocol>`）。
+ * 类型介绍由 `kind` 运行时解析，不入库。`note` 是运营备注，不参与比对。
  *
  * 不比对：`name`（用户别名）、`api_key`、`status`；图标 / 链接 / 展示名由 `kind` 运行时解析，不会过期。
  *
@@ -25,16 +24,7 @@ import { UPSTREAM_PROTOCOLS, type UpstreamProtocol } from '@octafuse/core/upstre
 /** `added`：官方有、本地没有；`changed`：两边都有但不同；`removed`：本地有、官方没有（多为用户自加）。 */
 export type ProviderSyncStatus = 'added' | 'changed' | 'removed';
 
-export type ProviderSyncFieldKey = 'description' | `endpoints.${UpstreamProtocol}`;
-
-export type ProviderSyncDescriptionField = {
-	key: 'description';
-	status: ProviderSyncStatus;
-	current: string | null;
-	official: string | null;
-	/** 默认是否勾选「采用官方」。官方没有而本地有（removed）默认保留。 */
-	default_apply: boolean;
-};
+export type ProviderSyncFieldKey = `endpoints.${UpstreamProtocol}`;
 
 /** 端点差异的一行：`base`、`auth`，或一个 capability。 */
 export type ProviderSyncEndpointRow = {
@@ -53,24 +43,17 @@ export type ProviderSyncEndpointField = {
 	default_apply: boolean;
 };
 
-export type ProviderSyncField = ProviderSyncDescriptionField | ProviderSyncEndpointField;
+export type ProviderSyncField = ProviderSyncEndpointField;
 
 /** 参与比对的模板字段（`StaticProviderImportPresetRow` 的子集）。 */
 export type ProviderSyncPresetInput = {
-	description?: string | null;
 	endpoints: ProviderEndpointsSource['endpoints'];
 };
 
 /** 参与比对的 provider 字段（`providers` 行的子集）。 */
 export type ProviderSyncProviderInput = {
-	description?: string | null;
 	endpoints?: ProviderEndpointsSource['endpoints'];
 };
-
-function normalizeText(value: string | null | undefined): string | null {
-	const trimmed = String(value ?? '').trim();
-	return trimmed === '' ? null : trimmed;
-}
 
 function statusOf(current: string | null, official: string | null): ProviderSyncStatus | null {
 	if (current === official) return null;
@@ -219,19 +202,6 @@ export function diffProviderAgainstPreset(
 ): ProviderSyncField[] {
 	const fields: ProviderSyncField[] = [];
 
-	const currentDescription = normalizeText(provider.description);
-	const officialDescription = normalizeText(preset.description);
-	const descriptionStatus = statusOf(currentDescription, officialDescription);
-	if (descriptionStatus) {
-		fields.push({
-			key: 'description',
-			status: descriptionStatus,
-			current: currentDescription,
-			official: officialDescription,
-			default_apply: descriptionStatus !== 'removed',
-		});
-	}
-
 	const currentMap = parseProviderEndpoints({ endpoints: provider.endpoints });
 	const officialMap = parseProviderEndpoints({ endpoints: preset.endpoints });
 	for (const protocol of UPSTREAM_PROTOCOLS) {
@@ -251,7 +221,6 @@ export function diffProviderAgainstPreset(
 }
 
 export type ProviderSyncPatch = {
-	description?: string | null;
 	endpoints?: ProviderEndpointsMap;
 };
 
@@ -267,10 +236,6 @@ export function buildProviderSyncPatch(
 	const selected = new Set(selectedKeys);
 	const diffKeys = new Set<string>(diffProviderAgainstPreset(provider, preset).map((f) => f.key));
 	const patch: ProviderSyncPatch = {};
-
-	if (selected.has('description') && diffKeys.has('description')) {
-		patch.description = normalizeText(preset.description);
-	}
 
 	const protocols = UPSTREAM_PROTOCOLS.filter((p) => selected.has(`endpoints.${p}`) && diffKeys.has(`endpoints.${p}`));
 	if (protocols.length > 0) {
@@ -339,8 +304,6 @@ export type ProviderSyncReport = {
 };
 
 export type ProviderSyncApplyBody = {
-	/** 与检查时相同。采用官方介绍时写入这一语言的目录摘要。 */
-	locale?: string;
 	items: Array<{ provider_id: string; fields: string[] }>;
 };
 

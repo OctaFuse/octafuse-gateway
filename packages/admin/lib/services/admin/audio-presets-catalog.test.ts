@@ -48,7 +48,8 @@ type PresetPricingJson = Partial<ParsedPricingProfile> & {
 
 const asPricing = (raw: unknown): PresetPricingJson => raw as PresetPricingJson;
 
-function isAudioPresetPricing(usd: PresetPricingJson): boolean {
+function isAudioPresetPricing(usd: PresetPricingJson | null | undefined): boolean {
+	if (usd == null) return false;
 	if (usd.audio_billing_mode === 'per_second' && usd.audio != null) return true;
 	if (usd.audio_billing_mode === 'per_character' && usd.audio != null) return true;
 	if (usd.audio_billing_mode === 'token' && Array.isArray(usd.tiers) && usd.tiers.length > 0) {

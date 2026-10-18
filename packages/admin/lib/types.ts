@@ -163,7 +163,13 @@ export interface GatewayProvider {
   api_key?: string;
   /** `active` | `disabled` */
   status?: string;
-  description: string | null;
+  /** 运营备注。类型介绍见 `kind_descriptions`。 */
+  note: string | null;
+  /** 已保存类型的中英文介绍。自定义、未分类或模板没有介绍时省略。 */
+  kind_descriptions?: {
+    en: string;
+    zh: string;
+  };
   created_at: string;
   has_pending_key?: boolean;
   /** `model_routes` 引用该 provider 的总数 */
@@ -198,7 +204,10 @@ export interface GatewayModel {
   retired_at?: string | null;
   /** JSON array string from json_group_array(model_tags.tag) */
   tags: string;
-  description: string | null;
+  /** 运营备注。目录介绍见 `catalog_i18n`。 */
+  note: string | null;
+  /** 静态目录中英文介绍。自建模型为 null。 */
+  catalog_i18n?: { en: string; zh: string } | null;
   metadata: string | null;
   /** 路由策略 JSON（`strategy` + `rules`）；null=回退全局 ROUTE_STRATEGY */
   route_policy?: string | null;

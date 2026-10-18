@@ -51,7 +51,7 @@ function model(id: string, overrides: Partial<ModelRow> = {}): ModelRow {
 			tiers: [{ upto: null, label: null, input_price: 1, output_price: 4 }],
 		}),
 		tags: '[]',
-		description: null,
+		note: null,
 		metadata: null,
 		input_modalities: '["text"]',
 		output_modalities: '["text"]',

@@ -11,7 +11,7 @@ import type { CatalogView } from '../../components/catalog-view-toggle';
 import { tagBadgeClass } from '../model-utils';
 import type { ModelListItem } from '../types';
 
-export const MODEL_LIST_COLUMNS = 'xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.6fr)]';
+export const MODEL_LIST_COLUMNS = 'xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.6fr)_1.75rem]';
 
 function routeUsageClass(routesCount: number, activeRoutesCount: number): string {
 	if (routesCount <= 0) return 'text-slate-400';
@@ -65,6 +65,21 @@ export function ModelCard(props: {
 			? [pricing.amount, pricing.unit].filter(Boolean).join(' ')
 			: pricingTooltip;
 
+	const renderOfficialUpdateButton = () => hasOfficialUpdate && onReviewOfficialUpdate ? (
+		<button
+			type="button"
+			onClick={(event) => {
+				event.stopPropagation();
+				onReviewOfficialUpdate(model);
+			}}
+			className="pointer-events-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200 transition-colors hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+			title={t('officialUpdateTitle')}
+			aria-label={t('officialUpdateTitle')}
+		>
+			<ArrowPathIcon className="h-4 w-4" aria-hidden />
+		</button>
+	) : null;
+
 	const tagBadges = tagShown.length > 0 ? (
 		<div className={`flex shrink-0 flex-wrap gap-1 ${isList ? 'min-w-0' : 'max-w-[40%] justify-end'}`} title={model.tags.join(' · ')}>
 			{tagShown.map((tag) => (
@@ -101,24 +116,7 @@ export function ModelCard(props: {
 						{model.id}
 					</p>
 				</div>
-				{hasOfficialUpdate && onReviewOfficialUpdate ? (
-					<button
-						type="button"
-						onClick={(event) => {
-							event.stopPropagation();
-							onReviewOfficialUpdate(model);
-						}}
-						className="pointer-events-auto relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200 transition-colors hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
-						title={t('officialUpdateTitle')}
-						aria-label={t('officialUpdateTitle')}
-					>
-						<ArrowPathIcon className="h-4 w-4" aria-hidden />
-						<span
-							className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-white"
-							aria-hidden
-						/>
-					</button>
-				) : null}
+				{isList ? <span className="xl:hidden">{renderOfficialUpdateButton()}</span> : renderOfficialUpdateButton()}
 				{!isList ? tagBadges : null}
 			</div>
 
@@ -189,6 +187,11 @@ export function ModelCard(props: {
 			{isList ? (
 				<div className="pointer-events-none relative z-10 min-w-0 sm:col-span-2 xl:col-span-1">
 					{tagBadges ?? <span className="text-xs text-slate-400">{t('noTags')}</span>}
+				</div>
+			) : null}
+			{isList && hasOfficialUpdate && onReviewOfficialUpdate ? (
+				<div className="pointer-events-none relative z-10 hidden items-center justify-end xl:col-start-6 xl:row-start-1 xl:flex">
+					{renderOfficialUpdateButton()}
 				</div>
 			) : null}
 		</article>

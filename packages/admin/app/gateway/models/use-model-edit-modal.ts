@@ -121,7 +121,7 @@ export function useModelEditModal(options?: Options) {
 				output_modalities: outputMods,
 				released_at: model.released_at ?? '',
 				tags: listTags,
-				description: model.description ?? '',
+				note: model.note ?? '',
 				metadata: formatMetadataForEditor(model.metadata),
 			});
 			if (audioModel) {

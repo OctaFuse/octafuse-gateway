@@ -38,7 +38,8 @@ export interface ModelWithRouteCountsRow {
 	pricing_profile: string | null;
 	/** `json_group_array` 结果 */
 	tags: string;
-	description: string | null;
+	/** 运营备注。目录介绍由静态预设按语言解析，不入库。 */
+	note: string | null;
 	metadata: string | null;
 	input_modalities: string | null;
 	output_modalities: string | null;
@@ -97,7 +98,8 @@ export interface ProviderAdminRow {
 	api_key?: string;
 	/** `active` | `disabled` */
 	status?: string;
-	description: string | null;
+	/** 运营备注。类型介绍由静态模板按语言解析，不入库。 */
+	note: string | null;
 	created_at: string;
 	/** `model_routes` 引用该 provider 的总数（列表/详情附带）。 */
 	routes_count?: number;

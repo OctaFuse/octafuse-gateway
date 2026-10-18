@@ -1,12 +1,13 @@
 'use client';
 
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { parseProviderEndpoints } from '@octafuse/core/provider-endpoints';
 import { VendorIcon } from '@/components/model-vendor-icon';
-import { providerImportCatalogCopy, summarizeOpenAiImportEndpoints } from '@/lib/provider-import-preset';
+import { providerImportCatalogCopy } from '@/lib/provider-import-preset';
 import { useLocale, useTranslations } from 'next-intl';
+import { protocolSummariesFromEndpoints } from '../provider-utils';
 import type { ProviderImportCatalogRow } from '../types';
 import { ProviderCatalogOutboundLink } from './provider-catalog-outbound-link';
+import { ProviderProtocolBadges } from './provider-protocol-badges';
 
 type ProviderImportModalProps = {
 	open: boolean;
@@ -208,30 +209,12 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 														className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800"
 													/>
 												</div>
-												<p className="text-xs text-gray-500">
-													{row.vendor_label} · {t('protocols')}: {row.protocols.join(', ') || '—'}
-												</p>
-												{(() => {
-													const openai = summarizeOpenAiImportEndpoints(
-														parseProviderEndpoints({ endpoints: row.endpoints })
-													);
-													if (!openai) return null;
-													const labelKey = openai.hasBase ? 'openaiBase' : 'openaiChat';
-													const caps =
-														openai.capabilities.length > 0
-															? openai.capabilities.join(', ')
-															: '';
-													return (
-														<p className="mt-1 break-all text-[11px] text-gray-400" title={openai.url}>
-															{t(labelKey, { url: openai.url })}
-															{caps ? (
-																<span className="ml-1 text-gray-500">
-																	{t('openaiCaps', { caps })}
-																</span>
-															) : null}
-														</p>
-													);
-												})()}
+												<div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+													<span className="text-xs text-gray-500">{row.vendor_label}</span>
+													<ProviderProtocolBadges
+														summaries={protocolSummariesFromEndpoints(row.endpoints, row.id)}
+													/>
+												</div>
 												{copy.description && <p className="mt-1 text-xs text-gray-600">{copy.description}</p>}
 											</div>
 										</div>

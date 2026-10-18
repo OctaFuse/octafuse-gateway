@@ -38,7 +38,6 @@ export type CatalogDiscoveryModel = {
 	/** Client request entries (protocol + operation), same shape as `GET /v1/models` `inbound`. */
 	inbound: InboundSurface[];
 	recommended_protocol: UpstreamProtocol;
-	description: string | null;
 	input_modalities: string[] | null;
 	output_modalities: string[] | null;
 	released_at: string | null;
@@ -144,7 +143,6 @@ export async function listCatalogDiscoveryModels(
 			protocols_by_group: protocolsByGroup,
 			inbound,
 			recommended_protocol: resolveRecommendedProtocol(protocols),
-			description: m.description,
 			input_modalities: parseModelModalitiesJson(m.input_modalities),
 			output_modalities: parseModelModalitiesJson(m.output_modalities),
 			released_at: m.released_at ?? null,

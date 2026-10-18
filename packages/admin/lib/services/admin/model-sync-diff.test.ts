@@ -1,11 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { buildModelSyncPatch, diffModelAgainstPreset } from '@/lib/model-sync-diff';
-import {
-	listStaticModelPresets,
-	modelPresetDescriptionForLocale,
-	pickPresetPricingRawForBillingCurrency,
-} from '@/lib/model-preset';
+import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/model-preset';
 import { coerceModelPricingProfileInput } from '@/lib/services/admin/pricing-input';
 
 const pricing = (input: number, output: number) =>
@@ -16,7 +12,6 @@ const preset = {
 	vendor: 'openai',
 	context_window: 128000,
 	max_tokens: 8192,
-	description: 'Official text',
 	released: '2026-01-01',
 	input_modalities: ['text', 'image'],
 	output_modalities: ['text'],
@@ -28,7 +23,6 @@ const synced = {
 	vendor: 'openai',
 	context_window: 128000,
 	max_tokens: 8192,
-	description: 'Official text',
 	released_at: '2026-01-01',
 	input_modalities: JSON.stringify(['image', 'text']),
 	output_modalities: JSON.stringify(['text']),
@@ -42,7 +36,7 @@ describe('diffModelAgainstPreset', () => {
 
 	it('reports changed and added scalar fields with default_apply', () => {
 		const fields = diffModelAgainstPreset(
-			{ ...synced, display_name: 'Old', context_window: 64000, description: null },
+			{ ...synced, display_name: 'Old', context_window: 64000 },
 			preset
 		);
 		assert.deepEqual(
@@ -50,7 +44,6 @@ describe('diffModelAgainstPreset', () => {
 			[
 				['display_name', 'changed'],
 				['context_window', 'changed'],
-				['description', 'added'],
 			]
 		);
 		assert.ok(fields.every((f) => f.default_apply));
@@ -99,47 +92,27 @@ describe('diffModelAgainstPreset', () => {
 	it('treats every bundled preset as in sync with a row built the way import builds it', () => {
 		for (const row of listStaticModelPresets()) {
 			const pricingProfile = coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(row, 'USD'));
-			for (const locale of ['en', 'zh'] as const) {
-				const description = modelPresetDescriptionForLocale(row, locale);
-				const model = {
-					display_name: row.display_name ?? null,
-					vendor: row.vendor ?? null,
-					context_window: row.context_window ?? null,
-					max_tokens: row.max_tokens ?? 8192,
-					description,
-					released_at: row.released ?? null,
-					input_modalities: row.modalities ? JSON.stringify(row.modalities.input) : null,
-					output_modalities: row.modalities ? JSON.stringify(row.modalities.output) : null,
-					pricing_profile: pricingProfile,
-				};
-				const fields = diffModelAgainstPreset(model, {
-					display_name: row.display_name ?? null,
-					vendor: row.vendor ?? null,
-					context_window: row.context_window ?? null,
-					max_tokens: row.max_tokens ?? null,
-					description,
-					released: row.released ?? null,
-					input_modalities: row.modalities?.input ?? null,
-					output_modalities: row.modalities?.output ?? null,
-					pricing_profile: pricingProfile,
-				});
-				assert.deepEqual(fields, [], `${row.id} ${locale}`);
-
-				const other = modelPresetDescriptionForLocale(row, locale === 'zh' ? 'en' : 'zh');
-				if (!other || other === description) continue;
-				const drifted = diffModelAgainstPreset(
-					{ ...model, description: other },
-					{
-						display_name: row.display_name ?? null,
-						description,
-					}
-				);
-				assert.deepEqual(
-					drifted.map((field) => field.key),
-					['description'],
-					`${row.id} ${locale} other language`
-				);
-			}
+			const model = {
+				display_name: row.display_name ?? null,
+				vendor: row.vendor ?? null,
+				context_window: row.context_window ?? null,
+				max_tokens: row.max_tokens ?? 8192,
+				released_at: row.released ?? null,
+				input_modalities: row.modalities ? JSON.stringify(row.modalities.input) : null,
+				output_modalities: row.modalities ? JSON.stringify(row.modalities.output) : null,
+				pricing_profile: pricingProfile,
+			};
+			const official = {
+				display_name: row.display_name ?? null,
+				vendor: row.vendor ?? null,
+				context_window: row.context_window ?? null,
+				max_tokens: row.max_tokens ?? null,
+				released: row.released ?? null,
+				input_modalities: row.modalities?.input ?? null,
+				output_modalities: row.modalities?.output ?? null,
+				pricing_profile: pricingProfile,
+			};
+			assert.deepEqual(diffModelAgainstPreset(model, official), [], row.id);
 		}
 	});
 });
@@ -166,6 +139,6 @@ describe('buildModelSyncPatch', () => {
 
 	it('ignores unknown keys, protected fields and keys that no longer differ', () => {
 		assert.deepEqual(buildModelSyncPatch(synced, preset, ['display_name', 'pricing_profile']), {});
-		assert.deepEqual(buildModelSyncPatch(drifted, preset, ['tags', 'metadata', 'route_policy', 'id']), {});
+		assert.deepEqual(buildModelSyncPatch(drifted, preset, ['tags', 'metadata', 'route_policy', 'note', 'id']), {});
 	});
 });

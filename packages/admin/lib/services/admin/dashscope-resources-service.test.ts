@@ -19,7 +19,7 @@ function configuredProvider(): ProviderRow {
 		endpoints: JSON.stringify({
 			dashscope: { base: "https://dashscope.aliyuncs.com/api/v1" },
 		}),
-		description: null,
+		note: null,
 		created_at: "2026-01-01 00:00:00",
 	};
 }

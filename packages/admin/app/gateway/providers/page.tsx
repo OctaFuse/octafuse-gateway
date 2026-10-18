@@ -8,7 +8,7 @@ import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';
 import { useCatalogView } from '../components/use-catalog-view';
 import { ProviderAddCard } from './components/provider-add-card';
-import { ProviderCard } from './components/provider-card';
+import { PROVIDER_LIST_COLUMNS, ProviderCard } from './components/provider-card';
 import { ProviderImportModal } from './components/provider-import-modal';
 import { ProviderModal } from './components/provider-modal';
 import { ProviderSyncCheckButton } from './components/provider-sync-check-button';
@@ -92,11 +92,12 @@ function ProvidersContent() {
 				{view === 'cards' ? (
 					<ProviderAddCard onImport={state.openImportModal} onCreate={state.handleCreate} />
 				) : (
-					<div className="hidden grid-cols-[minmax(0,1.2fr)_minmax(0,0.7fr)_minmax(0,1.7fr)_minmax(0,1.1fr)] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 xl:grid" aria-hidden>
+					<div className={`hidden gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 xl:grid ${PROVIDER_LIST_COLUMNS}`} aria-hidden>
 						<span>{t('list.provider')}</span>
-						<span>{t('list.routes')}</span>
 						<span>{t('list.protocols')}</span>
 						<span>{t('list.keyAndQuota')}</span>
+						<span>{t('list.routes')}</span>
+						<span>{t('list.status')}</span>
 					</div>
 				)}
 				<div className={view === 'list' ? 'divide-y divide-slate-200' : 'contents'} role={view === 'list' ? 'list' : undefined} aria-label={view === 'list' ? t('title') : undefined}>

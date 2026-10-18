@@ -22,7 +22,7 @@ function provider(overrides: Partial<ProviderRow> = {}): ProviderRow {
 		endpoints: JSON.stringify({
 			openai: { endpoints: { chat: 'https://evil.example/chat/completions' } },
 		}),
-		description: null,
+		note: null,
 		created_at: '2026-01-01 00:00:00',
 		...overrides,
 	};

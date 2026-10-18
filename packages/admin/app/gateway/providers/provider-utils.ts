@@ -125,7 +125,7 @@ function protocolFormFromConfig(cfg: ProtocolEndpointsConfig | undefined): Proto
 /** Provider 行 → 弹窗表单（endpoints + status；api_key 留空表示不改）。 */
 export function providerToFormData(
 	provider: GatewayProvider
-): Omit<ProviderFormData, "id" | "name" | "description"> {
+): Omit<ProviderFormData, "id" | "name" | "note"> {
 	const map = parseProviderEndpoints(provider);
 	return {
 		api_key: "",
@@ -264,10 +264,11 @@ export function formDataToEndpointsJson(form: ProviderFormData): string | null {
 	return serializeProviderEndpoints(formDataToEndpointsMap(form));
 }
 
-export function getProviderProtocolSummaries(
-	provider: GatewayProvider
+export function protocolSummariesFromEndpoints(
+	endpoints: GatewayProvider['endpoints'],
+	providerId = ''
 ): ProviderProtocolSummary[] {
-	const map = parseProviderEndpoints(provider);
+	const map = parseProviderEndpoints({ endpoints });
 	const rows: ProviderProtocolSummary[] = [];
 
 	const appendProtocol = (
@@ -287,7 +288,7 @@ export function getProviderProtocolSummaries(
 					taskId: key === 'dashscope' ? '{task_id}' : undefined,
 					// ElevenLabs 文本转语音的音色是路径参数，卡片上保留占位符。
 					voiceId: key === 'elevenlabs' ? '{voice_id}' : undefined,
-					providerId: provider.id,
+					providerId,
 				})
 					.replace(/%7Bmodel%7D/gi, '{model}')
 					.replace(/%7Btask_id%7D/gi, '{task_id}')
@@ -330,14 +331,20 @@ export function getProviderProtocolSummaries(
 	return rows;
 }
 
+export function getProviderProtocolSummaries(
+	provider: GatewayProvider
+): ProviderProtocolSummary[] {
+	return protocolSummariesFromEndpoints(provider.endpoints, provider.id);
+}
+
 export function providerHasApiKey(provider: GatewayProvider): boolean {
 	const masked = provider.api_key?.trim() || '';
 	return Boolean(masked) && masked !== '(empty)' && !provider.has_pending_key;
 }
 
-export function getProviderKeyStatus(provider: GatewayProvider): ProviderKeyStatusKind {
+/** 只反映密钥是否已填写，与供应商启用/停用无关。 */
+export function getProviderKeyStatus(provider: GatewayProvider): Exclude<ProviderKeyStatusKind, 'disabled'> {
 	if (provider.has_pending_key) return 'pending';
-	if (provider.status === 'disabled') return 'disabled';
 	if (!providerHasApiKey(provider)) return 'no_key';
 	return 'key_set';
 }
@@ -353,7 +360,15 @@ export function providerMatchesSearch(provider: GatewayProvider, query: string):
 			...protocol.endpoints.map((endpoint) => endpoint.url),
 		])
 		.join(' ');
-	return [provider.name, provider.id, provider.description ?? '', provider.status ?? '', endpointSearch]
+	return [
+		provider.name,
+		provider.id,
+		provider.note ?? '',
+		provider.kind_descriptions?.en ?? '',
+		provider.kind_descriptions?.zh ?? '',
+		provider.status ?? '',
+		endpointSearch,
+	]
 		.join(' ')
 		.toLowerCase()
 		.includes(normalized);

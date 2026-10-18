@@ -12,12 +12,12 @@ import type { ProviderAdminRow } from '../../storage/repository-dtos';
 import { PROVIDER_PATCH_COLS } from '../patch-allowlists';
 import { asMySqlPool } from './mysql2-compat';
 
-const PROVIDER_LIST_WITH_ROUTE_COUNTS_SQL = `SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.description, p.created_at,
+const PROVIDER_LIST_WITH_ROUTE_COUNTS_SQL = `SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.note, p.created_at,
 		(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id) AS routes_count,
 		(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id AND status = 'active') AS active_routes_count
 	FROM providers p ORDER BY p.created_at DESC`;
 
-const PROVIDER_DETAIL_WITH_ROUTE_COUNTS_SQL = `SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.description, p.created_at,
+const PROVIDER_DETAIL_WITH_ROUTE_COUNTS_SQL = `SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.note, p.created_at,
 		(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id) AS routes_count,
 		(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id AND status = 'active') AS active_routes_count
 	FROM providers p WHERE p.id = ?`;
@@ -29,7 +29,7 @@ function mapMyProviderRow(r: {
 	endpoints: string | null;
 	apiKey: string;
 	status: string;
-	description: string | null;
+	note: string | null;
 	createdAt: string;
 }): ProviderRow {
 	return {
@@ -39,7 +39,7 @@ function mapMyProviderRow(r: {
 		endpoints: r.endpoints,
 		api_key: r.apiKey,
 		status: r.status,
-		description: r.description,
+		note: r.note,
 		created_at: r.createdAt,
 	};
 }
@@ -58,7 +58,7 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 					endpoints: string | null;
 					api_key: string;
 					status: string;
-					description: string | null;
+					note: string | null;
 					created_at: string;
 					routes_count: number;
 					active_routes_count: number;
@@ -71,7 +71,7 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 				endpoints: r.endpoints,
 				api_key: r.api_key,
 				status: r.status,
-				description: r.description,
+				note: r.note,
 				created_at: r.created_at,
 				routes_count: Number(r.routes_count ?? 0),
 				active_routes_count: Number(r.active_routes_count ?? 0),
@@ -88,7 +88,7 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 			name: string;
 			kind?: string;
 			endpoints: string | null;
-			description: unknown;
+			note: unknown;
 			apiKey?: string;
 			status?: string;
 		}): Promise<void> {
@@ -100,7 +100,7 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 				endpoints: params.endpoints,
 				apiKey: params.apiKey ?? '',
 				status: params.status ?? 'active',
-				description: params.description == null ? null : String(params.description),
+				note: params.note == null ? null : String(params.note),
 				createdAt: now,
 			});
 		},
@@ -138,7 +138,7 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 					endpoints: string | null;
 					api_key: string;
 					status: string;
-					description: string | null;
+					note: string | null;
 					created_at: string;
 					routes_count: number;
 					active_routes_count: number;
@@ -153,7 +153,7 @@ export function createMySqlProvidersRepository(db: MySqlDatabaseClient): Provide
 				endpoints: r.endpoints,
 				api_key: r.api_key,
 				status: r.status,
-				description: r.description,
+				note: r.note,
 				created_at: r.created_at,
 				routes_count: Number(r.routes_count ?? 0),
 				active_routes_count: Number(r.active_routes_count ?? 0),

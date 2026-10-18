@@ -373,7 +373,8 @@
 			"provider": "プロバイダー",
 			"routes": "ルート",
 			"protocols": "プロトコルと機能",
-			"keyAndQuota": "API キーと利用枠"
+			"keyAndQuota": "API キーと利用枠",
+			"status": "状態"
 		},
 		"title": "Provider",
 		"subtitle": "{product} が使用するアップストリーム AI エンドポイント",
@@ -453,10 +454,6 @@
 			"catalogEmpty": "カタログは空です",
 			"noMatch": "この名前に一致するテンプレートはありません",
 			"selectRow": "{name} を選択",
-			"protocols": "protocols",
-			"openaiBase": "OpenAI base：{url}",
-			"openaiChat": "OpenAI chat：{url}",
-			"openaiCaps": "· {caps}",
 			"importSelected": "選択項目をインポート（{count}）",
 			"selectNone": "テンプレートを 1 件以上選択してください。",
 			"finished": "{created} 件の Provider をインポートしました。",
@@ -588,9 +585,10 @@
 			"capMessages": "messages (/v1/messages)",
 			"capGenerateContent": "generateContent (/v1beta/models/'{model}':generateContent)",
 			"capStreamGenerateContent": "streamGenerateContent (/v1beta/models/'{model}':streamGenerateContent)",
-			"description": "説明",
-			"descriptionHint": "内部参照専用です。アップストリームには送信されません。",
-			"descriptionPlaceholder": "任意の内部向け説明",
+			"catalogIntro": "公式の紹介",
+			"note": "メモ",
+			"noteHint": "このアカウント用のメモです。公式の紹介はカタログから表示され、画面の言語に従います。",
+			"notePlaceholder": "任意のメモ",
 			"deleteProvider": "Provider を削除",
 			"confirmDelete": "この Provider を削除しますか？",
 			"apiKeyRequired": "API Key *",
@@ -626,7 +624,6 @@
 				"removed": "ローカルのみ"
 			},
 			"field": {
-				"description": "説明",
 				"endpoints": "{protocol} エンドポイント"
 			},
 			"slot": {
@@ -832,8 +829,9 @@
 			"tags": "タグ",
 			"tagsPlaceholder": "例：free、lite、pro、max — Enter で追加",
 			"removeTag": "{tag} を削除",
-			"description": "説明",
-			"descriptionPlaceholder": "任意の内部メモ",
+			"catalogIntro": "公式の紹介",
+			"note": "メモ",
+			"notePlaceholder": "任意のメモ",
 			"metadataJson": "メタデータ（JSON）",
 			"metadataPlaceholder": "'{\"key\": \"value\"}'",
 			"deleteModel": "モデルを削除",
@@ -892,7 +890,6 @@
 				"vendor": "ベンダー",
 				"context_window": "コンテキストウィンドウ",
 				"max_tokens": "最大出力",
-				"description": "説明",
 				"released_at": "リリース日",
 				"input_modalities": "入力モダリティ",
 				"output_modalities": "出力モダリティ",

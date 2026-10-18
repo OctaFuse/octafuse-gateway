@@ -23,8 +23,8 @@ import {
 import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import {
 	getStaticModelPresetRetired,
+	getStaticModelCatalogCopy,
 	listStaticModelPresets,
-	modelPresetDescriptionForLocale,
 	pickPresetPricingRawForBillingCurrency,
 } from '@/lib/model-preset';
 import { badRequest, notFound } from './errors';
@@ -227,6 +227,7 @@ export async function listModelsService(repos: GatewayRepositories): Promise<Adm
 		...m,
 		tags: parseTagsJson(m.tags as string | null),
 		retired_at: getStaticModelPresetRetired(m.id),
+		catalog_i18n: getStaticModelCatalogCopy(m.id),
 	})) as AdminModelRow[];
 }
 
@@ -275,7 +276,7 @@ export async function createModelService(repos: GatewayRepositories, body: Admin
 		contextWindow,
 		maxTokens,
 		pricingProfile,
-		description: body.description,
+		note: body.note,
 		metadata: body.metadata,
 		inputModalities,
 		outputModalities,
@@ -299,6 +300,7 @@ export async function getModelService(repos: GatewayRepositories, id: string): P
 		...model,
 		tags: parseTagsJson(model.tags as string | null),
 		retired_at: getStaticModelPresetRetired(model.id),
+		catalog_i18n: getStaticModelCatalogCopy(model.id),
 	} as AdminModelRow;
 }
 
@@ -435,14 +437,14 @@ export async function listStaticModelPresetCatalogForAdminService(
 }
 
 /**
- * 从 `lib/model-presets/*.json`（经 `listStaticModelPresets` 合并）按 **指定 id** 导入模型：按当前 `BILLING_CURRENCY`（仅 USD/CNY 合法；否则按 USD 分支取价）写入完整 `pricing_profile`（含可选 `schedule`）；
- * `description` 按 `locale` 写入中文或英文目录介绍。
+ * 从 `lib/model-presets/*.json`（经 `listStaticModelPresets` 合并）按 **指定 id** 导入模型：按当前 `BILLING_CURRENCY`（仅 USD/CNY 合法；否则按 USD 分支取价）写入完整 `pricing_profile`（含可选 `schedule`）。
+ * 介绍留在静态目录，不写入 `note`。
  * **已存在同 id 的不导入、不覆盖**（记入 `skipped_existing`）。未知 id 或校验失败记入 `failed`。
  * 导入不写入 `model_tags`（标签由运营在导入后自行维护）。
  */
 export async function importModelsFromStaticPresetsService(
 	repos: GatewayRepositories,
-	input: { ids: string[]; locale?: string | null }
+	input: { ids: string[] }
 ): Promise<AdminModelsImportOutput> {
 	const uniqueIds = [...new Set((input.ids ?? []).map((x) => String(x).trim()).filter((x) => x.length > 0))];
 	if (uniqueIds.length === 0) {
@@ -498,7 +500,6 @@ export async function importModelsFromStaticPresetsService(
 				input_modalities: preset.modalities?.input ?? null,
 				output_modalities: preset.modalities?.output ?? null,
 				released_at: preset.released ?? null,
-				description: modelPresetDescriptionForLocale(preset, input.locale),
 			};
 
 			await createModelService(repos, body);

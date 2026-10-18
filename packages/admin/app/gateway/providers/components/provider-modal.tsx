@@ -11,6 +11,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { CheckIcon } from "@heroicons/react/24/solid";
 import { useTranslations, useLocale } from "next-intl";
+import { getStaticProviderPresetByKind, providerPresetCatalogCopy } from "@/lib/provider-import-preset";
 import { useEffect, useId, useMemo, useState } from "react";
 import { protocolFormHasOverrides, protocolFormIsConfigured } from "../provider-utils";
 import { listProviderKindChoices, resolveStoredProviderPresentation } from "@/lib/provider-import-preset";
@@ -624,6 +625,13 @@ export function ProviderModal(props: ProviderModalProps) {
 	}, [locale]);
 	const selectedKind = kindChoices.find((choice) => choice.kind === formData.kind);
 	const showUnclassified = Boolean(editingProvider) && !String(editingProvider?.kind ?? "").trim();
+	const catalogIntro = useMemo(() => {
+		const preset = getStaticProviderPresetByKind(formData.kind);
+		if (!preset) return "";
+		const copy = providerPresetCatalogCopy(preset);
+		const text = locale.toLowerCase().startsWith("zh") ? copy.zh || copy.en : copy.en || copy.zh;
+		return text ?? "";
+	}, [formData.kind, locale]);
 
 	useEffect(() => {
 		setShowApiKey(false);
@@ -862,27 +870,33 @@ export function ProviderModal(props: ProviderModalProps) {
 								</div>
 							</div>
 							<div className="flex min-h-0 flex-col">
+								{catalogIntro ? (
+									<div className="mb-3 rounded-md bg-gray-50 px-3 py-2">
+										<p className="text-xs font-medium text-gray-500">{t("catalogIntro")}</p>
+										<p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">{catalogIntro}</p>
+									</div>
+								) : null}
 								<div>
 									<h3
-										id="provider-description-heading"
+										id="provider-note-heading"
 										className="text-sm font-semibold text-gray-900"
 									>
-										{t("description")}
+										{t("note")}
 									</h3>
 									<p className="mt-0.5 text-xs text-gray-500">
-										{t("descriptionHint")}
+										{t("noteHint")}
 									</p>
 								</div>
 								<textarea
 									rows={3}
-									value={formData.description}
+									value={formData.note}
 									onChange={(e) =>
-										onFormChange({ ...formData, description: e.target.value })
+										onFormChange({ ...formData, note: e.target.value })
 									}
 									className="mt-3 min-h-[7.5rem] w-full flex-1 resize-y rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder={t("descriptionPlaceholder")}
+									placeholder={t("notePlaceholder")}
 									autoComplete="off"
-									aria-labelledby="provider-description-heading"
+									aria-labelledby="provider-note-heading"
 								/>
 							</div>
 						</section>

@@ -27,6 +27,7 @@
   { "key": "novita", "label": "Novita AI" },
   { "key": "nvidia", "label": "NVIDIA" },
   { "key": "openai", "label": "OpenAI" },
+  { "key": "opendesign", "label": "Open Design" },
   { "key": "opencode", "label": "OpenCode Zen" },
   { "key": "perplexity", "label": "Perplexity" },
   { "key": "qiniu", "label": "Qiniu" },

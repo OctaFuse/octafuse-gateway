@@ -119,7 +119,7 @@ export type ProviderFormData = {
 	minimax: ProtocolEndpointForm;
 	volcengine: ProtocolEndpointForm;
 	elevenlabs: ProtocolEndpointForm;
-	description: string;
+	note: string;
 };
 
 export type ProviderImportResult = {
@@ -168,7 +168,7 @@ export const EMPTY_PROVIDER_FORM: ProviderFormData = {
 	minimax: { ...EMPTY_PROTOCOL_FORM },
 	volcengine: { ...EMPTY_PROTOCOL_FORM },
 	elevenlabs: { ...EMPTY_PROTOCOL_FORM },
-	description: '',
+	note: '',
 };
 
 export type { GatewayProvider, ProviderEndpointsMap };

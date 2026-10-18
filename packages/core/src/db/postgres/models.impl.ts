@@ -20,7 +20,7 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 		SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens,
 			m.pricing_profile,
 			(SELECT COALESCE(json_agg(mt.tag ORDER BY mt.tag)::text, '[]') FROM model_tags mt WHERE mt.model_id = m.id) AS tags,
-			m.description, m.metadata, m.input_modalities, m.output_modalities, m.released_at, m.route_policy, m.created_at::text,
+			m.note, m.metadata, m.input_modalities, m.output_modalities, m.released_at, m.route_policy, m.created_at::text,
 			(SELECT COUNT(*)::int FROM model_routes WHERE model_id = m.id) AS routes_count,
 			(SELECT COUNT(*)::int FROM model_routes WHERE model_id = m.id AND status = 'active') AS active_routes_count
 		FROM models m ORDER BY m.id ASC
@@ -33,7 +33,7 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 		SELECT m.id, m.display_name, m.vendor, m.context_window, m.max_tokens,
 			m.pricing_profile,
 			(SELECT COALESCE(json_agg(mt.tag ORDER BY mt.tag)::text, '[]') FROM model_tags mt WHERE mt.model_id = m.id) AS tags,
-			m.description, m.metadata, m.input_modalities, m.output_modalities, m.released_at, m.route_policy, m.created_at::text,
+			m.note, m.metadata, m.input_modalities, m.output_modalities, m.released_at, m.route_policy, m.created_at::text,
 			(SELECT COUNT(*)::int FROM model_routes WHERE model_id = m.id) AS routes_count,
 			(SELECT COUNT(*)::int FROM model_routes WHERE model_id = m.id AND status = 'active') AS active_routes_count
 		FROM models m WHERE m.id = ${id}
@@ -48,7 +48,7 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 			contextWindow: unknown;
 			maxTokens: unknown;
 			pricingProfile?: unknown;
-			description: unknown;
+			note: unknown;
 			metadata: unknown;
 			inputModalities?: unknown;
 			outputModalities?: unknown;
@@ -62,7 +62,7 @@ export function createPostgresModelsRepository(db: PostgresDatabaseClient): Mode
 				contextWindow: params.contextWindow == null ? null : Number(params.contextWindow),
 				maxTokens: params.maxTokens == null ? null : Number(params.maxTokens),
 				pricingProfile: params.pricingProfile == null ? null : String(params.pricingProfile),
-				description: params.description == null ? null : String(params.description),
+				note: params.note == null ? null : String(params.note),
 				metadata: params.metadata == null ? null : String(params.metadata),
 				inputModalities: params.inputModalities == null ? null : String(params.inputModalities),
 				outputModalities: params.outputModalities == null ? null : String(params.outputModalities),

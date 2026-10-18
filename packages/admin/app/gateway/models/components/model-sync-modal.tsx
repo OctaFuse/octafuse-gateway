@@ -33,9 +33,8 @@ function Value({ value, tone }: { value: string | null; tone: 'old' | 'new' | 'n
 
 function ScalarDiff({ field }: { field: ModelSyncScalarField }) {
 	const t = useTranslations('models.sync');
-	const long = field.key === 'description';
 	return (
-		<div className={`grid gap-2 text-xs ${long ? 'sm:grid-cols-2' : 'sm:grid-cols-2'}`}>
+		<div className="grid gap-2 text-xs sm:grid-cols-2">
 			<div className="min-w-0">
 				<p className="mb-1 font-medium text-gray-500">{t('current')}</p>
 				<p className="whitespace-pre-wrap break-words rounded-md border border-red-100 bg-red-50/60 p-2 text-gray-800">
