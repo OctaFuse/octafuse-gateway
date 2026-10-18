@@ -123,6 +123,68 @@
 		"released": "2026-03-09"
 	},
 	{
+		"id": "grok-4.20-multi-agent-0309",
+		"display_name": "Grok 4.20 Multi-Agent",
+		"description": "A 1M-context xAI multi-agent reasoning model for deep research and complex multi-step tasks. Supports reasoning at configurable effort levels. Batch API available at 20% off standard pricing. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+		"i18n": {
+			"en": "A 1M-context xAI multi-agent reasoning model for deep research and complex multi-step tasks. Supports reasoning at configurable effort levels. Batch API available at 20% off standard pricing. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+			"zh": "1M 上下文 xAI 多智能体推理模型，面向深度研究与复杂多步任务。支持可配置推理强度。Batch API 享标准价八折。人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"ja": "1M コンテキストの xAI マルチエージェント推論モデルです。深い調査と、込み入った複数ステップの作業向けで、推論の強さを設定できます。Batch API は定価から 20% 引きです。人民元の価格は米ドル定価の 7 倍で換算した仮の価格であり、公式の人民元定価ではありません。",
+			"ko": "1M 컨텍스트 xAI 멀티에이전트 추론 모델입니다. 깊은 조사와 복잡한 여러 단계 작업용이며, 추론 강도를 설정할 수 있습니다. Batch API는 정가에서 20% 할인됩니다. 위안화 가격은 미국 달러 정가의 7배로 환산한 임시 가격이며, 공식 위안화 정가가 아닙니다."
+		},
+		"vendor": "xai",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 1.25,
+						"output_price": 2.5,
+						"cache_read_price": 0.2,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 2.5,
+						"output_price": 5,
+						"cache_read_price": 0.4,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 200000,
+						"input_price": 8.75,
+						"output_price": 17.5,
+						"cache_read_price": 1.4,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 17.5,
+						"output_price": 35,
+						"cache_read_price": 2.8,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-03-09"
+	},
+	{
 		"id": "grok-4.20-0309-non-reasoning",
 		"display_name": "Grok 4.20 Non-Reasoning",
 		"description": "A 1M-context xAI model for coding, agents, and knowledge work without extended reasoning. Same pricing as the reasoning variant. Batch API available at 20% off standard pricing.",

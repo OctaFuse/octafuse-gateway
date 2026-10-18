@@ -46,7 +46,8 @@
 				"text"
 			]
 		},
-		"released": "2026-01-27"
+		"released": "2026-01-27",
+		"retired": "2026-08-31"
 	},
 	{
 		"id": "kimi-k2.6",
@@ -215,7 +216,7 @@
 						"input_price": 3,
 						"output_price": 15,
 						"cache_read_price": 0.3,
-						"cache_write_price": null
+						"cache_write_price": 3
 					}
 				]
 			},
@@ -226,7 +227,7 @@
 						"input_price": 20,
 						"output_price": 100,
 						"cache_read_price": 2,
-						"cache_write_price": null
+						"cache_write_price": 20
 					}
 				]
 			}
