@@ -29,7 +29,7 @@ Operator
 
 ## 版本基线
 
-当前仓库版本为 **Octafuse Gateway 2.15.0**，D1 迁移共 **30 个**（截至 `0030_mcp_servers.sql`）。跨版本升级必须按编号应用全部未执行迁移；从 1.11.x 升级先阅读 [2.0 升级指南](../migrations/single-provider-key-cutover.md)，后续版本的迁移顺序见[迁移与切换索引](../README.md#迁移与切换)。从 2.14.0 升级到 2.15.0 必须应用 0030（见 [0030 迁移说明](../migrations/0030-mcp-servers.md)），先执行迁移，再部署同版本 Proxy / Admin。
+当前 `package.json` 版本号仍是 **Octafuse Gateway 2.15.0**。D1 迁移共 **31 个**（截至 `0031_catalog_notes.sql`）。跨版本升级必须按编号应用全部未执行迁移；从 1.11.x 升级先阅读 [2.0 升级指南](../migrations/single-provider-key-cutover.md)，后续版本的迁移顺序见[迁移与切换索引](../README.md#迁移与切换)。从 2.14.0 升级到 2.15.0 必须应用 0030（见 [0030 迁移说明](../migrations/0030-mcp-servers.md)）。从 2.15.0 升级到含 0031 的代码必须应用 0031（见 [0031 迁移说明](../migrations/0031-catalog-notes.md)），先执行迁移，再部署同版本 Proxy / Admin。
 
 下列构建体积来自 2026-07-24 对 `1.10.2` 的历史实测，仅用于量级参考；当前部署应以本次终端输出为准：
 
