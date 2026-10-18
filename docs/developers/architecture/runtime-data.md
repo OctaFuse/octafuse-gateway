@@ -104,6 +104,7 @@ flowchart TB
 - 迁移 **`0028_key_rate_limit_and_ingress`**：`api_keys.rate_limit` 与 `users.rate_limit`（JSON，`NULL` = 该层不限；当前仅 `rpm`）；用户层为所有 Key 合计，Key 层为单把钥匙。`api_key_request_logs.ingress_host` 只记录入口 Host，不做准入。成功记账时回写 `api_keys.last_used_at`。RPM 窗口计数在代理服务进程 / isolate 内存中，不落库。
 - 迁移 **`0029_provider_kind`**：`providers.kind`（`TEXT` / MySQL `VARCHAR(128)`，`NOT NULL DEFAULT ''`）。已有行保持空字符串，表示尚未分类。去掉 `providers.name` 的全局唯一，改为 `UNIQUE (name, kind)`（约束名 `uk_providers_name_kind`）。D1 不能直接删除仍被 `model_routes` 引用的 `providers`，因此先复制 `providers`、`model_routes`、`route_pool_sticky_bindings` 再替换。不回写已有账号别名，也不回写请求日志里的 `provider_name` 快照。模板英文名变更后，已保存的旧 `kind` 不自动改写，由管理员在编辑时重新选择。
 - 迁移 **`0030_mcp_servers`**：新增 `mcp_servers`（远程 MCP 服务，`slug` 唯一，`url` / `auth_headers` 按密钥存储，默认计费规则与超时在服务行上）与 `mcp_server_items`（同步下来的 tool / prompt / resource 目录快照，新条目默认 `disabled`，定义变化先进入 `pending_definition`）。三库语义一致，`pricing` 为文本 JSON。见 [0030 迁移说明](../../operators/migrations/0030-mcp-servers.md) 与 [MCP 聚合入口](./mcp-gateway.md)。
+- 迁移 **`0031_catalog_notes`**：`models.description`、`providers.description` 改名为 `note`，已有内容保留为运营备注。目录介绍不再写入数据库。见 [0031 迁移说明](../../operators/migrations/0031-catalog-notes.md)。
 - **`USER_CHARGED_COST_FACTOR_MODE` 无 schema 迁移**：用户 `charged_cost_factors` 与路由 Charged 有效倍率的合成由 `system_config` 该键控制（`multiply` 叠乘，`min` 取较小倍率）。缺键或非法值运行时回退 `multiply`；首次在网关配置（Gateway Config）保存才写入，不必补进 `0002_seed`。
 
 #### Endpoint capability 维护规则
@@ -167,12 +168,13 @@ sequenceDiagram
 > **0022–0025（2.4.0）升级说明**：见 **[2.4.0 发布说明](../../releases/2.4.0.md#升级说明)**。
 > **0026（2.7.0）升级说明**：见 **[2.7.0 发布说明](../../releases/2.7.0.md#升级说明)**。
 
-### Schema（迁移 **0015–0030**，三库同语义）
+### Schema（迁移 **0015–0031**，三库同语义）
 
 | 对象 | 含义 |
 |------|------|
 | **`providers.api_key`** / **`providers.status`** | 一个供应商（Provider）= 一把上游密钥；`status` 为 `active` \| `disabled`。**无** `provider_api_keys` 表 |
 | **`providers.name`** / **`providers.kind`** | `name` 是账号别名。`kind` 是导入模板的稳定英文 `name`、显式自定义 `__custom__`，或空字符串（尚未分类）。唯一约束为 `(name, kind)`，同一别名可以出现在不同类型下 |
+| **`models.note`** / **`providers.note`** | 运营手写备注。0031 由 `description` 改名，原内容保留。目录介绍在静态预设里，不写入这两列，公开模型接口也不返回 |
 | **`model_surfaces`** | 公开请求入口（Request Surface）：`model_id + route_group + request_protocol + request_operation` → `route_pool_id` |
 | **`route_pools`** | 一组可故障转移的上游目标（Upstream Target）容器；`strategy` 可覆盖模型与全局策略，`tier_strategies` 可按优先级层继续覆盖；`sticky_enabled` / `sticky_idle_ttl_seconds` / `sticky_epoch` 管理路由池（Route Pool）级供应商粘性（Provider sticky） |
 | **`route_pool_sticky_bindings`** | 供应商粘性的共享绑定；按 affinity hash 记录上游目标、epoch、token、访问与过期时间，供 Worker isolate / Node 实例共同使用 |
