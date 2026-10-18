@@ -126,29 +126,29 @@
 			"overview": "개요",
 			"inference": "추론",
 			"user": "사용자",
-			"tools": "Tools",
+			"tools": "도구",
 			"analytics": "분석",
 			"integration": "시스템 통합",
 			"system": "시스템"
 		},
 		"nav": {
 			"dashboard": "대시보드",
-			"providers": "Providers",
+			"providers": "공급자",
 			"models": "모델",
-			"routes": "Routes",
-			"playground": "Playground",
-			"simulator": "Simulator",
+			"routes": "라우트",
+			"playground": "플레이그라운드",
+			"simulator": "시뮬레이터",
 			"users": "사용자",
-			"apiKeys": "API Keys",
+			"apiKeys": "API 키",
 			"requestLogs": "요청 로그",
 			"auditLogs": "감사 로그",
 			"toolsConfig": "REST 서비스",
 			"toolInvocations": "호출 내역",
 			"mcpServers": "MCP 서버",
 			"modelUsage": "모델 사용량",
-			"providerUsage": "Provider 사용량",
+			"providerUsage": "공급자 사용량",
 			"userUsage": "사용자 사용량",
-			"reliability": "안정성",
+			"reliability": "신뢰성",
 			"config": "설정",
 			"adminApiKeys": "통합 키"
 		},
@@ -376,7 +376,7 @@
 			"keyAndQuota": "API 키 및 할당량",
 			"status": "상태"
 		},
-		"title": "Providers",
+		"title": "공급자",
 		"subtitle": "{product}에서 사용하는 업스트림 AI 엔드포인트",
 		"importHint": "가져오기로 일반 공급자 엔드포인트를 채웁니다. LLM 전용 템플릿은 chat URL(Base 없음), 전체 OpenAI 호환은 Base URL을 유지합니다. 카드를 열어 API 키를 설정하세요.",
 		"emptySearch": "이 검색 또는 필터와 일치하는 Provider가 없습니다",
@@ -1055,7 +1055,7 @@
 		}
 	},
 	"routes": {
-		"title": "모델 Routes",
+		"title": "모델 라우트",
 		"subtitle": "모델과 Provider 간 Route를 설정합니다",
 		"empty": "모델 또는 Route가 없습니다",
 		"emptyFilteredPrefix": "필터를 조정하거나",
@@ -1896,7 +1896,7 @@
 		}
 	},
 	"playground": {
-		"title": "Playground",
+		"title": "플레이그라운드",
 		"subtitle": "{product} — 단일 모델 Route로 업스트림 요청을 한 번 전송합니다. API Key 청구, api_key_request_logs, Failover는 적용되지 않습니다.",
 		"usageNote": "아래 사용량은 표시용입니다.",
 		"routeSection": "Route",
@@ -2094,7 +2094,7 @@
 		"kindEmbedding": "임베딩"
 	},
 	"simulator": {
-		"title": "Simulator",
+		"title": "시뮬레이터",
 		"subtitle": "{product} — 실제 클라이언트처럼 브라우저에서 Proxy를 직접 호출합니다: 인증, Route 그룹, Failover, 청구 및 api_key_request_logs.",
 		"connection": "연결",
 		"proxyBaseUrl": "Proxy Base URL",
@@ -2804,7 +2804,7 @@
 			"subtitle": "모델 및 Route 그룹별 사용량과 비용"
 		},
 		"providerUsage": {
-			"title": "Provider 사용량",
+			"title": "공급자 사용량",
 			"subtitle": "업스트림 Provider별 사용량과 비용"
 		},
 		"deletedProvider": "삭제됨",
@@ -2813,7 +2813,7 @@
 			"subtitle": "선택 기간의 이메일별 사용량과 비용 및 현재 계정 예산입니다."
 		},
 		"reliability": {
-			"title": "안정성",
+			"title": "신뢰성",
 			"subtitle": "Provider 및 Route 품질",
 			"providerQuality": "Provider 품질",
 			"perModelComparison": "모델별 Provider 비교",

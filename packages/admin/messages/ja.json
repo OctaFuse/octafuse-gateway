@@ -126,27 +126,27 @@
 			"overview": "概要",
 			"inference": "推論",
 			"user": "ユーザー",
-			"tools": "Tools",
+			"tools": "ツール",
 			"analytics": "分析",
 			"integration": "システム連携",
 			"system": "システム"
 		},
 		"nav": {
 			"dashboard": "ダッシュボード",
-			"providers": "Provider",
+			"providers": "プロバイダー",
 			"models": "モデル",
-			"routes": "Route",
-			"playground": "Playground",
-			"simulator": "Simulator",
+			"routes": "ルート",
+			"playground": "プレイグラウンド",
+			"simulator": "シミュレーター",
 			"users": "ユーザー",
-			"apiKeys": "API Keys",
+			"apiKeys": "API キー",
 			"requestLogs": "リクエストログ",
 			"auditLogs": "監査ログ",
 			"toolsConfig": "REST サービス",
 			"toolInvocations": "呼び出し履歴",
 			"mcpServers": "MCP サーバー",
 			"modelUsage": "モデル使用量",
-			"providerUsage": "Provider 使用量",
+			"providerUsage": "プロバイダー使用量",
 			"userUsage": "ユーザー使用量",
 			"reliability": "信頼性",
 			"config": "設定",
@@ -376,7 +376,7 @@
 			"keyAndQuota": "API キーと利用枠",
 			"status": "状態"
 		},
-		"title": "Provider",
+		"title": "プロバイダー",
 		"subtitle": "{product} が使用するアップストリーム AI エンドポイント",
 		"importHint": "「インポート」で一般的なプロバイダーエンドポイントを投入できます。LLM 専用テンプレートは chat URL（Base なし）、完全な OpenAI 対応は Base URL を保持します。カードを開き API キーを設定してください。",
 		"emptySearch": "この検索またはフィルターに一致する Provider はありません",
@@ -1055,7 +1055,7 @@
 		}
 	},
 	"routes": {
-		"title": "モデル Route",
+		"title": "モデルルート",
 		"subtitle": "モデルから Provider へのルーティングを設定",
 		"empty": "モデルまたは Route が見つかりません",
 		"emptyFilteredPrefix": "フィルターを調整するか、",
@@ -1896,7 +1896,7 @@
 		}
 	},
 	"playground": {
-		"title": "Playground",
+		"title": "プレイグラウンド",
 		"subtitle": "{product} — 1 つのモデル Route にアップストリームリクエストを送信します。API Key 課金、api_key_request_logs、failover はありません。",
 		"usageNote": "以下の使用量は表示専用です。",
 		"routeSection": "Route",
@@ -2094,7 +2094,7 @@
 		"kindEmbedding": "埋め込み"
 	},
 	"simulator": {
-		"title": "Simulator",
+		"title": "シミュレーター",
 		"subtitle": "{product} — 実際のクライアントと同様にブラウザーから Proxy を直接呼び出します。認証、Route Group、failover、課金、api_key_request_logs が適用されます。",
 		"connection": "接続",
 		"proxyBaseUrl": "Proxy Base URL",
@@ -2804,7 +2804,7 @@
 			"subtitle": "モデルおよび Route Group 別の使用量とコスト"
 		},
 		"providerUsage": {
-			"title": "Provider 使用量",
+			"title": "プロバイダー使用量",
 			"subtitle": "アップストリーム Provider 別の使用量とコスト"
 		},
 		"deletedProvider": "削除済み",
