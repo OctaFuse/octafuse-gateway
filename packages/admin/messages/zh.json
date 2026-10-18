@@ -224,7 +224,7 @@
 	},
 	"dashboard": {
 		"title": "仪表盘",
-		"subtitle": "{product} — 运营概览",
+		"subtitle": "查看网关请求、用量和费用趋势，及时发现运行异常。",
 		"analysisWindow": "分析时间范围",
 		"loadError": "指标加载失败，当前可能显示上次结果。",
 		"retry": "重试",
@@ -377,8 +377,8 @@
 			"status": "状态"
 		},
 		"title": "供应商",
-		"subtitle": "{product} 使用的上游 AI 供应商端点",
-		"importHint": "使用「导入」预填常见供应商端点。仅 LLM 的模板写入 chat URL（无 Base）；具备完整 OpenAI 能力的保留 Base URL。导入后请打开卡片并填写 API Key。",
+		"subtitle": "管理供应商账号、API 密钥和协议端点，为模型路由提供上游服务。",
+		"importHint": "从模板导入或新建供应商，再填写 API 密钥并检查端点配置。",
 		"emptySearch": "没有匹配当前搜索或筛选的供应商",
 		"emptyFilterHint": "可清除搜索或选择「全部」。",
 		"empty": "未找到供应商",
@@ -752,7 +752,7 @@
 			"tags": "标签"
 		},
 		"title": "模型",
-		"subtitle": "维护 {product} 向客户端暴露的模型。使用「导入」从内置目录预置行，或使用「新建」手动添加定义。",
+		"subtitle": "管理向客户端提供的模型，配置输入输出能力、定价和标签。",
 		"empty": "未找到模型",
 		"emptyHint": "从内置目录导入或手动创建模型",
 		"createTitleAll": "创建新模型",
@@ -1056,7 +1056,7 @@
 	},
 	"routes": {
 		"title": "模型路由",
-		"subtitle": "配置模型到供应商的路由",
+		"subtitle": "将模型连接到供应商，配置路由分组、优先级和流量分配。",
 		"empty": "未找到模型或路由",
 		"emptyFilteredPrefix": "请尝试调整筛选或",
 		"workspace": {
@@ -1897,8 +1897,8 @@
 	},
 	"playground": {
 		"title": "调试台",
-		"subtitle": "{product} — 为单条模型路由发送一次上游请求。无 API Key 计费、无 api_key_request_logs、无故障转移。",
-		"usageNote": "下方用量仅供展示。",
+		"subtitle": "选择单条模型路由直连上游，检查连通性和响应；不执行故障转移。",
+		"usageNote": "测试不计入网关用户账单或请求日志。",
 		"routeSection": "路由",
 		"requestBody": "请求",
 		"response": "响应",
@@ -2000,7 +2000,7 @@
 		"mode": "模式",
 		"modeRoutes": "路由",
 		"modeTools": "Tools",
-		"toolsSubtitle": "{product} — 直连 catalog 引擎（可测非 Active）。不计费、不写请求日志。",
+		"toolsSubtitle": "选择工具和服务商发送测试调用，检查接入配置与返回结果。",
 		"toolsSection": "工具与引擎",
 		"toolsHint": "凭证来自 system_config catalog。切 Active 前可在此验证密钥。",
 		"tool": "工具",
@@ -2095,12 +2095,12 @@
 	},
 	"simulator": {
 		"title": "模拟器",
-		"subtitle": "{product} — 浏览器直接调用 Proxy，如同真实客户端：鉴权、路由组、故障转移、计费与 api_key_request_logs。",
+		"subtitle": "使用用户 API 密钥模拟客户端请求，验证网关鉴权、路由和故障转移。",
 		"connection": "连接",
 		"proxyBaseUrl": "Proxy Base URL",
 		"requestBody": "请求体",
 		"response": "响应",
-		"usageNote": "下方用量仅供参考。API Key 保留在内存中，不会写入 localStorage。",
+		"usageNote": "请求按正常规则计费并记录日志。",
 		"localDevHint": "本地开发示例：http://127.0.0.1:8787 — 避免误指向生产环境。",
 		"protocol": "协议",
 		"geminiAction": "Gemini 动作",
@@ -2271,7 +2271,7 @@
 			}
 		},
 		"title": "用户",
-		"subtitle": "额度、API Key 与外部身份",
+		"subtitle": "管理用户账号、额度和访问限制，查看关联密钥与使用记录。",
 		"createTitle": "创建用户",
 		"detailTitle": "用户",
 		"userDetail": "用户详情",
@@ -2474,7 +2474,7 @@
 	},
 	"keysPage": {
 		"title": "API 密钥",
-		"subtitle": "管理用于 Gateway 访问的用户 API Key",
+		"subtitle": "创建和管理用户访问网关的 API 密钥，设置密钥状态与请求限流。",
 		"newKey": "新建 Key",
 		"createTitle": "创建 API Key",
 		"editTitle": "编辑 API Key",
@@ -2562,7 +2562,7 @@
 	},
 	"requestLogs": {
 		"title": "请求日志",
-		"subtitle": "查看 Gateway 请求历史",
+		"subtitle": "按时间、用户或模型筛选请求，查看调用详情、费用与错误原因。",
 		"filters": {
 			"protocol": "协议",
 			"routeGroup": "路由组",
@@ -2691,7 +2691,7 @@
 	},
 	"auditLogs": {
 		"title": "审计日志",
-		"subtitle": "用户审计追踪（user_audit_logs）— spent / budget_max 由前后用户快照推导；存在时会在下方追加 change_payload 中的遗留 / 额外 JSON（无独立 Metadata 列）。",
+		"subtitle": "追踪用户、密钥和额度变更，核对操作来源与变更前后的数据。",
 		"empty": "没有符合筛选条件的审计日志。",
 		"filters": {
 			"eventType": "事件类型",
@@ -2801,20 +2801,20 @@
 	"analytics": {
 		"modelUsage": {
 			"title": "模型用量",
-			"subtitle": "按模型与路由组的用量与成本"
+			"subtitle": "按模型和路由组分析用量与费用，对比调用表现。"
 		},
 		"providerUsage": {
 			"title": "供应商用量",
-			"subtitle": "按上游供应商统计用量与成本"
+			"subtitle": "对比供应商的请求量、成本与响应表现，评估上游资源使用情况。"
 		},
 		"deletedProvider": "已删除",
 		"userUsage": {
 			"title": "用户用量",
-			"subtitle": "按邮箱查看区间用量与成本，以及账户当前预算。"
+			"subtitle": "查看用户在所选时段的用量与费用，结合当前额度评估使用情况。"
 		},
 		"reliability": {
 			"title": "可靠性",
-			"subtitle": "供应商与路由质量",
+			"subtitle": "对比供应商与路由的成功率和延迟，定位近期错误。",
 			"providerQuality": "供应商质量",
 			"perModelComparison": "按模型对比供应商",
 			"recentErrors": "近期错误",
@@ -2919,8 +2919,8 @@
 	},
 	"adminApiKeys": {
 		"title": "集成密钥",
-		"subtitle": "为每个外部系统创建独立的最小权限密钥；控制台会话单独管理。",
-		"rotateHint": "点击一行即可编辑。重新生成密钥仅在点击保存后生效。",
+		"subtitle": "为外部系统创建独立的管理 API 密钥，按需授权并管理密钥状态。",
+		"rotateHint": "点击密钥行可编辑；重新生成的密钥在保存后生效。",
 		"create": "创建密钥",
 		"createTitle": "创建集成密钥",
 		"editTitle": "编辑集成密钥",
@@ -2944,7 +2944,7 @@
 	},
 	"config": {
 		"title": "系统配置",
-		"subtitle": "{product} Proxy 与本管理应用共享的键值设置（无需重复环境变量）",
+		"subtitle": "配置网关的时区、计费、路由和错误通知，各项设置分别保存。",
 		"saveTimezone": "保存时区",
 		"saveCurrency": "保存货币",
 		"saveUserChargedCostFactorMode": "保存用户计费倍率模式",
@@ -2991,7 +2991,7 @@
 		},
 		"saveRouteStrategy": "保存路由策略",
 		"ux": {
-			"subtitle": "管理时区、计费、路由和错误通知。每个配置卡片独立保存。",
+			"subtitle": "配置网关的时区、计费、路由和错误通知，各项设置分别保存。",
 			"timezoneHint": "决定每日额度与用量报表按哪个时区划分日期。",
 			"currencyHint": "模型价格、预算和计费金额统一使用的币种。",
 			"billingModeHint": "选择路由倍率与用户倍率的组合方式，修改后约 30 秒生效。",
@@ -3015,7 +3015,7 @@
 		},
 		"config": {
 			"title": "REST 服务",
-			"subtitle": "管理 REST 工具服务，查看配置状态与价格，通过详情完成接入、启用和测试。",
+			"subtitle": "接入 REST 工具服务，配置凭据和价格，并测试、启用服务。",
 			"viewInvocations": "查看调用记录 →",
 			"showSecrets": "显示密钥",
 			"hideSecrets": "隐藏密钥",
@@ -3173,7 +3173,7 @@
 		},
 		"invocations": {
 			"title": "调用记录",
-			"subtitle": "同时查看 REST 服务（tool:*）与 MCP 服务（mcp:*）的调用。点击行可查看请求与结果摘要；与请求日志同源。",
+			"subtitle": "查看 REST 与 MCP 工具的调用记录，检查请求、返回结果和费用。",
 			"configureTools": "REST 服务 →",
 			"source": "来源",
 			"allSources": "全部",
@@ -3367,7 +3367,7 @@
 	},
 	"mcp": {
 		"title": "MCP 服务",
-		"subtitle": "接入远程 MCP 服务，审核目录后通过网关的一个入口对外提供。",
+		"subtitle": "接入远程 MCP 服务，审核并启用工具，通过统一入口提供给客户端。",
 		"add": "添加服务",
 		"empty": "还没有 MCP 服务。",
 		"slug": "标识",

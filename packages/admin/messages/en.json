@@ -224,7 +224,7 @@
 	},
 	"dashboard": {
 		"title": "Dashboard",
-		"subtitle": "{product} — operations overview",
+		"subtitle": "Monitor gateway traffic, usage and spending trends to spot operational issues.",
 		"analysisWindow": "Analysis window",
 		"loadError": "Metrics could not be refreshed. Previous results may still be shown.",
 		"retry": "Retry",
@@ -377,8 +377,8 @@
 			"status": "Status"
 		},
 		"title": "Providers",
-		"subtitle": "Upstream AI endpoints consumed by {product}",
-		"importHint": "Use Import to seed common provider endpoints. LLM-only templates use a chat URL (not Base); full OpenAI-capable ones keep a Base URL. Then open a card and set the API key.",
+		"subtitle": "Manage provider accounts, API keys and protocol endpoints for model routing.",
+		"importHint": "Import a template or create a provider, then enter its API key and review the endpoints.",
 		"emptySearch": "No providers match this search or filter",
 		"emptyFilterHint": "Try clearing the search or choosing All.",
 		"empty": "No providers found",
@@ -752,7 +752,7 @@
 			"tags": "Tags"
 		},
 		"title": "Models",
-		"subtitle": "Maintain the models {product} exposes to clients. Seed rows from the built-in catalog with Import, or add definitions manually with New.",
+		"subtitle": "Manage the models available to clients, including input and output capabilities, pricing and tags.",
 		"empty": "No models found",
 		"emptyHint": "Import from the built-in catalog or create a model manually",
 		"createTitleAll": "Create a new model",
@@ -1056,7 +1056,7 @@
 	},
 	"routes": {
 		"title": "Model Routes",
-		"subtitle": "Configure model-to-provider routing",
+		"subtitle": "Connect models to providers and configure route groups, priorities and traffic distribution.",
 		"empty": "No models or routes found",
 		"emptyFilteredPrefix": "Try adjusting filters or",
 		"workspace": {
@@ -1897,8 +1897,8 @@
 	},
 	"playground": {
 		"title": "Playground",
-		"subtitle": "{product} — send one upstream request for a single model route. No API key billing, no api_key_request_logs, no failover.",
-		"usageNote": "Usage shown below is display-only.",
+		"subtitle": "Test connectivity and responses through a single model route, without failover.",
+		"usageNote": "Tests are excluded from gateway user billing and request logs.",
 		"routeSection": "Route",
 		"requestBody": "Request",
 		"response": "Response",
@@ -2000,7 +2000,7 @@
 		"mode": "Mode",
 		"modeRoutes": "Routes",
 		"modeTools": "Tools",
-		"toolsSubtitle": "{product} — call a catalog engine directly (any provider, not only Active). No billing, no request logs.",
+		"toolsSubtitle": "Select a tool and provider to test the connection settings and inspect the response.",
 		"toolsSection": "Tool & engine",
 		"toolsHint": "Credentials come from system_config catalogs. Use this to verify keys before switching Active.",
 		"tool": "Tool",
@@ -2095,12 +2095,12 @@
 	},
 	"simulator": {
 		"title": "Simulator",
-		"subtitle": "{product} — Browser calls the Proxy directly, like a real client: auth, route groups, failover, billing, and api_key_request_logs.",
+		"subtitle": "Use a user API key to simulate client requests and verify authentication, routing and failover.",
 		"connection": "Connection",
 		"proxyBaseUrl": "Proxy Base URL",
 		"requestBody": "Request body",
 		"response": "Response",
-		"usageNote": "Usage below is informational only. The API key stays in memory and is not written to localStorage.",
+		"usageNote": "Normal billing and request logging apply.",
 		"localDevHint": "Local dev example: http://127.0.0.1:8787 — avoid pointing at production by mistake.",
 		"protocol": "Protocol",
 		"geminiAction": "Gemini action",
@@ -2271,7 +2271,7 @@
 			}
 		},
 		"title": "Users",
-		"subtitle": "Budgets, API keys, and external identity",
+		"subtitle": "Manage user accounts, allowances and access limits, and review their API keys and usage history.",
 		"createTitle": "Create user",
 		"detailTitle": "User",
 		"userDetail": "User Detail",
@@ -2474,7 +2474,7 @@
 	},
 	"keysPage": {
 		"title": "API Keys",
-		"subtitle": "Manage user API keys for gateway access",
+		"subtitle": "Create and manage user API keys for gateway access, including key status and request rate limits.",
 		"newKey": "New Key",
 		"createTitle": "Create API Key",
 		"editTitle": "Edit API Key",
@@ -2562,7 +2562,7 @@
 	},
 	"requestLogs": {
 		"title": "Request Logs",
-		"subtitle": "View gateway request history",
+		"subtitle": "Filter requests by time, user or model to inspect call details, charges and errors.",
 		"filters": {
 			"protocol": "Protocol",
 			"routeGroup": "Route group",
@@ -2691,7 +2691,7 @@
 	},
 	"auditLogs": {
 		"title": "Audit Logs",
-		"subtitle": "User audit trail (user_audit_logs) — spent / budget_max are derived from before/after user snapshots; legacy / extra JSON from change_payload is appended below when present (no separate Metadata column).",
+		"subtitle": "Track changes to users, API keys and allowances, including their source and before-and-after values.",
 		"empty": "No audit logs match the filters.",
 		"filters": {
 			"eventType": "Event type",
@@ -2801,20 +2801,20 @@
 	"analytics": {
 		"modelUsage": {
 			"title": "Model Usage",
-			"subtitle": "Usage and cost by model and route group"
+			"subtitle": "Analyze usage and costs by model and route group, and compare request performance."
 		},
 		"providerUsage": {
 			"title": "Provider Usage",
-			"subtitle": "Usage and cost by upstream provider"
+			"subtitle": "Compare provider traffic, costs and response performance to assess upstream resource usage."
 		},
 		"deletedProvider": "Deleted",
 		"userUsage": {
 			"title": "User Usage",
-			"subtitle": "Usage and cost by email for the selected range, with current account budgets."
+			"subtitle": "Review usage and charges per user for the selected period alongside their current allowances."
 		},
 		"reliability": {
 			"title": "Reliability",
-			"subtitle": "Provider and route quality",
+			"subtitle": "Compare success rates and latency across providers and routes, and investigate recent errors.",
 			"providerQuality": "Provider quality",
 			"perModelComparison": "Per-model provider comparison",
 			"recentErrors": "Recent errors",
@@ -2919,8 +2919,8 @@
 	},
 	"adminApiKeys": {
 		"title": "Integration Keys",
-		"subtitle": "Create a separate, least-privilege key for each external system. Console sessions are managed separately.",
-		"rotateHint": "Click a row to edit. Regenerating the secret only applies after you save.",
+		"subtitle": "Create separate admin API keys for external systems, grant only the permissions needed and manage key status.",
+		"rotateHint": "Click a key row to edit it. Regenerated keys take effect after saving.",
 		"create": "Create key",
 		"createTitle": "Create integration key",
 		"editTitle": "Edit integration key",
@@ -2944,7 +2944,7 @@
 	},
 	"config": {
 		"title": "System config",
-		"subtitle": "Key-value settings shared by the {product} proxy and this admin app (no duplicate env vars)",
+		"subtitle": "Configure gateway timezone, billing, routing and error notifications. Save each section separately.",
 		"saveTimezone": "Save timezone",
 		"saveCurrency": "Save currency",
 		"saveUserChargedCostFactorMode": "Save charged factor mode",
@@ -2991,7 +2991,7 @@
 		},
 		"saveRouteStrategy": "Save route strategy",
 		"ux": {
-			"subtitle": "Manage timezone, billing, routing and error notifications. Each card saves independently.",
+			"subtitle": "Configure gateway timezone, billing, routing and error notifications. Save each section separately.",
 			"timezoneHint": "Sets the calendar day used by daily quotas and usage reports.",
 			"currencyHint": "The currency used for model prices, budgets and charges.",
 			"billingModeHint": "Choose how route and user multipliers combine. Updates take effect in about 30 seconds.",
@@ -3015,7 +3015,7 @@
 		},
 		"config": {
 			"title": "REST Services",
-			"subtitle": "Manage REST tool services, review status and pricing, and open details to configure, activate and test.",
+			"subtitle": "Connect REST tool services, configure credentials and pricing, then test and activate them.",
 			"viewInvocations": "View invocations →",
 			"showSecrets": "Show API keys",
 			"hideSecrets": "Hide API keys",
@@ -3173,7 +3173,7 @@
 		},
 		"invocations": {
 			"title": "Invocations",
-			"subtitle": "REST service calls (tool:*) and MCP service calls (mcp:*) together. Click a row to inspect the request and result summary. Same underlying rows as Request Logs.",
+			"subtitle": "Review REST and MCP tool calls, including requests, responses and charges.",
 			"configureTools": "REST Services →",
 			"source": "Source",
 			"allSources": "All",
@@ -3367,7 +3367,7 @@
 	},
 	"mcp": {
 		"title": "MCP Servers",
-		"subtitle": "Connect remote MCP servers and expose the reviewed catalog through one gateway endpoint.",
+		"subtitle": "Connect remote MCP servers, review and enable tools, and make them available through a single client endpoint.",
 		"add": "Add server",
 		"empty": "No MCP servers yet.",
 		"slug": "Slug",

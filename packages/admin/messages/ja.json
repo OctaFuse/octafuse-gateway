@@ -224,7 +224,7 @@
 	},
 	"dashboard": {
 		"title": "ダッシュボード",
-		"subtitle": "{product} — 運用概要",
+		"subtitle": "ゲートウェイのリクエスト、使用量、料金の推移を確認し、運用上の異常を把握します。",
 		"analysisWindow": "分析期間",
 		"loadError": "メトリクスを更新できませんでした。前回の結果が表示されている可能性があります。",
 		"retry": "再試行",
@@ -377,8 +377,8 @@
 			"status": "状態"
 		},
 		"title": "プロバイダー",
-		"subtitle": "{product} が使用するアップストリーム AI エンドポイント",
-		"importHint": "「インポート」で一般的なプロバイダーエンドポイントを投入できます。LLM 専用テンプレートは chat URL（Base なし）、完全な OpenAI 対応は Base URL を保持します。カードを開き API キーを設定してください。",
+		"subtitle": "モデルのルーティング先となるプロバイダーのアカウント、API キー、プロトコル別エンドポイントを管理します。",
+		"importHint": "テンプレートからインポートするか新規作成し、API キーを入力してエンドポイント設定を確認してください。",
 		"emptySearch": "この検索またはフィルターに一致する Provider はありません",
 		"emptyFilterHint": "検索をクリアするか「すべて」を選んでください。",
 		"empty": "Provider が見つかりません",
@@ -752,7 +752,7 @@
 			"tags": "タグ"
 		},
 		"title": "モデル",
-		"subtitle": "{product} がクライアントに公開するモデルを管理します。「インポート」で組み込みカタログから追加するか、「新規」で手動作成できます。",
+		"subtitle": "クライアントに提供するモデルを管理し、入出力の対応形式、料金、タグを設定します。",
 		"empty": "モデルが見つかりません",
 		"emptyHint": "組み込みカタログからインポートするか、モデルを手動で作成してください",
 		"createTitleAll": "新しいモデルを作成",
@@ -1056,7 +1056,7 @@
 	},
 	"routes": {
 		"title": "モデルルート",
-		"subtitle": "モデルから Provider へのルーティングを設定",
+		"subtitle": "モデルとプロバイダーを接続し、ルートグループ、優先度、トラフィックの配分を設定します。",
 		"empty": "モデルまたは Route が見つかりません",
 		"emptyFilteredPrefix": "フィルターを調整するか、",
 		"workspace": {
@@ -1897,8 +1897,8 @@
 	},
 	"playground": {
 		"title": "プレイグラウンド",
-		"subtitle": "{product} — 1 つのモデル Route にアップストリームリクエストを送信します。API Key 課金、api_key_request_logs、failover はありません。",
-		"usageNote": "以下の使用量は表示専用です。",
+		"subtitle": "単一のモデルルートで上流に直接接続し、接続状態と応答を確認します。フェイルオーバーは行いません。",
+		"usageNote": "テストはゲートウェイのユーザー課金とリクエストログの対象外です。",
 		"routeSection": "Route",
 		"requestBody": "リクエスト",
 		"response": "レスポンス",
@@ -2000,7 +2000,7 @@
 		"mode": "モード",
 		"modeRoutes": "Routes",
 		"modeTools": "Tools",
-		"toolsSubtitle": "{product} — catalog エンジンへ直接接続（Active 以外も可）。課金なし・リクエストログなし。",
+		"toolsSubtitle": "ツールとプロバイダーを選んでテスト呼び出しを行い、接続設定と応答を確認します。",
 		"toolsSection": "ツールとエンジン",
 		"toolsHint": "認証情報は system_config catalog から読みます。Active 切替前のキー検証に使えます。",
 		"tool": "ツール",
@@ -2095,12 +2095,12 @@
 	},
 	"simulator": {
 		"title": "シミュレーター",
-		"subtitle": "{product} — 実際のクライアントと同様にブラウザーから Proxy を直接呼び出します。認証、Route Group、failover、課金、api_key_request_logs が適用されます。",
+		"subtitle": "ユーザーの API キーでクライアントのリクエストを再現し、認証、ルーティング、フェイルオーバーを検証します。",
 		"connection": "接続",
 		"proxyBaseUrl": "Proxy Base URL",
 		"requestBody": "リクエスト Body",
 		"response": "レスポンス",
-		"usageNote": "以下の使用量は参考情報です。API Key はメモリ内にのみ保持され、localStorage には保存されません。",
+		"usageNote": "通常の課金ルールとリクエストログが適用されます。",
 		"localDevHint": "ローカル開発例：http://127.0.0.1:8787 — 誤って本番環境を指定しないよう注意してください。",
 		"protocol": "プロトコル",
 		"geminiAction": "Gemini action",
@@ -2271,7 +2271,7 @@
 			}
 		},
 		"title": "ユーザー",
-		"subtitle": "予算、API キー、外部 ID",
+		"subtitle": "ユーザーアカウント、利用枠、アクセス制限を管理し、関連する API キーと利用履歴を確認します。",
 		"createTitle": "ユーザーを作成",
 		"detailTitle": "ユーザー",
 		"userDetail": "ユーザー詳細",
@@ -2474,7 +2474,7 @@
 	},
 	"keysPage": {
 		"title": "API キー",
-		"subtitle": "Gateway へのアクセスに使用するユーザー API Key を管理",
+		"subtitle": "ユーザーがゲートウェイにアクセスするための API キーを作成・管理し、状態とリクエストのレート制限を設定します。",
 		"newKey": "新しい Key",
 		"createTitle": "API Key を作成",
 		"editTitle": "API Key を編集",
@@ -2562,7 +2562,7 @@
 	},
 	"requestLogs": {
 		"title": "リクエストログ",
-		"subtitle": "Gateway のリクエスト履歴を表示",
+		"subtitle": "時間、ユーザー、モデルでリクエストを絞り込み、呼び出しの詳細、料金、エラーの原因を確認します。",
 		"filters": {
 			"protocol": "プロトコル",
 			"routeGroup": "Route Group",
@@ -2691,7 +2691,7 @@
 	},
 	"auditLogs": {
 		"title": "監査ログ",
-		"subtitle": "ユーザー監査証跡（user_audit_logs）— spent / budget_max は変更前後のユーザースナップショットから算出されます。change_payload に旧形式 / 追加の JSON がある場合は下部に追記されます（独立した Metadata 列はありません）。",
+		"subtitle": "ユーザー、API キー、利用枠の変更履歴をたどり、操作元と変更前後の値を確認します。",
 		"empty": "フィルターに一致する監査ログはありません。",
 		"filters": {
 			"eventType": "イベント種別",
@@ -2801,20 +2801,20 @@
 	"analytics": {
 		"modelUsage": {
 			"title": "モデル使用量",
-			"subtitle": "モデルおよび Route Group 別の使用量とコスト"
+			"subtitle": "モデルとルートグループ別に使用量と料金を分析し、リクエストの性能を比較します。"
 		},
 		"providerUsage": {
 			"title": "プロバイダー使用量",
-			"subtitle": "アップストリーム Provider 別の使用量とコスト"
+			"subtitle": "プロバイダーごとのリクエスト数、コスト、応答性能を比較し、上流リソースの利用状況を把握します。"
 		},
 		"deletedProvider": "削除済み",
 		"userUsage": {
 			"title": "ユーザー使用量",
-			"subtitle": "選択期間のメール別使用量・費用と現在のアカウント予算。"
+			"subtitle": "選択期間のユーザー別使用量と料金を確認し、現在の利用枠とあわせて利用状況を把握します。"
 		},
 		"reliability": {
 			"title": "信頼性",
-			"subtitle": "Provider と Route の品質",
+			"subtitle": "プロバイダーとルートの成功率・遅延を比較し、最近のエラーを調査します。",
 			"providerQuality": "Provider 品質",
 			"perModelComparison": "モデル別 Provider 比較",
 			"recentErrors": "最近のエラー",
@@ -2919,8 +2919,8 @@
 	},
 	"adminApiKeys": {
 		"title": "連携キー",
-		"subtitle": "外部システムごとに独立した最小権限キーを作成します。コンソールセッションは別管理です。",
-		"rotateHint": "行をクリックして編集します。シークレットの再生成は保存後に反映されます。",
+		"subtitle": "外部システムごとに管理 API キーを作成し、必要な権限だけを付与してキーの状態を管理します。",
+		"rotateHint": "キーの行をクリックすると編集できます。再生成したキーは保存後に有効になります。",
 		"create": "キーを作成",
 		"createTitle": "連携キーを作成",
 		"editTitle": "連携キーを編集",
@@ -2944,7 +2944,7 @@
 	},
 	"config": {
 		"title": "システム設定",
-		"subtitle": "{product} Proxy とこの Admin アプリで共有する Key-Value 設定（環境変数の重複不要）",
+		"subtitle": "ゲートウェイのタイムゾーン、課金、ルーティング、エラー通知を設定します。各項目は個別に保存してください。",
 		"saveTimezone": "タイムゾーンを保存",
 		"saveCurrency": "通貨を保存",
 		"saveUserChargedCostFactorMode": "ユーザー課金倍率モードを保存",
@@ -2991,7 +2991,7 @@
 		},
 		"saveRouteStrategy": "ルート戦略を保存",
 		"ux": {
-			"subtitle": "タイムゾーン、課金、ルーティング、エラー通知を管理します。各カードは個別に保存されます。",
+			"subtitle": "ゲートウェイのタイムゾーン、課金、ルーティング、エラー通知を設定します。各項目は個別に保存してください。",
 			"timezoneHint": "日次クォータと利用レポートの日付を区切るタイムゾーンです。",
 			"currencyHint": "モデル価格、予算、請求額に使用する通貨です。",
 			"billingModeHint": "ルートとユーザーの倍率の組み合わせを選択します。変更は約 30 秒で反映されます。",
@@ -3015,7 +3015,7 @@
 		},
 		"config": {
 			"title": "REST サービス",
-			"subtitle": "REST ツールサービスの設定状態と料金を確認し、詳細から設定・有効化・テストを行えます。",
+			"subtitle": "REST ツールサービスを接続し、認証情報と料金を設定して、テスト・有効化を行います。",
 			"viewInvocations": "呼び出し履歴を表示 →",
 			"saveWebSearch": "Web Search を保存",
 			"saveWebFetch": "Web Fetch を保存",
@@ -3165,7 +3165,7 @@
 		},
 		"invocations": {
 			"title": "呼び出し履歴",
-			"subtitle": "REST サービス（tool:*）と MCP サービス（mcp:*）の呼び出しをまとめて表示します。行をクリックするとリクエストと結果概要を確認できます。リクエストログと同じ元データです。",
+			"subtitle": "REST と MCP ツールの呼び出し履歴を表示し、リクエスト、応答、料金を確認します。",
 			"configureTools": "REST サービス →",
 			"source": "ソース",
 			"allSources": "すべて",
@@ -3367,7 +3367,7 @@
 	},
 	"mcp": {
 		"title": "MCP サーバー",
-		"subtitle": "リモート MCP サーバーを接続し、確認したカタログをゲートウェイの単一エンドポイントで公開します。",
+		"subtitle": "リモート MCP サーバーを接続し、ツールを確認・有効化して、共通のエンドポイントからクライアントに提供します。",
 		"add": "サーバーを追加",
 		"empty": "MCP サーバーはまだありません。",
 		"slug": "スラッグ",

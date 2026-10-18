@@ -224,7 +224,7 @@
 	},
 	"dashboard": {
 		"title": "대시보드",
-		"subtitle": "{product} — 운영 개요",
+		"subtitle": "게이트웨이 요청, 사용량, 요금 추이를 확인하고 운영 이상을 파악하세요.",
 		"analysisWindow": "분석 기간",
 		"loadError": "지표를 새로 고치지 못했습니다. 이전 결과가 표시될 수 있습니다.",
 		"retry": "다시 시도",
@@ -377,8 +377,8 @@
 			"status": "상태"
 		},
 		"title": "공급자",
-		"subtitle": "{product}에서 사용하는 업스트림 AI 엔드포인트",
-		"importHint": "가져오기로 일반 공급자 엔드포인트를 채웁니다. LLM 전용 템플릿은 chat URL(Base 없음), 전체 OpenAI 호환은 Base URL을 유지합니다. 카드를 열어 API 키를 설정하세요.",
+		"subtitle": "모델 라우팅에 사용할 공급자 계정, API 키, 프로토콜별 엔드포인트를 관리하세요.",
+		"importHint": "템플릿을 가져오거나 공급자를 새로 만든 뒤 API 키를 입력하고 엔드포인트 설정을 확인하세요.",
 		"emptySearch": "이 검색 또는 필터와 일치하는 Provider가 없습니다",
 		"emptyFilterHint": "검색을 지우거나 전체를 선택해 보세요.",
 		"empty": "Provider가 없습니다",
@@ -752,7 +752,7 @@
 			"tags": "태그"
 		},
 		"title": "모델",
-		"subtitle": "{product}에서 클라이언트에 제공하는 모델을 관리합니다. 가져오기로 기본 제공 카탈로그에서 항목을 추가하거나 새로 만들기로 직접 정의하세요.",
+		"subtitle": "클라이언트에 제공할 모델을 관리하고 입출력 기능, 요금, 태그를 설정하세요.",
 		"empty": "모델이 없습니다",
 		"emptyHint": "기본 제공 카탈로그에서 가져오거나 모델을 직접 생성하세요",
 		"createTitleAll": "새 모델 생성",
@@ -1056,7 +1056,7 @@
 	},
 	"routes": {
 		"title": "모델 라우트",
-		"subtitle": "모델과 Provider 간 Route를 설정합니다",
+		"subtitle": "모델을 공급자에 연결하고 라우트 그룹, 우선순위, 트래픽 분배를 설정하세요.",
 		"empty": "모델 또는 Route가 없습니다",
 		"emptyFilteredPrefix": "필터를 조정하거나",
 		"workspace": {
@@ -1897,8 +1897,8 @@
 	},
 	"playground": {
 		"title": "플레이그라운드",
-		"subtitle": "{product} — 단일 모델 Route로 업스트림 요청을 한 번 전송합니다. API Key 청구, api_key_request_logs, Failover는 적용되지 않습니다.",
-		"usageNote": "아래 사용량은 표시용입니다.",
+		"subtitle": "단일 모델 라우트로 업스트림에 직접 연결해 연결 상태와 응답을 확인하세요. 장애 조치는 수행하지 않습니다.",
+		"usageNote": "테스트는 게이트웨이 사용자 과금 및 요청 로그에 포함되지 않습니다.",
 		"routeSection": "Route",
 		"requestBody": "요청",
 		"response": "응답",
@@ -2000,7 +2000,7 @@
 		"mode": "모드",
 		"modeRoutes": "Routes",
 		"modeTools": "Tools",
-		"toolsSubtitle": "{product} — catalog 엔진에 직접 연결(Active 외도 가능). 과금·요청 로그 없음.",
+		"toolsSubtitle": "도구와 공급자를 선택해 테스트 호출을 보내고 연결 설정과 응답을 확인하세요.",
 		"toolsSection": "도구 및 엔진",
 		"toolsHint": "자격 증명은 system_config catalog에서 읽습니다. Active 전환 전 키 검증에 사용하세요.",
 		"tool": "도구",
@@ -2095,12 +2095,12 @@
 	},
 	"simulator": {
 		"title": "시뮬레이터",
-		"subtitle": "{product} — 실제 클라이언트처럼 브라우저에서 Proxy를 직접 호출합니다: 인증, Route 그룹, Failover, 청구 및 api_key_request_logs.",
+		"subtitle": "사용자 API 키로 클라이언트 요청을 재현하고 인증, 라우팅, 장애 조치를 검증하세요.",
 		"connection": "연결",
 		"proxyBaseUrl": "Proxy Base URL",
 		"requestBody": "요청 본문",
 		"response": "응답",
-		"usageNote": "아래 사용량은 참고용입니다. API Key는 메모리에만 유지되며 localStorage에 기록되지 않습니다.",
+		"usageNote": "일반 요청과 동일하게 과금되고 로그가 기록됩니다.",
 		"localDevHint": "로컬 개발 예시: http://127.0.0.1:8787 — 실수로 프로덕션을 지정하지 않도록 주의하세요.",
 		"protocol": "프로토콜",
 		"geminiAction": "Gemini action",
@@ -2271,7 +2271,7 @@
 			}
 		},
 		"title": "사용자",
-		"subtitle": "예산, API 키, 외부 ID",
+		"subtitle": "사용자 계정, 이용 한도, 접근 제한을 관리하고 연결된 API 키와 사용 기록을 확인하세요.",
 		"createTitle": "사용자 생성",
 		"detailTitle": "사용자",
 		"userDetail": "사용자 세부 정보",
@@ -2474,7 +2474,7 @@
 	},
 	"keysPage": {
 		"title": "API 키",
-		"subtitle": "Gateway 접근용 사용자 API Key를 관리합니다",
+		"subtitle": "게이트웨이 접근용 사용자 API 키를 생성·관리하고 키 상태와 요청 속도 제한을 설정하세요.",
 		"newKey": "새 Key",
 		"createTitle": "API Key 생성",
 		"editTitle": "API Key 편집",
@@ -2562,7 +2562,7 @@
 	},
 	"requestLogs": {
 		"title": "요청 로그",
-		"subtitle": "Gateway 요청 기록을 확인합니다",
+		"subtitle": "시간, 사용자, 모델로 요청을 필터링하고 호출 상세, 요금, 오류 원인을 확인하세요.",
 		"filters": {
 			"protocol": "프로토콜",
 			"routeGroup": "Route 그룹",
@@ -2691,7 +2691,7 @@
 	},
 	"auditLogs": {
 		"title": "감사 로그",
-		"subtitle": "사용자 감사 기록(user_audit_logs) — spent / budget_max는 변경 전후 사용자 Snapshot에서 계산됩니다. change_payload에 레거시 / 추가 JSON이 있으면 아래에 함께 표시되며 별도의 Metadata 열은 없습니다.",
+		"subtitle": "사용자, API 키, 이용 한도의 변경 이력을 추적하고 작업 출처와 변경 전후 값을 확인하세요.",
 		"empty": "필터와 일치하는 감사 로그가 없습니다.",
 		"filters": {
 			"eventType": "이벤트 유형",
@@ -2801,20 +2801,20 @@
 	"analytics": {
 		"modelUsage": {
 			"title": "모델 사용량",
-			"subtitle": "모델 및 Route 그룹별 사용량과 비용"
+			"subtitle": "모델 및 라우트 그룹별 사용량과 요금을 분석하고 요청 성능을 비교하세요."
 		},
 		"providerUsage": {
 			"title": "공급자 사용량",
-			"subtitle": "업스트림 Provider별 사용량과 비용"
+			"subtitle": "공급자별 요청량, 비용, 응답 성능을 비교해 업스트림 리소스 사용 현황을 파악하세요."
 		},
 		"deletedProvider": "삭제됨",
 		"userUsage": {
 			"title": "사용자 사용량",
-			"subtitle": "선택 기간의 이메일별 사용량과 비용 및 현재 계정 예산입니다."
+			"subtitle": "선택한 기간의 사용자별 사용량과 요금을 확인하고 현재 이용 한도와 함께 사용 현황을 파악하세요."
 		},
 		"reliability": {
 			"title": "신뢰성",
-			"subtitle": "Provider 및 Route 품질",
+			"subtitle": "공급자와 라우트의 성공률 및 지연 시간을 비교하고 최근 오류를 조사하세요.",
 			"providerQuality": "Provider 품질",
 			"perModelComparison": "모델별 Provider 비교",
 			"recentErrors": "최근 오류",
@@ -2919,8 +2919,8 @@
 	},
 	"adminApiKeys": {
 		"title": "통합 키",
-		"subtitle": "외부 시스템마다 독립적인 최소 권한 키를 생성합니다. 콘솔 세션은 별도로 관리됩니다.",
-		"rotateHint": "행을 클릭해 편집하세요. 시크릿 재생성은 저장 후에 적용됩니다.",
+		"subtitle": "외부 시스템별 관리 API 키를 생성하고 필요한 권한만 부여하며 키 상태를 관리하세요.",
+		"rotateHint": "키 행을 클릭해 편집하세요. 재생성한 키는 저장 후 적용됩니다.",
 		"create": "키 생성",
 		"createTitle": "통합 키 생성",
 		"editTitle": "통합 키 편집",
@@ -2944,7 +2944,7 @@
 	},
 	"config": {
 		"title": "시스템 설정",
-		"subtitle": "{product} Proxy와 이 Admin 앱이 공유하는 Key-Value 설정입니다(환경 변수 중복 없음)",
+		"subtitle": "게이트웨이 시간대, 과금, 라우팅, 오류 알림을 설정하고 각 항목을 개별 저장하세요.",
 		"saveTimezone": "시간대 저장",
 		"saveCurrency": "통화 저장",
 		"saveUserChargedCostFactorMode": "사용자 과금 배율 모드 저장",
@@ -2991,7 +2991,7 @@
 		},
 		"saveRouteStrategy": "라우트 전략 저장",
 		"ux": {
-			"subtitle": "시간대, 과금, 라우팅, 오류 알림을 관리하세요. 각 카드는 따로 저장됩니다.",
+			"subtitle": "게이트웨이 시간대, 과금, 라우팅, 오류 알림을 설정하고 각 항목을 개별 저장하세요.",
 			"timezoneHint": "일일 할당량과 사용 보고서의 날짜를 구분하는 시간대입니다.",
 			"currencyHint": "모델 가격, 예산, 과금액에 사용하는 통화입니다.",
 			"billingModeHint": "라우트와 사용자 배수를 결합하는 방식을 선택하세요. 변경은 약 30초 후 적용됩니다.",
@@ -3015,7 +3015,7 @@
 		},
 		"config": {
 			"title": "REST 서비스",
-			"subtitle": "REST 도구 서비스의 설정 상태와 요금을 확인하고 상세 창에서 설정, 활성화 및 테스트할 수 있습니다.",
+			"subtitle": "REST 도구 서비스를 연결하고 인증 정보와 요금을 설정한 뒤 테스트하고 활성화하세요.",
 			"viewInvocations": "호출 내역 보기 →",
 			"saveWebSearch": "Web Search 저장",
 			"saveWebFetch": "Web Fetch 저장",
@@ -3165,7 +3165,7 @@
 		},
 		"invocations": {
 			"title": "호출 내역",
-			"subtitle": "REST 서비스(tool:*)와 MCP 서비스(mcp:*) 호출을 함께 봅니다. 행을 클릭하면 요청과 결과 요약을 확인할 수 있습니다. 요청 로그와 동일한 기본 행을 사용합니다.",
+			"subtitle": "REST 및 MCP 도구 호출 기록에서 요청, 응답, 요금을 확인하세요.",
 			"configureTools": "REST 서비스 →",
 			"source": "출처",
 			"allSources": "전체",
@@ -3367,7 +3367,7 @@
 	},
 	"mcp": {
 		"title": "MCP 서버",
-		"subtitle": "원격 MCP 서버를 연결하고, 검토한 카탈로그를 게이트웨이의 단일 엔드포인트로 제공합니다.",
+		"subtitle": "원격 MCP 서버를 연결하고 도구를 검토·활성화한 뒤 단일 엔드포인트로 클라이언트에 제공하세요.",
 		"add": "서버 추가",
 		"empty": "아직 MCP 서버가 없습니다.",
 		"slug": "슬러그",
