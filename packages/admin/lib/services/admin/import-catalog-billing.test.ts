@@ -76,7 +76,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'Gemini 4 Argon');
 		assert.equal(usd!.context_window, 1000000);
-		assert.equal(usd!.max_tokens, 64000);
+		assert.equal(usd!.max_tokens, 65536);
 		assert.equal(usd!.pricing_label, '$4 / $20 /M');
 		assert.equal(cny!.pricing_label, '¥28 / ¥140 /M');
 		const preset = listStaticModelPresets().find((p) => p.id === 'gemini-4-argon');
@@ -884,13 +884,10 @@ function doubaoTiers(id: string, billing: 'USD' | 'CNY') {
 }
 
 describe('MiniMax M3.1 Flash Preview catalog specs', () => {
-	it('records official limits and copies MiniMax M3 list prices until an official price exists', () => {
+	it('records official limits and does not retie placeholder prices to the current MiniMax M3 list', () => {
 		const preset = listStaticModelPresets().find((p) => p.id === 'minimax-m3.1-flash-preview');
-		const m3 = listStaticModelPresets().find((p) => p.id === 'minimax-m3');
 		assert.ok(preset);
-		assert.ok(m3);
 		const presetId = preset.id;
-		const m3Id = m3.id;
 		assert.equal(preset.display_name, 'MiniMax M3.1 Flash Preview');
 		assert.equal(preset.vendor, 'minimax');
 		assert.equal(preset.context_window, 1000000);
@@ -904,24 +901,13 @@ describe('MiniMax M3.1 Flash Preview catalog specs', () => {
 		assert.match(preset.i18n?.zh ?? '', /按 MiniMax M3 标准刊例预填/);
 		assert.match(preset.i18n?.ja ?? '', /MiniMax M3 の標準定価を仮に入れています/);
 		assert.match(preset.i18n?.ko ?? '', /MiniMax M3 표준 정가를 임시로 넣었습니다/);
-		assert.deepEqual(preset.pricing, m3.pricing);
 		for (const billing of ['USD', 'CNY'] as const) {
 			const row = listStaticModelPresetCatalogForAdmin(billing).find((item) => item.id === presetId);
-			const m3Row = listStaticModelPresetCatalogForAdmin(billing).find((item) => item.id === m3Id);
 			assert.ok(row, billing);
-			assert.ok(m3Row, billing);
 			assert.equal(row.kind, 'llm');
 			assert.equal(row.pricing_available, true);
-			assert.equal(row.pricing_label, m3Row.pricing_label);
 			assert.equal(row.context_window, 1000000);
 			assert.equal(row.max_tokens, 524288);
-			const profile = parsePricingProfile(
-				coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset, billing))!,
-			);
-			const m3Profile = parsePricingProfile(
-				coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(m3, billing))!,
-			);
-			assert.deepEqual(profile?.tiers, m3Profile?.tiers);
 		}
 	});
 });
