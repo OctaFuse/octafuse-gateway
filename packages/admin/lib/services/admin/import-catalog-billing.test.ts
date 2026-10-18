@@ -735,3 +735,200 @@ describe('static model presets always carry both USD and CNY pricing', () => {
 		assert.equal(cny.find((r) => r.id === 'grok-4.20-0309-non-reasoning')!.pricing_label, '¥8.75 / ¥17.5 /M');
 	});
 });
+
+const TOKEN_TIER_KEYS = ['cache_read_price', 'cache_write_price', 'input_price', 'output_price', 'upto'];
+
+function doubaoPreset(id: string) {
+	const preset = listStaticModelPresets().find((p) => p.id === id);
+	assert.ok(preset, id);
+	return preset!;
+}
+
+function doubaoTiers(id: string, billing: 'USD' | 'CNY') {
+	const preset = doubaoPreset(id);
+	const json = coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset, billing));
+	assert.ok(json, `${id} ${billing}`);
+	const profile = parsePricingProfile(json!);
+	assert.ok(profile, `${id} ${billing} parsed`);
+	return profile!.tiers;
+}
+
+describe('Doubao Seed catalog list prices', () => {
+	it('adds doubao-seed-2-1-pro-260915 with CNY only', () => {
+		const preset = doubaoPreset('doubao-seed-2-1-pro-260915');
+		assert.equal(preset.display_name, 'Doubao Seed 2.1 Pro (260915)');
+		assert.equal(preset.context_window, 1024000);
+		assert.equal(preset.max_tokens, 256000);
+		assert.equal(preset.released, '2026-09-15');
+		assert.equal(preset.retired, undefined);
+		assert.deepEqual(preset.modalities?.input, ['text', 'image', 'video']);
+		assert.deepEqual(preset.modalities?.output, ['text']);
+		assert.equal(
+			(preset as { suggested_provider_model_name?: unknown }).suggested_provider_model_name,
+			undefined
+		);
+		const pricing = preset.pricing as { usd?: unknown; cny?: { tiers: Array<Record<string, unknown>> } };
+		assert.equal(pricing.usd, undefined);
+		assert.deepEqual(Object.keys(pricing.cny!.tiers[0]!).sort(), TOKEN_TIER_KEYS);
+
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === preset.id);
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.context_window, 1024000);
+		assert.equal(usd!.max_tokens, 256000);
+		assert.equal(usd!.pricing_available, false);
+		assert.equal(usd!.pricing_label, null);
+		assert.equal(cny!.pricing_label, '¥6 / ¥30 /M');
+		assert.equal(cny!.context_window, 1024000);
+		assert.equal(cny!.max_tokens, 256000);
+
+		const tiers = doubaoTiers(preset.id, 'CNY');
+		assert.equal(tiers.length, 1);
+		assert.equal(tiers[0]?.upto, null);
+		assert.equal(tiers[0]?.input_price, 6);
+		assert.equal(tiers[0]?.output_price, 30);
+		assert.equal(tiers[0]?.cache_read_price, 1.2);
+		assert.equal(tiers[0]?.cache_write_price, 0.017);
+	});
+
+	it('raises doubao-seed-evolving context window to 1024k without changing prices', () => {
+		const preset = doubaoPreset('doubao-seed-evolving');
+		assert.equal(preset.context_window, 1024000);
+		assert.equal(preset.max_tokens, 256000);
+		assert.deepEqual(preset.modalities?.input, ['text', 'image', 'video']);
+		const usdRow = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === preset.id);
+		const cnyRow = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
+		assert.equal(usdRow!.context_window, 1024000);
+		assert.equal(usdRow!.max_tokens, 256000);
+		assert.equal(usdRow!.pricing_label, '$1 / $5 /M');
+		assert.equal(cnyRow!.pricing_label, '¥6 / ¥30 /M');
+		const usd = doubaoTiers(preset.id, 'USD');
+		const cny = doubaoTiers(preset.id, 'CNY');
+		assert.equal(usd.length, 1);
+		assert.equal(usd[0]?.upto, null);
+		assert.equal(usd[0]?.input_price, 1);
+		assert.equal(usd[0]?.output_price, 5);
+		assert.equal(usd[0]?.cache_read_price, 0.2);
+		assert.equal(usd[0]?.cache_write_price, null);
+		assert.equal(cny[0]?.input_price, 6);
+		assert.equal(cny[0]?.output_price, 30);
+		assert.equal(cny[0]?.cache_read_price, 1.2);
+		assert.equal(cny[0]?.cache_write_price, 0.017);
+	});
+
+	it('drops audio from doubao-seed-2-1-pro-260628 input modalities', () => {
+		const preset = doubaoPreset('doubao-seed-2-1-pro-260628');
+		assert.equal(preset.context_window, 256000);
+		assert.equal(preset.max_tokens, 256000);
+		assert.deepEqual(preset.modalities?.input, ['text', 'image', 'video']);
+		assert.deepEqual(preset.modalities?.output, ['text']);
+		const cny = doubaoTiers(preset.id, 'CNY');
+		assert.equal(cny[0]?.input_price, 6);
+		assert.equal(cny[0]?.output_price, 30);
+		assert.equal(cny[0]?.cache_read_price, 1.2);
+		assert.equal(cny[0]?.cache_write_price, 0.017);
+	});
+
+	it('corrects doubao-seed-2-0-mini-260215 USD cache-hit prices', () => {
+		const preset = doubaoPreset('doubao-seed-2-0-mini-260215');
+		assert.equal(preset.retired, '2026-10-22');
+		assert.equal(preset.context_window, 256000);
+		assert.equal(preset.max_tokens, 128000);
+		const usd = doubaoTiers(preset.id, 'USD');
+		assert.equal(usd.length, 2);
+		assert.equal(usd[0]?.upto, 128000);
+		assert.equal(usd[0]?.input_price, 0.1);
+		assert.equal(usd[0]?.output_price, 0.4);
+		assert.equal(usd[0]?.cache_read_price, 0.02);
+		assert.equal(usd[0]?.cache_write_price, null);
+		assert.equal(usd[1]?.upto, null);
+		assert.equal(usd[1]?.input_price, 0.2);
+		assert.equal(usd[1]?.output_price, 0.8);
+		assert.equal(usd[1]?.cache_read_price, 0.04);
+		assert.equal(usd[1]?.cache_write_price, null);
+		const cny = doubaoTiers(preset.id, 'CNY');
+		assert.equal(cny[0]?.input_price, 0.2);
+		assert.equal(cny[0]?.cache_read_price, 0.04);
+		assert.equal(cny[2]?.input_price, 0.8);
+		assert.equal(cny[2]?.cache_read_price, 0.16);
+	});
+
+	it('adds doubao-seed-2-0-lite-260428 with tiered CNY and USD list prices', () => {
+		const preset = doubaoPreset('doubao-seed-2-0-lite-260428');
+		assert.equal(preset.display_name, 'Doubao Seed 2.0 Lite (260428)');
+		assert.equal(preset.context_window, 256000);
+		assert.equal(preset.max_tokens, 128000);
+		assert.equal(preset.released, '2026-04-28');
+		assert.deepEqual(preset.modalities?.input, ['text', 'image', 'video', 'audio']);
+		assert.deepEqual(preset.modalities?.output, ['text']);
+		assert.match(preset.description ?? '', /not stored/i);
+		assert.match(preset.i18n?.zh ?? '', /未写入/);
+		assert.equal(
+			(preset as { suggested_provider_model_name?: unknown }).suggested_provider_model_name,
+			undefined
+		);
+		const usdRow = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === preset.id);
+		const cnyRow = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
+		assert.equal(usdRow!.pricing_label, '$0.25 / $2 /M');
+		assert.equal(cnyRow!.pricing_label, '¥0.6 / ¥3.6 /M');
+		assert.equal(usdRow!.context_window, 256000);
+		assert.equal(usdRow!.max_tokens, 128000);
+
+		const cnyRaw = preset.pricing.cny as { tiers: Array<Record<string, unknown>> };
+		assert.deepEqual(Object.keys(cnyRaw.tiers[0]!).sort(), TOKEN_TIER_KEYS);
+		const cny = doubaoTiers(preset.id, 'CNY');
+		assert.deepEqual(
+			cny.map((tier) => [tier.upto, tier.input_price, tier.output_price, tier.cache_read_price, tier.cache_write_price]),
+			[
+				[32000, 0.6, 3.6, 0.12, 0.017],
+				[128000, 0.9, 5.4, 0.18, 0.017],
+				[null, 1.8, 10.8, 0.36, 0.017],
+			]
+		);
+		const usd = doubaoTiers(preset.id, 'USD');
+		assert.deepEqual(
+			usd.map((tier) => [tier.upto, tier.input_price, tier.output_price, tier.cache_read_price, tier.cache_write_price]),
+			[
+				[128000, 0.25, 2, 0.05, null],
+				[null, 0.5, 4, 0.1, null],
+			]
+		);
+	});
+
+	it('adds doubao-seed-2-0-mini-260428 with tiered CNY and USD list prices', () => {
+		const preset = doubaoPreset('doubao-seed-2-0-mini-260428');
+		assert.equal(preset.display_name, 'Doubao Seed 2.0 Mini (260428)');
+		assert.equal(preset.context_window, 256000);
+		assert.equal(preset.max_tokens, 128000);
+		assert.equal(preset.released, '2026-04-28');
+		assert.deepEqual(preset.modalities?.input, ['text', 'image', 'video', 'audio']);
+		assert.deepEqual(preset.modalities?.output, ['text']);
+		assert.match(preset.description ?? '', /not stored/i);
+		assert.match(preset.i18n?.zh ?? '', /未写入/);
+		const usdRow = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === preset.id);
+		const cnyRow = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
+		assert.equal(usdRow!.pricing_label, '$0.1 / $0.4 /M');
+		assert.equal(cnyRow!.pricing_label, '¥0.2 / ¥2 /M');
+		assert.equal(usdRow!.context_window, 256000);
+		assert.equal(cnyRow!.max_tokens, 128000);
+
+		const cny = doubaoTiers(preset.id, 'CNY');
+		assert.deepEqual(
+			cny.map((tier) => [tier.upto, tier.input_price, tier.output_price, tier.cache_read_price, tier.cache_write_price]),
+			[
+				[32000, 0.2, 2, 0.04, 0.017],
+				[128000, 0.4, 4, 0.08, 0.017],
+				[null, 0.8, 8, 0.16, 0.017],
+			]
+		);
+		const usd = doubaoTiers(preset.id, 'USD');
+		assert.deepEqual(
+			usd.map((tier) => [tier.upto, tier.input_price, tier.output_price, tier.cache_read_price, tier.cache_write_price]),
+			[
+				[128000, 0.1, 0.4, 0.02, null],
+				[null, 0.2, 0.8, 0.04, null],
+			]
+		);
+	});
+});
