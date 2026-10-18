@@ -17,14 +17,14 @@
 						"upto": 128000,
 						"input_price": 0.1,
 						"output_price": 0.4,
-						"cache_read_price": 0.1,
+						"cache_read_price": 0.02,
 						"cache_write_price": null
 					},
 					{
 						"upto": null,
 						"input_price": 0.2,
 						"output_price": 0.8,
-						"cache_read_price": 0.2,
+						"cache_read_price": 0.04,
 						"cache_write_price": null
 					}
 				]
@@ -66,6 +66,75 @@
 		},
 		"released": "2026-02-14",
 		"retired": "2026-10-22"
+	},
+	{
+		"id": "doubao-seed-2-0-mini-260428",
+		"display_name": "Doubao Seed 2.0 Mini (260428)",
+		"description": "A compact all-modal Doubao model for deep thinking across text, image, video, and audio. Successor to doubao-seed-2-0-mini-260215. Context window is 256k, maximum input is 224k, and maximum answer is 128k. Official audio-input list prices are not stored in this preset: CNY 3 / 6 / 12 per million tokens (cache hit 0.6 / 1.2 / 2.4) for input up to 32k / 128k / 256k; USD 1.50 / 3.00 (cache hit 0.30 / 0.60) for input up to 128k / 256k.",
+		"i18n": {
+			"en": "A compact all-modal Doubao model for deep thinking across text, image, video, and audio. Successor to doubao-seed-2-0-mini-260215. Context window is 256k, maximum input is 224k, and maximum answer is 128k. Official audio-input list prices are not stored in this preset: CNY 3 / 6 / 12 per million tokens (cache hit 0.6 / 1.2 / 2.4) for input up to 32k / 128k / 256k; USD 1.50 / 3.00 (cache hit 0.30 / 0.60) for input up to 128k / 256k.",
+			"zh": "面向文本、图像、视频与音频的紧凑全模态豆包模型，支持深度思考，继任即将下线的 doubao-seed-2-0-mini-260215。上下文窗口 256k，最大输入 224k，最大回答 128k。音频输入刊例价未写入价格档：人民币 3 / 6 / 12 元每百万 token（缓存命中 0.6 / 1.2 / 2.4，对应输入不超过 32k / 128k / 256k）；美元 1.50 / 3.00（缓存命中 0.30 / 0.60，对应输入不超过 128k / 256k）。"
+		},
+		"vendor": "bytedance",
+		"context_window": 256000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 128000,
+						"input_price": 0.1,
+						"output_price": 0.4,
+						"cache_read_price": 0.02,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 0.2,
+						"output_price": 0.8,
+						"cache_read_price": 0.04,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 32000,
+						"input_price": 0.2,
+						"output_price": 2,
+						"cache_read_price": 0.04,
+						"cache_write_price": 0.017
+					},
+					{
+						"upto": 128000,
+						"input_price": 0.4,
+						"output_price": 4,
+						"cache_read_price": 0.08,
+						"cache_write_price": 0.017
+					},
+					{
+						"upto": null,
+						"input_price": 0.8,
+						"output_price": 8,
+						"cache_read_price": 0.16,
+						"cache_write_price": 0.017
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video",
+				"audio"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-04-28"
 	},
 	{
 		"id": "doubao-seed-2-0-lite-260215",
@@ -136,6 +205,75 @@
 		},
 		"released": "2026-02-14",
 		"retired": "2026-10-22"
+	},
+	{
+		"id": "doubao-seed-2-0-lite-260428",
+		"display_name": "Doubao Seed 2.0 Lite (260428)",
+		"description": "A lightweight all-modal Doubao model for deep thinking across text, image, video, and audio. Successor to doubao-seed-2-0-lite-260215. Context window is 256k, maximum input is 224k, and maximum answer is 128k. Official audio-input list prices are not stored in this preset: CNY 9 / 13.5 / 27 per million tokens (cache hit 1.8 / 2.7 / 5.4) for input up to 32k / 128k / 256k; USD 3.75 / 7.50 (cache hit 0.75 / 1.50) for input up to 128k / 256k.",
+		"i18n": {
+			"en": "A lightweight all-modal Doubao model for deep thinking across text, image, video, and audio. Successor to doubao-seed-2-0-lite-260215. Context window is 256k, maximum input is 224k, and maximum answer is 128k. Official audio-input list prices are not stored in this preset: CNY 9 / 13.5 / 27 per million tokens (cache hit 1.8 / 2.7 / 5.4) for input up to 32k / 128k / 256k; USD 3.75 / 7.50 (cache hit 0.75 / 1.50) for input up to 128k / 256k.",
+			"zh": "面向文本、图像、视频与音频的轻量全模态豆包模型，支持深度思考、工具调用、结构化输出与 GUI 任务，继任即将下线的 doubao-seed-2-0-lite-260215。上下文窗口 256k，最大输入 224k，最大回答 128k。音频输入刊例价未写入价格档：人民币 9 / 13.5 / 27 元每百万 token（缓存命中 1.8 / 2.7 / 5.4，对应输入不超过 32k / 128k / 256k）；美元 3.75 / 7.50（缓存命中 0.75 / 1.50，对应输入不超过 128k / 256k）。"
+		},
+		"vendor": "bytedance",
+		"context_window": 256000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 128000,
+						"input_price": 0.25,
+						"output_price": 2,
+						"cache_read_price": 0.05,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 0.5,
+						"output_price": 4,
+						"cache_read_price": 0.1,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 32000,
+						"input_price": 0.6,
+						"output_price": 3.6,
+						"cache_read_price": 0.12,
+						"cache_write_price": 0.017
+					},
+					{
+						"upto": 128000,
+						"input_price": 0.9,
+						"output_price": 5.4,
+						"cache_read_price": 0.18,
+						"cache_write_price": 0.017
+					},
+					{
+						"upto": null,
+						"input_price": 1.8,
+						"output_price": 10.8,
+						"cache_read_price": 0.36,
+						"cache_write_price": 0.017
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video",
+				"audio"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-04-28"
 	},
 	{
 		"id": "doubao-seed-2-0-pro-260215",
@@ -245,6 +383,78 @@
 			"input": [
 				"text",
 				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-06-23"
+	},
+	{
+		"id": "doubao-seed-2-1-pro-260915",
+		"display_name": "Doubao Seed 2.1 Pro (260915)",
+		"description": "A Doubao Seed 2.1 Pro model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, and video. Context window is 1024k and maximum answer is 256k. BytePlus ModelArk does not list this model, so there is no USD price.",
+		"i18n": {
+			"en": "A Doubao Seed 2.1 Pro model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, and video. Context window is 1024k and maximum answer is 256k. BytePlus ModelArk does not list this model, so there is no USD price.",
+			"zh": "面向深度思考、工具调用、结构化输出、GUI 任务，以及文本、图像与视频多模态理解的豆包 Seed 2.1 Pro。上下文窗口 1024k，最大回答 256k。BytePlus ModelArk 未上架该模型，因此没有美元刊例价。"
+		},
+		"vendor": "bytedance",
+		"context_window": 1000000,
+		"max_tokens": 256000,
+		"pricing": {
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 6,
+						"output_price": 30,
+						"cache_read_price": 1.2,
+						"cache_write_price": 0.017
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-09-15"
+	},
+	{
+		"id": "doubao-seed-2-1-lite-260915",
+		"display_name": "Doubao Seed 2.1 Lite (260915)",
+		"description": "A Doubao Seed 2.1 Lite model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, video, and audio. Context window is 1024k and maximum answer is 256k. Official audio-input list price is not stored in this preset: CNY 12 per million tokens (cache hit 2.4). BytePlus ModelArk does not list this model, so there is no USD price.",
+		"i18n": {
+			"en": "A Doubao Seed 2.1 Lite model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, video, and audio. Context window is 1024k and maximum answer is 256k. Official audio-input list price is not stored in this preset: CNY 12 per million tokens (cache hit 2.4). BytePlus ModelArk does not list this model, so there is no USD price.",
+			"zh": "面向深度思考、工具调用、结构化输出、GUI 任务，以及文本、图像、视频与音频多模态理解的豆包 Seed 2.1 Lite。上下文窗口 1024k，最大回答 256k。音频输入刊例价未写入价格档：人民币 12 元每百万 token（缓存命中 2.4）。BytePlus ModelArk 未上架该模型，因此没有美元刊例价。"
+		},
+		"vendor": "bytedance",
+		"context_window": 1000000,
+		"max_tokens": 256000,
+		"pricing": {
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.8,
+						"output_price": 2.7,
+						"cache_read_price": 0.16,
+						"cache_write_price": 0.017
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
 				"video",
 				"audio"
 			],
@@ -252,7 +462,7 @@
 				"text"
 			]
 		},
-		"released": "2026-06-23"
+		"released": "2026-09-15"
 	},
 	{
 		"id": "doubao-seed-2-1-turbo-260628",
@@ -310,7 +520,7 @@
 			"zh": "面向自适应推理与 Agent 实验场景的持续演进型豆包模型。"
 		},
 		"vendor": "bytedance",
-		"context_window": 256000,
+		"context_window": 1000000,
 		"max_tokens": 256000,
 		"pricing": {
 			"usd": {

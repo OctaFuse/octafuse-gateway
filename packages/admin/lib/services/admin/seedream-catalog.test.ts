@@ -11,9 +11,13 @@ describe('Seedream catalog + Volcengine Ark provider preset', () => {
 			ids.sort(),
 			[
 				'doubao-seed-2-0-lite-260215',
+				'doubao-seed-2-0-lite-260428',
 				'doubao-seed-2-0-mini-260215',
+				'doubao-seed-2-0-mini-260428',
 				'doubao-seed-2-0-pro-260215',
+				'doubao-seed-2-1-lite-260915',
 				'doubao-seed-2-1-pro-260628',
+				'doubao-seed-2-1-pro-260915',
 				'doubao-seed-2-1-turbo-260628',
 				'doubao-seed-evolving',
 				'doubao-seedream-5-0',
