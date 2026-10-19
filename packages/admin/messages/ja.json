@@ -2819,7 +2819,7 @@
 		},
 		"reliability": {
 			"title": "信頼性",
-			"subtitle": "プロバイダーとルートの成功率・遅延を比較し、最近のエラーを調査します。",
+			"subtitle": "プロバイダーとルートの成功率、最初のトークンまでの時間、遅延を比較し、最近のエラーを調査します。",
 			"providerQuality": "Provider 品質",
 			"perModelComparison": "モデル別 Provider 比較",
 			"recentErrors": "最近のエラー",

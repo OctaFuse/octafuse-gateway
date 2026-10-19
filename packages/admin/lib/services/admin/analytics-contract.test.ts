@@ -12,6 +12,8 @@ const raw = {
   charged_cost: 5, metered_cost: 3, standard_cost: 7,
   tokens_per_second: 3300, stream_tokens_per_second: 50, stream_sample_count: 1,
   failover_rate: 400 / 3, failover_request_rate: 100 / 3, failover_request_count: 1,
+  avg_first_reasoning_token_ms: 80, avg_first_token_ms: 240, avg_effective_ttft_ms: 80,
+  avg_reasoning_phase_ms: 160, reasoning_ttft_rate: 40, content_ttft_rate: 70,
 };
 
 it('model and provider APIs preserve legacy fields, filters and tags with additive quality metrics', async () => {
@@ -49,6 +51,10 @@ it('reliability errors use the selected range and retain the response envelope',
   } } as unknown as GatewayRepositories;
   const result = await getReliabilityAnalyticsService(repos, { start_date: start, end_date: end });
   assert.deepEqual(Object.keys(result).sort(), ['modelProviders', 'providers', 'recentErrors']);
+  assert.equal(result.providers[0].avg_effective_ttft_ms, 80);
+  assert.equal(result.providers[0].content_ttft_rate, 70);
+  assert.equal(result.modelProviders[0].avg_first_token_ms, 240);
+  assert.equal(result.modelProviders[0].reasoning_ttft_rate, 40);
   assert.deepEqual(result.recentErrors, logs);
   assert.deepEqual(calls, [{ page: 1, pageSize: 10, status: 'error', startDate: start, endDate: end }]);
 });

@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl';
 import { AnalyticsInsights, AnalyticsControls, AnalyticsLoadError } from '@/components/AnalyticsInsights';
 import { analyticsColumnVisible, type AnalyticsView } from '@/lib/analytics-insights';
 import { AnalyticsTokenCount } from '@/components/AnalyticsTokenCount';
+import { AnalyticsTtftCell } from '@/components/AnalyticsTtftCell';
 import { AnalyticsTokenDisplayPicker } from '@/components/AnalyticsTokenDisplayPicker';
 import { useAnalyticsRange } from '@/lib/use-analytics-range';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
@@ -16,7 +17,7 @@ import { readApiJson, readJson } from '@/lib/api-json';
 import { compareAnalyticsTableRows } from '@/lib/analytics-range';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { formatLatencyMs } from '@/lib/format-latency';
-import { successRateClassName } from '@/lib/analytics-rate-style';
+import { cacheHitRateClassName, successRateClassName } from '@/lib/analytics-rate-style';
 import type { TokenDisplayMode } from '@/lib/format-token-count';
 import type { ApiResponse, ModelUsageRow, UserUsageRow } from '@/lib/types';
 import { csvRowsToString, downloadCsvFile, filenameTimestamp } from '@/lib/csv';
@@ -308,12 +309,14 @@ export default function UserUsagePage() {
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.requests')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.inputTokens')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.outputTokens')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.cacheHitRate')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.standard')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.charged')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.metered')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgChargedPerReq')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.successRate')}</th>
                                     <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgLatencyMs')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.ttft')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgUpstreamMs')}</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -336,6 +339,9 @@ export default function UserUsagePage() {
                                         <td className="px-3 py-2 text-sm text-gray-900">{modelRow.request_count.toLocaleString()}</td>
                                         <td className="px-3 py-2 text-sm"><AnalyticsTokenCount value={modelRow.input_tokens} mode={tokenDisplayMode} /></td>
                                         <td className="px-3 py-2 text-sm"><AnalyticsTokenCount value={modelRow.output_tokens} mode={tokenDisplayMode} /></td>
+                                        <td className="px-3 py-2 text-sm">
+                                          <span className={cacheHitRateClassName(modelRow.cache_hit_rate)}>{modelRow.input_tokens > 0 ? `${modelRow.cache_hit_rate.toFixed(1)}%` : '—'}</span>
+                                        </td>
                                         <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
                                           {formatGatewayMoneyCode(modelRow.standard_cost ?? 0, billingCurrency, 4)}
                                         </td>
@@ -345,16 +351,19 @@ export default function UserUsagePage() {
                                         <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
                                           {formatGatewayMoneyCode(modelRow.metered_cost, billingCurrency, 4)}
                                         </td>
-                                        <td className="px-3 py-2 text-sm text-gray-600">
-                                          {formatGatewayMoneyCode(modelRow.avg_charged_per_request, billingCurrency, 6)}
-                                        </td>
                                         <td className="px-3 py-2 text-sm">
                                           <span className={successRateClassName(modelRow.success_rate)}>
                                             {modelRow.success_rate.toFixed(1)}%
                                           </span>
                                         </td>
-                                        <td className="px-3 py-2 text-sm text-gray-600">
+                                        <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
                                           {modelRow.avg_latency_ms != null ? formatLatencyMs(modelRow.avg_latency_ms) : tCommon('noData')}
+                                        </td>
+                                        <td className="px-3 py-2 text-sm">
+                                          <AnalyticsTtftCell metrics={modelRow} noDataLabel={tCommon('noData')} />
+                                        </td>
+                                        <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
+                                          {modelRow.avg_upstream_response_ms != null ? formatLatencyMs(modelRow.avg_upstream_response_ms) : tCommon('noData')}
                                         </td>
                                       </tr>
                                     );

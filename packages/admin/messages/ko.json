@@ -2819,7 +2819,7 @@
 		},
 		"reliability": {
 			"title": "신뢰성",
-			"subtitle": "공급자와 라우트의 성공률 및 지연 시간을 비교하고 최근 오류를 조사하세요.",
+			"subtitle": "공급자와 라우트의 성공률, 첫 토큰까지 시간, 지연 시간을 비교하고 최근 오류를 조사하세요.",
 			"providerQuality": "Provider 품질",
 			"perModelComparison": "모델별 Provider 비교",
 			"recentErrors": "최근 오류",

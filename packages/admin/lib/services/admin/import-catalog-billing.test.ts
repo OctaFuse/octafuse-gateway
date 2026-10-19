@@ -820,6 +820,34 @@ function doubaoTiers(id: string, billing: 'USD' | 'CNY') {
 	return profile!.tiers;
 }
 
+describe('MiniMax M3 catalog list prices', () => {
+	it('records the current official standard tiers, not the struck list or Priority', () => {
+		const preset = listStaticModelPresets().find((p) => p.id === 'minimax-m3');
+		assert.ok(preset);
+		const expected = {
+			USD: [
+				{ upto: 512000, input_price: 0.3, output_price: 1.2, cache_read_price: 0.06, cache_write_price: null },
+				{ upto: null, input_price: 0.6, output_price: 2.4, cache_read_price: 0.12, cache_write_price: null },
+			],
+			CNY: [
+				{ upto: 512000, input_price: 2.1, output_price: 8.4, cache_read_price: 0.42, cache_write_price: null },
+				{ upto: null, input_price: 4.2, output_price: 16.8, cache_read_price: 0.84, cache_write_price: null },
+			],
+		};
+		for (const billing of ['USD', 'CNY'] as const) {
+			const profile = parsePricingProfile(
+				coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset, billing))!,
+			);
+			assert.deepEqual(
+				profile?.tiers.map((tier) =>
+					Object.fromEntries(TOKEN_TIER_KEYS.map((key) => [key, tier[key as keyof typeof tier]])),
+				),
+				expected[billing],
+			);
+		}
+	});
+});
+
 describe('MiniMax M3.1 Flash catalog specs', () => {
 	it('records the official single-tier list price and drops the preview id', () => {
 		const preset = listStaticModelPresets().find((p) => p.id === 'minimax-m3.1-flash');

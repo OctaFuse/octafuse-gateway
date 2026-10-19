@@ -7,6 +7,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { AnalyticsInsights, AnalyticsLoadError } from '@/components/AnalyticsInsights';
+import { AnalyticsTtftCell } from '@/components/AnalyticsTtftCell';
 import { useAnalyticsRange } from '@/lib/use-analytics-range';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
 import { useAnalyticsProviderKind } from '@/components/AnalyticsProviderKind';
@@ -148,6 +149,7 @@ export default function ReliabilityPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.successRate')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.errors')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgLatencyMs')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.ttft')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgUpstreamMs')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('insights.failoverShare')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgAttempts')}</th>
@@ -171,6 +173,7 @@ export default function ReliabilityPage() {
                     </td>
                     <td className="px-4 py-3 text-sm"><Link className="text-red-600 hover:underline" href={errorLogHref(p.provider_id)}>{p.error_count.toLocaleString()}</Link></td>
                     <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{p.avg_latency_ms != null ? formatLatencyMs(p.avg_latency_ms) : tCommon('noData')}</td>
+                    <td className="px-4 py-3 text-sm"><AnalyticsTtftCell metrics={p} noDataLabel={tCommon('noData')} /></td>
                     <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{p.avg_upstream_response_ms != null ? formatLatencyMs(p.avg_upstream_response_ms) : tCommon('noData')}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{p.failover_request_rate != null ? `${p.failover_request_rate.toFixed(1)}%` : '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{p.avg_attempts != null ? p.avg_attempts.toFixed(2) : tCommon('noData')}</td>
@@ -197,6 +200,7 @@ export default function ReliabilityPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.requests')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.successRate')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgLatencyMs')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.ttft')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgUpstreamMs')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('insights.failoverShare')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgAttempts')}</th>
@@ -222,6 +226,7 @@ export default function ReliabilityPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{r.avg_latency_ms != null ? formatLatencyMs(r.avg_latency_ms) : tCommon('noData')}</td>
+                      <td className="px-4 py-3 text-sm"><AnalyticsTtftCell metrics={r} noDataLabel={tCommon('noData')} /></td>
                       <td className="px-4 py-3 text-sm text-gray-600 tabular-nums">{r.avg_upstream_response_ms != null ? formatLatencyMs(r.avg_upstream_response_ms) : tCommon('noData')}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.failover_request_rate != null ? `${r.failover_request_rate.toFixed(1)}%` : '—'}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{r.avg_attempts != null ? r.avg_attempts.toFixed(2) : tCommon('noData')}</td>

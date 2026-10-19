@@ -2819,7 +2819,7 @@
 		},
 		"reliability": {
 			"title": "Reliability",
-			"subtitle": "Compare success rates and latency across providers and routes, and investigate recent errors.",
+			"subtitle": "Compare success rate, time to first token, and latency across providers and routes, and investigate recent errors.",
 			"providerQuality": "Provider quality",
 			"perModelComparison": "Per-model provider comparison",
 			"recentErrors": "Recent errors",
