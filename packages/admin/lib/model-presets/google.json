@@ -2,16 +2,16 @@
 	{
 		"id": "gemini-4-argon",
 		"display_name": "Gemini 4 Argon",
-		"description": "Google's flagship Gemini reasoning model for complex software engineering, scientific problem solving, and multi-step agents. Input and output share a 1,048,576-token window; synchronous output defaults to 65,536 tokens, and long decode can reach 1,048,576.",
+		"description": "Google's flagship Gemini reasoning model for complex software engineering, scientific problem solving, and multi-step agents. Input and output share a ~1M window; synchronous output defaults to 64K, and long decode can reach ~1M.",
 		"i18n": {
-			"en": "Google's flagship Gemini reasoning model for complex software engineering, scientific problem solving, and multi-step agents. Input and output share a 1,048,576-token window; synchronous output defaults to 65,536 tokens, and long decode can reach 1,048,576.",
-			"zh": "面向复杂软件工程、科学问题求解与多步 Agent 的旗舰 Gemini 推理模型。输入与输出共用 1,048,576 Token 窗口；同步输出默认 65,536 Token，长解码最高 1,048,576 Token。",
-			"ja": "難しいソフト開発、科学的な問題解決、複数ステップのエージェント向けの、Gemini 推論フラッグシップです。入出力は 1,048,576 トークンのウィンドウを共有します。同期出力の初期値は 65,536 トークン、長いデコードは最大 1,048,576 トークンです。",
-			"ko": "어려운 소프트웨어 개발, 과학 문제 풀이, 여러 단계 에이전트용 Gemini 추론 플래그십입니다. 입출력은 1,048,576 토큰 창을 공유합니다. 동기 출력 기본값은 65,536 토큰, 긴 디코드는 최대 1,048,576 토큰입니다."
+			"en": "Google's flagship Gemini reasoning model for complex software engineering, scientific problem solving, and multi-step agents. Input and output share a ~1M window; synchronous output defaults to 64K, and long decode can reach ~1M.",
+			"zh": "面向复杂软件工程、科学问题求解与多步 Agent 的旗舰 Gemini 推理模型。输入与输出共用约 1M 窗口；同步输出默认 64K，长解码最高约 1M。",
+			"ja": "難しいソフト開発、科学的な問題解決、複数ステップのエージェント向けの、Gemini 推論フラッグシップです。入出力は約 1M のウィンドウを共有します。同期出力の初期値は 64K、長いデコードは最大約 1M です。",
+			"ko": "어려운 소프트웨어 개발, 과학 문제 풀이, 여러 단계 에이전트용 Gemini 추론 플래그십입니다. 입출력은 약 1M 창을 공유합니다. 동기 출력 기본값은 64K, 긴 디코드는 최대 약 1M입니다."
 		},
 		"vendor": "google",
-		"context_window": 1048576,
-		"max_tokens": 1048576,
+		"context_window": 1000000,
+		"max_tokens": 64000,
 		"pricing": {
 			"usd": {
 				"tiers": [

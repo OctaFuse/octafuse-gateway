@@ -1,0 +1,34 @@
+[
+	{
+		"id": "minimax-asr-1.0",
+		"display_name": "MiniMax ASR 1.0",
+		"description": "MiniMax file speech recognition (asr-1.0) via POST /v1/speech_to_text. Set the route provider model name to asr-1.0 and the adapter to minimax-asr-file. Billed per second of upstream duration, with no minimum.",
+		"i18n": {
+			"en": "MiniMax file speech recognition (asr-1.0) via POST /v1/speech_to_text. Set the route provider model name to asr-1.0 and the adapter to minimax-asr-file. Billed per second of upstream duration, with no minimum.",
+			"zh": "MiniMax 文件语音识别（asr-1.0），走 POST /v1/speech_to_text。路由的供应商模型名填 asr-1.0，适配器选 MiniMax 文件转写。按上游时长按秒计费，没有最低时长。",
+			"ja": "MiniMax のファイル音声認識（asr-1.0）で、POST /v1/speech_to_text を使います。ルートのプロバイダーモデル名は asr-1.0、アダプターは MiniMax のファイル文字起こしです。上流が返した長さを秒単位で課金し、最低秒数はありません。",
+			"ko": "MiniMax 파일 음성 인식(asr-1.0)으로, POST /v1/speech_to_text를 씁니다. 라우트의 공급자 모델명은 asr-1.0, 어댑터는 MiniMax 파일 받아쓰기입니다. 업스트림이 돌려준 길이를 초 단위로 과금하며, 최소 길이는 없습니다."
+		},
+		"vendor": "minimax",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000105556,
+					"minimum_seconds": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000694444,
+					"minimum_seconds": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	}
+]

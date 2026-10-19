@@ -1,0 +1,258 @@
+[
+	{
+		"id": "qwen-audio-3.0-asr-flash-streaming",
+		"display_name": "Qwen Audio 3.0 ASR Flash Streaming",
+		"description": "DashScope real-time speech recognition for low-latency streaming audio.",
+		"i18n": {
+			"en": "DashScope real-time speech recognition for low-latency streaming audio.",
+			"zh": "DashScope 实时语音识别模型，适合低延迟流式音频输入。",
+			"ja": "DashScope のリアルタイム音声認識です。遅延を抑えたいストリーミング音声に向いています。",
+			"ko": "DashScope 실시간 음성 인식입니다. 지연을 줄여야 하는 스트리밍 오디오에 맞습니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00009,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00033,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "qwen-audio-3.0-asr-flash-filetrans",
+		"display_name": "Qwen Audio 3.0 ASR Flash Filetrans",
+		"description": "DashScope asynchronous speech recognition for recorded audio files.",
+		"i18n": {
+			"en": "DashScope asynchronous speech recognition for recorded audio files.",
+			"zh": "DashScope 非实时语音识别模型，适合录音文件转写。",
+			"ja": "DashScope の非同期音声認識です。録音ファイルの文字起こしに向いています。",
+			"ko": "DashScope 비동기 음성 인식입니다. 녹음 파일 받아쓰기에 맞습니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000035,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00022,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "qwen-audio-3.0-asr-flash",
+		"display_name": "Qwen Audio 3.0 ASR Flash",
+		"description": "DashScope synchronous speech recognition for short recorded audio.",
+		"i18n": {
+			"en": "DashScope synchronous speech recognition for short recorded audio.",
+			"zh": "DashScope 同步语音识别模型，适合短录音转写。",
+			"ja": "DashScope の同期音声認識です。短い録音の文字起こしに向いています。",
+			"ko": "DashScope 동기 음성 인식입니다. 짧은 녹음 받아쓰기에 맞습니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000035,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00022,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "qwen3-asr-flash-realtime",
+		"display_name": "Qwen3 ASR Flash Realtime",
+		"description": "DashScope Qwen3 ASR real-time speech recognition over WebSocket sessions.",
+		"i18n": {
+			"en": "DashScope Qwen3 ASR real-time speech recognition over WebSocket sessions.",
+			"zh": "DashScope Qwen3 ASR 实时语音识别，使用 WebSocket 会话模式。",
+			"ja": "DashScope Qwen3 ASR のリアルタイム音声認識です。WebSocket セッションで使います。",
+			"ko": "DashScope Qwen3 ASR 실시간 음성 인식입니다. WebSocket 세션으로 사용합니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00009,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00033,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "qwen3-asr-flash-filetrans",
+		"display_name": "Qwen3 ASR Flash Filetrans",
+		"description": "DashScope Qwen3 ASR asynchronous speech recognition for recorded audio files.",
+		"i18n": {
+			"en": "DashScope Qwen3 ASR asynchronous speech recognition for recorded audio files.",
+			"zh": "DashScope Qwen3 ASR 非实时语音识别，适合录音文件转写。",
+			"ja": "DashScope Qwen3 ASR の非同期音声認識です。録音ファイルの文字起こしに向いています。",
+			"ko": "DashScope Qwen3 ASR 비동기 음성 인식입니다. 녹음 파일 받아쓰기에 맞습니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000035,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00022,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "qwen3-asr-flash",
+		"display_name": "Qwen3 ASR Flash",
+		"description": "DashScope Qwen3 ASR for synchronous audio transcription.",
+		"i18n": {
+			"en": "DashScope Qwen3 ASR for synchronous audio transcription.",
+			"zh": "DashScope Qwen3 ASR 同步语音识别模型。",
+			"ja": "DashScope Qwen3 ASR の同期音声認識です。",
+			"ko": "DashScope Qwen3 ASR 동기 음성 인식입니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000035,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00022,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "fun-asr-realtime",
+		"display_name": "Fun-ASR Realtime",
+		"description": "DashScope Fun-ASR real-time speech recognition over WebSocket streaming.",
+		"i18n": {
+			"en": "DashScope Fun-ASR real-time speech recognition over WebSocket streaming.",
+			"zh": "DashScope Fun-ASR 实时语音识别，使用 WebSocket 流式输入。",
+			"ja": "DashScope Fun-ASR のリアルタイム音声認識です。WebSocket で音声を流し込みます。",
+			"ko": "DashScope Fun-ASR 실시간 음성 인식입니다. WebSocket으로 오디오를 흘려 보냅니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00009,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00033,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "fun-asr",
+		"display_name": "Fun-ASR",
+		"description": "DashScope Fun-ASR asynchronous speech recognition for recorded audio files.",
+		"i18n": {
+			"en": "DashScope Fun-ASR asynchronous speech recognition for recorded audio files.",
+			"zh": "DashScope Fun-ASR 非实时语音识别，适合录音文件转写。",
+			"ja": "DashScope Fun-ASR の非同期音声認識です。録音ファイルの文字起こしに向いています。",
+			"ko": "DashScope Fun-ASR 비동기 음성 인식입니다. 녹음 파일 받아쓰기에 맞습니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000035,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00022,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio"],
+			"output": ["text"]
+		}
+	}
+]

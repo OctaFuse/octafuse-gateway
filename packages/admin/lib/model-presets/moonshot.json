@@ -46,7 +46,8 @@
 				"text"
 			]
 		},
-		"released": "2026-01-27"
+		"released": "2026-01-27",
+		"retired": "2026-08-31"
 	},
 	{
 		"id": "kimi-k2.6",
@@ -157,7 +158,7 @@
 			"ko": "Kimi K2.7 Code 고속 버전입니다. 코딩 추론이 더 빠르고, 지연에 민감한 개발 흐름과 에이전트용입니다."
 		},
 		"vendor": "moonshot",
-		"context_window": 262144,
+		"context_window": 256000,
 		"max_tokens": 256000,
 		"pricing": {
 			"usd": {
@@ -215,7 +216,7 @@
 						"input_price": 3,
 						"output_price": 15,
 						"cache_read_price": 0.3,
-						"cache_write_price": null
+						"cache_write_price": 3
 					}
 				]
 			},
@@ -226,7 +227,7 @@
 						"input_price": 20,
 						"output_price": 100,
 						"cache_read_price": 2,
-						"cache_write_price": null
+						"cache_write_price": 20
 					}
 				]
 			}

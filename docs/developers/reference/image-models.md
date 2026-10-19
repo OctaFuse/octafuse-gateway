@@ -48,7 +48,7 @@
 
 ## 模型目录
 
-静态预设放在 `packages/admin/lib/model-presets/`，生图模型一般在 `<vendor>-image.json`（MiniMax 在 `minimax.json`）。在管理后台的模型（Models）页导入预设；同 ID 已存在时不会覆盖，改价需要编辑模型，或对已知型号运行 `node scripts/db/migrate-image-billing-modes.mjs --apply`。
+静态预设放在 `packages/admin/lib/model-presets/`，生图模型在 `<vendor>-image.json`。在管理后台的模型（Models）页导入预设；同 ID 已存在时不会覆盖，改价需要编辑模型，或对已知型号运行 `node scripts/db/migrate-image-billing-modes.mjs --apply`。
 
 目录 ID 一般与上游的供应商模型名一致。例外是 MiniMax：目录 ID 带 `minimax-` 前缀，路由的供应商模型名填 `image-01` / `image-01-live`。火山方舟用推理接入点时，路由填 `ep-…`。预设不写 `suggested_provider_model_name` 或 `suggested_custom_params`，默认参数由客户端或路由 `custom_params` 注入。退役型号不进预设，库里的旧行需要手工清理。
 
@@ -61,6 +61,7 @@
 | 模型 ID | 展示名 | 厂商文档 | 计费模式 | CNY | USD | 分档 | 预设文件 |
 |---|---|---|---|---|---|---|---|
 | `qwen-image-2.1-pro` | Qwen Image 2.1 Pro | [百炼 DashScope](../architecture/dashscope-image.md) | `per_image` | ¥0.25/张 | $0.04/张 | 一口价 | `aliyun-image.json` |
+| `qwen-image-2.1-turbo` | Qwen Image 2.1 Turbo | [百炼 DashScope](../architecture/dashscope-image.md) | `per_image` | ¥0.1/张 | $0.016/张 | 一口价 | `aliyun-image.json` |
 | `qwen-image-3.0` | Qwen Image 3.0 | [百炼 DashScope](../architecture/dashscope-image.md) | `per_image` | ¥0.18/张 | $0.03/张 | 参考图 | `aliyun-image.json` |
 | `qwen-image-3.0-pro` | Qwen Image 3.0 Pro | [百炼 DashScope](../architecture/dashscope-image.md) | `per_image` | ¥0.25/张 | $0.04/张 | `by_size`、参考图 | `aliyun-image.json` |
 | `wan2.7-image` | Wan 2.7 Image | [百炼 DashScope](../architecture/dashscope-image.md) | `per_image` | ¥0.2/张 | $0.03/张 | 一口价 | `aliyun-image.json` |
@@ -71,8 +72,8 @@
 | `gemini-3-pro-image-preview` | Gemini 3 Pro Image Preview | [Google Gemini](../architecture/gemini-image.md) | `token` | 图出 ¥840/1M | 图出 $120/1M | 按 usage | `google-image.json` |
 | `gemini-3.1-flash-image` | Gemini 3.1 Flash Image | [Google Gemini](../architecture/gemini-image.md) | `token` | 图出 ¥420/1M | 图出 $60/1M | 按 usage | `google-image.json` |
 | `gemini-nano-banana-2.1` | Gemini Nano Banana 2.1 | [Google Gemini](../architecture/gemini-image.md) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `google-image.json` |
-| `minimax-image-01` | MiniMax Image 01 | [MiniMax](../architecture/minimax-image.md) | `per_image` | ¥0.025/张 | $0.0035/张 | 一口价 | `minimax.json` |
-| `minimax-image-01-live` | MiniMax Image 01 Live | [MiniMax](../architecture/minimax-image.md) | `per_image` | ¥0.025/张 | $0.0035/张 | 一口价 | `minimax.json` |
+| `minimax-image-01` | MiniMax Image 01 | [MiniMax](../architecture/minimax-image.md) | `per_image` | ¥0.025/张 | $0.0035/张 | 一口价 | `minimax-image.json` |
+| `minimax-image-01-live` | MiniMax Image 01 Live | [MiniMax](../architecture/minimax-image.md) | `per_image` | ¥0.025/张 | $0.0035/张 | 一口价 | `minimax-image.json` |
 | `gpt-image-2` | GPT Image 2 | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |
 | `gpt-image-2.5-flare` | GPT Image 2.5 Flare | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |
 | `gpt-image-2.5-sunburst` | GPT Image 2.5 Sunburst | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |

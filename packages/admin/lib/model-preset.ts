@@ -8,16 +8,16 @@
  * 命名约定：
  * - `<vendor>.json` — LLM（`modalities.output` 以 `text` 为主，含多模态「看图」LLM）
  * - `<vendor>-image.json` — 纯文生图（`modalities.output` 含 `image`）
- * - `<vendor>-audio.json` — 语音转写 ASR 与语音合成 TTS（`pricing.audio_billing_mode: per_second | token | per_character`）
+ * - `<vendor>-audio-asr.json` — 语音转写 ASR（`audio_billing_mode: per_second | token`）
+ * - `<vendor>-audio-tts.json` — 语音合成 TTS（`audio_billing_mode: per_character`）
  * - `<vendor>-embedding.json` — 向量模型（`modalities.output` 为 `embedding`；仅按输入 token 计费，output / cache 价为 0 / null）
- * - `aliyun.json` 另含 DashScope ASR/TTS，便于从同一个官方厂商目录一起导入供应商与音频模型。
  *
  * 各预设内 **`pricing.usd`** 与 D1 导出 `data/remote/.../data-remote-table-models-*.sql` 中 `pricing_profile` 一致（美元口径）；
  * **`pricing.cny`**：有官方人民币标价的（国内厂商，以中国区官方/Postgres 价为准）取官方价；没有的（海外厂商，如 openai / anthropic / google / xai / elevenlabs 等）一律按 **USD × 7** 换算占位，不使用实时汇率，且不得留空（测试会拦截）。
  * 导入时按当前 `BILLING_CURRENCY` 选用 `usd` / `cny` **整段**写入 `pricing_profile`（含可选 `schedule` 官方时段，不只 `tiers`）。
  * DeepSeek V4 / V4.1 目录价为空闲价；`schedule` 为北京时间工作日高峰 09:00–12:00、14:00–18:00、`factor` 2。命中按 `BUSINESS_TIMEZONE` 墙钟，中国区请设 `Asia/Shanghai`。
  * Google Gemini 目录价为 Standard 标准价，不含限时导入价、Batch、Flex。Flash 3.7 / 3.8 写入 $1.50 / $7.50，而不是 2026-12-31 前的 $0.75 / $3.75。
- * Gemini 4 Argon 目录价为 2026-12-01 起的 Standard 刊例 $4 / $20，缓存读取 $0.20；不含 2026-11-30 前的入门价 $2 / $10。只支持隐式缓存，`cache_write_price` 留空。上下文与长解码上限均为 1,048,576，`max_tokens` 记该上限；同步默认输出 65,536 写在介绍里。输入含文本、图像、音频、视频与 PDF。`gemini-4-barium` 无官方刊例，不入库。
+ * Gemini 4 Argon 目录价为 2026-12-01 起的 Standard 刊例 $4 / $20，缓存读取 $0.20；不含 2026-11-30 前的入门价 $2 / $10。只支持隐式缓存，`cache_write_price` 留空。上下文与长解码上限为 1M（1000000），同步默认输出 64K（64000）记在 `max_tokens` 与介绍里。输入含文本、图像、音频、视频与 PDF。`gemini-4-barium` 无官方刊例，不入库。
  * Claude Sonnet 5 目录价为官方标准价 $2 / $10（2026-08-10 起入门价转正，不再使用原定 9 月 1 日的 $3 / $15）。
  * GPT-5.6 Terra / Luna 目录价为 2026-07-30 起的标准价 $2 / $12 与 $0.20 / $1.20；GPT-5.6 Sol 与 `gpt-5.6` 别名仍写刊例 $5 / $30，不含至少到 2026-11-21 的促销价。
  * GPT-6 Sol / Luna 目录价为 2026-09-22 起的 Standard 刊例：短上下文 $2 / $10 与 $0.10 / $0.50；输入超过 272K 时整单按 2 倍输入与缓存、1.5 倍输出。不含 Batch、Flex 半价与 Fast 双倍。
@@ -25,7 +25,7 @@
  * Claude Opus 5.5 目录价为 $4 / $20；缓存读取 $0.20，`cache_write_price` 取 5 分钟写入 $5（1 小时写入 $8 不单列）。
  * Grok 4.7 目录价与 Grok 4.6 相同（200K 阶梯，$2 / $6 与 $4 / $12）。不含仅 Cursor / Grok Build 提供的 Fast 双倍价。官方未公布文本输出上限，`max_tokens` 沿用同系 128000。
  * Xiaomi MiMo-V2.6 目录价为实时推理刊例（USD / CNY 分源）。Pro 与 Flash 的批量推理半价不写入 preset；UltraSpeed 无批量推理。缓存写入官网标明限时免费，`cache_write_price` 保持 null。
- * MiniMax-M3.1-Flash-Preview 已写入规格。官方未公布按量刊例（仅 M Plan / MiniMax Code），美元与人民币价格暂按 MiniMax M3 标准刊例预填，官方刊例公布后应替换。
+ * MiniMax M3.1 Flash 目录价为 2026-10-19 起的官方单一档标准刊例：美元 $0.15 / $0.60，缓存读取 $0.015；中国区按量价 ¥1 / ¥4，缓存读取 ¥0.1。不含 Priority。`cache_write_price` 留空。预览 id `minimax-m3.1-flash-preview` 已从静态目录移除。
  * 面向管理后台的英文摘要与中、英、日、韩介绍均与模型预设共同维护，按界面语言只读展示，不写入数据库。
  *
  * 合并顺序：与下方 import 列表一致（尚未录入价目的厂商保留 `[]` 占位文件；image 文件紧挨同 vendor 的 LLM 之后）。
@@ -33,6 +33,8 @@
 import aliyunPresets from './model-presets/aliyun.json';
 import aliyunImagePresets from './model-presets/aliyun-image.json';
 import aliyunEmbeddingPresets from './model-presets/aliyun-embedding.json';
+import aliyunAudioAsrPresets from './model-presets/aliyun-audio-asr.json';
+import aliyunAudioTtsPresets from './model-presets/aliyun-audio-tts.json';
 import anthropicPresets from './model-presets/anthropic.json';
 import baichuanPresets from './model-presets/baichuan.json';
 import baiduPresets from './model-presets/baidu.json';
@@ -40,18 +42,22 @@ import bytedancePresets from './model-presets/bytedance.json';
 import bytedanceImagePresets from './model-presets/bytedance-image.json';
 import coherePresets from './model-presets/cohere.json';
 import deepseekPresets from './model-presets/deepseek.json';
-import elevenlabsAudioPresets from './model-presets/elevenlabs-audio.json';
+import elevenlabsAudioTtsPresets from './model-presets/elevenlabs-audio-tts.json';
+import elevenlabsAudioAsrPresets from './model-presets/elevenlabs-audio-asr.json';
 import googlePresets from './model-presets/google.json';
 import googleImagePresets from './model-presets/google-image.json';
 import googleEmbeddingPresets from './model-presets/google-embedding.json';
 import meituanPresets from './model-presets/meituan.json';
 import metaPresets from './model-presets/meta.json';
 import minimaxPresets from './model-presets/minimax.json';
+import minimaxImagePresets from './model-presets/minimax-image.json';
+import minimaxAudioAsrPresets from './model-presets/minimax-audio-asr.json';
+import minimaxAudioTtsPresets from './model-presets/minimax-audio-tts.json';
 import mistralPresets from './model-presets/mistral.json';
 import moonshotPresets from './model-presets/moonshot.json';
 import openaiPresets from './model-presets/openai.json';
 import openaiImagePresets from './model-presets/openai-image.json';
-import openaiAudioPresets from './model-presets/openai-audio.json';
+import openaiAudioAsrPresets from './model-presets/openai-audio-asr.json';
 import openaiEmbeddingPresets from './model-presets/openai-embedding.json';
 import perplexityPresets from './model-presets/perplexity.json';
 import stabilityPresets from './model-presets/stability.json';
@@ -101,6 +107,8 @@ const STATIC_MODEL_PRESETS_BY_VENDOR = [
 	aliyunPresets,
 	aliyunImagePresets,
 	aliyunEmbeddingPresets,
+	aliyunAudioAsrPresets,
+	aliyunAudioTtsPresets,
 	anthropicPresets,
 	baichuanPresets,
 	baiduPresets,
@@ -108,18 +116,22 @@ const STATIC_MODEL_PRESETS_BY_VENDOR = [
 	bytedanceImagePresets,
 	coherePresets,
 	deepseekPresets,
-	elevenlabsAudioPresets,
+	elevenlabsAudioTtsPresets,
+	elevenlabsAudioAsrPresets,
 	googlePresets,
 	googleImagePresets,
 	googleEmbeddingPresets,
 	meituanPresets,
 	metaPresets,
 	minimaxPresets,
+	minimaxImagePresets,
+	minimaxAudioAsrPresets,
+	minimaxAudioTtsPresets,
 	mistralPresets,
 	moonshotPresets,
 	openaiPresets,
 	openaiImagePresets,
-	openaiAudioPresets,
+	openaiAudioAsrPresets,
 	openaiEmbeddingPresets,
 	perplexityPresets,
 	stabilityPresets,

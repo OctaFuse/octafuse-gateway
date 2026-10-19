@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
 	ArrowDownIcon,
 	ArrowsUpDownIcon,
 	CheckCircleIcon,
+	CheckIcon,
 	ClipboardDocumentIcon,
 	PencilSquareIcon,
 	PlusIcon,
@@ -48,6 +49,7 @@ import { ProviderStickyChip } from './provider-sticky-chip';
 import { RouteStickyUsage } from './route-sticky-usage';
 import { RouteTargetPricing } from './route-target-pricing';
 import { useRoutePricingDisplay } from '../use-route-pricing-display';
+import { useRoutePathDisplay } from '../use-route-path-display';
 
 const EMPTY_STICKY_COUNTS = new Map<string, number>();
 
@@ -223,7 +225,7 @@ function RouteTarget({
 				</div>
 				{!listView ? upstreamModel : null}
 				{listView ? <div className="route-provider-list-model min-w-0">{upstreamModel}</div> : null}
-				<div className={listView ? 'contents' : 'mt-3 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-4'}>
+				<div className={listView ? 'route-provider-list-meta' : 'mt-3 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-4'}>
 					<div className={listView ? 'flex min-w-0 flex-col items-center gap-1 text-[10px]' : 'flex flex-wrap items-center gap-1.5'}>
 						<button
 							type="button"
@@ -250,7 +252,12 @@ function RouteTarget({
 						</span>
 					) : null}
 					{!listView && (params.headers || params.body) ? paramsBadges : null}
-					{listView ? <div className="flex min-w-0 justify-center">{stickyUsage}</div> : null}
+					{listView ? (
+						<div className="flex min-w-0 items-center justify-center gap-1">
+							<span className="route-provider-mobile-label text-[10px] text-slate-500">{t('listStickyUsers')}</span>
+							{stickyUsage}
+						</div>
+					) : null}
 					{listView ? paramsBadges : null}
 				</div>
 			</div>
@@ -289,7 +296,7 @@ export function FlowConnectorAdd({
 					</button>
 				</span>
 			</div>
-			<div className="flex justify-center pt-1 xl:hidden">
+			<div className="route-flow-connector-stacked flex justify-center pt-1 xl:hidden">
 				<button
 					type="button"
 					onClick={onClick}
@@ -367,13 +374,13 @@ export function RouteGroupInfo({
 	const copied = copiedModelId === requestedModelId;
 
 	return (
-		<div className={`relative w-full min-w-0 ${centered ? 'grid grid-rows-2' : ''}`} aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}>
-			<div className={`flex min-w-0 gap-1.5 ${centered ? 'items-end pb-2' : 'h-8 items-start pt-1'}`}>
+		<div className={`route-group-info relative w-full min-w-0 ${centered ? 'grid grid-rows-2' : ''}`} aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}>
+			<div className={`route-group-label flex min-w-0 gap-1.5 ${centered ? 'items-end pb-2' : 'h-8 items-start pt-1'}`}>
 				<span className={`shrink-0 text-[10px] font-medium ${isDefaultGroup ? 'text-sky-700' : 'text-violet-700'}`}>{t('routeGroup')}</span>
 				<span className={`min-w-0 truncate text-[11px] font-semibold ${isDefaultGroup ? 'text-sky-900' : 'text-violet-900'}`} title={routeGroup}>{routeGroup}</span>
 			</div>
-			<span className={`absolute inset-x-0 h-px ${centered ? 'top-1/2' : 'top-8'} ${isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300'}`} aria-hidden />
-			<div>
+			<span className={`route-group-rail absolute inset-x-0 h-px ${centered ? 'top-1/2' : 'top-8'} ${isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300'}`} aria-hidden />
+			<div className="route-group-details">
 				<div className="flex min-w-0 items-start gap-1 pt-2">
 					<span className="min-w-0 flex-1 font-mono text-[10px] leading-[14px] text-slate-600 [overflow-wrap:anywhere]" title={requestedModelId}>
 						{requestedModelId}
@@ -411,11 +418,29 @@ export function RequestSurfaceNode({
 	modelId?: string;
 }) {
 	const t = useTranslations('routes.flow');
+	const tGuide = useTranslations('routes.modal.guide');
+	const tCommon = useTranslations('common');
+	const [pathDisplay] = useRoutePathDisplay();
+	const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
+	useEffect(() => {
+		if (copyStatus === 'idle') return;
+		const timer = setTimeout(() => setCopyStatus('idle'), 2500);
+		return () => clearTimeout(timer);
+	}, [copyStatus]);
 	const surfacePath = requestSurfacePath(
 		surface.protocol,
 		surface.requestOperation,
 		modelId
 	);
+
+	async function copyPath() {
+		try {
+			await navigator.clipboard.writeText(surfacePath);
+			setCopyStatus('copied');
+		} catch {
+			setCopyStatus('failed');
+		}
+	}
 
 	return (
 		<div className="w-full min-w-0 rounded-lg border border-blue-200 bg-blue-50/75 px-3 py-2.5 shadow-sm">
@@ -423,22 +448,38 @@ export function RequestSurfaceNode({
 				<span className="text-[10px] font-semibold uppercase tracking-wider text-blue-600">
 					{t('requestNode')}
 				</span>
-				<span
-					className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded ring-1 ring-inset ${protocolBadgeClass(surface.protocol)}`}
-					title={surface.protocolLabel}
-					aria-label={surface.protocolLabel}
-				>
-					<UpstreamProtocolBrandIcon protocol={surface.protocol} />
-				</span>
+				<div className="ml-auto flex shrink-0 items-center gap-1.5">
+					<button
+						type="button"
+						onClick={() => void copyPath()}
+						aria-label={copyStatus === 'copied' ? tCommon('copied') : tGuide('copyPath')}
+						title={copyStatus === 'copied' ? tCommon('copied') : tGuide('copyPath')}
+						className="rounded p-0.5 text-blue-500 hover:bg-blue-100 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+					>
+						{copyStatus === 'copied' ? <CheckIcon className="h-3.5 w-3.5" aria-hidden /> : <ClipboardDocumentIcon className="h-3.5 w-3.5" aria-hidden />}
+					</button>
+					<span
+						className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded ring-1 ring-inset ${protocolBadgeClass(surface.protocol)}`}
+						title={surface.protocolLabel}
+						aria-label={surface.protocolLabel}
+					>
+						<UpstreamProtocolBrandIcon protocol={surface.protocol} />
+					</span>
+				</div>
 			</div>
 			<div className="mt-1.5 min-w-0">
-				<span
-					className="block min-w-0 truncate font-mono text-[11px] font-semibold text-gray-800"
+				<code
+					className={`block w-full min-w-0 select-text font-mono text-[11px] font-semibold leading-4 text-gray-800 ${pathDisplay === 'full' ? 'whitespace-normal [overflow-wrap:anywhere]' : 'truncate'}`}
 					title={surfacePath}
 				>
-					{surfacePath}
-				</span>
+					{pathDisplay === 'full' ? surfacePath.split(/(?=\/)/).map((segment, index) => (
+						<span key={index}><wbr />{segment}</span>
+					)) : surfacePath}
+				</code>
 			</div>
+			<span role="status" className={copyStatus === 'failed' ? 'mt-1 block text-[10px] text-red-600' : 'sr-only'}>
+				{copyStatus === 'failed' ? tGuide('copyFailed') : copyStatus === 'copied' ? tCommon('copied') : ''}
+			</span>
 		</div>
 	);
 }
@@ -766,14 +807,14 @@ function FlowBranch({
 		: branchIndex === branchCount - 1 ? 'top-0 bottom-[calc(100%-3.5rem)]' : 'inset-y-0';
 
 	return (
-		<div className="relative py-3 xl:pl-4">
+		<div className="route-flow-branch relative py-3 xl:pl-4">
 			{!singleGroup ? <span className={`absolute left-0 hidden w-px bg-blue-300 xl:block ${railClass}`} aria-hidden /> : null}
 			<span
 				className={`absolute left-0 hidden h-px w-4 bg-blue-300 xl:block ${singleGroup ? 'top-1/2' : 'top-14'}`}
 				aria-hidden
 			/>
-			<div className={`grid min-w-0 gap-y-3 xl:grid-cols-[minmax(180px,240px)_minmax(0,1fr)] ${singleGroup ? 'xl:items-center' : 'xl:items-start'}`}>
-				<div className={`relative flex min-w-0 flex-col xl:pr-8 ${singleGroup ? '' : 'mt-3'}`}>
+			<div className={`route-flow-branch-layout grid min-w-0 gap-y-3 xl:grid-cols-[minmax(180px,240px)_minmax(0,1fr)] ${singleGroup ? 'xl:items-center' : 'xl:items-start'}`}>
+				<div className={`route-flow-group relative flex min-w-0 flex-col xl:pr-8 ${singleGroup ? '' : 'mt-3'}`}>
 					<RouteGroupInfo
 						centered={singleGroup}
 						modelId={card.model_id}
@@ -861,7 +902,7 @@ function FlowSection({
 	return (
 		<div className="px-3 sm:px-4">
 			<div className="xl:grid xl:grid-cols-[minmax(160px,210px)_minmax(0,1fr)]">
-				<div className="relative flex min-w-0 flex-col justify-center py-3 xl:pr-8">
+				<div className="route-flow-entry relative flex min-w-0 flex-col justify-center py-3 xl:pr-8">
 					<RequestSurfaceNode surface={surface} modelId={card.model_id} />
 					<FlowConnectorAdd
 						railClass="bg-blue-300"
@@ -942,7 +983,7 @@ export function RouteModelFlow(props: Props) {
 	const surfaceGroups = groupSectionsByRequestSurface(sections);
 
 	return (
-		<article className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+		<article className={`${density === 'list' ? 'route-flow-list-layout route-model-list-layout ' : ''}overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm`}>
 			<header className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2.5 sm:px-5">
 				<div className="min-w-0 flex-1">
 					<div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -973,7 +1014,7 @@ export function RouteModelFlow(props: Props) {
 						</div>
 					</div>
 					<div className="mt-1 flex min-w-0 flex-wrap items-center gap-2">
-						<span className="font-mono text-[11px] text-gray-500">{card.model_id}</span>
+						<span className="min-w-0 font-mono text-[11px] text-gray-500 [overflow-wrap:anywhere]">{card.model_id}</span>
 						<span className="text-gray-300">·</span>
 						<span className="text-[11px] text-gray-500">{stats}</span>
 						{tags.length ? tags.slice(0, 4).map((tag) => (
@@ -998,7 +1039,7 @@ export function RouteModelFlow(props: Props) {
 				</div>
 			</header>
 
-			<div className="divide-y divide-slate-300/80 bg-slate-200/80 px-3 py-3 sm:px-4">
+			<div className={`${density === 'list' ? 'route-model-list-surfaces' : 'divide-y divide-slate-300/80'} bg-slate-200/80 px-3 py-3 sm:px-4`}>
 				{surfaceGroups.length ? surfaceGroups.map((surface) => (
 					<FlowSection
 						key={surface.key}

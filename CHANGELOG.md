@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **MiniMax M3.1 Flash**：静态目录用正式模型 `minimax-m3.1-flash`（上游 `MiniMax-M3.1-Flash`，发布日 2026-10-19）替换预览条目 `minimax-m3.1-flash-preview`。官方标准刊例为单一档：美元输入 $0.15/M、输出 $0.60/M、缓存读取 $0.015/M；中国区按量价为 ¥1/M、¥4/M、缓存读取 ¥0.1/M。上下文 1M。介绍按官网模型说明书写：原生多模态、1M 上下文、思考深度可调的 Frontier Coding 模型。输出硬上限仍记 512K，因为 Chat 参考只给 MiniMax-M3 写了该上限。思考不能关闭。已导入的预览行不会被导入覆盖，需要另导入新 id，并把路由的上游模型名改为 `MiniMax-M3.1-Flash`。
+- **模型预设文件分类**：音频预设按 `<vendor>-audio-asr.json` 与 `<vendor>-audio-tts.json` 分开（阿里云、MiniMax、OpenAI、ElevenLabs）。MiniMax 生图在 `minimax-image.json`。模型 id、价格、类型与导入结果不变。
+- **路由列表响应式布局**：按可用宽度切换表格、左右分栏和紧凑纵向布局；外层模型与请求入口区域保持占满，仅将供应商表格的最大宽度限制为 1280px，减少宽屏下内容分散；请求入口分区增加留白，并改用内缩、两端渐隐的浅色分割线；新增「入口路径」完整／省略切换并记住选择，默认单行省略，选择完整时按路径分段换行，支持复制完整路径。窄屏收紧请求入口与路由组间距，添加按钮靠右，模型说明与时段价格支持换行，避免继续缩小时拥挤或溢出。覆盖「按模型」与「总览」以及两种倍率显示。
+- **Kimi K3 缓存写入价**：静态目录补上默认 5 分钟档 `cache_write_price`（美元 $3/M、人民币 ¥20/M）。上下文与最大输出仍为 1,000,000。
+- **Kimi K2.5 目录退役**：静态目录将 `kimi-k2.5` 标为 2026-08-31 退役（Moonshot 官方已下线，国内外调用返回 404，请迁移至 Kimi K3）。仅用于展示和筛选，价格、模态、路由与计费不变。
+- **Qwen Image 2.1 Turbo**：新增按张计费预设。美元 $0.016/张，人民币 ¥0.1/张，发布日 2026-10-09。
+- **模型预设窗口**：上下文和最大输入输出按 K=1000、M=1000000 写入，介绍改为 256K、1M 这类写法。Gemini 4 Argon 最大输出为 64K；Kimi K2.7 Code Highspeed 上下文为 256K；MiniMax M2.7 Highspeed 上下文为 200K；Qwen3.8 2.4T-A95B、27B、Omni Flash 最大输出为 128K；MiniMax M3.1 Flash Preview 输出硬上限为 512K。豆包 Seed 2.1 Pro / Lite 的 1024K 上下文为 1024000。价格与模态不变。
+- **网宿 AI 网关导入模板**：供应商模板增加网宿新版统一网关。OpenAI Base 为 `https://api.edgecloudapp.com/v2/llm/openai`，Anthropic Messages 为 `https://api.edgecloudapp.com/v2/llm/anthropic/messages`，Gemini Base 为 `https://api.edgecloudapp.com/v2/llm/gemini/v1beta/models`（Bearer）。鉴权使用令牌管理里 `sk-` 开头的新令牌。管理后台图标使用网宿标志，品牌色 `#005BAC`。
+
 ## 2.16.0
 
 ### Minor Changes

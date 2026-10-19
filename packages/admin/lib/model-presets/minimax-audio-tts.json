@@ -1,0 +1,66 @@
+[
+	{
+		"id": "minimax-speech-2.8-hd",
+		"display_name": "MiniMax Speech 2.8 HD",
+		"description": "MiniMax sync speech synthesis (speech-2.8-hd) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-hd. Use minimax-tts for OpenAI /v1/audio/speech, or MiniMax audio.speech passthrough for the native endpoint. Billed per upstream usage_characters.",
+		"i18n": {
+			"en": "MiniMax sync speech synthesis (speech-2.8-hd) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-hd. Use minimax-tts for OpenAI /v1/audio/speech, or MiniMax audio.speech passthrough for the native endpoint. Billed per upstream usage_characters.",
+			"zh": "MiniMax 同步语音合成（speech-2.8-hd），走 POST /v1/t2a_v2。供应商模型名填 speech-2.8-hd。OpenAI /v1/audio/speech 用适配器 minimax-tts，原生端点用 audio.speech 透传。按上游 usage_characters 计费。",
+			"ja": "MiniMax の同期音声合成（speech-2.8-hd）で、POST /v1/t2a_v2 を使います。プロバイダーモデル名は speech-2.8-hd です。OpenAI /v1/audio/speech はアダプター minimax-tts、ネイティブは audio.speech のパススルーです。上流の usage_characters で課金します。",
+			"ko": "MiniMax 동기 음성 합성(speech-2.8-hd)으로, POST /v1/t2a_v2를 씁니다. 공급자 모델명은 speech-2.8-hd입니다. OpenAI /v1/audio/speech는 어댑터 minimax-tts, 네이티브는 audio.speech 패스스루입니다. 업스트림 usage_characters로 과금합니다."
+		},
+		"vendor": "minimax",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.0001,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.00035,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
+	},
+	{
+		"id": "minimax-speech-2.8-turbo",
+		"display_name": "MiniMax Speech 2.8 Turbo",
+		"description": "MiniMax low-latency sync speech synthesis (speech-2.8-turbo) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-turbo. Use minimax-tts for OpenAI /v1/audio/speech, or MiniMax audio.speech passthrough for the native endpoint. Billed per upstream usage_characters.",
+		"i18n": {
+			"en": "MiniMax low-latency sync speech synthesis (speech-2.8-turbo) via POST /v1/t2a_v2. Set the route provider model name to speech-2.8-turbo. Use minimax-tts for OpenAI /v1/audio/speech, or MiniMax audio.speech passthrough for the native endpoint. Billed per upstream usage_characters.",
+			"zh": "MiniMax 低延迟同步语音合成（speech-2.8-turbo），走 POST /v1/t2a_v2。供应商模型名填 speech-2.8-turbo。OpenAI /v1/audio/speech 用适配器 minimax-tts，原生端点用 audio.speech 透传。按上游 usage_characters 计费。",
+			"ja": "MiniMax の低レイテンシ同期音声合成（speech-2.8-turbo）で、POST /v1/t2a_v2 を使います。プロバイダーモデル名は speech-2.8-turbo です。OpenAI /v1/audio/speech はアダプター minimax-tts、ネイティブは audio.speech のパススルーです。上流の usage_characters で課金します。",
+			"ko": "MiniMax 저지연 동기 음성 합성(speech-2.8-turbo)으로, POST /v1/t2a_v2를 씁니다. 공급자 모델명은 speech-2.8-turbo입니다. OpenAI /v1/audio/speech는 어댑터 minimax-tts, 네이티브는 audio.speech 패스스루입니다. 업스트림 usage_characters로 과금합니다."
+		},
+		"vendor": "minimax",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.00006,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.0002,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
+	}
+]

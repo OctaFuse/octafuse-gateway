@@ -467,12 +467,14 @@ describe('adapter registry', () => {
 				id: string;
 				pricing?: { usd?: { audio_billing_mode?: string } };
 			}>;
-		const audioIds = rows('aliyun.json')
-			.filter((row) => {
-				const mode = row.pricing?.usd?.audio_billing_mode;
-				return mode === 'per_second' || mode === 'per_character';
-			})
-			.map((row) => row.id);
+		const audioIds = ['aliyun-audio-asr.json', 'aliyun-audio-tts.json'].flatMap((file) =>
+			rows(file)
+				.filter((row) => {
+					const mode = row.pricing?.usd?.audio_billing_mode;
+					return mode === 'per_second' || mode === 'per_character';
+				})
+				.map((row) => row.id),
+		);
 		const imageIds = rows('aliyun-image.json').map((row) => row.id);
 		assert.ok(audioIds.length > 0);
 		assert.ok(imageIds.length > 0);

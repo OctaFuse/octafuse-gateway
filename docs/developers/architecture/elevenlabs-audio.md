@@ -144,7 +144,7 @@ wscat -c "wss://$GATEWAY/elevenlabs/v1/text-to-speech/JBFqnCBsd6RMkjVDRZzb/strea
 
 因为是估算，用量需要和 ElevenLabs 控制台定期对账：客户端发了静音、或 STT 由 ElevenLabs 按实际处理时长计费时，两边会有出入。
 
-目录模型预设（`elevenlabs-audio.json`）的美元价为官方刊例价；人民币价按美元 ×7 换算，是占位价而非官方人民币刊例（与 Anthropic、Google 预设同一约定），需要精确人民币账务时请在模型页手工调整。换算后：TTS 为 $0.08 / 千字符 → ¥0.56，$0.04 → ¥0.28；Scribe v2 / Medical 为 $0.22 / 小时 → `0.00042777` 元/秒（约 ¥1.54 / 小时）。
+目录模型预设（`elevenlabs-audio-tts.json`、`elevenlabs-audio-asr.json`）的美元价为官方刊例价；人民币价按美元 ×7 换算，是占位价而非官方人民币刊例（与 Anthropic、Google 预设同一约定），需要精确人民币账务时请在模型页手工调整。换算后：TTS 为 $0.08 / 千字符 → ¥0.56，$0.04 → ¥0.28；Scribe v2 / Medical 为 $0.22 / 小时 → `0.00042777` 元/秒（约 ¥1.54 / 小时）。
 
 | 模型预设 ID | 供应商模型名 | 单价 |
 |-------------|--------------|------|

@@ -1219,7 +1219,7 @@ Content-Type: multipart/form-data
 
 **时长**：两种模式都会解析时长（上游 `verbose_json` 的 `duration`，缺失时按文件字节估算），并在 `pricing_audit.duration_source` 标注来源；按秒模式用其计费，token 模式主要用于预检与审计。
 
-Admin 静态预设（`packages/admin/lib/model-presets/openai-audio.json`，与 [Speech to text](https://developers.openai.com/api/docs/guides/speech-to-text) 当前别名一致）：
+Admin 静态预设（`packages/admin/lib/model-presets/openai-audio-asr.json`，与 [Speech to text](https://developers.openai.com/api/docs/guides/speech-to-text) 当前别名一致）：
 
 | model id | 计费模式 | 上游官方价（参考） | Gateway 目录价（USD） |
 |----------|----------|-------------------|----------------------|

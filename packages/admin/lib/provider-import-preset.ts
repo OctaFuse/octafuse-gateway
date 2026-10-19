@@ -334,6 +334,7 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 		['openrouter.ai', identity('openrouter')],
 		['siliconflow.cn', identity('siliconflow')],
 		['siliconflow.com', identity('siliconflow')],
+		['edgecloudapp.com', identity('wangsu')],
 	];
 	for (const [domain, matchedIdentity] of domainRules) {
 		if (hostnameMatches(hostname, domain)) return matchedIdentity;
@@ -457,6 +458,7 @@ function identityFromNameHint(normalizedName: string): ProviderCatalogIdentity |
 		[['zenmux'], identity('zenmux')],
 		[['openrouter'], identity('openrouter')],
 		[['siliconflow', '硅基流动'], identity('siliconflow')],
+		[['wangsu', '网宿', 'edgecloudapp'], identity('wangsu')],
 		[['ollama'], identity('ollama')],
 	];
 	for (const [keywords, matchedIdentity] of vendorRules) {

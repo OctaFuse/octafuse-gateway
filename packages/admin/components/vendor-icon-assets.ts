@@ -52,6 +52,7 @@ import togetherIcon from '@lobehub/icons-static-svg/icons/together.svg';
 import vercelIcon from '@lobehub/icons-static-svg/icons/vercel.svg';
 import vertexAiIcon from '@lobehub/icons-static-svg/icons/vertexai.svg';
 import volcengineIcon from '@lobehub/icons-static-svg/icons/volcengine.svg';
+import wangsuIcon from './icons/wangsu.svg';
 import xaiIcon from '@lobehub/icons-static-svg/icons/xai.svg';
 import xiaomiMimoIcon from '@lobehub/icons-static-svg/icons/xiaomimimo.svg';
 import zaiIcon from '@lobehub/icons-static-svg/icons/zai.svg';
@@ -108,6 +109,7 @@ export const vendorIconAssets: Readonly<Record<string, string>> = {
 	together: assetUrl(togetherIcon),
 	vercel: assetUrl(vercelIcon),
 	volcengine: assetUrl(volcengineIcon),
+	wangsu: assetUrl(wangsuIcon),
 	xai: assetUrl(xaiIcon),
 	xiaomi: assetUrl(xiaomiMimoIcon),
 	zenmux: assetUrl(zenmuxIcon),

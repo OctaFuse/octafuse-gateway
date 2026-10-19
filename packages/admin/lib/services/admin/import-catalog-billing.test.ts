@@ -4,6 +4,7 @@ import { parsePricingProfile } from '@octafuse/core/db/pricing-profile';
 import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/model-preset';
 import { coerceModelPricingProfileInput } from './pricing-input';
 import { listStaticModelPresetCatalogForAdmin } from './models-service';
+import type { AdminStaticModelPresetCatalogItem } from './types';
 
 describe('import catalog pricing preview follows billing currency', () => {
 	it('USD branch uses $ and usd tier amounts', () => {
@@ -75,8 +76,8 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.ok(usd);
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'Gemini 4 Argon');
-		assert.equal(usd!.context_window, 1048576);
-		assert.equal(usd!.max_tokens, 1048576);
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 64000);
 		assert.equal(usd!.pricing_label, '$4 / $20 /M');
 		assert.equal(cny!.pricing_label, '¥28 / ¥140 /M');
 		const preset = listStaticModelPresets().find((p) => p.id === 'gemini-4-argon');
@@ -514,7 +515,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.ok(usd);
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'MiniMax M2.7 Highspeed');
-		assert.equal(usd!.context_window, 204800);
+		assert.equal(usd!.context_window, 200000);
 		assert.equal(usd!.max_tokens, 128000);
 		assert.equal(usd!.pricing_label, '$0.6 / $2.4 /M');
 		assert.equal(cny!.pricing_label, '¥4.2 / ¥16.8 /M');
@@ -532,13 +533,45 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cnyProfile?.tiers[0]?.cache_write_price, 2.625);
 	});
 
+	it('includes kimi-k3 with platform.kimi list prices including 5min cache_write_price', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'kimi-k3');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'kimi-k3');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Kimi K3');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 1000000);
+		assert.equal(usd!.pricing_label, '$3 / $15 /M');
+		assert.equal(cny!.pricing_label, '¥20 / ¥100 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'kimi-k3');
+		assert.ok(preset);
+		const usdProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.equal(usdProfile?.tiers[0]?.input_price, 3);
+		assert.equal(usdProfile?.tiers[0]?.output_price, 15);
+		assert.equal(usdProfile?.tiers[0]?.cache_read_price, 0.3);
+		assert.equal(usdProfile?.tiers[0]?.cache_write_price, 3);
+		assert.equal(cnyProfile?.tiers[0]?.input_price, 20);
+		assert.equal(cnyProfile?.tiers[0]?.output_price, 100);
+		assert.equal(cnyProfile?.tiers[0]?.cache_read_price, 2);
+		assert.equal(cnyProfile?.tiers[0]?.cache_write_price, 20);
+	});
+
+	it('marks kimi-k2.5 retired on the official offline date', () => {
+		const preset = listStaticModelPresets().find((p) => p.id === 'kimi-k2.5');
+		assert.ok(preset);
+		assert.equal(preset!.retired, '2026-08-31');
+		assert.equal(preset!.context_window, 256000);
+		assert.equal(preset!.max_tokens, 256000);
+	});
+
 	it('includes kimi-k2.7-code-highspeed with platform.kimi.ai USD and CNY list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'kimi-k2.7-code-highspeed');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'kimi-k2.7-code-highspeed');
 		assert.ok(usd);
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'Kimi K2.7 Code Highspeed');
-		assert.equal(usd!.context_window, 262144);
+		assert.equal(usd!.context_window, 256000);
 		assert.equal(usd!.pricing_label, '$1.9 / $8 /M');
 		assert.equal(cny!.pricing_label, '¥13 / ¥54 /M');
 		const preset = listStaticModelPresets().find((p) => p.id === 'kimi-k2.7-code-highspeed');
@@ -556,7 +589,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'Qwen3.8 2.4T-A95B');
 		assert.equal(usd!.context_window, 1000000);
-		assert.equal(usd!.max_tokens, 131072);
+		assert.equal(usd!.max_tokens, 128000);
 		assert.equal(cny!.pricing_label, '¥12 / ¥36 /M');
 		const preset = listStaticModelPresets().find((p) => p.id === 'qwen3.8-2.4t-a95b');
 		assert.ok(preset);
@@ -601,6 +634,36 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(usd!.display_name, 'Qwen3.8 Max Prime');
 		assert.equal(usd!.context_window, 1000000);
 		assert.equal(cny!.pricing_label, '¥24 / ¥72 /M');
+	});
+
+	it('includes qwen-image-2.1-turbo with DashScope per-image list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen-image-2.1-turbo');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen-image-2.1-turbo');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Qwen Image 2.1 Turbo');
+		assert.equal(usd!.kind, 'image');
+		assert.equal(usd!.context_window, null);
+		assert.equal(usd!.max_tokens, null);
+		const preset = listStaticModelPresets().find((p) => p.id === 'qwen-image-2.1-turbo');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-10-09');
+		assert.deepEqual(preset!.modalities?.input, ['text', 'image']);
+		assert.deepEqual(preset!.modalities?.output, ['image']);
+		const usdPricing = pickPresetPricingRawForBillingCurrency(preset!, 'USD') as {
+			image_billing_mode?: string;
+			image?: { default?: number };
+		};
+		assert.ok(usdPricing);
+		assert.equal(usdPricing.image_billing_mode, 'per_image');
+		assert.equal(usdPricing.image?.default, 0.016);
+		const cnyPricing = pickPresetPricingRawForBillingCurrency(preset!, 'CNY') as {
+			image_billing_mode?: string;
+			image?: { default?: number };
+		};
+		assert.ok(cnyPricing);
+		assert.equal(cnyPricing.image_billing_mode, 'per_image');
+		assert.equal(cnyPricing.image?.default, 0.1);
 	});
 
 	it('includes gemini-nano-banana-2.1 with Gemini API Standard list prices (CNY is USD × 7)', () => {
@@ -757,45 +820,44 @@ function doubaoTiers(id: string, billing: 'USD' | 'CNY') {
 	return profile!.tiers;
 }
 
-describe('MiniMax M3.1 Flash Preview catalog specs', () => {
-	it('records official limits and copies MiniMax M3 list prices until an official price exists', () => {
-		const preset = listStaticModelPresets().find((p) => p.id === 'minimax-m3.1-flash-preview');
-		const m3 = listStaticModelPresets().find((p) => p.id === 'minimax-m3');
+describe('MiniMax M3.1 Flash catalog specs', () => {
+	it('records the official single-tier list price and drops the preview id', () => {
+		const preset = listStaticModelPresets().find((p) => p.id === 'minimax-m3.1-flash');
 		assert.ok(preset);
-		assert.ok(m3);
-		const presetId = preset.id;
-		const m3Id = m3.id;
-		assert.equal(preset.display_name, 'MiniMax M3.1 Flash Preview');
+		assert.equal(listStaticModelPresets().some((p) => p.id === 'minimax-m3.1-flash-preview'), false);
+		assert.equal(preset.display_name, 'MiniMax M3.1 Flash');
 		assert.equal(preset.vendor, 'minimax');
 		assert.equal(preset.context_window, 1000000);
-		assert.equal(preset.max_tokens, 524288);
-		assert.equal(preset.released, undefined);
+		assert.equal(preset.max_tokens, 512000);
+		assert.equal(preset.released, '2026-10-19');
 		assert.equal(preset.retired, undefined);
 		assert.deepEqual(preset.modalities?.input, ['text', 'image', 'video']);
 		assert.deepEqual(preset.modalities?.output, ['text']);
-		assert.match(preset.description ?? '', /MiniMax-M3.1-Flash-Preview/);
-		assert.match(preset.description ?? '', /copied from the MiniMax M3 standard list price/i);
-		assert.match(preset.i18n?.zh ?? '', /按 MiniMax M3 标准刊例预填/);
-		assert.match(preset.i18n?.ja ?? '', /MiniMax M3 の標準定価を仮に入れています/);
-		assert.match(preset.i18n?.ko ?? '', /MiniMax M3 표준 정가를 임시로 넣었습니다/);
-		assert.deepEqual(preset.pricing, m3.pricing);
+		assert.match(preset.description ?? '', /tunable thinking depth/);
+		assert.match(preset.i18n?.zh ?? '', /Frontier Coding/);
+		assert.match(preset.i18n?.ja ?? '', /Frontier Coding/);
+		assert.match(preset.i18n?.ko ?? '', /Frontier Coding/);
+		const expected = {
+			USD: [{ upto: null, input_price: 0.15, output_price: 0.6, cache_read_price: 0.015, cache_write_price: null }],
+			CNY: [{ upto: null, input_price: 1, output_price: 4, cache_read_price: 0.1, cache_write_price: null }],
+		};
 		for (const billing of ['USD', 'CNY'] as const) {
-			const row = listStaticModelPresetCatalogForAdmin(billing).find((item) => item.id === presetId);
-			const m3Row = listStaticModelPresetCatalogForAdmin(billing).find((item) => item.id === m3Id);
+			const row: AdminStaticModelPresetCatalogItem | undefined =
+				listStaticModelPresetCatalogForAdmin(billing).find((item) => item.id === preset.id);
 			assert.ok(row, billing);
-			assert.ok(m3Row, billing);
 			assert.equal(row.kind, 'llm');
 			assert.equal(row.pricing_available, true);
-			assert.equal(row.pricing_label, m3Row.pricing_label);
 			assert.equal(row.context_window, 1000000);
-			assert.equal(row.max_tokens, 524288);
+			assert.equal(row.max_tokens, 512000);
 			const profile = parsePricingProfile(
 				coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset, billing))!,
 			);
-			const m3Profile = parsePricingProfile(
-				coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(m3, billing))!,
+			assert.deepEqual(
+				profile?.tiers.map((tier) =>
+					Object.fromEntries(TOKEN_TIER_KEYS.map((key) => [key, tier[key as keyof typeof tier]])),
+				),
+				expected[billing],
 			);
-			assert.deepEqual(profile?.tiers, m3Profile?.tiers);
 		}
 	});
 });
@@ -804,7 +866,7 @@ describe('Doubao Seed catalog list prices', () => {
 	it('adds doubao-seed-2-1-pro-260915 with CNY only', () => {
 		const preset = doubaoPreset('doubao-seed-2-1-pro-260915');
 		assert.equal(preset.display_name, 'Doubao Seed 2.1 Pro (260915)');
-		assert.equal(preset.context_window, 1000000);
+		assert.equal(preset.context_window, 1024000);
 		assert.equal(preset.max_tokens, 256000);
 		assert.equal(preset.released, '2026-09-15');
 		assert.equal(preset.retired, undefined);
@@ -822,12 +884,12 @@ describe('Doubao Seed catalog list prices', () => {
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
 		assert.ok(usd);
 		assert.ok(cny);
-		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.context_window, 1024000);
 		assert.equal(usd!.max_tokens, 256000);
 		assert.equal(usd!.pricing_available, false);
 		assert.equal(usd!.pricing_label, null);
 		assert.equal(cny!.pricing_label, '¥6 / ¥30 /M');
-		assert.equal(cny!.context_window, 1000000);
+		assert.equal(cny!.context_window, 1024000);
 		assert.equal(cny!.max_tokens, 256000);
 
 		const tiers = doubaoTiers(preset.id, 'CNY');
@@ -842,7 +904,7 @@ describe('Doubao Seed catalog list prices', () => {
 	it('adds doubao-seed-2-1-lite-260915 with CNY only', () => {
 		const preset = doubaoPreset('doubao-seed-2-1-lite-260915');
 		assert.equal(preset.display_name, 'Doubao Seed 2.1 Lite (260915)');
-		assert.equal(preset.context_window, 1000000);
+		assert.equal(preset.context_window, 1024000);
 		assert.equal(preset.max_tokens, 256000);
 		assert.equal(preset.released, '2026-09-15');
 		assert.equal(preset.retired, undefined);
@@ -864,12 +926,12 @@ describe('Doubao Seed catalog list prices', () => {
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
 		assert.ok(usd);
 		assert.ok(cny);
-		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.context_window, 1024000);
 		assert.equal(usd!.max_tokens, 256000);
 		assert.equal(usd!.pricing_available, false);
 		assert.equal(usd!.pricing_label, null);
 		assert.equal(cny!.pricing_label, '¥0.8 / ¥2.7 /M');
-		assert.equal(cny!.context_window, 1000000);
+		assert.equal(cny!.context_window, 1024000);
 		assert.equal(cny!.max_tokens, 256000);
 
 		const tiers = doubaoTiers(preset.id, 'CNY');

@@ -62,6 +62,7 @@ const VENDOR_VISUALS: Record<string, IconVisual> = {
 	together: { url: vendorIconAssets.together, accent: '#0f62fe' },
 	vercel: { url: vendorIconAssets.vercel, accent: '#000000' },
 	volcengine: { url: vendorIconAssets.volcengine, accent: '#00c8d7' },
+	wangsu: { url: vendorIconAssets.wangsu, accent: '#005bac' },
 	xai: { url: vendorIconAssets.xai, accent: '#6b7280' },
 	xiaomi: { url: vendorIconAssets.xiaomi, accent: '#ff6900' },
 	zenmux: { url: vendorIconAssets.zenmux, accent: '#7c5cff' },
