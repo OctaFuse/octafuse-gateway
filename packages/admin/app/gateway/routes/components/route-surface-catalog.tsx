@@ -271,10 +271,10 @@ function GroupToUpstreamBranch({
 	const singleGroup = branchCount === 1;
 
 	return (
-		<div className="relative py-3 xl:pl-4">
+		<div className="route-flow-branch relative py-3 xl:pl-4">
 			<BranchConnectors alignTop={!singleGroup} index={branchIndex} count={branchCount} colorClass={railColor} />
-			<div className={`grid min-w-0 gap-y-3 xl:grid-cols-[minmax(180px,240px)_minmax(0,1fr)] ${singleGroup ? 'xl:items-center' : 'xl:items-start'}`}>
-				<div className={`relative flex min-w-0 flex-col xl:pr-8 ${singleGroup ? '' : 'mt-3'}`}>
+			<div className={`route-flow-branch-layout grid min-w-0 gap-y-3 xl:grid-cols-[minmax(180px,240px)_minmax(0,1fr)] ${singleGroup ? 'xl:items-center' : 'xl:items-start'}`}>
+				<div className={`route-flow-group relative flex min-w-0 flex-col xl:pr-8 ${singleGroup ? '' : 'mt-3'}`}>
 					<RouteGroupInfo
 						centered={singleGroup}
 						modelId={card.model_id}
@@ -372,7 +372,7 @@ function ModelToGroupsBranch({
 		<div className="relative py-2 xl:pl-4">
 			<BranchConnectors index={modelIndex} count={modelCount} colorClass="bg-blue-300" />
 			<div className="xl:grid xl:grid-cols-[minmax(160px,220px)_minmax(0,1fr)]">
-				<div className="relative flex min-w-0 flex-col justify-center xl:pr-8">
+				<div className="route-flow-entry relative flex min-w-0 flex-col justify-center xl:pr-8">
 					<CatalogModelNode
 						card={card}
 						onEditModel={onEditModel}
@@ -453,7 +453,7 @@ function SurfaceCatalogSection({
 	const [collapsed, setCollapsed] = useState(false);
 	const routeCount = surface.models.reduce((sum, model) => sum + model.sections.reduce((n, section) => n + section.routes.length, 0), 0);
 	return (
-		<article className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+		<article className={`${density === 'list' ? 'route-flow-list-layout route-catalog-list-layout ' : ''}overflow-hidden rounded-xl border border-slate-200 bg-white`}>
 			<button type="button" onClick={() => setCollapsed(value => !value)} aria-expanded={!collapsed} className="flex w-full flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 focus-visible:outline-blue-500">
 				<ChevronDownIcon className={`h-4 w-4 text-slate-400 transition-transform ${collapsed ? '-rotate-90' : ''}`} aria-hidden />
 				<span className="text-xs font-semibold text-slate-800">{surface.protocolLabel}</span>

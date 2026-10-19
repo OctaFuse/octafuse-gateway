@@ -134,7 +134,7 @@ export function RouteTargetPricing({
 									title={t('editRoute')}
 									aria-label={`${t('editRoute')} · ${period}`}
 								>
-									<span className="min-w-0 whitespace-nowrap tabular-nums">{window ? formatScheduleRange(window.start, window.end) : period}</span>
+									<span className={`min-w-0 tabular-nums ${compact ? '[overflow-wrap:anywhere]' : 'whitespace-nowrap'}`}>{window ? formatScheduleRange(window.start, window.end) : period}</span>
 									{window && <span className="text-[10px] text-slate-500">{formatDays(window.days)}</span>}
 									{isCurrent && <span className="rounded bg-blue-50 px-1 text-[9px] font-medium leading-4 text-blue-600">{modal('catalogScheduleNow')}</span>}
 								</button>
