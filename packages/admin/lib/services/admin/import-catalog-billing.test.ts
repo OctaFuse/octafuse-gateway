@@ -4,6 +4,7 @@ import { parsePricingProfile } from '@octafuse/core/db/pricing-profile';
 import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/model-preset';
 import { coerceModelPricingProfileInput } from './pricing-input';
 import { listStaticModelPresetCatalogForAdmin } from './models-service';
+import type { AdminStaticModelPresetCatalogItem } from './types';
 
 describe('import catalog pricing preview follows billing currency', () => {
 	it('USD branch uses $ and usd tier amounts', () => {
@@ -841,7 +842,8 @@ describe('MiniMax M3.1 Flash catalog specs', () => {
 			CNY: [{ upto: null, input_price: 1, output_price: 4, cache_read_price: 0.1, cache_write_price: null }],
 		};
 		for (const billing of ['USD', 'CNY'] as const) {
-			const row = listStaticModelPresetCatalogForAdmin(billing).find((item) => item.id === preset.id);
+			const row: AdminStaticModelPresetCatalogItem | undefined =
+				listStaticModelPresetCatalogForAdmin(billing).find((item) => item.id === preset.id);
 			assert.ok(row, billing);
 			assert.equal(row.kind, 'llm');
 			assert.equal(row.pricing_available, true);

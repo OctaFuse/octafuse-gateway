@@ -1,0 +1,14 @@
+---
+description: 改过 Admin、Core、Proxy 或 Docker 后，任务结束前必须跑通 typecheck:admin
+alwaysApply: true
+---
+
+# 任务结束前跑 Admin 类型检查
+
+本次改动碰到 `packages/admin`、`packages/core`、`packages/proxy`、`Dockerfile*` 或 `docker/**` 时，宣布完成前必须在仓库根跑通：
+
+```bash
+npm run typecheck:admin
+```
+
+约 10 秒。`verify` 不包含这次检查。没改这些路径就不必跑。不要用完整 Docker 冒烟代替这次检查，也不要等 PR 的 `typecheck-admin` / `smoke-node-pg`。
