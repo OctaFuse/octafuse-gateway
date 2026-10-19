@@ -22,7 +22,7 @@ alwaysApply: false
 
 ## 3. 静态目录写刊例价
 
-改 `packages/admin/lib/model-presets/`（LLM / 生图 / 音频分开），补 `import-catalog-billing` 测试。模型类型（llm / image / asr / tts / embedding）由模态与计费模式派生，写预设时对照 `docs/developers/reference/model-kinds.md`：ASR 输入含 audio、输出 text，计费 `per_second` / `token`；TTS 输入 text、输出 audio，计费 `per_character`；`model-kind-presets.test.ts` 会拦截矛盾预设。USD 与 CNY 取各自官方刊例（国内厂商取中国区官网价，如 Z.AI vs BigModel 分别取）。厂商没有官方人民币标价时，`pricing.cny` 一律按 `USD × 7` 占位，并在 `description` 与 `i18n` 末尾注明“人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例”；不要留空，也不要用实时汇率。每个带 `pricing.usd` 的预设都必须有 `pricing.cny`，`import-catalog-billing.test.ts` 会拦截缺失。折扣只记现状，preset 里写**刊例价**，不写限时活动价。
+改 `packages/admin/lib/model-presets/`（LLM / 生图 / 向量 / 音频 ASR / 音频 TTS 分开；音频文件名为 `<vendor>-audio-asr.json` 与 `<vendor>-audio-tts.json`），补 `import-catalog-billing` 测试。模型类型（llm / image / asr / tts / embedding）由模态与计费模式派生，写预设时对照 `docs/developers/reference/model-kinds.md`：ASR 输入含 audio、输出 text，计费 `per_second` / `token`；TTS 输入 text、输出 audio，计费 `per_character`；`model-kind-presets.test.ts` 会拦截矛盾预设。USD 与 CNY 取各自官方刊例（国内厂商取中国区官网价，如 Z.AI vs BigModel 分别取）。厂商没有官方人民币标价时，`pricing.cny` 一律按 `USD × 7` 占位，并在 `description` 与 `i18n` 末尾注明“人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例”；不要留空，也不要用实时汇率。每个带 `pricing.usd` 的预设都必须有 `pricing.cny`，`import-catalog-billing.test.ts` 会拦截缺失。折扣只记现状，preset 里写**刊例价**，不写限时活动价。
 
 **退役日期 `retired`（`YYYY-MM-DD`）**：只依据厂商官方 deprecations / 下线公告填写厂商停止提供该模型的日期；未公布日期（含“not sooner than”之类的下限）一律不写。日期不晚于今天即视为退役，晚于今天在 Admin 显示“将于 X 退役”。加新模型与定期巡检都要对照官方下线页。该字段仅作元数据，不影响路由与计费。
 

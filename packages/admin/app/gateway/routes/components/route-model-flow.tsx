@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
 	ArrowDownIcon,
 	ArrowsUpDownIcon,
 	CheckCircleIcon,
+	CheckIcon,
 	ClipboardDocumentIcon,
 	PencilSquareIcon,
 	PlusIcon,
@@ -48,6 +49,7 @@ import { ProviderStickyChip } from './provider-sticky-chip';
 import { RouteStickyUsage } from './route-sticky-usage';
 import { RouteTargetPricing } from './route-target-pricing';
 import { useRoutePricingDisplay } from '../use-route-pricing-display';
+import { useRoutePathDisplay } from '../use-route-path-display';
 
 const EMPTY_STICKY_COUNTS = new Map<string, number>();
 
@@ -416,11 +418,29 @@ export function RequestSurfaceNode({
 	modelId?: string;
 }) {
 	const t = useTranslations('routes.flow');
+	const tGuide = useTranslations('routes.modal.guide');
+	const tCommon = useTranslations('common');
+	const [pathDisplay] = useRoutePathDisplay();
+	const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
+	useEffect(() => {
+		if (copyStatus === 'idle') return;
+		const timer = setTimeout(() => setCopyStatus('idle'), 2500);
+		return () => clearTimeout(timer);
+	}, [copyStatus]);
 	const surfacePath = requestSurfacePath(
 		surface.protocol,
 		surface.requestOperation,
 		modelId
 	);
+
+	async function copyPath() {
+		try {
+			await navigator.clipboard.writeText(surfacePath);
+			setCopyStatus('copied');
+		} catch {
+			setCopyStatus('failed');
+		}
+	}
 
 	return (
 		<div className="w-full min-w-0 rounded-lg border border-blue-200 bg-blue-50/75 px-3 py-2.5 shadow-sm">
@@ -428,22 +448,38 @@ export function RequestSurfaceNode({
 				<span className="text-[10px] font-semibold uppercase tracking-wider text-blue-600">
 					{t('requestNode')}
 				</span>
-				<span
-					className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded ring-1 ring-inset ${protocolBadgeClass(surface.protocol)}`}
-					title={surface.protocolLabel}
-					aria-label={surface.protocolLabel}
-				>
-					<UpstreamProtocolBrandIcon protocol={surface.protocol} />
-				</span>
+				<div className="ml-auto flex shrink-0 items-center gap-1.5">
+					<button
+						type="button"
+						onClick={() => void copyPath()}
+						aria-label={copyStatus === 'copied' ? tCommon('copied') : tGuide('copyPath')}
+						title={copyStatus === 'copied' ? tCommon('copied') : tGuide('copyPath')}
+						className="rounded p-0.5 text-blue-500 hover:bg-blue-100 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+					>
+						{copyStatus === 'copied' ? <CheckIcon className="h-3.5 w-3.5" aria-hidden /> : <ClipboardDocumentIcon className="h-3.5 w-3.5" aria-hidden />}
+					</button>
+					<span
+						className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded ring-1 ring-inset ${protocolBadgeClass(surface.protocol)}`}
+						title={surface.protocolLabel}
+						aria-label={surface.protocolLabel}
+					>
+						<UpstreamProtocolBrandIcon protocol={surface.protocol} />
+					</span>
+				</div>
 			</div>
 			<div className="mt-1.5 min-w-0">
-				<span
-					className="block min-w-0 truncate font-mono text-[11px] font-semibold text-gray-800"
+				<code
+					className={`block w-full min-w-0 select-text font-mono text-[11px] font-semibold leading-4 text-gray-800 ${pathDisplay === 'full' ? 'whitespace-normal [overflow-wrap:anywhere]' : 'truncate'}`}
 					title={surfacePath}
 				>
-					{surfacePath}
-				</span>
+					{pathDisplay === 'full' ? surfacePath.split(/(?=\/)/).map((segment, index) => (
+						<span key={index}><wbr />{segment}</span>
+					)) : surfacePath}
+				</code>
 			</div>
+			<span role="status" className={copyStatus === 'failed' ? 'mt-1 block text-[10px] text-red-600' : 'sr-only'}>
+				{copyStatus === 'failed' ? tGuide('copyFailed') : copyStatus === 'copied' ? tCommon('copied') : ''}
+			</span>
 		</div>
 	);
 }

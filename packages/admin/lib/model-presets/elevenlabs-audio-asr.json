@@ -1,0 +1,110 @@
+[
+	{
+		"id": "elevenlabs-scribe-v2",
+		"display_name": "ElevenLabs Scribe v2",
+		"description": "ElevenLabs Scribe v2 speech-to-text for POST /v1/speech-to-text (file transcription): 90+ languages, word-level timestamps, speaker diarization, and audio event tagging. Set the route provider model name to scribe_v2. Use elevenlabs-asr-file for OpenAI /v1/audio/transcriptions, or ElevenLabs audio.transcriptions passthrough for the native endpoint. Official list price $0.22 per hour; gateway meters by audio duration (per second). Optional keyterm prompting ($0.05/hour) and transcript editing ($0.07/hour) are billed extra by ElevenLabs and not included. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+		"i18n": {
+			"en": "ElevenLabs Scribe v2 speech-to-text for POST /v1/speech-to-text (file transcription): 90+ languages, word-level timestamps, speaker diarization, and audio event tagging. Set the route provider model name to scribe_v2. Use elevenlabs-asr-file for OpenAI /v1/audio/transcriptions, or ElevenLabs audio.transcriptions passthrough for the native endpoint. Official list price $0.22 per hour; gateway meters by audio duration (per second). Optional keyterm prompting ($0.05/hour) and transcript editing ($0.07/hour) are billed extra by ElevenLabs and not included. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+			"zh": "ElevenLabs Scribe v2 语音转写，对应 POST /v1/speech-to-text（文件转写）：支持 90+ 种语言、词级时间戳、说话人识别和音频事件标注。供应商模型名填 scribe_v2。OpenAI /v1/audio/transcriptions 用适配器 elevenlabs-asr-file，原生端点用 audio.transcriptions 透传。官方刊例价 $0.22/小时；网关按音频时长（秒）计量。关键词提示（$0.05/小时）和转写编辑（$0.07/小时）由 ElevenLabs 另计费，不含在内。人民币价格为美元刊例价 ×7 的换算占位价，并非官方人民币刊例。",
+			"ja": "ElevenLabs Scribe v2 の音声文字起こしで、POST /v1/speech-to-text（ファイル文字起こし）に対応します。90以上の言語、単語単位のタイムスタンプ、話者分離、音声イベントのタグ付けが使えます。ルートのプロバイダーモデル名は scribe_v2 です。OpenAI /v1/audio/transcriptions はアダプター elevenlabs-asr-file、ネイティブは audio.transcriptions のパススルーです。定価は1時間あたり $0.22 で、ゲートウェイは音声の長さ（秒）で計量します。キーワード指定（1時間 $0.05）と文字起こしの修正（1時間 $0.07）は ElevenLabs が別料金で、この定価には入りません。人民元の価格は米ドル定価の7倍で換算した仮価格であり、公式の人民元定価ではありません。",
+			"ko": "ElevenLabs Scribe v2 음성 받아쓰기로, POST /v1/speech-to-text(파일 받아쓰기)에 해당합니다. 90개 이상의 언어, 단어 단위 타임스탬프, 화자 분리, 오디오 이벤트 태그를 지원합니다. 라우트의 공급자 모델명은 scribe_v2입니다. OpenAI /v1/audio/transcriptions는 어댑터 elevenlabs-asr-file, 네이티브는 audio.transcriptions 패스스루입니다. 정가는 시간당 $0.22이며, 게이트웨이는 오디오 길이(초)로 계량합니다. 키워드 지정(시간당 $0.05)과 받아쓰기 수정(시간당 $0.07)은 ElevenLabs가 따로 과금하며, 이 정가에 포함되지 않습니다. 위안화 가격은 미국 달러 정가의 7배로 환산한 임시 가격이며, 공식 위안화 정가가 아닙니다."
+		},
+		"vendor": "elevenlabs",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 6.111e-05,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00042777,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": [
+				"audio"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
+		"id": "elevenlabs-scribe-v2-medical",
+		"display_name": "ElevenLabs Scribe v2 Medical",
+		"description": "ElevenLabs Scribe v2 Medical speech-to-text, a Scribe v2 fine-tune for clinical audio with better recognition of drug names, anatomy, and pathology terms. Same API and price as Scribe v2: POST /v1/speech-to-text, 90+ languages, word-level timestamps, speaker diarization. Set the route provider model name to scribe_v2_medical. Use elevenlabs-asr-file for OpenAI /v1/audio/transcriptions, or ElevenLabs audio.transcriptions passthrough for the native endpoint. Official list price $0.22 per hour; gateway meters by audio duration (per second). Batch only; optional keyterm prompting and transcript editing are billed extra by ElevenLabs and not included. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+		"i18n": {
+			"en": "ElevenLabs Scribe v2 Medical speech-to-text, a Scribe v2 fine-tune for clinical audio with better recognition of drug names, anatomy, and pathology terms. Same API and price as Scribe v2: POST /v1/speech-to-text, 90+ languages, word-level timestamps, speaker diarization. Set the route provider model name to scribe_v2_medical. Use elevenlabs-asr-file for OpenAI /v1/audio/transcriptions, or ElevenLabs audio.transcriptions passthrough for the native endpoint. Official list price $0.22 per hour; gateway meters by audio duration (per second). Batch only; optional keyterm prompting and transcript editing are billed extra by ElevenLabs and not included. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+			"zh": "ElevenLabs Scribe v2 Medical 语音转写，是 Scribe v2 针对临床音频的微调版本，对药名、解剖和病理术语识别更准。接口和价格与 Scribe v2 相同：POST /v1/speech-to-text，支持 90+ 种语言、词级时间戳和说话人识别。供应商模型名填 scribe_v2_medical。OpenAI /v1/audio/transcriptions 用适配器 elevenlabs-asr-file，原生端点用 audio.transcriptions 透传。官方刊例价 $0.22/小时；网关按音频时长（秒）计量。仅支持批量转写；关键词提示、转写编辑等附加功能由 ElevenLabs 另计费，不含在内。人民币价格为美元刊例价 ×7 的换算占位价，并非官方人民币刊例。",
+			"ja": "ElevenLabs Scribe v2 Medical の音声文字起こしです。Scribe v2 を臨床音声向けに微調整したもので、薬剤名、解剖、病理の用語がより正確です。API と価格は Scribe v2 と同じで、POST /v1/speech-to-text、90以上の言語、単語単位のタイムスタンプ、話者分離に対応します。ルートのプロバイダーモデル名は scribe_v2_medical です。OpenAI /v1/audio/transcriptions はアダプター elevenlabs-asr-file、ネイティブは audio.transcriptions のパススルーです。定価は1時間あたり $0.22 で、ゲートウェイは音声の長さ（秒）で計量します。バッチ文字起こしのみです。キーワード指定や文字起こしの修正は ElevenLabs が別料金で、この定価には入りません。人民元の価格は米ドル定価の7倍で換算した仮価格であり、公式の人民元定価ではありません。",
+			"ko": "ElevenLabs Scribe v2 Medical 음성 받아쓰기입니다. Scribe v2를 임상 오디오에 맞게 미세조정한 버전으로, 약명, 해부, 병리 용어를 더 정확히 잡습니다. API와 가격은 Scribe v2와 같고, POST /v1/speech-to-text, 90개 이상의 언어, 단어 단위 타임스탬프, 화자 분리를 지원합니다. 라우트의 공급자 모델명은 scribe_v2_medical입니다. OpenAI /v1/audio/transcriptions는 어댑터 elevenlabs-asr-file, 네이티브는 audio.transcriptions 패스스루입니다. 정가는 시간당 $0.22이며, 게이트웨이는 오디오 길이(초)로 계량합니다. 배치 받아쓰기만 됩니다. 키워드 지정과 받아쓰기 수정은 ElevenLabs가 따로 과금하며, 이 정가에 포함되지 않습니다. 위안화 가격은 미국 달러 정가의 7배로 환산한 임시 가격이며, 공식 위안화 정가가 아닙니다."
+		},
+		"vendor": "elevenlabs",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 6.111e-05,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00042777,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": [
+				"audio"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
+		"id": "elevenlabs-scribe-v2-realtime",
+		"display_name": "ElevenLabs Scribe v2 Realtime",
+		"description": "ElevenLabs Scribe v2 Realtime speech-to-text over WebSocket (GET /v1/speech-to-text/realtime): low-latency streaming transcription with partial and committed transcripts, 90+ languages. Set the route provider model name to scribe_v2_realtime and use the ElevenLabs audio.transcriptions.realtime passthrough; the OpenAI /v1/audio/transcriptions endpoint is not supported for this model. Official list price $0.39 per hour; the gateway meters per second from the audio bytes the client sends (using the session audio_format), so it is an estimate to reconcile against the ElevenLabs dashboard. Browsers cannot set the xi-api-key header: authenticate with the Sec-WebSocket-Protocol token octafuse-api-key.<key>. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+		"i18n": {
+			"en": "ElevenLabs Scribe v2 Realtime speech-to-text over WebSocket (GET /v1/speech-to-text/realtime): low-latency streaming transcription with partial and committed transcripts, 90+ languages. Set the route provider model name to scribe_v2_realtime and use the ElevenLabs audio.transcriptions.realtime passthrough; the OpenAI /v1/audio/transcriptions endpoint is not supported for this model. Official list price $0.39 per hour; the gateway meters per second from the audio bytes the client sends (using the session audio_format), so it is an estimate to reconcile against the ElevenLabs dashboard. Browsers cannot set the xi-api-key header: authenticate with the Sec-WebSocket-Protocol token octafuse-api-key.<key>. CNY price is the USD list price × 7 (placeholder, not an official RMB list price).",
+			"zh": "ElevenLabs Scribe v2 Realtime 实时转写（WebSocket，GET /v1/speech-to-text/realtime）：低延迟流式转写，返回临时与已提交转写文本，支持 90+ 种语言。供应商模型名填 scribe_v2_realtime，路由适配器用 ElevenLabs audio.transcriptions.realtime 透传；该模型不支持 OpenAI /v1/audio/transcriptions。官方刊例价 $0.39/小时；网关按客户端发出的音频字节（结合会话的 audio_format）折算成秒计量，属估算，需与 ElevenLabs 控制台对账。浏览器无法设置 xi-api-key 请求头，请用 Sec-WebSocket-Protocol 子协议 octafuse-api-key.<key> 鉴权。人民币价格为美元刊例价 ×7 的换算占位价，并非官方人民币刊例。",
+			"ja": "ElevenLabs Scribe v2 Realtime のリアルタイム文字起こしです（WebSocket、GET /v1/speech-to-text/realtime）。低レイテンシのストリーミングで、途中結果と確定した文字起こしを返し、90以上の言語に対応します。ルートのプロバイダーモデル名は scribe_v2_realtime、アダプターは ElevenLabs audio.transcriptions.realtime のパススルーです。このモデルは OpenAI /v1/audio/transcriptions には対応しません。定価は1時間あたり $0.39 です。ゲートウェイはクライアントが送った音声バイトを、セッションの audio_format から秒に換算して計量するので、見積もりです。ElevenLabs の管理画面と突き合わせてください。ブラウザは xi-api-key ヘッダーを付けられないため、Sec-WebSocket-Protocol のサブプロトコル octafuse-api-key.<key> で認証します。人民元の価格は米ドル定価の7倍で換算した仮価格であり、公式の人民元定価ではありません。",
+			"ko": "ElevenLabs Scribe v2 Realtime 실시간 받아쓰기입니다(WebSocket, GET /v1/speech-to-text/realtime). 저지연 스트리밍으로 임시 결과와 확정된 받아쓰기를 돌려주며, 90개 이상의 언어를 지원합니다. 라우트의 공급자 모델명은 scribe_v2_realtime, 어댑터는 ElevenLabs audio.transcriptions.realtime 패스스루입니다. 이 모델은 OpenAI /v1/audio/transcriptions를 지원하지 않습니다. 정가는 시간당 $0.39입니다. 게이트웨이는 클라이언트가 보낸 오디오 바이트를 세션의 audio_format으로 초에 환산해 계량하므로 추정치입니다. ElevenLabs 콘솔과 맞춰 보세요. 브라우저는 xi-api-key 헤더를 넣을 수 없으므로, Sec-WebSocket-Protocol 서브프로토콜 octafuse-api-key.<key>로 인증합니다. 위안화 가격은 미국 달러 정가의 7배로 환산한 임시 가격이며, 공식 위안화 정가가 아닙니다."
+		},
+		"vendor": "elevenlabs",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00010833,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00075833,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": [
+				"audio"
+			],
+			"output": [
+				"text"
+			]
+		}
+	}
+]

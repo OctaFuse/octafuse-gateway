@@ -51,7 +51,7 @@ export type AudioPricingDraftState = {
 	tiers: PricingTierDraftRow[];
 };
 
-/** 新建 Audio 模型默认价（per_second；对齐 openai-audio.json whisper USD：0.0001 / 最低 1 秒）。 */
+/** 新建 Audio 模型默认价（per_second；对齐 openai-audio-asr.json whisper USD：0.0001 / 最低 1 秒）。 */
 export function createDefaultAudioPricingDraft(): AudioPricingDraftState {
 	return {
 		mode: 'per_second',

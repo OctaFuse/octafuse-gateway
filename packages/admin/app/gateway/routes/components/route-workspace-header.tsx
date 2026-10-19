@@ -7,6 +7,7 @@ import type { StickyRefreshIntervalMs } from '../sticky-refresh-preference';
 import type { RouteFlowDensity, RouteWorkspaceView } from '../types';
 import { StickyRefreshControl } from './sticky-refresh-control';
 import { useRoutePricingDisplay } from '../use-route-pricing-display';
+import { useRoutePathDisplay } from '../use-route-path-display';
 
 type Props = {
 	visibleModelCount: number;
@@ -28,6 +29,7 @@ export function RouteWorkspaceHeader(props: Props) {
 	const { visibleModelCount, visibleRouteCount, density, onDensityChange, view, onViewChange, stickyRefreshIntervalMs } = props;
 	const t = useTranslations('routes.workspace');
 	const [pricingDisplay, setPricingDisplay] = useRoutePricingDisplay();
+	const [pathDisplay, setPathDisplay] = useRoutePathDisplay();
 
 	return (
 		<div className="md:sticky md:top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm sm:px-6">
@@ -95,6 +97,23 @@ export function RouteWorkspaceHeader(props: Props) {
 								className={viewSwitchButtonClass(pricingDisplay === value)}
 							>
 								{t(value === 'effective' ? 'pricingDisplayEffective' : 'pricingDisplayConfigured')}
+							</button>
+						))}
+					</div>
+				</div>
+				<div className="flex items-center gap-2" role="group" aria-label={t('pathDisplayLabel')}>
+					<span className="shrink-0 text-xs text-slate-500">{t('pathDisplayLabel')}</span>
+					<div className={VIEW_SWITCH_GROUP_CLASS}>
+						{(['full', 'compact'] as const).map(value => (
+							<button
+								key={value}
+								type="button"
+								onClick={() => setPathDisplay(value)}
+								aria-pressed={pathDisplay === value}
+								title={t(value === 'full' ? 'pathDisplayFullHint' : 'pathDisplayCompactHint')}
+								className={viewSwitchButtonClass(pathDisplay === value)}
+							>
+								{t(value === 'full' ? 'pathDisplayFull' : 'pathDisplayCompact')}
 							</button>
 						))}
 					</div>

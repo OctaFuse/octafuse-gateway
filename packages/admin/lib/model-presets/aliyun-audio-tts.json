@@ -1,0 +1,260 @@
+[
+	{
+		"id": "qwen-audio-3.0-tts-plus",
+		"display_name": "Qwen Audio 3.0 TTS Plus",
+		"description": "DashScope high-quality text-to-speech model billed by generated characters.",
+		"i18n": {
+			"en": "DashScope high-quality text-to-speech model billed by generated characters.",
+			"zh": "DashScope 高质量语音合成模型，按生成字符数计费。",
+			"ja": "DashScope の高品質な音声合成です。生成した文字数で課金します。",
+			"ko": "DashScope 고품질 음성 합성입니다. 생성한 글자 수로 과금합니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.00002,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.00014,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
+	},
+	{
+		"id": "qwen-audio-3.0-tts-flash",
+		"display_name": "Qwen Audio 3.0 TTS Flash",
+		"description": "DashScope low-latency text-to-speech model billed by generated characters.",
+		"i18n": {
+			"en": "DashScope low-latency text-to-speech model billed by generated characters.",
+			"zh": "DashScope 低延迟语音合成模型，按生成字符数计费。",
+			"ja": "DashScope の低レイテンシ音声合成です。生成した文字数で課金します。",
+			"ko": "DashScope 저지연 음성 합성입니다. 생성한 글자 수로 과금합니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.000015,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.0001,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
+	},
+	{
+		"id": "cosyvoice-v1",
+		"display_name": "CosyVoice V1",
+		"description": "DashScope text-to-speech model with streaming synthesis support.",
+		"i18n": {
+			"en": "DashScope text-to-speech model with streaming synthesis support.",
+			"zh": "DashScope CosyVoice V1 语音合成模型，支持流式合成。",
+			"ja": "DashScope CosyVoice V1 の音声合成です。ストリーミング合成に対応しています。",
+			"ko": "DashScope CosyVoice V1 음성 합성입니다. 스트리밍 합성을 지원합니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.0000285714286,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.0002,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
+	},
+	{
+		"id": "cosyvoice-v2",
+		"display_name": "CosyVoice V2",
+		"description": "DashScope text-to-speech model with streaming synthesis support.",
+		"i18n": {
+			"en": "DashScope text-to-speech model with streaming synthesis support.",
+			"zh": "DashScope CosyVoice V2 语音合成模型，支持流式合成。",
+			"ja": "DashScope CosyVoice V2 の音声合成です。ストリーミング合成に対応しています。",
+			"ko": "DashScope CosyVoice V2 음성 합성입니다. 스트리밍 합성을 지원합니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.0000285714286,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.0002,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
+	},
+	{
+		"id": "cosyvoice-v3-flash",
+		"display_name": "CosyVoice V3 Flash",
+		"description": "DashScope low-latency text-to-speech model billed by generated characters.",
+		"i18n": {
+			"en": "DashScope low-latency text-to-speech model billed by generated characters.",
+			"zh": "DashScope CosyVoice V3 Flash 低延迟语音合成模型。",
+			"ja": "DashScope CosyVoice V3 Flash の低レイテンシ音声合成です。",
+			"ko": "DashScope CosyVoice V3 Flash 저지연 음성 합성입니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.000013,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.0001,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
+	},
+	{
+		"id": "cosyvoice-v3-plus",
+		"display_name": "CosyVoice V3 Plus",
+		"description": "DashScope high-quality text-to-speech model billed by generated characters.",
+		"i18n": {
+			"en": "DashScope high-quality text-to-speech model billed by generated characters.",
+			"zh": "DashScope CosyVoice V3 Plus 高质量语音合成模型。",
+			"ja": "DashScope CosyVoice V3 Plus の高品質な音声合成です。",
+			"ko": "DashScope CosyVoice V3 Plus 고품질 음성 합성입니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.000026,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.0002,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
+	},
+	{
+		"id": "cosyvoice-v3.5-flash",
+		"display_name": "CosyVoice V3.5 Flash",
+		"description": "DashScope CosyVoice 3.5 Flash TTS with voice cloning/design and instruction control; billed by generated characters.",
+		"i18n": {
+			"en": "DashScope CosyVoice 3.5 Flash TTS with voice cloning/design and instruction control; billed by generated characters.",
+			"zh": "DashScope CosyVoice V3.5 Flash 语音合成，支持声音复刻/设计与指令控制，按生成字符数计费。",
+			"ja": "DashScope CosyVoice V3.5 Flash の音声合成です。ボイスクローン、声のデザイン、指示による制御に対応し、生成した文字数で課金します。",
+			"ko": "DashScope CosyVoice V3.5 Flash 음성 합성입니다. 보이스 클로닝, 보이스 디자인, 지시 제어를 지원하고, 생성한 글자 수로 과금합니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.0000114285714,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.00008,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		},
+		"released": "2026-02-27"
+	},
+	{
+		"id": "cosyvoice-v3.5-plus",
+		"display_name": "CosyVoice V3.5 Plus",
+		"description": "DashScope CosyVoice 3.5 Plus high-expressiveness TTS with voice cloning/design and instruction control; billed by generated characters.",
+		"i18n": {
+			"en": "DashScope CosyVoice 3.5 Plus high-expressiveness TTS with voice cloning/design and instruction control; billed by generated characters.",
+			"zh": "DashScope CosyVoice V3.5 Plus 高表现力语音合成，支持声音复刻/设计与指令控制，按生成字符数计费。",
+			"ja": "DashScope CosyVoice V3.5 Plus の表現力の高い音声合成です。ボイスクローン、声のデザイン、指示による制御に対応し、生成した文字数で課金します。",
+			"ko": "DashScope CosyVoice V3.5 Plus의 표현력 높은 음성 합성입니다. 보이스 클로닝, 보이스 디자인, 지시 제어를 지원하고, 생성한 글자 수로 과금합니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.0000214285714,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.00015,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		},
+		"released": "2026-02-27"
+	}
+]

@@ -58,7 +58,7 @@ function isAudioPresetPricing(usd: PresetPricingJson | null | undefined): boolea
 	return false;
 }
 
-describe('static audio model presets (*-audio.json)', () => {
+describe('static audio model presets (*-audio-asr.json / *-audio-tts.json)', () => {
 	it('every audio preset uses an explicit audio billing mode', () => {
 		const audioRows = listStaticModelPresets().filter((r) =>
 			isAudioPresetPricing(asPricing(r.pricing.usd))
