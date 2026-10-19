@@ -136,15 +136,25 @@
   justify-self: start;
 }
 
-/* Bound the whole flow too, so unused space stays outside the diagram. */
-.route-model-list-layout {
+/* Model and surface sections fill the workspace; only provider tables are capped. */
+.route-flow-list-layout {
   width: 100%;
-  max-width: 112rem;
 }
 
-.route-catalog-list-layout {
-  width: 100%;
-  max-width: 126rem;
+/* Separate request surfaces with breathing room and a quiet, inset rule. */
+.route-model-list-surfaces > * + * {
+  position: relative;
+  margin-top: 1rem;
+  padding-top: 1.25rem;
+}
+
+.route-model-list-surfaces > * + *::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  inset-inline: 1rem;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgb(148 163 184 / 0.3) 15%, rgb(148 163 184 / 0.3) 85%, transparent);
 }
 
 .route-provider-list-grid {

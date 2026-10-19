@@ -1003,7 +1003,7 @@ export function RouteModelFlow(props: Props) {
 				</div>
 			</header>
 
-			<div className="divide-y divide-slate-300/80 bg-slate-200/80 px-3 py-3 sm:px-4">
+			<div className={`${density === 'list' ? 'route-model-list-surfaces' : 'divide-y divide-slate-300/80'} bg-slate-200/80 px-3 py-3 sm:px-4`}>
 				{surfaceGroups.length ? surfaceGroups.map((surface) => (
 					<FlowSection
 						key={surface.key}

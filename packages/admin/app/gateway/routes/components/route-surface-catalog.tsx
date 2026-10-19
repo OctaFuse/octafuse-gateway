@@ -453,7 +453,7 @@ function SurfaceCatalogSection({
 	const [collapsed, setCollapsed] = useState(false);
 	const routeCount = surface.models.reduce((sum, model) => sum + model.sections.reduce((n, section) => n + section.routes.length, 0), 0);
 	return (
-		<article className={`${density === 'list' ? 'route-flow-list-layout route-catalog-list-layout ' : ''}overflow-hidden rounded-xl border border-slate-200 bg-white`}>
+		<article className={`${density === 'list' ? 'route-flow-list-layout ' : ''}overflow-hidden rounded-xl border border-slate-200 bg-white`}>
 			<button type="button" onClick={() => setCollapsed(value => !value)} aria-expanded={!collapsed} className="flex w-full flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 focus-visible:outline-blue-500">
 				<ChevronDownIcon className={`h-4 w-4 text-slate-400 transition-transform ${collapsed ? '-rotate-90' : ''}`} aria-hidden />
 				<span className="text-xs font-semibold text-slate-800">{surface.protocolLabel}</span>
