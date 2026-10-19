@@ -38,7 +38,8 @@ export function RouteBillingFactors({
 	locked: boolean;
 	timezone: string;
 	onChange: (form: RouteFormData) => void;
-	renderPrices?: (index: number) => ReactNode;
+	/** `null` 表示未命中下方时段时的兜底行（其他时段 / 全部时段）。 */
+	renderPrices?: (index: number | null) => ReactNode;
 }) {
 	const t = useTranslations('routes.modal');
 	const common = useTranslations('common');
@@ -349,7 +350,7 @@ export function RouteBillingFactors({
 									</div>
 								</div>
 							) : null}
-							{row && renderPrices ? <div className="mt-2">{renderPrices(index)}</div> : null}
+							{renderPrices ? <div className="mt-2">{renderPrices(row ? index : null)}</div> : null}
 						</fieldset>
 					);
 				})}
