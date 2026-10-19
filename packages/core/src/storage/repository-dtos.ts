@@ -263,6 +263,12 @@ export interface ProviderReliabilityRow {
 	success_count: number;
 	error_count: number;
 	avg_latency_ms: number | null;
+	avg_first_reasoning_token_ms: number | null;
+	avg_first_token_ms: number | null;
+	avg_effective_ttft_ms: number | null;
+	avg_reasoning_phase_ms: number | null;
+	reasoning_ttft_rate: number;
+	content_ttft_rate: number;
 	avg_upstream_response_ms: number | null;
 	failover_rate: number;
 	/** Requests with at least one failover; legacy failover_rate counts events per 100 requests. */
@@ -282,6 +288,12 @@ export interface ModelProviderReliabilityRow {
 	request_count: number;
 	success_count: number;
 	avg_latency_ms: number | null;
+	avg_first_reasoning_token_ms: number | null;
+	avg_first_token_ms: number | null;
+	avg_effective_ttft_ms: number | null;
+	avg_reasoning_phase_ms: number | null;
+	reasoning_ttft_rate: number;
+	content_ttft_rate: number;
 	avg_upstream_response_ms: number | null;
 	failover_rate: number;
 	/** Requests with at least one failover; legacy failover_rate counts events per 100 requests. */

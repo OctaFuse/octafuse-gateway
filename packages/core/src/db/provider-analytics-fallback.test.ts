@@ -136,4 +136,32 @@ describe('analytics sampled quality metrics', () => {
     assert.ok(rows.every(r => r.failover_request_rate === 0));
     assert.deepEqual(await analytics.queryModelAnalytics({ start: END, end: END }), []);
   });
+
+  it('averages first-token timings on reliability rows and ignores requests without a sample', async () => {
+    const analytics = createAnalyticsDb(sqlite => {
+      sqlite.exec(`DELETE FROM api_key_request_logs;
+        INSERT INTO api_key_request_logs
+          (id, provider_id, model_id, created_at, status, first_reasoning_token_ms, first_token_ms)
+        VALUES
+          ('reasoned', 'live', 'model-a', '${AT}', 'success', 100, 400),
+          ('content', 'live', 'model-a', '${AT}', 'success', NULL, 200),
+          ('none', 'live', 'model-a', '${AT}', 'error', NULL, NULL);`);
+    });
+    const near = (actual: unknown, expected: number) => {
+      assert.equal(typeof actual, 'number');
+      assert.ok(Math.abs(Number(actual) - expected) < 1e-6, `${actual} ~= ${expected}`);
+    };
+    for (const rows of [
+      await analytics.queryProviderReliability({ start: START, end: END }),
+      await analytics.queryModelProviderReliability({ start: START, end: END }),
+    ]) {
+      const row = rows[0];
+      near(row.avg_first_reasoning_token_ms, 100);
+      near(row.avg_first_token_ms, 300);
+      near(row.avg_effective_ttft_ms, 150);
+      near(row.avg_reasoning_phase_ms, 300);
+      near(row.reasoning_ttft_rate, 100 / 3);
+      near(row.content_ttft_rate, 200 / 3);
+    }
+  });
 });

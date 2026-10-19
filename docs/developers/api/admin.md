@@ -1160,7 +1160,9 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 
 `providers` 与 `modelProviders` 另含 `failover_request_count`、`failover_request_rate`；`failover_rate` 含义不变。归属规则与供应商用量相同：按日志最终 `provider_id` 统计，不代表上游逐次尝试可用率。
 
-`recentErrors` 为所选区间（仍受 180 天上限约束）内最近 10 条 `status = error` 日志，字段与全局请求日志相同。
+这两类行还含与模型、供应商用量相同的首 Token 聚合：`avg_first_reasoning_token_ms`、`avg_first_token_ms`、`avg_effective_ttft_ms`、`avg_reasoning_phase_ms`、`reasoning_ttft_rate`、`content_ttft_rate`。口径见上文 `GET /admin/analytics/models`。没有首 Token 样本时平均值为 `null`。
+
+`recentErrors` 为所选区间（仍受 180 天上限约束）内最近 10 条 `status = error` 日志，字段与全局请求日志相同，不含上述聚合。
 
 ### 删除模型的路由约束
 
