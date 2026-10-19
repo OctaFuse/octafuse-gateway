@@ -6,7 +6,8 @@
 - **Kimi K3 缓存写入价**：静态目录补上默认 5 分钟档 `cache_write_price`（美元 $3/M、人民币 ¥20/M）。上下文与最大输出仍为 1,000,000。
 - **Kimi K2.5 目录退役**：静态目录将 `kimi-k2.5` 标为 2026-08-31 退役（Moonshot 官方已下线，国内外调用返回 404，请迁移至 Kimi K3）。仅用于展示和筛选，价格、模态、路由与计费不变。
 - **Qwen Image 2.1 Turbo**：新增按张计费预设。美元 $0.016/张，人民币 ¥0.1/张，发布日 2026-10-09。
-- **Gemini 4 Argon**：上下文改为 1,000,000，最大输出改为官网原值 65,536。美元与人民币刊例不变。
+- **模型预设窗口**：上下文和最大输入输出按 K=1000、M=1000000 写入，介绍改为 256K、1M 这类写法。Gemini 4 Argon 最大输出为 64K；Kimi K2.7 Code Highspeed 上下文为 256K；MiniMax M2.7 Highspeed 上下文为 200K；Qwen3.8 2.4T-A95B、27B、Omni Flash 最大输出为 128K；MiniMax M3.1 Flash Preview 输出硬上限为 512K。豆包 Seed 2.1 Pro / Lite 的 1024K 上下文为 1024000。价格与模态不变。
+- **网宿 AI 网关导入模板**：供应商模板增加网宿新版统一网关。OpenAI Base 为 `https://api.edgecloudapp.com/v2/llm/openai`，Anthropic Messages 为 `https://api.edgecloudapp.com/v2/llm/anthropic/messages`，Gemini Base 为 `https://api.edgecloudapp.com/v2/llm/gemini/v1beta/models`（Bearer）。鉴权使用令牌管理里 `sk-` 开头的新令牌。管理后台图标使用网宿标志，品牌色 `#005BAC`。
 
 ## 2.16.0
 

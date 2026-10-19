@@ -107,7 +107,7 @@
 		},
 		"vendor": "minimax",
 		"retired": "2026-11-18",
-		"context_window": 204800,
+		"context_window": 200000,
 		"max_tokens": 128000,
 		"pricing": {
 			"usd": {
@@ -208,16 +208,16 @@
 	{
 		"id": "minimax-m3.1-flash-preview",
 		"display_name": "MiniMax M3.1 Flash Preview",
-		"description": "Frontier multimodal MiniMax coding model. The 1,000,000-token window counts input and output together. Upstream model name is MiniMax-M3.1-Flash-Preview. Recommended max_completion_tokens is 131072; the hard output cap stored here is 524288. Input is text, image, and video; audio input is not supported. Thinking stays on: thinking.type disabled and reasoning_effort none return 400. Chat reasoning_effort accepts low, medium, high, xhigh, and max, and defaults to max. Anthropic uses output_config.effort with the same values. Available only through M Plan and MiniMax Code. MiniMax has not published a pay-as-you-go list price; USD and CNY prices here are copied from the MiniMax M3 standard list price until an official list price is published.",
+		"description": "Frontier multimodal MiniMax coding model. The 1M window counts input and output together. Upstream model name is MiniMax-M3.1-Flash-Preview. Recommended max_completion_tokens is 128K; the hard output cap stored here is 512K. Input is text, image, and video; audio input is not supported. Thinking stays on: thinking.type disabled and reasoning_effort none return 400. Chat reasoning_effort accepts low, medium, high, xhigh, and max, and defaults to max. Anthropic uses output_config.effort with the same values. Available only through M Plan and MiniMax Code. MiniMax has not published a pay-as-you-go list price; USD and CNY prices here are copied from the MiniMax M3 standard list price until an official list price is published.",
 		"i18n": {
-			"en": "Frontier multimodal MiniMax coding model. The 1,000,000-token window counts input and output together. Upstream model name is MiniMax-M3.1-Flash-Preview. Recommended max_completion_tokens is 131072; the hard output cap stored here is 524288. Input is text, image, and video; audio input is not supported. Thinking stays on: thinking.type disabled and reasoning_effort none return 400. Chat reasoning_effort accepts low, medium, high, xhigh, and max, and defaults to max. Anthropic uses output_config.effort with the same values. Available only through M Plan and MiniMax Code. MiniMax has not published a pay-as-you-go list price; USD and CNY prices here are copied from the MiniMax M3 standard list price until an official list price is published.",
-			"zh": "面向编程与 Agent 的 MiniMax 多模态预览模型。100 万 token 上下文包含输入与输出。上游模型名为 MiniMax-M3.1-Flash-Preview。建议 max_completion_tokens 为 131072，这里记录的输出硬上限为 524288。输入为文本、图像和视频，不支持音频。思考不能关闭：thinking.type 为 disabled 或 reasoning_effort 为 none 会返回 400。Chat 的 reasoning_effort 取 low、medium、high、xhigh、max，默认 max。Anthropic 用 output_config.effort，取值相同。目前只通过 M Plan 与 MiniMax Code 提供。官方未公布按量刊例价，美元与人民币价格先按 MiniMax M3 标准刊例预填，官方刊例公布后应替换。",
-			"ja": "コーディングとエージェント向けの MiniMax マルチモーダル・プレビューです。100万トークンのコンテキストは入力と出力の合計です。上流のモデル名は MiniMax-M3.1-Flash-Preview です。max_completion_tokens の推奨は 131072、ここに記録した出力のハード上限は 524288 です。入力はテキスト、画像、動画で、音声は非対応です。思考は切れません。thinking.type を disabled にするか、reasoning_effort を none にすると 400 が返ります。Chat の reasoning_effort は low、medium、high、xhigh、max で、初期値は max です。Anthropic は output_config.effort で、値は同じです。いま提供されるのは M Plan と MiniMax Code だけです。従量の定価は未公表で、米ドルと人民元の価格は MiniMax M3 の標準定価を仮に入れています。公式の定価が出たら差し替えてください。",
-			"ko": "코딩과 에이전트용 MiniMax 멀티모달 프리뷰입니다. 100만 토큰 컨텍스트는 입력과 출력을 합친 값입니다. 업스트림 모델명은 MiniMax-M3.1-Flash-Preview입니다. max_completion_tokens 권장값은 131072, 여기에 적어 둔 출력 하드 상한은 524288입니다. 입력은 텍스트, 이미지, 영상이고 오디오는 지원하지 않습니다. 사고는 끌 수 없습니다. thinking.type을 disabled로 두거나 reasoning_effort를 none으로 두면 400이 반환됩니다. Chat의 reasoning_effort는 low, medium, high, xhigh, max이고 기본값은 max입니다. Anthropic은 output_config.effort를 쓰며 값은 같습니다. 지금은 M Plan과 MiniMax Code로만 제공됩니다. 종량 정가는 아직 없고, 미국 달러와 위안화 가격은 MiniMax M3 표준 정가를 임시로 넣었습니다. 공식 정가가 나오면 바꿔야 합니다."
+			"en": "Frontier multimodal MiniMax coding model. The 1M window counts input and output together. Upstream model name is MiniMax-M3.1-Flash-Preview. Recommended max_completion_tokens is 128K; the hard output cap stored here is 512K. Input is text, image, and video; audio input is not supported. Thinking stays on: thinking.type disabled and reasoning_effort none return 400. Chat reasoning_effort accepts low, medium, high, xhigh, and max, and defaults to max. Anthropic uses output_config.effort with the same values. Available only through M Plan and MiniMax Code. MiniMax has not published a pay-as-you-go list price; USD and CNY prices here are copied from the MiniMax M3 standard list price until an official list price is published.",
+			"zh": "面向编程与 Agent 的 MiniMax 多模态预览模型。1M 上下文包含输入与输出。上游模型名为 MiniMax-M3.1-Flash-Preview。建议 max_completion_tokens 为 128K，这里记录的输出硬上限为 512K。输入为文本、图像和视频，不支持音频。思考不能关闭：thinking.type 为 disabled 或 reasoning_effort 为 none 会返回 400。Chat 的 reasoning_effort 取 low、medium、high、xhigh、max，默认 max。Anthropic 用 output_config.effort，取值相同。目前只通过 M Plan 与 MiniMax Code 提供。官方未公布按量刊例价，美元与人民币价格先按 MiniMax M3 标准刊例预填，官方刊例公布后应替换。",
+			"ja": "コーディングとエージェント向けの MiniMax マルチモーダル・プレビューです。1M のコンテキストは入力と出力の合計です。上流のモデル名は MiniMax-M3.1-Flash-Preview です。max_completion_tokens の推奨は 128K、ここに記録した出力のハード上限は 512K です。入力はテキスト、画像、動画で、音声は非対応です。思考は切れません。thinking.type を disabled にするか、reasoning_effort を none にすると 400 が返ります。Chat の reasoning_effort は low、medium、high、xhigh、max で、初期値は max です。Anthropic は output_config.effort で、値は同じです。いま提供されるのは M Plan と MiniMax Code だけです。従量の定価は未公表で、米ドルと人民元の価格は MiniMax M3 の標準定価を仮に入れています。公式の定価が出たら差し替えてください。",
+			"ko": "코딩과 에이전트용 MiniMax 멀티모달 프리뷰입니다. 1M 컨텍스트는 입력과 출력을 합친 값입니다. 업스트림 모델명은 MiniMax-M3.1-Flash-Preview입니다. max_completion_tokens 권장값은 128K, 여기에 적어 둔 출력 하드 상한은 512K입니다. 입력은 텍스트, 이미지, 영상이고 오디오는 지원하지 않습니다. 사고는 끌 수 없습니다. thinking.type을 disabled로 두거나 reasoning_effort를 none으로 두면 400이 반환됩니다. Chat의 reasoning_effort는 low, medium, high, xhigh, max이고 기본값은 max입니다. Anthropic은 output_config.effort를 쓰며 값은 같습니다. 지금은 M Plan과 MiniMax Code로만 제공됩니다. 종량 정가는 아직 없고, 미국 달러와 위안화 가격은 MiniMax M3 표준 정가를 임시로 넣었습니다. 공식 정가가 나오면 바꿔야 합니다."
 		},
 		"vendor": "minimax",
 		"context_window": 1000000,
-		"max_tokens": 524288,
+		"max_tokens": 512000,
 		"pricing": {
 			"usd": {
 				"tiers": [

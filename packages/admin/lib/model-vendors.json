@@ -39,6 +39,7 @@
   { "key": "together", "label": "Together AI" },
   { "key": "vercel", "label": "Vercel" },
   { "key": "volcengine", "label": "ByteDance Volcengine" },
+  { "key": "wangsu", "label": "Wangsu" },
   { "key": "xai", "label": "xAI (Grok)" },
   { "key": "xiaomi", "label": "Xiaomi Mimo" },
   { "key": "zenmux", "label": "ZenMux" },

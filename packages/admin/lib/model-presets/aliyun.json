@@ -108,7 +108,7 @@
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
-		"max_tokens": 131072,
+		"max_tokens": 128000,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -155,7 +155,7 @@
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
-		"max_tokens": 131072,
+		"max_tokens": 128000,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -203,7 +203,7 @@
 		},
 		"vendor": "aliyun",
 		"context_window": 1000000,
-		"max_tokens": 131072,
+		"max_tokens": 128000,
 		"pricing": {
 			"usd": {
 				"tiers": [

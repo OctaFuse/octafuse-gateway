@@ -76,7 +76,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'Gemini 4 Argon');
 		assert.equal(usd!.context_window, 1000000);
-		assert.equal(usd!.max_tokens, 65536);
+		assert.equal(usd!.max_tokens, 64000);
 		assert.equal(usd!.pricing_label, '$4 / $20 /M');
 		assert.equal(cny!.pricing_label, '¥28 / ¥140 /M');
 		const preset = listStaticModelPresets().find((p) => p.id === 'gemini-4-argon');
@@ -514,7 +514,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.ok(usd);
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'MiniMax M2.7 Highspeed');
-		assert.equal(usd!.context_window, 204800);
+		assert.equal(usd!.context_window, 200000);
 		assert.equal(usd!.max_tokens, 128000);
 		assert.equal(usd!.pricing_label, '$0.6 / $2.4 /M');
 		assert.equal(cny!.pricing_label, '¥4.2 / ¥16.8 /M');
@@ -570,7 +570,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.ok(usd);
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'Kimi K2.7 Code Highspeed');
-		assert.equal(usd!.context_window, 262144);
+		assert.equal(usd!.context_window, 256000);
 		assert.equal(usd!.pricing_label, '$1.9 / $8 /M');
 		assert.equal(cny!.pricing_label, '¥13 / ¥54 /M');
 		const preset = listStaticModelPresets().find((p) => p.id === 'kimi-k2.7-code-highspeed');
@@ -588,7 +588,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'Qwen3.8 2.4T-A95B');
 		assert.equal(usd!.context_window, 1000000);
-		assert.equal(usd!.max_tokens, 131072);
+		assert.equal(usd!.max_tokens, 128000);
 		assert.equal(cny!.pricing_label, '¥12 / ¥36 /M');
 		const preset = listStaticModelPresets().find((p) => p.id === 'qwen3.8-2.4t-a95b');
 		assert.ok(preset);
@@ -830,7 +830,7 @@ describe('MiniMax M3.1 Flash Preview catalog specs', () => {
 		assert.equal(preset.display_name, 'MiniMax M3.1 Flash Preview');
 		assert.equal(preset.vendor, 'minimax');
 		assert.equal(preset.context_window, 1000000);
-		assert.equal(preset.max_tokens, 524288);
+		assert.equal(preset.max_tokens, 512000);
 		assert.equal(preset.released, undefined);
 		assert.equal(preset.retired, undefined);
 		assert.deepEqual(preset.modalities?.input, ['text', 'image', 'video']);
@@ -850,7 +850,7 @@ describe('MiniMax M3.1 Flash Preview catalog specs', () => {
 			assert.equal(row.pricing_available, true);
 			assert.equal(row.pricing_label, m3Row.pricing_label);
 			assert.equal(row.context_window, 1000000);
-			assert.equal(row.max_tokens, 524288);
+			assert.equal(row.max_tokens, 512000);
 			const profile = parsePricingProfile(
 				coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset, billing))!,
 			);
@@ -866,7 +866,7 @@ describe('Doubao Seed catalog list prices', () => {
 	it('adds doubao-seed-2-1-pro-260915 with CNY only', () => {
 		const preset = doubaoPreset('doubao-seed-2-1-pro-260915');
 		assert.equal(preset.display_name, 'Doubao Seed 2.1 Pro (260915)');
-		assert.equal(preset.context_window, 1000000);
+		assert.equal(preset.context_window, 1024000);
 		assert.equal(preset.max_tokens, 256000);
 		assert.equal(preset.released, '2026-09-15');
 		assert.equal(preset.retired, undefined);
@@ -884,12 +884,12 @@ describe('Doubao Seed catalog list prices', () => {
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
 		assert.ok(usd);
 		assert.ok(cny);
-		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.context_window, 1024000);
 		assert.equal(usd!.max_tokens, 256000);
 		assert.equal(usd!.pricing_available, false);
 		assert.equal(usd!.pricing_label, null);
 		assert.equal(cny!.pricing_label, '¥6 / ¥30 /M');
-		assert.equal(cny!.context_window, 1000000);
+		assert.equal(cny!.context_window, 1024000);
 		assert.equal(cny!.max_tokens, 256000);
 
 		const tiers = doubaoTiers(preset.id, 'CNY');
@@ -904,7 +904,7 @@ describe('Doubao Seed catalog list prices', () => {
 	it('adds doubao-seed-2-1-lite-260915 with CNY only', () => {
 		const preset = doubaoPreset('doubao-seed-2-1-lite-260915');
 		assert.equal(preset.display_name, 'Doubao Seed 2.1 Lite (260915)');
-		assert.equal(preset.context_window, 1000000);
+		assert.equal(preset.context_window, 1024000);
 		assert.equal(preset.max_tokens, 256000);
 		assert.equal(preset.released, '2026-09-15');
 		assert.equal(preset.retired, undefined);
@@ -926,12 +926,12 @@ describe('Doubao Seed catalog list prices', () => {
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
 		assert.ok(usd);
 		assert.ok(cny);
-		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.context_window, 1024000);
 		assert.equal(usd!.max_tokens, 256000);
 		assert.equal(usd!.pricing_available, false);
 		assert.equal(usd!.pricing_label, null);
 		assert.equal(cny!.pricing_label, '¥0.8 / ¥2.7 /M');
-		assert.equal(cny!.context_window, 1000000);
+		assert.equal(cny!.context_window, 1024000);
 		assert.equal(cny!.max_tokens, 256000);
 
 		const tiers = doubaoTiers(preset.id, 'CNY');

@@ -520,6 +520,33 @@ describe('provider import preset catalog metadata', () => {
 		);
 	});
 
+	it('uses the Wangsu unified gateway bases for OpenAI, Anthropic, and Gemini', () => {
+		const row = listStaticProviderImportPresets().find((preset) => preset.name === 'Wangsu AI Gateway');
+		assert.ok(row);
+		assert.equal(row.vendor_key, 'wangsu');
+		assert.equal(row.endpoints.openai?.base, 'https://api.edgecloudapp.com/v2/llm/openai');
+		assert.equal(
+			resolveUpstreamEndpoint('openai', 'chat', row.endpoints),
+			'https://api.edgecloudapp.com/v2/llm/openai/chat/completions'
+		);
+		assert.equal(row.endpoints.anthropic?.base, undefined);
+		assert.equal(
+			row.endpoints.anthropic?.endpoints?.messages,
+			'https://api.edgecloudapp.com/v2/llm/anthropic/messages'
+		);
+		assert.equal(
+			resolveUpstreamEndpoint('anthropic', 'messages', row.endpoints),
+			'https://api.edgecloudapp.com/v2/llm/anthropic/messages'
+		);
+		assert.equal(row.endpoints.gemini?.base, 'https://api.edgecloudapp.com/v2/llm/gemini/v1beta/models');
+		assert.equal(row.endpoints.gemini?.auth, 'bearer');
+		assert.equal(
+			row.catalog?.links?.platform,
+			'https://www.wangsu.com/document/ai/aigateway-quick-start1'
+		);
+		assert.equal(inferStaticProviderVendorKey({ name: '网宿私有代理' }), 'wangsu');
+	});
+
 	it('keeps Vertex Express on Gemini query-key and adds project-scoped OpenAI chat', () => {
 		const rows = listStaticProviderImportPresets();
 		const express = rows.find((row) => row.name === 'Google Vertex AI (Express Mode · API Key)');
