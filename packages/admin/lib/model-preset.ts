@@ -9,7 +9,7 @@
  * - `<vendor>.json` — LLM（`modalities.output` 以 `text` 为主，含多模态「看图」LLM）
  * - `<vendor>-image.json` — 纯文生图（`modalities.output` 含 `image`）
  * - `<vendor>-audio-asr.json` — 语音转写 ASR（`audio_billing_mode: per_second | token`）
- * - `<vendor>-audio-tts.json` — 语音合成 TTS（`audio_billing_mode: per_character`）
+ * - `<vendor>-audio-tts.json` — 语音合成 TTS（`audio_billing_mode: per_character | token`）
  * - `<vendor>-embedding.json` — 向量模型（`modalities.output` 为 `embedding`；仅按输入 token 计费，output / cache 价为 0 / null）
  *
  * 各预设内 **`pricing.usd`** 与 D1 导出 `data/remote/.../data-remote-table-models-*.sql` 中 `pricing_profile` 一致（美元口径）；

@@ -430,14 +430,18 @@ describe('adapter registry', () => {
 
 	it('matches provider model names with wildcards, case, and exclusions', () => {
 		const speech = getAdapterByOptionKey('dashscope-tts-speech');
+		const qwenAudioAsr = getAdapterByOptionKey('dashscope-asr-qwen-audio-file');
+		const qwenAudioRealtime = getAdapterByOptionKey('passthrough:dashscope:audio.transcriptions.realtime.inference');
 		const qwenTts = getAdapterByOptionKey('dashscope-tts-qwen');
 		const qwenTtsSession = getAdapterByOptionKey('passthrough:dashscope:audio.speech.realtime.session');
 		const qwenAsr = getAdapterByOptionKey('dashscope-asr-qwen-file');
 		const asyncAsr = getAdapterByOptionKey('dashscope-asr-file-async');
 		const openaiAsr = getAdapterByOptionKey('passthrough:openai:audio.transcriptions');
-		assert.ok(speech && qwenTts && qwenTtsSession && qwenAsr && asyncAsr && openaiAsr);
+		assert.ok(speech && qwenAudioAsr && qwenAudioRealtime && qwenTts && qwenTtsSession && qwenAsr && asyncAsr && openaiAsr);
 
 		assert.equal(matchAdapterUpstreamModel(speech, 'Qwen-Audio-3.0-TTS-Plus'), 'match');
+		assert.equal(matchAdapterUpstreamModel(speech, 'qwen-audio-3.1-tts-flash'), 'match');
+		assert.equal(matchAdapterUpstreamModel(speech, 'qwen-audio-3.1-tts-next'), 'mismatch');
 		assert.equal(matchAdapterUpstreamModel(speech, 'cosyvoice-v3.5-flash'), 'match');
 		assert.equal(matchAdapterUpstreamModel(speech, 'qwen3-tts-flash'), 'mismatch');
 		assert.equal(matchAdapterUpstreamModel(speech, ''), 'generic');
@@ -449,6 +453,13 @@ describe('adapter registry', () => {
 		assert.equal(matchAdapterUpstreamModel(qwenTtsSession, 'qwen3-tts-flash-realtime'), 'match');
 		assert.equal(matchAdapterUpstreamModel(qwenTtsSession, 'qwen-tts-realtime'), 'match');
 		assert.equal(matchAdapterUpstreamModel(qwenTtsSession, 'qwen3-tts-flash'), 'mismatch');
+
+		assert.equal(matchAdapterUpstreamModel(qwenAudioAsr, 'qwen-audio-3.1-asr-flash'), 'match');
+		assert.equal(matchAdapterUpstreamModel(qwenAudioAsr, 'qwen-audio-3.1-asr-flash-filetrans'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(qwenAudioAsr, 'qwen-audio-3.1-asr-flash-streaming'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(qwenAudioRealtime, 'qwen-audio-3.1-asr-flash-streaming'), 'match');
+		assert.equal(matchAdapterUpstreamModel(qwenAudioRealtime, 'qwen-audio-3.1-asr-flash-message'), 'match');
+		assert.equal(matchAdapterUpstreamModel(asyncAsr, 'qwen-audio-3.1-asr-flash-filetrans'), 'match');
 
 		assert.equal(matchAdapterUpstreamModel(qwenAsr, 'qwen3-asr-flash'), 'match');
 		assert.equal(matchAdapterUpstreamModel(qwenAsr, 'qwen3-asr-flash-2025-09-08'), 'match');
@@ -471,7 +482,7 @@ describe('adapter registry', () => {
 			rows(file)
 				.filter((row) => {
 					const mode = row.pricing?.usd?.audio_billing_mode;
-					return mode === 'per_second' || mode === 'per_character';
+					return mode === 'per_second' || mode === 'per_character' || mode === 'token';
 				})
 				.map((row) => row.id),
 		);

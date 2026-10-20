@@ -13,6 +13,6 @@ export function audioModelGuardMessage(
 	if (result === 'ok') return null;
 	const noun = expected === 'tts' ? 'speech' : 'transcription';
 	if (result === 'wrong_kind') return `${routeLabel} requires a ${noun} model`;
-	const mode = expected === 'tts' ? 'per_character' : 'per_second or token';
+	const mode = expected === 'tts' ? 'per_character or token' : 'per_second or token';
 	return `${routeLabel}: ${noun} model has no valid audio billing configured (expected audio_billing_mode ${mode})`;
 }

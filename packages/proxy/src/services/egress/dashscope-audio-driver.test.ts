@@ -312,7 +312,37 @@ describe('DashScope ASR dispatch', () => {
 		assert.deepEqual(sent.parameters.language_hints, ['zh']);
 		assert.deepEqual(await result.response.json(), { text: 'Audio 3.0 结果' });
 		assert.equal(result.meta.audioDurationSeconds, 2.25);
+		assert.equal(result.meta.audioTokenUsage, null);
 		assert.equal(result.upstreamRequestId, 'req-audio30');
+	});
+
+	it('keeps Qwen-Audio 3.1 input and output tokens for token billing', async () => {
+		const result = await dispatchDashScopeSyncAsr(
+			route({
+				providerModelName: 'qwen-audio-3.1-asr-flash',
+				adapter: 'dashscope-asr-qwen-audio-file',
+			}),
+			request(),
+			undefined,
+			null,
+			undefined,
+			{
+				fetchImpl: async () =>
+					new Response(
+						JSON.stringify({
+							request_id: 'req-audio31',
+							output: { text: 'Audio 3.1 结果' },
+							usage: { duration: 4, input_tokens: 100, output_tokens: 12, total_tokens: 112 },
+						}),
+						{ status: 200 },
+					),
+			},
+		);
+		assert.equal((await result.response.json()).text, 'Audio 3.1 结果');
+		assert.equal(result.meta.audioDurationSeconds, 4);
+		assert.equal(result.meta.audioTokenUsage?.input_tokens, 100);
+		assert.equal(result.meta.audioTokenUsage?.output_tokens, 12);
+		assert.equal(result.meta.audioTokenUsage?.total_tokens, 112);
 	});
 
 	it('forwards native DashScope multimodal JSON for passthrough', async () => {

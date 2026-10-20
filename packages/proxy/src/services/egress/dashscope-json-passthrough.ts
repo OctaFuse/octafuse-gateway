@@ -2,7 +2,13 @@
  * DashScope 原生 JSON / SSE 透传。
  * 只替换 model，原样返回上游 body。转换适配器不走这里。
  */
-import { applyRouteExtraHeaders, resolveProviderUpstreamSecret, resolveUpstreamEndpoint } from '@octafuse/core';
+import {
+	applyRouteExtraHeaders,
+	parseOpenAiAudioTokenUsage,
+	resolveProviderUpstreamSecret,
+	resolveUpstreamEndpoint,
+	type AudioTokenUsage,
+} from '@octafuse/core';
 import type { ProviderEndpointCapability } from '@octafuse/core/provider-endpoints';
 import type { RouteResult } from '../model-router';
 import { EMPTY_USAGE, type UsageFromStream } from '../proxy';
@@ -88,15 +94,37 @@ function transcriptionUrl(payload: unknown): string | null {
 		: null;
 }
 
-function scanCharacters(text: string, carry: string): { characters: number | null; carry: string } {
+const USAGE_NUMBER_PATTERNS = {
+	characters: /"characters"\s*:\s*(\d+(?:\.\d+)?)/g,
+	input_tokens: /"input_tokens"\s*:\s*(\d+(?:\.\d+)?)/g,
+	output_tokens: /"output_tokens"\s*:\s*(\d+(?:\.\d+)?)/g,
+	total_tokens: /"total_tokens"\s*:\s*(\d+(?:\.\d+)?)/g,
+} as const;
+
+function lastJsonNumber(window: string, key: keyof typeof USAGE_NUMBER_PATTERNS): number | null {
+	let last: string | undefined;
+	for (const match of window.matchAll(USAGE_NUMBER_PATTERNS[key])) last = match[1];
+	return last === undefined ? null : asNonNegative(last);
+}
+
+function scanSpeechUsage(
+	text: string,
+	carry: string,
+): {
+	characters: number | null;
+	inputTokens: number | null;
+	outputTokens: number | null;
+	totalTokens: number | null;
+	carry: string;
+} {
 	const window = carry + text;
-	const matches = window.match(/"characters"\s*:\s*(\d+(?:\.\d+)?)/g);
-	let characters: number | null = null;
-	if (matches) {
-		const last = matches[matches.length - 1]?.match(/(\d+(?:\.\d+)?)/);
-		characters = last ? asNonNegative(last[1]) : null;
-	}
-	return { characters, carry: window.slice(-32) };
+	return {
+		characters: lastJsonNumber(window, 'characters'),
+		inputTokens: lastJsonNumber(window, 'input_tokens'),
+		outputTokens: lastJsonNumber(window, 'output_tokens'),
+		totalTokens: lastJsonNumber(window, 'total_tokens'),
+		carry: window.slice(-80),
+	};
 }
 
 function jsonResponse(status: number, payload: unknown, statusText = ''): Response {
@@ -184,7 +212,14 @@ export async function dispatchDashScopeJsonPassthrough(
 				usageWith({
 					audio_characters: billed.characters ?? undefined,
 					audio_duration_seconds: billed.durationSeconds ?? undefined,
-					raw_usage: billed.rawUsage,
+					raw_usage: billed.tokenUsage?.raw_usage ?? billed.rawUsage,
+					...(billed.tokenUsage
+						? {
+								input_tokens: billed.tokenUsage.input_tokens,
+								output_tokens: billed.tokenUsage.output_tokens,
+								total_tokens: billed.tokenUsage.total_tokens,
+							}
+						: {}),
 				}),
 			),
 			upstreamRequestId: requestId,
@@ -194,6 +229,7 @@ export async function dispatchDashScopeJsonPassthrough(
 				audioDurationSeconds: billed.durationSeconds,
 				audioDurationSource: billed.durationSource,
 				imageCount: billed.imageCount,
+				audioTokenUsage: billed.tokenUsage,
 			},
 		};
 	} catch (error) {
@@ -230,34 +266,41 @@ async function billParsed(
 	durationSource: 'upstream' | null;
 	imageCount: number | null;
 	rawUsage: string | null;
+	tokenUsage: AudioTokenUsage | null;
 }> {
+	const empty = {
+		characters: null,
+		durationSeconds: null,
+		durationSource: null,
+		imageCount: null,
+		rawUsage: null as string | null,
+		tokenUsage: null as AudioTokenUsage | null,
+	};
 	const usage = asObject(asObject(parsed)?.usage);
 	const rawUsage = usage ? JSON.stringify(usage) : null;
+	const tokenUsage = parseOpenAiAudioTokenUsage(parsed);
 	if (!ok) {
-		return { characters: null, durationSeconds: null, durationSource: null, imageCount: null, rawUsage };
+		return { ...empty, rawUsage };
 	}
 	if (surface === 'images.generations.multimodal') {
 		return {
-			characters: null,
-			durationSeconds: null,
-			durationSource: null,
+			...empty,
 			imageCount: countDashScopeImages(parsed),
 			rawUsage,
 		};
 	}
 	if (surface === 'audio.speech' || surface === 'audio.speech.multimodal' || surface === 'audio.speech.stream') {
 		return {
+			...empty,
 			characters: charactersFromPayload(parsed),
-			durationSeconds: null,
-			durationSource: null,
-			imageCount: null,
 			rawUsage,
+			tokenUsage,
 		};
 	}
 	if (surface === 'audio.transcriptions.async' && taskId && taskStatus(parsed) === 'SUCCEEDED') {
 		const url = transcriptionUrl(parsed);
 		if (!url) {
-			return { characters: null, durationSeconds: null, durationSource: null, imageCount: null, rawUsage };
+			return { ...empty, rawUsage, tokenUsage };
 		}
 		const result = await fetchImpl(url, { signal });
 		const resultText = await result.text();
@@ -278,14 +321,14 @@ async function billParsed(
 						clientSeconds: null,
 					});
 		return {
-			characters: null,
+			...empty,
 			durationSeconds: duration?.seconds ?? null,
 			durationSource: duration?.source === 'upstream' ? 'upstream' : null,
-			imageCount: null,
 			rawUsage: rawUsage ?? (asObject(resultBody)?.usage ? JSON.stringify(asObject(resultBody)?.usage) : null),
+			tokenUsage: tokenUsage ?? (result.ok ? parseOpenAiAudioTokenUsage(resultBody) : null),
 		};
 	}
-	return { characters: null, durationSeconds: null, durationSource: null, imageCount: null, rawUsage };
+	return { ...empty, rawUsage };
 }
 
 function streamResult(
@@ -306,33 +349,58 @@ function streamResult(
 	const decoder = new TextDecoder();
 	let carry = '';
 	let characters: number | null = null;
+	let inputTokens: number | null = null;
+	let outputTokens: number | null = null;
+	let totalTokens: number | null = null;
 	const stream = new ReadableStream<Uint8Array>({
 		async pull(controller) {
 			try {
 				const chunk = await reader.read();
 				if (chunk.done) {
 					timing?.markStreamComplete();
-					resolveUsage(usageWith({ audio_characters: characters ?? undefined }));
+					resolveUsage(
+						usageWith({
+							audio_characters: characters ?? undefined,
+							...(inputTokens != null ? { input_tokens: inputTokens } : {}),
+							...(outputTokens != null ? { output_tokens: outputTokens } : {}),
+							...(totalTokens != null ? { total_tokens: totalTokens } : {}),
+						}),
+					);
 					controller.close();
 					return;
 				}
-				const scanned = scanCharacters(decoder.decode(chunk.value, { stream: true }), carry);
+				const scanned = scanSpeechUsage(decoder.decode(chunk.value, { stream: true }), carry);
 				carry = scanned.carry;
 				if (scanned.characters != null) characters = scanned.characters;
+				if (scanned.inputTokens != null) inputTokens = scanned.inputTokens;
+				if (scanned.outputTokens != null) outputTokens = scanned.outputTokens;
+				if (scanned.totalTokens != null) totalTokens = scanned.totalTokens;
 				controller.enqueue(chunk.value);
 			} catch (error) {
 				timing?.markStreamComplete();
-				resolveUsage({
-					...EMPTY_USAGE,
-					audio_characters: characters ?? undefined,
-					stream_error: error instanceof Error ? error.message : String(error),
-				});
+				resolveUsage(
+					usageWith({
+						audio_characters: characters ?? undefined,
+						...(inputTokens != null ? { input_tokens: inputTokens } : {}),
+						...(outputTokens != null ? { output_tokens: outputTokens } : {}),
+						...(totalTokens != null ? { total_tokens: totalTokens } : {}),
+						stream_error: error instanceof Error ? error.message : String(error),
+					}),
+				);
 				controller.error(error);
 			}
 		},
 		cancel(reason) {
 			timing?.markStreamComplete();
-			resolveUsage({ ...EMPTY_USAGE, audio_characters: characters ?? undefined, cancelled: true });
+			resolveUsage(
+				usageWith({
+					audio_characters: characters ?? undefined,
+					...(inputTokens != null ? { input_tokens: inputTokens } : {}),
+					...(outputTokens != null ? { output_tokens: outputTokens } : {}),
+					...(totalTokens != null ? { total_tokens: totalTokens } : {}),
+					cancelled: true,
+				}),
+			);
 			return reader.cancel(reason);
 		},
 	});

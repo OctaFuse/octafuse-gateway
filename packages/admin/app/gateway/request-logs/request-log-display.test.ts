@@ -67,6 +67,18 @@ describe('requestLogFeatureKind', () => {
 		assert.equal(requestLogFeatureKind({ upstream_operation: 'audio.transcriptions.multimodal' }), 'asr');
 		assert.equal(requestLogFeatureKind({ request_operation: 'chat' }), 'llm');
 	});
+
+	it('does not treat audio_tokens billing as ASR when the operation is TTS', () => {
+		assert.equal(
+			requestLogFeatureKind({ billing_kind: 'audio_tokens', request_operation: 'audio.speech' }),
+			'tts',
+		);
+		assert.equal(
+			requestLogFeatureKind({ billing_kind: 'audio_tokens', request_operation: 'audio.transcriptions' }),
+			'asr',
+		);
+		assert.equal(requestLogFeatureKind({ billing_kind: 'audio_tokens' }), 'asr');
+	});
 });
 
 describe('requestLogFeatureTags', () => {

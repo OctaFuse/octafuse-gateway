@@ -3,7 +3,7 @@
  * `POST /dashscope/api/v1/services/audio/tts/SpeechSynthesizer`
  * `X-DashScope-SSE: enable` 走 `audio.speech.stream`，否则走 `audio.speech`。
  */
-import type { GatewayRepositories } from '@octafuse/core';
+import { audioTokenUsageFromCounts, type GatewayRepositories } from '@octafuse/core';
 import { audioModelGuardMessage } from './audio-model-guard';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
@@ -225,6 +225,9 @@ async function forwardDashScopeSpeech(
 					durationSource: 'estimated',
 					fileBytes: 0,
 					characters: response.ok ? (meta?.audioCharacters ?? usage?.audio_characters ?? null) : null,
+					tokenUsage: response.ok
+						? (meta?.audioTokenUsage ?? audioTokenUsageFromCounts(usage ?? {}))
+						: null,
 					requestStartedAtMs: start,
 				},
 				providerKeyId: proxyResult.chosenRoute.providerKeyId ?? null,

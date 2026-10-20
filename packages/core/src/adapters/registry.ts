@@ -168,7 +168,11 @@ export interface AdapterDescriptor {
  * 新增模型家族时在这里补 pattern，不要在 Admin 里再写一份。
  */
 const QWEN3_ASR_SYNC_MODELS = ['qwen3-asr-flash', 'qwen3-asr-flash-2*'] as const;
-const QWEN_AUDIO_ASR_SYNC_MODELS = ['qwen-audio-3.0-asr-flash', 'qwen-audio-3.0-asr-flash-2*'] as const;
+const QWEN_AUDIO_ASR_SYNC_MODELS = [
+	'qwen-audio-3.0-asr-flash',
+	'qwen-audio-3.0-asr-flash-2*',
+	'qwen-audio-3.1-asr-flash',
+] as const;
 const FUN_ASR_SYNC_MODELS = ['fun-asr-realtime*'] as const;
 const DASHSCOPE_SYNC_ASR_MODELS = [
 	...QWEN3_ASR_SYNC_MODELS,
@@ -181,8 +185,14 @@ const DASHSCOPE_ASR_INFERENCE_MODELS = [
 	'fun-asr-realtime*',
 	'paraformer-realtime*',
 	'qwen-audio-3.0-asr-flash-streaming*',
+	'qwen-audio-3.1-asr-flash-streaming*',
+	'qwen-audio-3.1-asr-flash-message*',
 ] as const;
-const COSYVOICE_AND_QWEN_AUDIO_TTS_MODELS = ['cosyvoice-*', 'qwen-audio-3.0-tts-*'] as const;
+const COSYVOICE_AND_QWEN_AUDIO_TTS_MODELS = [
+	'cosyvoice-*',
+	'qwen-audio-3.0-tts-*',
+	'qwen-audio-3.1-tts-flash',
+] as const;
 const QWEN_TTS_HTTP_MODELS = {
 	include: ['qwen3-tts-*', 'qwen-tts*'],
 	exclude: ['*realtime*'],

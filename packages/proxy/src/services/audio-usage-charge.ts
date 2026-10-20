@@ -7,6 +7,7 @@
 import type { GatewayRepositories, UpstreamProtocol } from '@octafuse/core';
 import {
 	buildAudioTokenPrecheckUsage,
+	buildSpeechTokenPrecheckUsage,
 	changedFieldsToJson,
 	computeAudioPerSecondMeteredCost,
 	computeAudioPerCharacterMeteredCost,
@@ -448,7 +449,7 @@ function resolveAudioCostsForProfile(
 	billing: AudioBillingParams,
 	profile: ParsedPricingProfile | null,
 	factors: Awaited<ReturnType<typeof resolveRouteFactors>>,
-	options?: { allowTokenPrecheckEstimate?: boolean }
+	options?: { allowTokenPrecheckEstimate?: boolean; tokenPrecheckUsage?: AudioTokenUsage }
 ): AudioCostBreakdown {
 	const mode = resolveAudioBillingMode(profile);
 
@@ -460,7 +461,7 @@ function resolveAudioCostsForProfile(
 		const usage =
 			billing.tokenUsage ??
 			(options?.allowTokenPrecheckEstimate
-				? buildAudioTokenPrecheckUsage(billing.durationSeconds)
+				? (options.tokenPrecheckUsage ?? buildAudioTokenPrecheckUsage(billing.durationSeconds))
 				: null);
 		if (!usage || (usage.input_tokens === 0 && usage.output_tokens === 0 && usage.total_tokens === 0)) {
 			return zeroAudioCostBreakdown(billing, factors, 'audio_tokens', {
@@ -498,6 +499,7 @@ export async function estimateAudioSpeechCosts(
 		| 'modelPricingProfileJson'
 		| 'requestStartedAtMs'
 		| 'characters'
+		| 'tokenUsage'
 		| 'catalogModelId'
 		| 'userChargedCostFactorsJson'
 		| 'routeGroup'
@@ -521,7 +523,10 @@ export async function estimateAudioSpeechCosts(
 	);
 }
 
-/** TTS 预算预检允许用输入字符数；最终扣费仍只接受上游 usage.characters。 */
+/**
+ * TTS 预算预检允许用输入字符数估算（token 计费时按字符数估 token 上界）；
+ * 最终扣费仍只接受上游 usage.characters / token usage。
+ */
 export async function estimateAudioSpeechBudgetPrecheck(
 	repos: GatewayRepositories,
 	billing: Pick<
@@ -554,7 +559,11 @@ export async function estimateAudioSpeechBudgetPrecheck(
 		const costs = resolveAudioCostsForProfile(
 			{ ...params, routePriceOverrideJson: override },
 			profile,
-			factors
+			factors,
+			{
+				allowTokenPrecheckEstimate: true,
+				tokenPrecheckUsage: buildSpeechTokenPrecheckUsage(billing.inputCharacters),
+			}
 		);
 		if (!best || costs.chargedCost >= best.chargedCost) best = costs;
 	}

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Qwen-Audio 3.1**：静态目录增加 `qwen-audio-3.1-asr-flash`、`qwen-audio-3.1-asr-flash-filetrans`、`qwen-audio-3.1-asr-flash-streaming`、`qwen-audio-3.1-asr-flash-message` 和 `qwen-audio-3.1-tts-flash`。中国区与国际区都按官方 input/output token 刊例计费，不再沿用 3.0 的按秒或按字符价。同步识别、文件转写、inference 实时识别和 SpeechSynthesizer 会读取上游 token 用量。`qwen-audio-3.1-realtime-plus` 与 `qwen-audio-3.1-tts-next` 仍未接入。已导入的 3.0 模型不会被覆盖，3.1 需要另导入并挂到对应适配器。
 - **路由时段价格明细**：计费规则里每个文本模型时段都可以展开查看本时段价格明细，包括只有「全部时段」、以及未命中窗口时的「其他时段」。没有目录时段倍率时按基准价 ×1，再乘以该行当前生效的供应商、计费和成本倍率。
 - **MiniMax M3 目录价**：静态目录改为官网标准现价（永久五折后）。输入不超过 512K 时，美元 $0.30 / $1.20、缓存读取 $0.06，中国区 ¥2.10 / ¥8.40、缓存读取 ¥0.42；超过 512K 时整档加倍。不含 Priority 与划线原价。已导入的模型不会被覆盖，需要重新导入或手工改价。
 - **可靠性首 Token**：供应商质量与按模型对比供应商增加 TTFT 列，放在平均延迟旁。主数字是用户感知的有效首 Token（有推理时标 R，否则标 C），悬停查看正文、推理、有效值和覆盖率，口径与用量分析一致。没有首 Token 样本时显示 —。近期错误列表不变。

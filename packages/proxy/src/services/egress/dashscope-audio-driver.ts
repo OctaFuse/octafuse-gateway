@@ -7,9 +7,11 @@
  */
 import {
 	applyRouteExtraHeaders,
+	parseOpenAiAudioTokenUsage,
 	resolveProviderUpstreamSecret,
 	resolveUpstreamEndpoint,
 	routeCustomParamsBody,
+	type AudioTokenUsage,
 } from '@octafuse/core';
 import {
 	applyUpstreamExtraFields,
@@ -50,7 +52,7 @@ type DashScopeAudioDispatchResult = {
 		audioDurationSeconds: number | null;
 		audioDurationSource: AudioDurationSource | null;
 		audioFileBytes: number;
-		audioTokenUsage: null;
+		audioTokenUsage: AudioTokenUsage | null;
 		restoredUpstreamPaths?: string[];
 	};
 };
@@ -434,6 +436,7 @@ function clientResult(
 	fileBytes: number,
 	duration: { seconds: number; source: AudioDurationSource } | null,
 	requestId: string | null,
+	tokenUsage: AudioTokenUsage | null = null,
 ): DashScopeAudioDispatchResult {
 	const clientBody = upstreamResponse.ok
 		? reshapeTranscriptionForClient(parsedBody, req.clientResponseFormat)
@@ -452,7 +455,7 @@ function clientResult(
 			audioDurationSeconds: duration?.seconds ?? null,
 			audioDurationSource: duration?.source ?? null,
 			audioFileBytes: fileBytes,
-			audioTokenUsage: null,
+			audioTokenUsage: tokenUsage,
 			restoredUpstreamPaths: readRestoredUpstreamPaths(req),
 		},
 	};
@@ -584,6 +587,7 @@ export async function dispatchDashScopeSyncAsr(
 			req.file.bytes.byteLength,
 			resolveDashScopeDuration(req, seconds),
 			headerRequestId ?? bodyRequestId(upstreamBody),
+			parseOpenAiAudioTokenUsage(upstreamBody),
 		);
 	} catch (error) {
 		timing?.markStreamComplete();
@@ -757,6 +761,7 @@ export async function dispatchDashScopeAsyncAsr(
 				req.file?.bytes.byteLength ?? 0,
 				resolveDashScopeDuration(req, seconds),
 				requestId,
+				parseOpenAiAudioTokenUsage(queryBody) ?? parseOpenAiAudioTokenUsage(resultBody),
 			);
 		}
 	} catch (error) {
@@ -820,6 +825,7 @@ export async function dispatchDashScopeMultimodalPassthrough(
 		timing?.markStreamComplete();
 		const requestId = headerRequestId ?? bodyRequestId(parsedBody);
 		const seconds = response.ok ? extractDashScopeMultimodalDurationSeconds(parsedBody) : null;
+		const tokenUsage = response.ok ? parseOpenAiAudioTokenUsage(parsedBody) : null;
 		const duration =
 			seconds == null
 				? null
@@ -842,7 +848,7 @@ export async function dispatchDashScopeMultimodalPassthrough(
 				audioDurationSeconds: duration?.seconds ?? null,
 				audioDurationSource: duration?.source ?? null,
 				audioFileBytes: 0,
-				audioTokenUsage: null,
+				audioTokenUsage: tokenUsage,
 			},
 		};
 	} catch (error) {

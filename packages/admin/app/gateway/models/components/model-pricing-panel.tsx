@@ -79,6 +79,10 @@ export function ModelPricingPanel({
 												id: 'per_character' as const,
 												label: t('audioBillingModePerCharacter'),
 											},
+											{
+												id: 'token' as const,
+												label: t('audioBillingModeToken'),
+											},
 									  ]
 									: [
 											{

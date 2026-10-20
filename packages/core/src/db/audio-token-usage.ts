@@ -96,6 +96,49 @@ export function parseOpenAiAudioTokenUsage(body: unknown): AudioTokenUsage | nul
 	};
 }
 
+/**
+ * 语音合成（文本进、音频出）：把已拆好的 input/output 计数收成用量，
+ * 输入是文本 token，输出就是音频 token。全 0 视为没有上游回执。
+ */
+export function audioTokenUsageFromCounts(input: {
+	input_tokens?: number | null;
+	output_tokens?: number | null;
+	total_tokens?: number | null;
+	raw_usage?: string | null;
+}): AudioTokenUsage | null {
+	const input_tokens = asNonNegInt(input.input_tokens);
+	const output_tokens = asNonNegInt(input.output_tokens);
+	const total_tokens = asNonNegInt(input.total_tokens) || input_tokens + output_tokens;
+	if (input_tokens === 0 && output_tokens === 0 && total_tokens === 0) return null;
+	return {
+		input_tokens,
+		output_tokens,
+		total_tokens,
+		audio_tokens: output_tokens,
+		text_tokens: input_tokens,
+		raw_usage: input.raw_usage ?? null,
+	};
+}
+
+/**
+ * 语音合成 token 计费的预算预检用量（只用于预检，不用于最终扣费）。
+ * 输入按「1 字符 ≤ 1 token」取上界；输出音频 token 随时长增长，
+ * 按每字符 6 个取偏保守估值，避免余额不足的请求被放过。
+ */
+export function buildSpeechTokenPrecheckUsage(inputCharacters: number): AudioTokenUsage {
+	const chars = Number.isFinite(inputCharacters) && inputCharacters > 0 ? Math.ceil(inputCharacters) : 1;
+	const input_tokens = chars;
+	const output_tokens = chars * 6;
+	return {
+		input_tokens,
+		output_tokens,
+		total_tokens: input_tokens + output_tokens,
+		audio_tokens: output_tokens,
+		text_tokens: input_tokens,
+		raw_usage: null,
+	};
+}
+
 /** 原始成本（未乘路由倍率）：(input×input_price + output×output_price) / 1M */
 export function computeAudioTokenMeteredCost(
 	usage: AudioTokenUsage,

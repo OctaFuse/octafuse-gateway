@@ -111,6 +111,26 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cny!.pricing_label, '¥10.5 / ¥52.5 /M');
 	});
 
+	it('includes Qwen-Audio 3.1 ASR and TTS at official token list prices', () => {
+		const asrUsd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen-audio-3.1-asr-flash');
+		const asrCny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen-audio-3.1-asr-flash');
+		assert.ok(asrUsd);
+		assert.ok(asrCny);
+		assert.equal(asrUsd!.kind, 'asr');
+		assert.equal(asrUsd!.context_window, 8192);
+		assert.equal(asrUsd!.max_tokens, 1024);
+		assert.equal(asrUsd!.pricing_label, '$0.15 / $0.47 /M');
+		assert.equal(asrCny!.pricing_label, '¥0.8 / ¥2.7 /M');
+
+		const ttsUsd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen-audio-3.1-tts-flash');
+		const ttsCny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen-audio-3.1-tts-flash');
+		assert.ok(ttsUsd);
+		assert.ok(ttsCny);
+		assert.equal(ttsUsd!.kind, 'tts');
+		assert.equal(ttsUsd!.pricing_label, '$0.23 / $1.87 /M');
+		assert.equal(ttsCny!.pricing_label, '¥1.5 / ¥12 /M');
+	});
+
 	it('includes qwen3.8-flash with official Model Studio list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen3.8-flash');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen3.8-flash');

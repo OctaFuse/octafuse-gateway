@@ -35,6 +35,7 @@ const cases: Case[] = [
 	{ name: 'ASR per_second without modalities', fields: { pricing_profile: asrSecond }, kind: 'asr', source: 'billing' },
 	{ name: 'ASR token', fields: { input_modalities: ['audio', 'text'], output_modalities: ['text'], pricing_profile: asrToken }, kind: 'asr', source: 'billing' },
 	{ name: 'TTS per_character', fields: { input_modalities: ['text'], output_modalities: ['audio'], pricing_profile: ttsChar }, kind: 'tts', source: 'billing' },
+	{ name: 'TTS token', fields: { input_modalities: ['text'], output_modalities: ['audio'], pricing_profile: asrToken }, kind: 'tts', source: 'billing' },
 	{ name: 'ASR by signature without pricing', fields: { input_modalities: ['audio'], output_modalities: ['text'] }, kind: 'asr', source: 'modality_signature' },
 	{ name: 'ASR by signature with audio+text input', fields: { input_modalities: ['audio', 'text'], output_modalities: ['text'], pricing_profile: llmTiers }, kind: 'asr', source: 'modality_signature' },
 	{ name: 'TTS by signature without pricing', fields: { input_modalities: ['text'], output_modalities: ['audio'] }, kind: 'tts', source: 'modality_signature' },
@@ -75,6 +76,7 @@ describe('validateModelKindConsistency', () => {
 		{ pricing_profile: asrSecond },
 		{ input_modalities: ['audio'], output_modalities: ['text'], pricing_profile: asrSecond },
 		{ input_modalities: ['text'], output_modalities: ['audio'], pricing_profile: ttsChar },
+		{ input_modalities: ['text'], output_modalities: ['audio'], pricing_profile: asrToken },
 		{ input_modalities: ['text'], output_modalities: ['embedding'] },
 		{ input_modalities: ['text', 'image'], output_modalities: ['text'], pricing_profile: llmTiers },
 	];

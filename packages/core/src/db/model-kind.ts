@@ -4,7 +4,8 @@
  * Kind 由已有字段派生，不单独落库：
  * 1. `output_modalities` 含 `embedding` → embedding
  * 2. `output_modalities` 含 `image` → image（output 缺失时回退旧版 `pricing_profile.image`）
- * 3. 有效 `audio_billing_mode`：`per_character` → tts；`per_second` / `token` → asr
+ * 3. 有效 `audio_billing_mode`：`per_character` → tts；`per_second` → asr；
+ *    `token` 在「仅文本进、仅音频出」时为 tts，其余为 asr
  * 4. 无计费模式时按模态签名兜底：output 仅 audio 且 input 仅 text → tts；
  *    output 仅 text 且 input 含 audio 且只有 audio/text → asr
  * 5. 其余 → llm（多模态 LLM 会接收图片 / 音频，因此不能用 input 含 image/audio 判断）
@@ -61,6 +62,12 @@ function toModalityList(raw: string | string[] | null | undefined): string[] | n
 
 type AudioBillingKind = 'asr' | 'tts' | null;
 
+/** Token 计费的语音合成：只进文本、只出音频。其余 token 音频模型仍是 ASR。 */
+function isSpeechTokenSignature(input: string[] | null, output: string[] | null): boolean {
+	if (!output || output.length !== 1 || output[0] !== 'audio') return false;
+	return input == null || input.every((modality) => modality === 'text');
+}
+
 /** 仅当计费模式与其负载同时合法时才算“有效”，否则交给模态签名兜底。 */
 function audioKindFromBilling(profile: ReturnType<typeof parsePricingProfile>): AudioBillingKind {
 	switch (profile?.audio_billing_mode) {
@@ -94,6 +101,7 @@ function audioKindFromSignature(input: string[] | null, output: string[] | null)
 
 export function explainModelKind(m: ModelKindFields): { kind: ModelKind; source: ModelKindSource } {
 	const output = toModalityList(m.output_modalities);
+	const input = toModalityList(m.input_modalities);
 	if (output?.includes('embedding')) {
 		return { kind: 'embedding', source: 'output_modalities' };
 	}
@@ -105,10 +113,13 @@ export function explainModelKind(m: ModelKindFields): { kind: ModelKind; source:
 		return { kind: 'image', source: 'legacy_pricing' };
 	}
 	const billing = audioKindFromBilling(profile);
+	if (billing === 'asr' && profile?.audio_billing_mode === 'token' && isSpeechTokenSignature(input, output)) {
+		return { kind: 'tts', source: 'billing' };
+	}
 	if (billing) {
 		return { kind: billing, source: 'billing' };
 	}
-	const signature = audioKindFromSignature(toModalityList(m.input_modalities), output);
+	const signature = audioKindFromSignature(input, output);
 	if (signature) {
 		return { kind: signature, source: 'modality_signature' };
 	}
@@ -151,6 +162,7 @@ export function validateModelKindConsistency(m: ModelKindFields): string | null 
 		}
 		return null;
 	}
+	if (mode === 'token' && isSpeechTokenSignature(input, output)) return null;
 	// per_second | token → ASR
 	if (output?.includes('audio')) {
 		return `audio_billing_mode "${mode}" (ASR) conflicts with output_modalities containing audio`;
@@ -165,12 +177,12 @@ export type AudioModelGuardResult = 'ok' | 'wrong_kind' | 'billing_missing';
 
 /**
  * 音频端点入口守卫：分类（Kind）只说明“它是什么模型”，是否可放行还要求计费配置就绪，
- * 否则请求会在没有定价的情况下被受理。ASR 要求 `per_second` / `token`，TTS 要求 `per_character`。
+ * 否则请求会在没有定价的情况下被受理。ASR 要求 `per_second` / `token`，TTS 要求 `per_character` / `token`。
  */
 export function checkAudioModelGuard(m: ModelKindFields, expected: 'asr' | 'tts'): AudioModelGuardResult {
 	if (resolveModelKind(m) !== expected) return 'wrong_kind';
 	const mode = resolveAudioBillingMode(parsePricingProfile(m.pricing_profile ?? undefined));
-	if (expected === 'tts') return mode === 'per_character' ? 'ok' : 'billing_missing';
+	if (expected === 'tts') return mode === 'per_character' || mode === 'token' ? 'ok' : 'billing_missing';
 	return mode === 'per_second' || mode === 'token' ? 'ok' : 'billing_missing';
 }
 

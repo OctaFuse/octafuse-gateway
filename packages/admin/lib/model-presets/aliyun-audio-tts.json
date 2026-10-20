@@ -1,5 +1,43 @@
 [
 	{
+		"id": "qwen-audio-3.1-tts-flash",
+		"display_name": "Qwen Audio 3.1 TTS Flash",
+		"description": "DashScope low-latency text-to-speech with instruction control and voice cloning. Billed by input and output tokens.",
+		"i18n": {
+			"en": "DashScope low-latency text-to-speech with instruction control and voice cloning. Billed by input and output tokens.",
+			"zh": "DashScope 低延迟语音合成，支持指令控制与声音复刻。按输入和输出 Token 计费。",
+			"ja": "DashScope の低レイテンシ音声合成です。指示による制御とボイスクローンに対応し、入力と出力のトークンで課金します。",
+			"ko": "DashScope 저지연 음성 합성입니다. 지시 제어와 보이스 클로닝을 지원하고, 입력과 출력 토큰으로 과금합니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.23,
+						"output_price": 1.87
+					}
+				]
+			},
+			"cny": {
+				"audio_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.5,
+						"output_price": 12
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		}
+	},
+	{
 		"id": "qwen-audio-3.0-tts-plus",
 		"display_name": "Qwen Audio 3.0 TTS Plus",
 		"description": "DashScope high-quality text-to-speech model billed by generated characters.",

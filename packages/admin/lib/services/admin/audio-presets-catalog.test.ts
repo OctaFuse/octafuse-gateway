@@ -32,6 +32,11 @@ const EXPECTED_AUDIO_IDS = [
 	'minimax-speech-2.8-hd',
 	'minimax-speech-2.8-turbo',
 	'qwen-audio-3.0-asr-flash',
+	'qwen-audio-3.1-asr-flash',
+	'qwen-audio-3.1-asr-flash-filetrans',
+	'qwen-audio-3.1-asr-flash-message',
+	'qwen-audio-3.1-asr-flash-streaming',
+	'qwen-audio-3.1-tts-flash',
 	'qwen-audio-3.0-asr-flash-filetrans',
 	'qwen-audio-3.0-asr-flash-streaming',
 	'qwen-audio-3.0-tts-flash',
@@ -69,10 +74,14 @@ describe('static audio model presets (*-audio-asr.json / *-audio-tts.json)', () 
 		);
 		for (const row of audioRows) {
 			assert.ok(row.vendor, `vendor required for ${row.id}`);
-			if (asPricing(row.pricing.usd).audio_billing_mode === 'per_character') {
-				assert.equal((row.modalities?.output ?? []).includes('audio'), true);
+			const mode = asPricing(row.pricing.usd).audio_billing_mode;
+			const input = row.modalities?.input ?? [];
+			const output = row.modalities?.output ?? [];
+			const tokenTts = mode === 'token' && output.includes('audio') && !input.includes('audio');
+			if (mode === 'per_character' || tokenTts) {
+				assert.equal(output.includes('audio'), true, row.id);
 			} else {
-				assert.equal((row.modalities?.input ?? []).includes('audio'), true);
+				assert.equal(input.includes('audio'), true, row.id);
 			}
 		}
 	});
@@ -125,6 +134,22 @@ describe('static audio model presets (*-audio-asr.json / *-audio-tts.json)', () 
 		assert.equal(asPricing(fileAsr.pricing.cny).audio?.price_per_second, 0.00022);
 
 		// 官方标价为「元/万字符」；目录存「每字符」单价，供 usage.characters × price 扣费。
+		const qwen31 = byId.get('qwen-audio-3.1-asr-flash')!;
+		assert.equal(asPricing(qwen31.pricing.usd).audio_billing_mode, 'token');
+		assert.equal(asPricing(qwen31.pricing.usd).tiers?.[0]?.input_price, 0.15);
+		assert.equal(asPricing(qwen31.pricing.usd).tiers?.[0]?.output_price, 0.47);
+		assert.equal(asPricing(qwen31.pricing.cny).tiers?.[0]?.input_price, 0.8);
+		assert.equal(asPricing(qwen31.pricing.cny).tiers?.[0]?.output_price, 2.7);
+		assert.equal(qwen31.context_window, 8192);
+		assert.equal(qwen31.max_tokens, 1024);
+
+		const qwen31Tts = byId.get('qwen-audio-3.1-tts-flash')!;
+		assert.equal(asPricing(qwen31Tts.pricing.usd).audio_billing_mode, 'token');
+		assert.equal(asPricing(qwen31Tts.pricing.usd).tiers?.[0]?.input_price, 0.23);
+		assert.equal(asPricing(qwen31Tts.pricing.usd).tiers?.[0]?.output_price, 1.87);
+		assert.equal(asPricing(qwen31Tts.pricing.cny).tiers?.[0]?.input_price, 1.5);
+		assert.equal(asPricing(qwen31Tts.pricing.cny).tiers?.[0]?.output_price, 12);
+
 		const tts = byId.get('qwen-audio-3.0-tts-plus')!;
 		assert.equal(asPricing(tts.pricing.cny).audio_billing_mode, 'per_character');
 		assert.equal(asPricing(tts.pricing.cny).audio?.price_per_character, 0.00014);
