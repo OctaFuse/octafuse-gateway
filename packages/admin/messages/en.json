@@ -1351,9 +1351,9 @@
 			"audioPresetHint": "Choose a mode to fill the public protocol, upstream capability, and adapter. Verify the provider model name.",
 			"audioPresetNonRealtime": "DashScope non-realtime TTS (OpenAI compatible)",
 			"audioPresetRealtime": "DashScope realtime TTS (WebSocket)",
-			"audioPresetAsrFlashConvert": "Qwen-Audio-3.0 flash (OpenAI convert)",
-			"audioPresetAsrFlashPassthrough": "Qwen-Audio-3.0 flash (DashScope HTTP)",
-			"audioPresetAsrFiletrans": "DashScope filetrans (async file_url)",
+			"audioPresetAsrFlashConvert": "Qwen-Audio flash (OpenAI convert)",
+			"audioPresetAsrFlashPassthrough": "Qwen-Audio flash (DashScope HTTP)",
+			"audioPresetAsrFiletrans": "Qwen-Audio filetrans (async file_url)",
 			"modelRequired": "Model *",
 			"selectModel": "Select a model",
 			"modelId": "Model ID",
@@ -1369,10 +1369,20 @@
 			"adapterNames": {
 				"passthrough": "Passthrough",
 				"dashscope-asr-qwen-file": "Qwen3 file ASR",
-				"dashscope-asr-qwen-audio-file": "Qwen-Audio-3.0 file ASR",
+				"dashscope-asr-qwen-audio-file": "Qwen-Audio file ASR",
 				"dashscope-asr-fun-file": "Fun-ASR file",
-				"dashscope-asr-file-async": "Async file ASR",
-				"dashscope-tts-speech": "CosyVoice / Qwen-Audio-3.0 TTS",
+				"dashscope-asr-qwen-file-async": "Qwen3 async file ASR",
+				"dashscope-asr-qwen-audio-file-async": "Qwen-Audio async file ASR",
+				"dashscope-asr-fun-async": "Fun-ASR async file ASR",
+				"dashscope-asr-paraformer-async": "Paraformer async file ASR",
+				"dashscope-tts-speech": "CosyVoice TTS",
+				"dashscope-tts-qwen-audio": "Qwen-Audio TTS",
+				"passthrough-cosyvoice": "Passthrough CosyVoice",
+				"passthrough-qwen-audio-tts": "Passthrough Qwen-Audio",
+				"passthrough-qwen3": "Passthrough Qwen3",
+				"passthrough-qwen-audio-asr": "Passthrough Qwen-Audio",
+				"passthrough-fun-asr": "Passthrough Fun-ASR",
+				"passthrough-paraformer": "Passthrough Paraformer",
 				"dashscope-tts-qwen": "Qwen-TTS (multimodal)",
 				"dashscope-tts-minimax": "MiniMax TTS",
 				"dashscope-image-qwen": "Qwen Image 3.0",
@@ -1399,7 +1409,7 @@
 					]
 				},
 				"dashscope-asr-qwen-audio-file": {
-					"purpose": "For qwen-audio-3.0-asr-flash.",
+					"purpose": "For qwen-audio-3.0-asr-flash and qwen-audio-3.1-asr-flash. For filetrans, choose Qwen-Audio async file ASR.",
 					"mapping": [
 						"language is written to parameters.language_hints.",
 						"prompt is sent as input_text.",
@@ -1413,8 +1423,35 @@
 						"format is inferred from the MIME type or filename extension."
 					]
 				},
-				"dashscope-asr-file-async": {
-					"purpose": "For filetrans, fun-asr, and paraformer async transcription. The provider needs both the submit and task query endpoints.",
+				"dashscope-asr-qwen-file-async": {
+					"purpose": "For qwen3-asr-flash-filetrans. The provider needs both the submit and task query endpoints.",
+					"mapping": [
+						"A public file_url form field is required (http, https, or oss).",
+						"prompt is written to input.context.",
+						"language is written to parameters.language_hints.",
+						"The gateway submits the task and polls for the result."
+					]
+				},
+				"dashscope-asr-qwen-audio-file-async": {
+					"purpose": "For Qwen-Audio filetrans. The provider needs both the submit and task query endpoints.",
+					"mapping": [
+						"A public file_url form field is required (http, https, or oss).",
+						"prompt is written to input.context.",
+						"language is written to parameters.language_hints.",
+						"The gateway submits the task and polls for the result."
+					]
+				},
+				"dashscope-asr-fun-async": {
+					"purpose": "For fun-asr and fun-asr-2 async transcription, excluding realtime. The provider needs both the submit and task query endpoints.",
+					"mapping": [
+						"A public file_url form field is required (http, https, or oss).",
+						"prompt is written to input.context.",
+						"language is written to parameters.language_hints.",
+						"The gateway submits the task and polls for the result."
+					]
+				},
+				"dashscope-asr-paraformer-async": {
+					"purpose": "For paraformer-v async transcription. The provider needs both the submit and task query endpoints.",
 					"mapping": [
 						"A public file_url form field is required (http, https, or oss).",
 						"prompt is written to input.context.",
@@ -1423,7 +1460,15 @@
 					]
 				},
 				"dashscope-tts-speech": {
-					"purpose": "For CosyVoice and Qwen-Audio-3.0-TTS.",
+					"purpose": "For CosyVoice. For Qwen-Audio, choose Qwen-Audio TTS.",
+					"mapping": [
+						"response_format accepts mp3, opus, wav, and pcm.",
+						"speed is 0.5–2 and is written to input.rate.",
+						"instructions is written to input.instruction."
+					]
+				},
+				"dashscope-tts-qwen-audio": {
+					"purpose": "For qwen-audio-3.0-tts and qwen-audio-3.1-tts-flash. Voices follow the model: 3.1 uses voices ending in _v3.1.",
 					"mapping": [
 						"response_format accepts mp3, opus, wav, and pcm.",
 						"speed is 0.5–2 and is written to input.rate.",
@@ -1431,7 +1476,7 @@
 					]
 				},
 				"dashscope-tts-qwen": {
-					"purpose": "For non-realtime models such as qwen3-tts-flash. For Qwen-Audio-3.0-TTS, choose CosyVoice / Qwen-Audio-3.0 TTS.",
+					"purpose": "For non-realtime models such as qwen3-tts-flash. For Qwen-Audio, choose Qwen-Audio TTS.",
 					"mapping": [
 						"Only wav is returned, so response_format must be wav.",
 						"speed must be 1.",

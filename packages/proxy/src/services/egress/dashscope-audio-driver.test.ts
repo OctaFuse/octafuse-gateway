@@ -467,7 +467,7 @@ describe('DashScope ASR dispatch', () => {
 			route({
 				providerModelName: 'qwen3-asr-flash-filetrans',
 				upstreamOperation: 'audio.transcriptions.async',
-				adapter: 'dashscope-asr-file-async',
+				adapter: 'dashscope-asr-qwen-audio-file-async',
 			}),
 			// 异步任务由客户端提供公网 URL，网关不需要接收或暂存音频文件。
 			request({ file: null, fileSourceUrl: 'https://audio.example/sample.wav' }),

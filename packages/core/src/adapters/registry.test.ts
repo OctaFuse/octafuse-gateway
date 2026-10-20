@@ -47,8 +47,12 @@ describe('adapter registry', () => {
 			'dashscope-asr-qwen-file',
 			'dashscope-asr-qwen-audio-file',
 			'dashscope-asr-fun-file',
-			'dashscope-asr-file-async',
+			'dashscope-asr-qwen-file-async',
+			'dashscope-asr-qwen-audio-file-async',
+			'dashscope-asr-fun-async',
+			'dashscope-asr-paraformer-async',
 			'dashscope-tts-speech',
+			'dashscope-tts-qwen-audio',
 			'dashscope-tts-qwen',
 			'dashscope-tts-minimax',
 			'dashscope-image-qwen',
@@ -109,7 +113,19 @@ describe('adapter registry', () => {
 			upstreamProtocol: 'minimax',
 			upstreamOperation: 'audio.transcriptions',
 		});
-		assert.equal(listConversionAdapters().length, 16);
+		assert.equal(listConversionAdapters().length, 20);
+		assert.deepEqual(ROUTE_ADAPTER_MAPPINGS['dashscope-tts-qwen-audio'], {
+			requestProtocol: 'openai',
+			requestOperation: 'audio.speech',
+			upstreamProtocol: 'dashscope',
+			upstreamOperation: 'audio.speech',
+		});
+		assert.deepEqual(ROUTE_ADAPTER_MAPPINGS['dashscope-asr-qwen-audio-file-async'], {
+			requestProtocol: 'openai',
+			requestOperation: 'audio.transcriptions',
+			upstreamProtocol: 'dashscope',
+			upstreamOperation: 'audio.transcriptions.async',
+		});
 		assert.deepEqual(ROUTE_ADAPTER_MAPPINGS['minimax-tts'], {
 			requestProtocol: 'openai',
 			requestOperation: 'audio.speech',
@@ -229,7 +245,7 @@ describe('adapter registry', () => {
 	it('resolves DashScope presets from registry intents', () => {
 		assert.equal(getAdapterByPresetIntent('dashscope-asr-flash-convert')?.id, 'dashscope-asr-qwen-audio-file');
 		assert.equal(getAdapterByPresetIntent('dashscope-asr-flash-passthrough')?.id, 'passthrough');
-		assert.equal(getAdapterByPresetIntent('dashscope-asr-filetrans')?.id, 'dashscope-asr-file-async');
+		assert.equal(getAdapterByPresetIntent('dashscope-asr-filetrans')?.id, 'dashscope-asr-qwen-audio-file-async');
 		assert.equal(getAdapterByPresetIntent('dashscope-tts-nonrealtime')?.id, 'dashscope-tts-speech');
 		assert.equal(getAdapterByPresetIntent('dashscope-tts-realtime')?.id, 'passthrough');
 		assert.equal(getAdapterByPresetIntent('dashscope-image-qwen')?.id, 'dashscope-image-qwen');
@@ -412,7 +428,10 @@ describe('adapter registry', () => {
 		const features = Object.fromEntries(
 			listConversionAdapters().map((adapter) => [adapter.id, adapter.lossyFeatures ?? []]),
 		);
-		assert.deepEqual(features['dashscope-asr-file-async'], []);
+		assert.deepEqual(features['dashscope-asr-qwen-file-async'], []);
+		assert.deepEqual(features['dashscope-asr-qwen-audio-file-async'], []);
+		assert.deepEqual(features['dashscope-asr-fun-async'], []);
+		assert.deepEqual(features['dashscope-asr-paraformer-async'], []);
 		assert.deepEqual(features['dashscope-tts-minimax'], []);
 		assert.deepEqual(features['minimax-tts'], ['response_format_aac', 'openai_speed_range']);
 		assert.deepEqual(features['elevenlabs-tts'], [
@@ -430,17 +449,26 @@ describe('adapter registry', () => {
 
 	it('matches provider model names with wildcards, case, and exclusions', () => {
 		const speech = getAdapterByOptionKey('dashscope-tts-speech');
+		const qwenAudioTts = getAdapterByOptionKey('dashscope-tts-qwen-audio');
 		const qwenAudioAsr = getAdapterByOptionKey('dashscope-asr-qwen-audio-file');
-		const qwenAudioRealtime = getAdapterByOptionKey('passthrough:dashscope:audio.transcriptions.realtime.inference');
+		const qwenAudioRealtime = getAdapterByOptionKey(
+			'passthrough:dashscope:audio.transcriptions.realtime.inference:qwen-audio',
+		);
 		const qwenTts = getAdapterByOptionKey('dashscope-tts-qwen');
 		const qwenTtsSession = getAdapterByOptionKey('passthrough:dashscope:audio.speech.realtime.session');
 		const qwenAsr = getAdapterByOptionKey('dashscope-asr-qwen-file');
-		const asyncAsr = getAdapterByOptionKey('dashscope-asr-file-async');
+		const asyncAsr = getAdapterByOptionKey('dashscope-asr-qwen-audio-file-async');
 		const openaiAsr = getAdapterByOptionKey('passthrough:openai:audio.transcriptions');
-		assert.ok(speech && qwenAudioAsr && qwenAudioRealtime && qwenTts && qwenTtsSession && qwenAsr && asyncAsr && openaiAsr);
+		assert.ok(
+			speech && qwenAudioTts && qwenAudioAsr && qwenAudioRealtime && qwenTts && qwenTtsSession && qwenAsr && asyncAsr && openaiAsr,
+		);
 
-		assert.equal(matchAdapterUpstreamModel(speech, 'Qwen-Audio-3.0-TTS-Plus'), 'match');
-		assert.equal(matchAdapterUpstreamModel(speech, 'qwen-audio-3.1-tts-flash'), 'match');
+		assert.equal(matchAdapterUpstreamModel(speech, 'Qwen-Audio-3.0-TTS-Plus'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(speech, 'qwen-audio-3.1-tts-flash'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(qwenAudioTts, 'Qwen-Audio-3.0-TTS-Plus'), 'match');
+		assert.equal(matchAdapterUpstreamModel(qwenAudioTts, 'qwen-audio-3.1-tts-flash'), 'match');
+		assert.equal(matchAdapterUpstreamModel(qwenAudioTts, 'qwen-audio-3.1-tts-next'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(qwenAudioTts, 'cosyvoice-v3.5-flash'), 'mismatch');
 		assert.equal(matchAdapterUpstreamModel(speech, 'qwen-audio-3.1-tts-next'), 'mismatch');
 		assert.equal(matchAdapterUpstreamModel(speech, 'cosyvoice-v3.5-flash'), 'match');
 		assert.equal(matchAdapterUpstreamModel(speech, 'qwen3-tts-flash'), 'mismatch');
@@ -460,14 +488,24 @@ describe('adapter registry', () => {
 		assert.equal(matchAdapterUpstreamModel(qwenAudioRealtime, 'qwen-audio-3.1-asr-flash-streaming'), 'match');
 		assert.equal(matchAdapterUpstreamModel(qwenAudioRealtime, 'qwen-audio-3.1-asr-flash-message'), 'match');
 		assert.equal(matchAdapterUpstreamModel(asyncAsr, 'qwen-audio-3.1-asr-flash-filetrans'), 'match');
+		assert.equal(matchAdapterUpstreamModel(asyncAsr, 'fun-asr'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(asyncAsr, 'paraformer-v2'), 'mismatch');
 
 		assert.equal(matchAdapterUpstreamModel(qwenAsr, 'qwen3-asr-flash'), 'match');
 		assert.equal(matchAdapterUpstreamModel(qwenAsr, 'qwen3-asr-flash-2025-09-08'), 'match');
 		assert.equal(matchAdapterUpstreamModel(qwenAsr, 'qwen3-asr-flash-realtime'), 'mismatch');
 		assert.equal(matchAdapterUpstreamModel(qwenAsr, 'qwen3-asr-flash-filetrans'), 'mismatch');
-		assert.equal(matchAdapterUpstreamModel(asyncAsr, 'qwen3-asr-flash-filetrans'), 'match');
-		assert.equal(matchAdapterUpstreamModel(asyncAsr, 'fun-asr'), 'match');
-		assert.equal(matchAdapterUpstreamModel(asyncAsr, 'fun-asr-realtime'), 'mismatch');
+		assert.equal(matchAdapterUpstreamModel(asyncAsr, 'qwen3-asr-flash-filetrans'), 'mismatch');
+		assert.equal(
+			matchAdapterUpstreamModel(getAdapterByOptionKey('dashscope-asr-qwen-file-async')!, 'qwen3-asr-flash-filetrans'),
+			'match',
+		);
+		assert.equal(matchAdapterUpstreamModel(getAdapterByOptionKey('dashscope-asr-fun-async')!, 'fun-asr'), 'match');
+		assert.equal(matchAdapterUpstreamModel(getAdapterByOptionKey('dashscope-asr-fun-async')!, 'fun-asr-realtime'), 'mismatch');
+		assert.equal(
+			matchAdapterUpstreamModel(getAdapterByOptionKey('dashscope-asr-paraformer-async')!, 'paraformer-v2'),
+			'match',
+		);
 		assert.equal(matchAdapterUpstreamModel(openaiAsr, 'qwen3-asr-flash'), 'generic');
 	});
 

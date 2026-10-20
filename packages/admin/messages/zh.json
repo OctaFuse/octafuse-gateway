@@ -1351,9 +1351,9 @@
 			"audioPresetHint": "选择模式后自动填充对外协议、上游能力和适配器；供应商模型名称仍需确认。",
 			"audioPresetNonRealtime": "DashScope 非实时 TTS（OpenAI 兼容）",
 			"audioPresetRealtime": "DashScope 实时 TTS（WebSocket）",
-			"audioPresetAsrFlashConvert": "Qwen-Audio-3.0 flash（OpenAI 转换）",
-			"audioPresetAsrFlashPassthrough": "Qwen-Audio-3.0 flash（DashScope HTTP 透传）",
-			"audioPresetAsrFiletrans": "DashScope filetrans（异步 file_url）",
+				"audioPresetAsrFlashConvert": "Qwen-Audio flash（OpenAI 转换）",
+				"audioPresetAsrFlashPassthrough": "Qwen-Audio flash（DashScope HTTP 透传）",
+				"audioPresetAsrFiletrans": "Qwen-Audio filetrans（异步 file_url）",
 			"modelRequired": "模型 *",
 			"selectModel": "选择模型",
 			"modelId": "模型 ID",
@@ -1369,10 +1369,20 @@
 			"adapterNames": {
 				"passthrough": "透传",
 				"dashscope-asr-qwen-file": "Qwen3 文件转写",
-				"dashscope-asr-qwen-audio-file": "Qwen-Audio-3.0 文件转写",
+				"dashscope-asr-qwen-audio-file": "Qwen-Audio 文件转写",
 				"dashscope-asr-fun-file": "Fun-ASR 文件转写",
-				"dashscope-asr-file-async": "异步文件转写",
-				"dashscope-tts-speech": "CosyVoice / Qwen-Audio-3.0 语音合成",
+				"dashscope-asr-qwen-file-async": "Qwen3 异步文件转写",
+				"dashscope-asr-qwen-audio-file-async": "Qwen-Audio 异步文件转写",
+				"dashscope-asr-fun-async": "Fun-ASR 异步文件转写",
+				"dashscope-asr-paraformer-async": "Paraformer 异步文件转写",
+				"dashscope-tts-speech": "CosyVoice 语音合成",
+				"dashscope-tts-qwen-audio": "Qwen-Audio 语音合成",
+				"passthrough-cosyvoice": "透传 CosyVoice",
+				"passthrough-qwen-audio-tts": "透传 Qwen-Audio",
+				"passthrough-qwen3": "透传 Qwen3",
+				"passthrough-qwen-audio-asr": "透传 Qwen-Audio",
+				"passthrough-fun-asr": "透传 Fun-ASR",
+				"passthrough-paraformer": "透传 Paraformer",
 				"dashscope-tts-qwen": "Qwen-TTS 语音合成（多模态）",
 				"dashscope-tts-minimax": "MiniMax 语音合成",
 				"dashscope-image-qwen": "千问图像 3.0",
@@ -1399,7 +1409,7 @@
 					]
 				},
 				"dashscope-asr-qwen-audio-file": {
-					"purpose": "适用 qwen-audio-3.0-asr-flash。",
+					"purpose": "适用 qwen-audio-3.0-asr-flash 与 qwen-audio-3.1-asr-flash。filetrans 请选 Qwen-Audio 异步文件转写。",
 					"mapping": [
 						"language 写入 parameters.language_hints。",
 						"prompt 作为 input_text。",
@@ -1413,8 +1423,35 @@
 						"format 从 MIME 或文件扩展名推断。"
 					]
 				},
-				"dashscope-asr-file-async": {
-					"purpose": "适用 filetrans、fun-asr 与 paraformer 异步转写。供应商需配置提交和任务查询两个端点。",
+				"dashscope-asr-qwen-file-async": {
+					"purpose": "适用 qwen3-asr-flash-filetrans。供应商需配置提交和任务查询两个端点。",
+					"mapping": [
+						"必须传公网 file_url 表单字段（http、https 或 oss）。",
+						"prompt 写入 input.context。",
+						"language 写入 parameters.language_hints。",
+						"网关提交任务并轮询结果。"
+					]
+				},
+				"dashscope-asr-qwen-audio-file-async": {
+					"purpose": "适用 qwen-audio 的 filetrans。供应商需配置提交和任务查询两个端点。",
+					"mapping": [
+						"必须传公网 file_url 表单字段（http、https 或 oss）。",
+						"prompt 写入 input.context。",
+						"language 写入 parameters.language_hints。",
+						"网关提交任务并轮询结果。"
+					]
+				},
+				"dashscope-asr-fun-async": {
+					"purpose": "适用 fun-asr 与 fun-asr-2 异步转写，不含 realtime。供应商需配置提交和任务查询两个端点。",
+					"mapping": [
+						"必须传公网 file_url 表单字段（http、https 或 oss）。",
+						"prompt 写入 input.context。",
+						"language 写入 parameters.language_hints。",
+						"网关提交任务并轮询结果。"
+					]
+				},
+				"dashscope-asr-paraformer-async": {
+					"purpose": "适用 paraformer-v 异步转写。供应商需配置提交和任务查询两个端点。",
 					"mapping": [
 						"必须传公网 file_url 表单字段（http、https 或 oss）。",
 						"prompt 写入 input.context。",
@@ -1423,7 +1460,15 @@
 					]
 				},
 				"dashscope-tts-speech": {
-					"purpose": "适用 CosyVoice 与 Qwen-Audio-3.0-TTS。",
+					"purpose": "适用 CosyVoice。Qwen-Audio 请选 Qwen-Audio 语音合成。",
+					"mapping": [
+						"response_format 支持 mp3、opus、wav、pcm。",
+						"speed 取值 0.5–2，写入 input.rate。",
+						"instructions 写入 input.instruction。"
+					]
+				},
+				"dashscope-tts-qwen-audio": {
+					"purpose": "适用 qwen-audio-3.0-tts 与 qwen-audio-3.1-tts-flash。音色跟模型走：3.1 使用带 _v3.1 的音色。",
 					"mapping": [
 						"response_format 支持 mp3、opus、wav、pcm。",
 						"speed 取值 0.5–2，写入 input.rate。",
@@ -1431,7 +1476,7 @@
 					]
 				},
 				"dashscope-tts-qwen": {
-					"purpose": "适用 qwen3-tts-flash 等非实时模型。Qwen-Audio-3.0-TTS 请选 CosyVoice / Qwen-Audio-3.0 语音合成。",
+					"purpose": "适用 qwen3-tts-flash 等非实时模型。Qwen-Audio 请选 Qwen-Audio 语音合成。",
 					"mapping": [
 						"只返回 wav，response_format 必须是 wav。",
 						"speed 必须为 1。",

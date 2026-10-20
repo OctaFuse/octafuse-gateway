@@ -8,7 +8,7 @@ import {
 	ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { displayedProtectedUpstreamPaths } from '@octafuse/core/upstream-extra-fields';
-import type { AdapterDescriptor } from '@octafuse/core/adapters/registry';
+import { isDashScopeAsyncFileAdapter, type AdapterDescriptor } from '@octafuse/core/adapters/registry';
 import { useTranslations } from 'next-intl';
 import { buildOpenAiAdapterCallSample, requestSurfacePath } from '../route-utils';
 
@@ -286,7 +286,7 @@ export function RouteAdapterGuide({ descriptor, modelId, routeGroup, onOpenReque
 									<>
 										<p>
 											{t(
-												descriptor.id === 'dashscope-asr-file-async'
+												isDashScopeAsyncFileAdapter(descriptor.id)
 													? 'guide.sampleHintAsync'
 													: 'guide.sampleHint'
 											)}

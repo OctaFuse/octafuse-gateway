@@ -95,7 +95,7 @@ DashScope 语音合成的上游 `input` 是对象，OpenAI 的 `input` 是文本
 | 视频 | `exchange: 'job'`，`responsePayload: 'binary'` | 异步任务提交 / 轮询 / 取结果内核 |
 | 更多图 / 音频供应商 | 多数是 `passthrough` 或单个转换适配器 | 注册表加一行、分发表加一行 |
 
-`dashscope-asr-file-async` 已标为 `exchange: 'job'`，是将来抽出任务内核的第一个样本。
+Qwen3、Qwen-Audio、Fun-ASR、Paraformer 的异步文件转写适配器已标为 `exchange: 'job'`，是将来抽出任务内核的样本。
 
 `failover-dispatch.ts` 的 `ProxyDispatchMeta` 里多数字段目前仅用于图 / 音频记账。文本入口已抽出可序列化的 `AccountingEvent` 与直接 flush 的 sink 接缝（`dispatch → describeOutcome → buildAccountingEvent → sink.flush`）；图 / 音频尚未迁入该接缝，本轮不改它们的计费口径。
 

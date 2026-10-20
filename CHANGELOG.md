@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **DashScope 语音适配器按系列拆开**：CosyVoice 继续用 `dashscope-tts-speech`；Qwen-Audio 3.0 / 3.1 语音合成改用 `dashscope-tts-qwen-audio`。异步文件转写拆成 Qwen3、Qwen-Audio、Fun-ASR、Paraformer 四个转换适配器，透传选项也按系列分开。迁移 0032 会改写已有转换路由：供应商模型名以 `qwen-audio-` 开头的 `dashscope-tts-speech`，以及能对上系列的 `dashscope-asr-file-async`。对不上的旧异步行会留在库里，直到改成新适配器才重新可用。透传行仍是 `passthrough`。
 - **Qwen-Audio 3.1**：静态目录增加 `qwen-audio-3.1-asr-flash`、`qwen-audio-3.1-asr-flash-filetrans`、`qwen-audio-3.1-asr-flash-streaming`、`qwen-audio-3.1-asr-flash-message` 和 `qwen-audio-3.1-tts-flash`。中国区与国际区都按官方 input/output token 刊例计费，不再沿用 3.0 的按秒或按字符价。同步识别、文件转写、inference 实时识别和 SpeechSynthesizer 会读取上游 token 用量。`qwen-audio-3.1-realtime-plus` 与 `qwen-audio-3.1-tts-next` 仍未接入。已导入的 3.0 模型不会被覆盖，3.1 需要另导入并挂到对应适配器。
 - **路由时段价格明细**：计费规则里每个文本模型时段都可以展开查看本时段价格明细，包括只有「全部时段」、以及未命中窗口时的「其他时段」。没有目录时段倍率时按基准价 ×1，再乘以该行当前生效的供应商、计费和成本倍率。
 - **MiniMax M3 目录价**：静态目录改为官网标准现价（永久五折后）。输入不超过 512K 时，美元 $0.30 / $1.20、缓存读取 $0.06，中国区 ¥2.10 / ¥8.40、缓存读取 ¥0.42；超过 512K 时整档加倍。不含 Priority 与划线原价。已导入的模型不会被覆盖，需要重新导入或手工改价。

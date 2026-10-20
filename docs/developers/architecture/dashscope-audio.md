@@ -51,9 +51,13 @@ Adapter 是 route target 的必选、可校验能力，不使用字符串兜底�
 | `dashscope-asr-qwen-file`  | OpenAI multipart ASR → Base64 Data URL → Qwen3-ASR（`content.audio` + `asr_options`） |
 | `dashscope-asr-qwen-audio-file` | OpenAI multipart ASR → Qwen-Audio-3.0 / 3.1 flash（`input_audio` + 必填 `format` / `language_hints`；响应 `output.text`。3.0 用 `usage.duration` 按秒计费，3.1 另读 `usage.input_tokens` / `output_tokens` 按 token 计费） |
 | `dashscope-asr-fun-file`   | OpenAI multipart ASR → Base64 Data URL → Fun-ASR-Realtime 非实时 ASR |
-| `dashscope-asr-file-async` | OpenAI `audio.transcriptions` + 公网 `file_url` → DashScope 异步 submit/poll |
+| `dashscope-asr-qwen-file-async` | OpenAI `audio.transcriptions` + 公网 `file_url` → Qwen3 filetrans 异步 submit/poll |
+| `dashscope-asr-qwen-audio-file-async` | OpenAI `audio.transcriptions` + 公网 `file_url` → Qwen-Audio filetrans 异步 submit/poll |
+| `dashscope-asr-fun-async` | OpenAI `audio.transcriptions` + 公网 `file_url` → Fun-ASR 异步 submit/poll |
+| `dashscope-asr-paraformer-async` | OpenAI `audio.transcriptions` + 公网 `file_url` → Paraformer 异步 submit/poll |
 | `passthrough`              | DashScope 原生实时 ASR 事件 → DashScope 同名 task/session WebSocket  |
-| `dashscope-tts-speech`     | OpenAI speech → DashScope SpeechSynthesizer                          |
+| `dashscope-tts-speech`     | OpenAI speech → CosyVoice SpeechSynthesizer                          |
+| `dashscope-tts-qwen-audio` | OpenAI speech → Qwen-Audio 3.0 / 3.1 SpeechSynthesizer                |
 | `dashscope-tts-qwen`       | OpenAI speech → DashScope Qwen-TTS 多模态 TTS                        |
 | `dashscope-tts-minimax`    | OpenAI speech → DashScope MiniMax 多模态 TTS                         |
 | `passthrough`              | DashScope 原生实时 TTS 事件 → DashScope 同名 task/session WebSocket  |
@@ -91,8 +95,8 @@ API Key 继续使用现有 Provider key 存储；Workspace ID 不是密钥，可
 1. 新建或编辑供应商账号，启用 `DashScope` 协议，填写 API Key 和 DashScope base；需要专用地址时再展开端点覆盖。
 2. 新建网关模型。`Model ID` 是客户端使用的公开名称；模型分类选择 `Audio`，再选择 `Speech to text` 或 `Text to speech`。
 3. 在路由中创建对应 Request Surface 和 Target。`Provider model` 必须填写 DashScope 的真实模型名，它与网关 `Model ID` 是两个独立字段。
-4. HTTP 文件 ASR 按模型接口选择 adapter：Qwen3 用 `dashscope-asr-qwen-file`，Qwen-Audio-3.0 / 3.1 flash 用 `dashscope-asr-qwen-audio-file`，Fun-ASR 用 `dashscope-asr-fun-file`，filetrans 用 `dashscope-asr-file-async`。3.1 的 streaming 与 message 走 inference WebSocket。Admin 路由弹窗提供 ASR 快捷预设。不要把 Audio 3.x 接到 Qwen3 adapter。
-5. 原生透传：request/upstream 都选 `dashscope` 和同一个 operation，adapter 选 `passthrough`。同步 ASR、多模态语音和生图共用多模态生成路径；SpeechSynthesizer、异步 filetrans 和实时 WebSocket 使用各自的公开路径。OpenAI 客户端仍用转换适配器 `dashscope-tts-speech`、`dashscope-tts-qwen`、`dashscope-tts-minimax` 或 `dashscope-asr-file-async`。
+4. HTTP 文件 ASR 按模型系列选择 adapter：Qwen3 同步用 `dashscope-asr-qwen-file`，filetrans 用 `dashscope-asr-qwen-file-async`；Qwen-Audio 3.0 / 3.1 flash 同步用 `dashscope-asr-qwen-audio-file`，filetrans 用 `dashscope-asr-qwen-audio-file-async`；Fun-ASR 同步用 `dashscope-asr-fun-file`，异步用 `dashscope-asr-fun-async`；Paraformer 异步用 `dashscope-asr-paraformer-async`。3.1 的 streaming 与 message 走 inference WebSocket。Admin 路由弹窗提供 Qwen-Audio 的 ASR 快捷预设。不要把 Audio 3.x 接到 Qwen3 adapter。
+5. 原生透传：request/upstream 都选 `dashscope` 和同一个 operation，adapter 选 `passthrough`，并选对应系列。同步 ASR、多模态语音和生图共用多模态生成路径；SpeechSynthesizer、异步 filetrans 和实时 WebSocket 使用各自的公开路径。OpenAI 客户端按系列用 `dashscope-tts-speech`（CosyVoice）、`dashscope-tts-qwen-audio`、`dashscope-tts-qwen`、`dashscope-tts-minimax`，或上面的异步文件转写适配器。
 
 这里不根据模型名前缀自动猜 adapter。选错接口族时应直接暴露 DashScope 的错误，避免把配置错误伪装成故障转移。
 
