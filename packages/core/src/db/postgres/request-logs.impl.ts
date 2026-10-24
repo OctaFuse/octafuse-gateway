@@ -10,15 +10,25 @@ import {
 } from '../../lib/dashboard-request-stats';
 import type { RequestLogRow } from '../../types';
 import type { PostgresDatabaseClient } from '../../storage/database-client';
-import type { RequestLogsRepository } from '../../storage/gateway-repository-interfaces';
+import type { RequestLogSummaryRow, RequestLogsRepository } from '../../storage/gateway-repository-interfaces';
 import { sqlitePlaceholdersToPg } from '../shared/sql-placeholders';
 import { filterAllowedRequestLogStatuses } from '../request-log-status-filter';
 import { appendModelIdPrefixCondition, appendProviderIdsCondition } from '../request-log-filters';
 import { postgresTimeseriesBucketExpr } from '../request-timeseries-bucket';
+import { buildRequestLogSummaryQuery, mapRequestLogSummaryRows } from '../request-log-summary';
 
 export function createPostgresRequestLogsRepository(db: PostgresDatabaseClient): RequestLogsRepository {
 	const pg = db.raw;
 	return {
+		async getRequestLogSummary(options): Promise<RequestLogSummaryRow[]> {
+			const { sql, binds } = buildRequestLogSummaryQuery(options, 'postgres');
+			const rows = (await pg.unsafe(
+				sqlitePlaceholdersToPg(sql),
+				binds as Parameters<typeof pg.unsafe>[1]
+			)) as Record<string, unknown>[];
+			return mapRequestLogSummaryRows(rows, options.groupBy);
+		},
+
 		async getRequestLogsByKeyId(
 			apiKeyId: string,
 			page: number,

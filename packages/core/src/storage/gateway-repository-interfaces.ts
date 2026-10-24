@@ -375,7 +375,53 @@ export type RequestLogsByKeyIdFilter = {
 	includeStatuses?: string[];
 };
 
+/** {@link RequestLogsRepository.getRequestLogSummary} 可用的分组维度。 */
+export const REQUEST_LOG_SUMMARY_DIMENSIONS = ['provider', 'model', 'route_group', 'status'] as const;
+export type RequestLogSummaryDimension = (typeof REQUEST_LOG_SUMMARY_DIMENSIONS)[number];
+
+/** 汇总行的分组键字段；未参与分组的维度不出现。`null` 表示该列在日志里为空。 */
+export type RequestLogSummaryKey = {
+	provider_id?: string | null;
+	model_id?: string | null;
+	route_group?: string | null;
+	status?: string | null;
+};
+
+/** 汇总指标：条数与 Token 为整数，金额为 6 位小数十进制字符串（避免浮点往返）。 */
+export type RequestLogSummaryMetrics = {
+	request_count: number;
+	success_count: number;
+	error_count: number;
+	input_tokens: number;
+	output_tokens: number;
+	cache_read_tokens: number;
+	cache_write_tokens: number;
+	reasoning_tokens: number;
+	total_tokens: number;
+	standard_cost: string;
+	metered_cost: string;
+	charged_cost: string;
+	charged_wallet_cost: string;
+};
+
+export type RequestLogSummaryRow = RequestLogSummaryKey & RequestLogSummaryMetrics;
+
 export interface RequestLogsRepository {
+	/**
+	 * 按维度聚合区间内请求日志（所有状态都计入）。区间为半开 `[startDate, endDate)`，两端均为 ISO 8601 UTC 时刻。
+	 * 没有日志的分组不返回行；返回行数超过 `limit` 时只保证至多 `limit` 行，调用方可传 `最大值 + 1` 判断是否越界。
+	 */
+	getRequestLogSummary(options: {
+		groupBy: RequestLogSummaryDimension[];
+		startDate: string;
+		endDate: string;
+		providerIds?: string[];
+		modelId?: string;
+		modelIdPrefix?: string;
+		routeGroup?: string;
+		status?: string;
+		limit: number;
+	}): Promise<RequestLogSummaryRow[]>;
 	getRequestLogsByKeyId(
 		apiKeyId: string,
 		page: number,

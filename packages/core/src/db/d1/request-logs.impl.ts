@@ -13,11 +13,12 @@ import {
 } from '../../lib/dashboard-request-stats';
 import type { RequestLogRow } from '../../types';
 import type { D1DatabaseClient } from '../../storage/database-client';
-import type { RequestLogsRepository } from '../../storage/gateway-repository-interfaces';
+import type { RequestLogSummaryRow, RequestLogsRepository } from '../../storage/gateway-repository-interfaces';
 import type { RequestLogsD1Statements } from './d1-repository-extras';
 import type { InsertRequestLogParams } from '../request-logs-types';
 import { filterAllowedRequestLogStatuses } from '../request-log-status-filter';
 import { appendModelIdPrefixCondition, appendProviderIdsCondition } from '../request-log-filters';
+import { buildRequestLogSummaryQuery, mapRequestLogSummaryRows } from '../request-log-summary';
 import {
 	sqliteBusinessTimezoneModifier,
 	sqliteTimeseriesBucketExpr,
@@ -94,6 +95,15 @@ export function createD1RequestLogsRepository(db: D1DatabaseClient): RequestLogs
 	const raw = db.raw;
 	return {
 		buildInsertRequestLogStatement,
+
+		async getRequestLogSummary(options): Promise<RequestLogSummaryRow[]> {
+			const { sql, binds } = buildRequestLogSummaryQuery(options, 'd1');
+			const result = await raw
+				.prepare(sql)
+				.bind(...binds)
+				.all<Record<string, unknown>>();
+			return mapRequestLogSummaryRows(result.results ?? [], options.groupBy);
+		},
 
 		async getRequestLogsByKeyId(
 			apiKeyId: string,
