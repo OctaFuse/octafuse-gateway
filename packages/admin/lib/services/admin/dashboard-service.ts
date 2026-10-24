@@ -1,7 +1,7 @@
 /**
  * 管理后台聚合服务：仪表盘 KPI、全局请求日志列表、`system_config` 读写，以及模型/供应商/用户/可靠性分析 API 的数据装配。
  */
-import type { GatewayRepositories } from '@octafuse/core';
+import type { GatewayRepositories, RequestLogSummaryDimension, RequestLogSummaryRow } from '@octafuse/core';
 import { BILLING_CURRENCY_KEY, tryParseGatewaySupportedBillingCurrencyInput } from '@octafuse/core/lib/billing-currency';
 import {
 	parseWebSearchActiveInput,
@@ -71,6 +71,8 @@ import type {
 	AdminReliabilityAnalyticsOutput,
 	AdminReliabilityModelProviderRow,
 	AdminReliabilityProviderRow,
+	AdminRequestLogSummaryOutput,
+	RequestLogSummaryGroupBy,
 	AdminRequestLogsOutput,
 	AdminStatsOutput,
 	AdminUserAnalyticsRow,
@@ -155,6 +157,112 @@ export async function listAdminGlobalRequestLogsService(
 		endDate: input.end_date,
 	});
 	return { ...result, page, page_size: pageSize };
+}
+
+const ISO_INSTANT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;
+
+function parseIsoInstant(raw: string | undefined, name: string): string {
+	const value = raw?.trim() ?? '';
+	if (!ISO_INSTANT_RE.test(value) || Number.isNaN(Date.parse(value))) {
+		throw badRequest(`${name} must be an ISO 8601 timestamp with timezone, e.g. 2026-10-20T10:00:00.000Z`);
+	}
+	return new Date(value).toISOString();
+}
+
+/** 汇总接口 `group_by` 白名单 → 仓储分组维度。 */
+const SUMMARY_GROUP_BY_DIMENSIONS: Record<RequestLogSummaryGroupBy, RequestLogSummaryDimension[]> = {
+	provider: ['provider'],
+	model: ['model'],
+	'provider,model': ['provider', 'model'],
+	route_group: ['route_group'],
+	status: ['status'],
+};
+
+/** 单次汇总最多返回的分组数；超出直接报错，不静默截断。 */
+export const REQUEST_LOG_SUMMARY_MAX_GROUPS = 1000;
+
+function parseSummaryGroupBy(raw: string | undefined): RequestLogSummaryGroupBy {
+	const value = (raw ?? '').trim() || 'provider';
+	// provider 与 model 的两种书写顺序等价。
+	const normalized = value === 'model,provider' ? 'provider,model' : value;
+	if (!(normalized in SUMMARY_GROUP_BY_DIMENSIONS)) {
+		throw badRequest(`group_by must be one of: ${Object.keys(SUMMARY_GROUP_BY_DIMENSIONS).join(', ')}`);
+	}
+	return normalized as RequestLogSummaryGroupBy;
+}
+
+function zeroSummaryMetrics(): Omit<RequestLogSummaryRow, 'provider_id'> {
+	return {
+		request_count: 0,
+		success_count: 0,
+		error_count: 0,
+		input_tokens: 0,
+		output_tokens: 0,
+		cache_read_tokens: 0,
+		cache_write_tokens: 0,
+		reasoning_tokens: 0,
+		total_tokens: 0,
+		standard_cost: '0.000000',
+		metered_cost: '0.000000',
+		charged_cost: '0.000000',
+		charged_wallet_cost: '0.000000',
+	};
+}
+
+/**
+ * 请求日志汇总（门户对账等精确核对场景）。
+ * 区间为半开 `[start, end)`，精度到毫秒；所有状态的日志都计入，与明细分页口径一致。
+ * 金额为 6 位小数十进制字符串。无 `provider_ids` 时至少要带一个其他筛选条件，避免全表无条件聚合。
+ * 仅在 `group_by=provider` 且传了 `provider_ids` 时，请求的每个 Provider 都有一行，没有日志的记 0。
+ */
+export async function getRequestLogSummaryService(
+	repos: GatewayRepositories,
+	input: {
+		group_by?: string;
+		provider_ids?: string;
+		model_id?: string;
+		model_id_prefix?: string;
+		route_group?: string;
+		status?: string;
+		start?: string;
+		end?: string;
+	}
+): Promise<AdminRequestLogSummaryOutput> {
+	const groupBy = parseSummaryGroupBy(input.group_by);
+	const providerIds = parseProviderIds(input.provider_ids);
+	const modelId = input.model_id?.trim() || undefined;
+	const modelIdPrefix = input.model_id_prefix?.trim() || undefined;
+	const routeGroup = input.route_group?.trim() || undefined;
+	const status = input.status?.trim() || undefined;
+	if (!providerIds && !modelId && !modelIdPrefix && !routeGroup && !status) {
+		throw badRequest('at least one of provider_ids, model_id, model_id_prefix, route_group, status is required');
+	}
+	const start = parseIsoInstant(input.start, 'start');
+	const end = parseIsoInstant(input.end, 'end');
+	if (Date.parse(start) >= Date.parse(end)) throw badRequest('start must be earlier than end');
+
+	const rows = await repos.requestLogs.getRequestLogSummary({
+		groupBy: SUMMARY_GROUP_BY_DIMENSIONS[groupBy],
+		startDate: start,
+		endDate: end,
+		providerIds,
+		modelId,
+		modelIdPrefix,
+		routeGroup,
+		status,
+		limit: REQUEST_LOG_SUMMARY_MAX_GROUPS + 1,
+	});
+	if (rows.length > REQUEST_LOG_SUMMARY_MAX_GROUPS) {
+		throw badRequest(
+			`summary has more than ${REQUEST_LOG_SUMMARY_MAX_GROUPS} groups, narrow the filters or choose a coarser group_by`
+		);
+	}
+	let groups = rows;
+	if (groupBy === 'provider' && providerIds) {
+		const byId = new Map(rows.map((row) => [row.provider_id, row]));
+		groups = providerIds.map((id) => byId.get(id) ?? { provider_id: id, ...zeroSummaryMetrics() });
+	}
+	return { start, end, group_by: groupBy, groups };
 }
 
 const MAX_PROVIDER_IDS = 10;

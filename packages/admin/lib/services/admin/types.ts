@@ -9,7 +9,7 @@ import type {
 	GlobalApiKeyBudgetAuditLogRow,
 	RequestLogRow,
 } from '@octafuse/core';
-import type { ModelRouteJoinRow } from '@octafuse/core';
+import type { ModelRouteJoinRow, RequestLogSummaryRow } from '@octafuse/core';
 import type { UpstreamProtocol } from '@octafuse/core/upstream-protocol';
 
 export type BudgetPeriod = 'none' | 'daily' | 'weekly' | 'monthly';
@@ -479,6 +479,17 @@ export type AdminRequestLogsOutput = {
 	page: number;
 	page_size: number;
 };
+
+/** `GET /admin/request-logs/summary` 的输出。 */
+export type AdminRequestLogSummaryOutput = {
+	start: string;
+	end: string;
+	group_by: RequestLogSummaryGroupBy;
+	groups: RequestLogSummaryRow[];
+};
+
+/** `group_by` 的取值白名单；`provider,model` 与 `model,provider` 等价。 */
+export type RequestLogSummaryGroupBy = 'provider' | 'model' | 'provider,model' | 'route_group' | 'status';
 
 /** `GET /admin/config` 单行 */
 export type AdminConfigRow = {

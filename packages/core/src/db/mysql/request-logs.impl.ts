@@ -13,10 +13,11 @@ import {
 } from '../../lib/dashboard-request-stats';
 import type { RequestLogRow } from '../../types';
 import type { MySqlDatabaseClient } from '../../storage/database-client';
-import type { RequestLogsRepository } from '../../storage/gateway-repository-interfaces';
+import type { RequestLogSummaryRow, RequestLogsRepository } from '../../storage/gateway-repository-interfaces';
 import { asMySqlPool } from './mysql2-compat';
 import { filterAllowedRequestLogStatuses } from '../request-log-status-filter';
 import { appendModelIdPrefixCondition, appendProviderIdsCondition } from '../request-log-filters';
+import { buildRequestLogSummaryQuery, mapRequestLogSummaryRows } from '../request-log-summary';
 import {
 	businessTimezoneOffsetSeconds,
 	mysqlTimeseriesBucketExpr,
@@ -26,6 +27,12 @@ import {
 export function createMySqlRequestLogsRepository(db: MySqlDatabaseClient): RequestLogsRepository {
 	const pool = asMySqlPool(db.raw);
 	return {
+		async getRequestLogSummary(options): Promise<RequestLogSummaryRow[]> {
+			const { sql, binds } = buildRequestLogSummaryQuery(options, 'mysql');
+			const [rows] = await pool.query<(RowDataPacket & Record<string, unknown>)[]>(sql, binds);
+			return mapRequestLogSummaryRows(rows, options.groupBy);
+		},
+
 		async getRequestLogsByKeyId(
 			apiKeyId: string,
 			page: number,
@@ -134,7 +141,7 @@ export function createMySqlRequestLogsRepository(db: MySqlDatabaseClient): Reque
 				bindValues.push(options.providerId);
 			}
 			appendProviderIdsCondition(conditions, bindValues, 'rl.provider_id', options.providerIds);
-			appendModelIdPrefixCondition(conditions, bindValues, 'rl.model_id', options.modelIdPrefix);
+			appendModelIdPrefixCondition(conditions, bindValues, 'rl.model_id', options.modelIdPrefix, 'mysql');
 			if (options.routeGroup) {
 				conditions.push('rl.route_group = ?');
 				bindValues.push(options.routeGroup);

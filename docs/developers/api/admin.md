@@ -99,6 +99,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/access-keys`、`/:id`、`/:id/secret`、`/:id/rotate`、`/:id/revoke` | GET, POST, PATCH | `admin_api_keys`；仅 Console Session，同源写请求 | Admin UI |
 | `/admin/business-timezone` | GET | `system_config.BUSINESS_TIMEZONE` | Admin UI（Provider 首屏加载） |
 | `/admin/request-logs` | GET | `api_key_request_logs`（**GlobalLogs**，多条件筛选分页） | Admin UI |
+| `/admin/request-logs/summary` | GET | `api_key_request_logs`，按维度精确汇总条数、Token 与四项金额 | 外部集成方（门户对账） |
 | `/admin/budget-audit-logs` | GET | **`user_audit_logs`**（左联 **`users`** 取 `email` 等，多维筛选分页） | Admin UI |
 | `/admin/analytics/models` | GET | `api_key_request_logs`，可选联 `model_tags` | Admin UI |
 | `/admin/analytics/providers` | GET | `api_key_request_logs`，按 Provider 聚合 | Admin UI |
@@ -1069,6 +1070,34 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 | `start_date` / `end_date` | 过滤 `created_at`（UTC，格式：`YYYY-MM-DD HH:mm:ss`） |
 
 `data` 每条日志即 **`api_key_request_logs` 行**（读接口不 JOIN `models` / `providers`；展示名依赖写入时快照列）。**`model_name`** / **`provider_name`** 为请求当时展示名快照；**`provider_model_name`** 为上游模型 id；**`provider_key_id`** / **`provider_key_label`** / **`provider_key_fingerprint`** 为最终选用 Provider 快照（现为 **provider id / name / api_key 指纹**；0015 前旧行可能仍为历史 key 池 id）。**`request_body`** 为客户端入口侧脱敏 JSON（无提示词正文；长度有上限）。**`upstream_request_body`** 为合并路由 `custom_params` 后、与发往供应商的 wire 体结构对齐的脱敏快照（规则同 `request_body`；迁移前或旧行可能为 `null`）。**`request_protocol`**（入口）与 **`upstream_protocol`**（所选路由实际转发协议）见上文注。升级前列可能为 `null`。
+
+### `GET /admin/request-logs/summary`
+
+按维度精确汇总区间内的请求日志。门户对账等核对场景只需要合计，用它代替分页拉全量明细：一次查询，耗时与日志条数无关。权限同 `/admin/request-logs`（`logs.read`）。
+
+| 查询参数 | 说明 |
+|----------|------|
+| `start` / `end` | 必填，带时区的 ISO 8601（如 `2026-10-20T10:00:00.000Z`），半开区间 `[start, end)`，精度到毫秒；`start` 必须早于 `end` |
+| `group_by` | 默认 `provider`。可选 `provider`、`model`、`provider,model`（`model,provider` 等价）、`route_group`、`status`；其他值返回 400 |
+| `provider_ids` | 逗号分隔，最多 10 个，匹配其中任一 `provider_id` |
+| `model_id` | 精确匹配 |
+| `model_id_prefix` | `model_id` 前缀；`%`、`_` 和 `\` 按字面量匹配 |
+| `route_group` | 精确匹配 |
+| `status` | 精确匹配 |
+
+没有 `provider_ids` 时，至少要带 `model_id`、`model_id_prefix`、`route_group`、`status` 之一，避免全表无条件聚合。
+
+响应：`{ success, data, group_by, start, end }`。`data` 每组一行，包含参与分组的键（`provider_id`、`model_id`、`route_group`、`status`，列值为空时为 `null`）和下列指标：
+
+| 字段 | 说明 |
+|------|------|
+| `request_count` / `success_count` / `error_count` | 条数；`success_count`、`error_count` 只统计 `status` 恰为 `success`、`error` 的日志，`cancelled` 等其他状态只计入 `request_count` |
+| `input_tokens` / `output_tokens` / `cache_read_tokens` / `cache_write_tokens` / `reasoning_tokens` / `total_tokens` | Token 合计，整数 |
+| `standard_cost` / `metered_cost` / `charged_cost` / `charged_wallet_cost` | 金额合计，6 位小数十进制字符串 |
+
+所有状态的日志都计入，与明细分页口径一致。只有 `group_by=provider` 且传了 `provider_ids` 时，请求的**每个** Provider 都有一行，区间内没有日志的所有指标为 0。其他分组只返回有日志的分组。单次最多 1000 组，超出返回 400，需要缩小筛选或换更粗的 `group_by`，不会静默截断。D1 的 `created_at` 为秒级文本，毫秒边界按字典序比较，同秒内以 `.000` 对待。
+
+`provider_ids` 加时间范围的查询走索引 `(provider_id, created_at)`（迁移 0033），`model`、`route_group`、`status` 分组没有专用索引，区间越长越慢。老版本网关没有这个路径，调用方应在收到 404 时回退到分页明细。
 
 ### `GET /admin/budget-audit-logs`
 

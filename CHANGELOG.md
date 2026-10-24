@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **请求日志汇总接口**：新增 `GET /api/admin/request-logs/summary`，在给定区间内按 `provider`、`model`、`provider,model`、`route_group` 或 `status` 精确汇总请求条数、Token 和 `standard_cost`、`metered_cost`、`charged_cost`、`charged_wallet_cost`。区间为半开毫秒区间，金额为 6 位小数字符串，可按 `provider_ids`、`model_id`、`model_id_prefix`、`route_group`、`status` 筛选，单次最多 1000 组。外部对账不必再分页拉全量请求日志，耗时不再随日志条数增长。老版本网关没有这个路径，调用方收到 404 应回退到分页明细。
+- **MySQL 的 `model_id_prefix` 筛选**：修复 MySQL 上请求日志列表带 `model_id_prefix` 时 `ESCAPE` 子句被当成未闭合字符串而报语法错误的问题。
+- **请求日志 Provider 索引**：迁移 0033 在 `api_key_request_logs` 上增加 `(provider_id, created_at)` 索引，三库脚本都有。按 Provider 加时间范围的筛选不再先扫区间内所有 Provider 的行。大表上建索引会持有写锁，Postgres 可低峰先手工 `CREATE INDEX CONCURRENTLY` 同名索引，见 [0033 迁移说明](docs/operators/migrations/0033-request-log-provider-index.md)。
 - **Kimi K3.1 Pro**：静态目录增加 `kimi-k3.1-pro` 与 `kimi-k3.1-pro-highspeed`（发布日 2026-10-23）。上下文与最大输出为 1M。刊例取官网首页：Pro 美元 $2 / $10、缓存读取 $0.20、5 分钟缓存写入 $2，人民币 ¥13 / ¥68、缓存读取 ¥1.30、缓存写入 ¥13；Highspeed 美元 $4 / $20、缓存读取 $0.20、缓存写入 $4，人民币 ¥26 / ¥136、缓存读取 ¥1.30、缓存写入 ¥26。高速版缓存命中与 Pro 相同。1 小时缓存写入官网未给 K3.1 单列价格，不写入。导入后需自行挂路由，不会自动打标签。
 - **向量接口响应头**：`POST /v1/embeddings` 与 Gemini embed 读完上游 JSON 后重新封装响应时，去掉 `Content-Encoding`、`Content-Length`、`Transfer-Encoding` 和 `Connection`。上游非 2xx 错误体在记日志并重建响应时同样去掉这些头。上游 gzip 压缩的向量结果和错误 JSON 不再被浏览器当成压缩正文，网关模拟测试不再出现 Failed to fetch。聊天等非流式 JSON 响应同样处理。
 - **DashScope 语音适配器按系列拆开**：CosyVoice 继续用 `dashscope-tts-speech`；Qwen-Audio 3.0 / 3.1 语音合成改用 `dashscope-tts-qwen-audio`。异步文件转写拆成 Qwen3、Qwen-Audio、Fun-ASR、Paraformer 四个转换适配器，透传选项也按系列分开。迁移 0032 会改写已有转换路由：供应商模型名以 `qwen-audio-` 开头的 `dashscope-tts-speech`，以及能对上系列的 `dashscope-asr-file-async`。对不上的旧异步行会留在库里，直到改成新适配器才重新可用。透传行仍是 `passthrough`。
