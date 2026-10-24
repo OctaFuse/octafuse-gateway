@@ -22,3 +22,7 @@ docker compose --env-file docker/deploy/.env.local -f docker/examples/gateway.co
 ## 参考
 
 - 已纳入版本控制的占位示例：**[`.env.example`](./.env.example)**（勿含真实密钥）。
+
+## 宝塔部署记录
+
+- [外置 PostgreSQL + 宝塔 Docker + Nginx HTTPS](./baota.md)：完整 Compose（两个应用以 `AUTO_MIGRATE` 在启动时迁移）、环境变量、升级、域名反代、IP 直连及排错。

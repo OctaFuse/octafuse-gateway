@@ -553,6 +553,37 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cnyProfile?.tiers[0]?.cache_write_price, 2.625);
 	});
 
+	it('includes kimi-k3.1-pro and highspeed with platform.kimi.ai USD and platform.kimi.com CNY list prices', () => {
+		for (const [id, displayName, usdIn, usdOut, usdWrite, cnyIn, cnyOut, cnyWrite] of [
+			['kimi-k3.1-pro', 'Kimi K3.1 Pro', 2, 10, 2, 13, 68, 13],
+			['kimi-k3.1-pro-highspeed', 'Kimi K3.1 Pro Highspeed', 4, 20, 4, 26, 136, 26],
+		] as const) {
+			const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === id);
+			const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === id);
+			assert.ok(usd, id);
+			assert.ok(cny, id);
+			assert.equal(usd!.display_name, displayName);
+			assert.equal(usd!.context_window, 1000000);
+			assert.equal(usd!.max_tokens, 1000000);
+			assert.equal(usd!.pricing_label, `$${usdIn} / $${usdOut} /M`);
+			assert.equal(cny!.pricing_label, `¥${cnyIn} / ¥${cnyOut} /M`);
+			const preset = listStaticModelPresets().find((p) => p.id === id);
+			assert.ok(preset);
+			assert.equal(preset!.released, '2026-10-23');
+			assert.deepEqual(preset!.modalities, { input: ['text', 'image', 'video'], output: ['text'] });
+			const usdProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+			const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+			assert.equal(usdProfile?.tiers[0]?.input_price, usdIn);
+			assert.equal(usdProfile?.tiers[0]?.output_price, usdOut);
+			assert.equal(usdProfile?.tiers[0]?.cache_read_price, 0.2);
+			assert.equal(usdProfile?.tiers[0]?.cache_write_price, usdWrite);
+			assert.equal(cnyProfile?.tiers[0]?.input_price, cnyIn);
+			assert.equal(cnyProfile?.tiers[0]?.output_price, cnyOut);
+			assert.equal(cnyProfile?.tiers[0]?.cache_read_price, 1.3);
+			assert.equal(cnyProfile?.tiers[0]?.cache_write_price, cnyWrite);
+		}
+	});
+
 	it('includes kimi-k3 with platform.kimi list prices including 5min cache_write_price', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'kimi-k3');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'kimi-k3');
