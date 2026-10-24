@@ -102,7 +102,7 @@ describe('buildPlaygroundDashScopeSyncAsrRequest', () => {
 
 	it('builds the official async filetrans submit body from file_url', () => {
 		const request = buildPlaygroundDashScopeAsyncAsrRequest(
-			route('dashscope-asr-file-async', {
+			route('dashscope-asr-qwen-audio-file-async', {
 				upstreamOperation: 'audio.transcriptions.async',
 				providerModelName: 'qwen-audio-3.0-asr-flash-filetrans',
 			}),

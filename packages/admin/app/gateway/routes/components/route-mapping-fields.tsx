@@ -57,6 +57,10 @@ export function RouteMappingFields({
 	const locale = useLocale();
 	const adapterLabel = (adapter: string) =>
 		t.has(`adapterNames.${adapter}`) ? t(`adapterNames.${adapter}`) : adapter;
+	const adapterOptionLabel = (descriptor: { id: string; labelKey?: string }) => {
+		const key = descriptor.labelKey ?? descriptor.id;
+		return t.has(`adapterNames.${key}`) ? t(`adapterNames.${key}`) : adapterLabel(descriptor.id);
+	};
 	const adapterPurpose = (adapter: string) =>
 		t.has(`adapterGuides.${adapter}.purpose`) ? t(`adapterGuides.${adapter}.purpose`) : null;
 	const requestProtocols = UPSTREAM_PROTOCOLS.filter(
@@ -78,7 +82,11 @@ export function RouteMappingFields({
 		selectedProvider,
 		formData.provider_model_name
 	);
-	const selectedAdapterOptionKey = resolveAdapterOptionKey(formData, modelKindForModel(selectedModel));
+	const selectedAdapterOptionKey = resolveAdapterOptionKey(
+		formData,
+		modelKindForModel(selectedModel),
+		formData.provider_model_name,
+	);
 	const selectedAdapterOption = adapterOptions.find(
 		(option) => option.descriptor.optionKey === selectedAdapterOptionKey
 	);
@@ -503,7 +511,7 @@ export function RouteMappingFields({
 									title={option.descriptor.id}
 									disabled={!option.available && option.descriptor.optionKey !== selectedAdapterOptionKey}
 								>
-									{adapterLabel(option.descriptor.id)}
+									{adapterOptionLabel(option.descriptor)}
 									{adapterOptionMappingSuffix(option.descriptor)}
 									{!option.available ? ` · ${t('adapterUnavailable')}` : ''}
 								</option>

@@ -474,6 +474,7 @@ async function finalizeMultimodalResponse(params: {
 					durationSource,
 					fileBytes: 0,
 					characters: response.ok ? (meta?.audioCharacters ?? usage?.audio_characters ?? null) : null,
+					tokenUsage: response.ok ? (meta?.audioTokenUsage ?? null) : null,
 					requestStartedAtMs: start,
 				},
 				providerKeyId: chosenRoute.providerKeyId ?? null,

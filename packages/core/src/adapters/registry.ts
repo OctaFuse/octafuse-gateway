@@ -126,8 +126,13 @@ export type AdapterPresetIntent =
 export interface AdapterDescriptor {
 	/** 写入 `model_routes.adapter` 的稳定 ID；语义变化时发新 ID，永不复用。 */
 	id: string;
-	/** Admin 选项唯一键。转换 adapter 等于 id；passthrough 变体为 `passthrough:{protocol}:{operation}`，同一 operation 的第二种模型种类再加后缀。 */
+	/** Admin 选项唯一键。转换 adapter 等于 id；passthrough 变体为 `passthrough:{protocol}:{operation}`，同一 operation 的另一种模型系列再加后缀。 */
 	optionKey: string;
+	/**
+	 * Admin 下拉名称的文案键。缺省用 `id`。
+	 * 同一 `passthrough` id 按系列拆开时，用它区分显示名。
+	 */
+	labelKey?: string;
 	request: { protocol: UpstreamProtocol; operation: string };
 	upstream: { protocol: UpstreamProtocol; operations: readonly string[] };
 	modality: AdapterModality;
@@ -168,21 +173,26 @@ export interface AdapterDescriptor {
  * 新增模型家族时在这里补 pattern，不要在 Admin 里再写一份。
  */
 const QWEN3_ASR_SYNC_MODELS = ['qwen3-asr-flash', 'qwen3-asr-flash-2*'] as const;
-const QWEN_AUDIO_ASR_SYNC_MODELS = ['qwen-audio-3.0-asr-flash', 'qwen-audio-3.0-asr-flash-2*'] as const;
+const QWEN_AUDIO_ASR_SYNC_MODELS = [
+	'qwen-audio-3.0-asr-flash',
+	'qwen-audio-3.0-asr-flash-2*',
+	'qwen-audio-3.1-asr-flash',
+] as const;
 const FUN_ASR_SYNC_MODELS = ['fun-asr-realtime*'] as const;
-const DASHSCOPE_SYNC_ASR_MODELS = [
-	...QWEN3_ASR_SYNC_MODELS,
-	...QWEN_AUDIO_ASR_SYNC_MODELS,
-	...FUN_ASR_SYNC_MODELS,
-] as const;
-const DASHSCOPE_ASYNC_ASR_MODELS = ['*-filetrans*', 'fun-asr', 'fun-asr-2*', 'paraformer-v*'] as const;
+const QWEN3_FILETRANS_MODELS = ['qwen3-asr-flash-filetrans*'] as const;
+const QWEN_AUDIO_FILETRANS_MODELS = ['qwen-audio-*-filetrans*'] as const;
+const FUN_ASR_ASYNC_MODELS = ['fun-asr', 'fun-asr-2*'] as const;
+const PARAFORMER_ASYNC_MODELS = ['paraformer-v*'] as const;
 const DASHSCOPE_ASR_SESSION_MODELS = ['qwen3-asr-flash-realtime*'] as const;
-const DASHSCOPE_ASR_INFERENCE_MODELS = [
-	'fun-asr-realtime*',
-	'paraformer-realtime*',
+const FUN_ASR_INFERENCE_MODELS = ['fun-asr-realtime*'] as const;
+const PARAFORMER_INFERENCE_MODELS = ['paraformer-realtime*'] as const;
+const QWEN_AUDIO_ASR_INFERENCE_MODELS = [
 	'qwen-audio-3.0-asr-flash-streaming*',
+	'qwen-audio-3.1-asr-flash-streaming*',
+	'qwen-audio-3.1-asr-flash-message*',
 ] as const;
-const COSYVOICE_AND_QWEN_AUDIO_TTS_MODELS = ['cosyvoice-*', 'qwen-audio-3.0-tts-*'] as const;
+const COSYVOICE_TTS_MODELS = ['cosyvoice-*'] as const;
+const QWEN_AUDIO_TTS_MODELS = ['qwen-audio-3.0-tts-*', 'qwen-audio-3.1-tts-flash'] as const;
 const QWEN_TTS_HTTP_MODELS = {
 	include: ['qwen3-tts-*', 'qwen-tts*'],
 	exclude: ['*realtime*'],
@@ -287,9 +297,26 @@ const CONVERSION_ADAPTERS = [
 		protectedUpstreamPaths: ['parameters.format'],
 	},
 	{
-		id: 'dashscope-asr-file-async',
-		optionKey: 'dashscope-asr-file-async',
-		upstreamModels: { include: DASHSCOPE_ASYNC_ASR_MODELS },
+		id: 'dashscope-asr-qwen-file-async',
+		optionKey: 'dashscope-asr-qwen-file-async',
+		upstreamModels: { include: QWEN3_FILETRANS_MODELS },
+		request: { protocol: 'openai', operation: 'audio.transcriptions' },
+		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.async'] },
+		modality: 'audio',
+		modelKind: 'asr',
+		exchange: 'job',
+		billing: 'per_second',
+		requestPayload: 'multipart',
+		responsePayload: 'json',
+		requiredUpstreamCapabilities: ['audio.transcriptions', 'audio.transcriptions.tasks'],
+		publicPath: '/v1/audio/transcriptions',
+		roles: ['upstream'],
+		protectedUpstreamPaths: ['input.file_urls'],
+	},
+	{
+		id: 'dashscope-asr-qwen-audio-file-async',
+		optionKey: 'dashscope-asr-qwen-audio-file-async',
+		upstreamModels: { include: QWEN_AUDIO_FILETRANS_MODELS },
 		request: { protocol: 'openai', operation: 'audio.transcriptions' },
 		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.async'] },
 		modality: 'audio',
@@ -305,9 +332,43 @@ const CONVERSION_ADAPTERS = [
 		protectedUpstreamPaths: ['input.file_urls'],
 	},
 	{
+		id: 'dashscope-asr-fun-async',
+		optionKey: 'dashscope-asr-fun-async',
+		upstreamModels: { include: FUN_ASR_ASYNC_MODELS },
+		request: { protocol: 'openai', operation: 'audio.transcriptions' },
+		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.async'] },
+		modality: 'audio',
+		modelKind: 'asr',
+		exchange: 'job',
+		billing: 'per_second',
+		requestPayload: 'multipart',
+		responsePayload: 'json',
+		requiredUpstreamCapabilities: ['audio.transcriptions', 'audio.transcriptions.tasks'],
+		publicPath: '/v1/audio/transcriptions',
+		roles: ['upstream'],
+		protectedUpstreamPaths: ['input.file_urls'],
+	},
+	{
+		id: 'dashscope-asr-paraformer-async',
+		optionKey: 'dashscope-asr-paraformer-async',
+		upstreamModels: { include: PARAFORMER_ASYNC_MODELS },
+		request: { protocol: 'openai', operation: 'audio.transcriptions' },
+		upstream: { protocol: 'dashscope', operations: ['audio.transcriptions.async'] },
+		modality: 'audio',
+		modelKind: 'asr',
+		exchange: 'job',
+		billing: 'per_second',
+		requestPayload: 'multipart',
+		responsePayload: 'json',
+		requiredUpstreamCapabilities: ['audio.transcriptions', 'audio.transcriptions.tasks'],
+		publicPath: '/v1/audio/transcriptions',
+		roles: ['upstream'],
+		protectedUpstreamPaths: ['input.file_urls'],
+	},
+	{
 		id: 'dashscope-tts-speech',
 		optionKey: 'dashscope-tts-speech',
-		upstreamModels: { include: COSYVOICE_AND_QWEN_AUDIO_TTS_MODELS },
+		upstreamModels: { include: COSYVOICE_TTS_MODELS },
 		request: { protocol: 'openai', operation: 'audio.speech' },
 		upstream: { protocol: 'dashscope', operations: ['audio.speech'] },
 		modality: 'audio',
@@ -320,6 +381,24 @@ const CONVERSION_ADAPTERS = [
 		publicPath: '/v1/audio/speech',
 		roles: ['upstream'],
 		presetIntent: 'dashscope-tts-nonrealtime',
+		protectedUpstreamPaths: ['input.format'],
+		extraBodyNote: 'dashscope_tts_input',
+	},
+	{
+		id: 'dashscope-tts-qwen-audio',
+		optionKey: 'dashscope-tts-qwen-audio',
+		upstreamModels: { include: QWEN_AUDIO_TTS_MODELS },
+		request: { protocol: 'openai', operation: 'audio.speech' },
+		upstream: { protocol: 'dashscope', operations: ['audio.speech'] },
+		modality: 'audio',
+		modelKind: 'tts',
+		exchange: 'unary',
+		billing: 'per_character',
+		requestPayload: 'json',
+		responsePayload: 'binary',
+		requiredUpstreamCapabilities: ['audio.speech'],
+		publicPath: '/v1/audio/speech',
+		roles: ['upstream'],
 		protectedUpstreamPaths: ['input.format'],
 		extraBodyNote: 'dashscope_tts_input',
 	},
@@ -564,10 +643,12 @@ function passthroughDescriptor(input: {
 	protectedUpstreamPaths?: readonly string[];
 	extraBodyExample?: { readonly [key: string]: unknown };
 	extraBodyNote?: 'dashscope_tts_input';
+	labelKey?: string;
 }): AdapterDescriptor {
 	return {
 		id: PASSTHROUGH_ROUTE_ADAPTER,
 		optionKey: input.optionKey ?? `${PASSTHROUGH_ROUTE_ADAPTER}:${input.protocol}:${input.operation}`,
+		...(input.labelKey ? { labelKey: input.labelKey } : {}),
 		request: { protocol: input.protocol, operation: input.operation },
 		upstream: { protocol: input.protocol, operations: [input.operation] },
 		modality: input.modality,
@@ -796,17 +877,45 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.transcriptions.multimodal',
+		optionKey: 'passthrough:dashscope:audio.transcriptions.multimodal:qwen3',
+		labelKey: 'passthrough-qwen3',
+		modelKind: 'asr',
+		modality: 'audio',
+		billing: 'per_second',
+		requiredUpstreamCapabilities: ['audio.transcriptions.multimodal'],
+		publicPath: DASHSCOPE_MULTIMODAL_GENERATION_PATH,
+		upstreamModels: { include: QWEN3_ASR_SYNC_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'audio.transcriptions.multimodal',
+		optionKey: 'passthrough:dashscope:audio.transcriptions.multimodal:qwen-audio',
+		labelKey: 'passthrough-qwen-audio-asr',
 		modelKind: 'asr',
 		modality: 'audio',
 		billing: 'per_second',
 		requiredUpstreamCapabilities: ['audio.transcriptions.multimodal'],
 		publicPath: DASHSCOPE_MULTIMODAL_GENERATION_PATH,
 		presetIntent: 'dashscope-asr-flash-passthrough',
-		upstreamModels: { include: DASHSCOPE_SYNC_ASR_MODELS },
+		upstreamModels: { include: QWEN_AUDIO_ASR_SYNC_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'audio.transcriptions.multimodal',
+		optionKey: 'passthrough:dashscope:audio.transcriptions.multimodal:fun',
+		labelKey: 'passthrough-fun-asr',
+		modelKind: 'asr',
+		modality: 'audio',
+		billing: 'per_second',
+		requiredUpstreamCapabilities: ['audio.transcriptions.multimodal'],
+		publicPath: DASHSCOPE_MULTIMODAL_GENERATION_PATH,
+		upstreamModels: { include: FUN_ASR_SYNC_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.transcriptions.realtime.inference',
+		optionKey: 'passthrough:dashscope:audio.transcriptions.realtime.inference:fun',
+		labelKey: 'passthrough-fun-asr',
 		modelKind: 'asr',
 		modality: 'audio',
 		exchange: 'websocket',
@@ -814,7 +923,35 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		responsePayload: 'websocket',
 		requiredUpstreamCapabilities: ['audio.realtime.inference'],
 		publicPath: DASHSCOPE_REALTIME_INFERENCE_PATH,
-		upstreamModels: { include: DASHSCOPE_ASR_INFERENCE_MODELS },
+		upstreamModels: { include: FUN_ASR_INFERENCE_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'audio.transcriptions.realtime.inference',
+		optionKey: 'passthrough:dashscope:audio.transcriptions.realtime.inference:paraformer',
+		labelKey: 'passthrough-paraformer',
+		modelKind: 'asr',
+		modality: 'audio',
+		exchange: 'websocket',
+		billing: 'per_second',
+		responsePayload: 'websocket',
+		requiredUpstreamCapabilities: ['audio.realtime.inference'],
+		publicPath: DASHSCOPE_REALTIME_INFERENCE_PATH,
+		upstreamModels: { include: PARAFORMER_INFERENCE_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'audio.transcriptions.realtime.inference',
+		optionKey: 'passthrough:dashscope:audio.transcriptions.realtime.inference:qwen-audio',
+		labelKey: 'passthrough-qwen-audio-asr',
+		modelKind: 'asr',
+		modality: 'audio',
+		exchange: 'websocket',
+		billing: 'per_second',
+		responsePayload: 'websocket',
+		requiredUpstreamCapabilities: ['audio.realtime.inference'],
+		publicPath: DASHSCOPE_REALTIME_INFERENCE_PATH,
+		upstreamModels: { include: QWEN_AUDIO_ASR_INFERENCE_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -844,17 +981,34 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.speech',
+		optionKey: 'passthrough:dashscope:audio.speech:cosyvoice',
+		labelKey: 'passthrough-cosyvoice',
 		modelKind: 'tts',
 		modality: 'audio',
 		billing: 'per_character',
 		responsePayload: 'binary',
 		requiredUpstreamCapabilities: ['audio.speech'],
 		publicPath: DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
-		upstreamModels: { include: COSYVOICE_AND_QWEN_AUDIO_TTS_MODELS },
+		upstreamModels: { include: COSYVOICE_TTS_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'audio.speech',
+		optionKey: 'passthrough:dashscope:audio.speech:qwen-audio',
+		labelKey: 'passthrough-qwen-audio-tts',
+		modelKind: 'tts',
+		modality: 'audio',
+		billing: 'per_character',
+		responsePayload: 'binary',
+		requiredUpstreamCapabilities: ['audio.speech'],
+		publicPath: DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
+		upstreamModels: { include: QWEN_AUDIO_TTS_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.speech.stream',
+		optionKey: 'passthrough:dashscope:audio.speech.stream:cosyvoice',
+		labelKey: 'passthrough-cosyvoice',
 		modelKind: 'tts',
 		modality: 'audio',
 		exchange: 'sse',
@@ -862,7 +1016,21 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 		responsePayload: 'sse',
 		requiredUpstreamCapabilities: ['audio.speech'],
 		publicPath: DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
-		upstreamModels: { include: COSYVOICE_AND_QWEN_AUDIO_TTS_MODELS },
+		upstreamModels: { include: COSYVOICE_TTS_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'audio.speech.stream',
+		optionKey: 'passthrough:dashscope:audio.speech.stream:qwen-audio',
+		labelKey: 'passthrough-qwen-audio-tts',
+		modelKind: 'tts',
+		modality: 'audio',
+		exchange: 'sse',
+		billing: 'per_character',
+		responsePayload: 'sse',
+		requiredUpstreamCapabilities: ['audio.speech'],
+		publicPath: DASHSCOPE_SPEECH_SYNTHESIZER_PATH,
+		upstreamModels: { include: QWEN_AUDIO_TTS_MODELS },
 	}),
 	passthroughDescriptor({
 		protocol: 'dashscope',
@@ -898,13 +1066,54 @@ const PASSTHROUGH_ADAPTERS: readonly AdapterDescriptor[] = [
 	passthroughDescriptor({
 		protocol: 'dashscope',
 		operation: 'audio.transcriptions.async',
+		optionKey: 'passthrough:dashscope:audio.transcriptions.async:qwen3',
+		labelKey: 'passthrough-qwen3',
 		modelKind: 'asr',
 		modality: 'audio',
 		exchange: 'job',
 		billing: 'per_second',
 		requiredUpstreamCapabilities: ['audio.transcriptions', 'audio.transcriptions.tasks'],
 		publicPath: DASHSCOPE_FILE_TRANSCRIPTION_PATH,
-		upstreamModels: { include: DASHSCOPE_ASYNC_ASR_MODELS },
+		upstreamModels: { include: QWEN3_FILETRANS_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'audio.transcriptions.async',
+		optionKey: 'passthrough:dashscope:audio.transcriptions.async:qwen-audio',
+		labelKey: 'passthrough-qwen-audio-asr',
+		modelKind: 'asr',
+		modality: 'audio',
+		exchange: 'job',
+		billing: 'per_second',
+		requiredUpstreamCapabilities: ['audio.transcriptions', 'audio.transcriptions.tasks'],
+		publicPath: DASHSCOPE_FILE_TRANSCRIPTION_PATH,
+		upstreamModels: { include: QWEN_AUDIO_FILETRANS_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'audio.transcriptions.async',
+		optionKey: 'passthrough:dashscope:audio.transcriptions.async:fun',
+		labelKey: 'passthrough-fun-asr',
+		modelKind: 'asr',
+		modality: 'audio',
+		exchange: 'job',
+		billing: 'per_second',
+		requiredUpstreamCapabilities: ['audio.transcriptions', 'audio.transcriptions.tasks'],
+		publicPath: DASHSCOPE_FILE_TRANSCRIPTION_PATH,
+		upstreamModels: { include: FUN_ASR_ASYNC_MODELS },
+	}),
+	passthroughDescriptor({
+		protocol: 'dashscope',
+		operation: 'audio.transcriptions.async',
+		optionKey: 'passthrough:dashscope:audio.transcriptions.async:paraformer',
+		labelKey: 'passthrough-paraformer',
+		modelKind: 'asr',
+		modality: 'audio',
+		exchange: 'job',
+		billing: 'per_second',
+		requiredUpstreamCapabilities: ['audio.transcriptions', 'audio.transcriptions.tasks'],
+		publicPath: DASHSCOPE_FILE_TRANSCRIPTION_PATH,
+		upstreamModels: { include: PARAFORMER_ASYNC_MODELS },
 	}),
 ];
 
@@ -966,6 +1175,18 @@ export function isRouteAdapter(raw: string): raw is RouteAdapter {
 
 export function isConversionRouteAdapter(raw: string): raw is ConversionRouteAdapter {
 	return raw !== PASSTHROUGH_ROUTE_ADAPTER && isRouteAdapter(raw);
+}
+
+/** OpenAI 转写 → DashScope 异步 file_urls。系列各自一个 id，提交体目前相同。 */
+export const DASHSCOPE_ASYNC_FILE_ADAPTERS = [
+	'dashscope-asr-qwen-file-async',
+	'dashscope-asr-qwen-audio-file-async',
+	'dashscope-asr-fun-async',
+	'dashscope-asr-paraformer-async',
+] as const satisfies readonly ConversionRouteAdapter[];
+
+export function isDashScopeAsyncFileAdapter(adapter: string): boolean {
+	return (DASHSCOPE_ASYNC_FILE_ADAPTERS as readonly string[]).includes(adapter);
 }
 
 export function listConversionAdapters(): readonly AdapterDescriptor[] {

@@ -33,6 +33,7 @@ import {
 	adaptersForModelKind,
 	getAdapterByOptionKey,
 	getAdapterByPresetIntent,
+	isDashScopeAsyncFileAdapter,
 	listSelectableAdapters,
 	matchAdapterUpstreamModel,
 	type AdapterModelMatch,
@@ -1160,6 +1161,7 @@ export function listAdapterOptionsForModel(
 export function resolveAdapterOptionKey(
 	formData: Pick<RouteFormData, 'adapter' | 'request_protocol' | 'request_operation' | 'upstream_protocol' | 'upstream_operation'>,
 	modelKind?: AdapterModelKind,
+	providerModelName = '',
 ): string | null {
 	const matches = listSelectableAdapters().filter(
 		(descriptor) =>
@@ -1169,6 +1171,11 @@ export function resolveAdapterOptionKey(
 			descriptor.upstream.protocol === formData.upstream_protocol &&
 			descriptor.upstream.operations.includes(formData.upstream_operation),
 	);
+	const named = providerModelName.trim();
+	if (named) {
+		const matched = matches.find((descriptor) => matchAdapterUpstreamModel(descriptor, named) === 'match');
+		if (matched) return matched.optionKey;
+	}
 	const preferred = modelKind ? matches.find((descriptor) => descriptor.modelKind === modelKind) : undefined;
 	return preferred?.optionKey ?? matches[0]?.optionKey ?? null;
 }
@@ -1194,7 +1201,7 @@ export function alignRouteFormAdapter(
 		provider,
 		formData.provider_model_name,
 	);
-	const currentKey = resolveAdapterOptionKey(formData, modelKindForModel(model));
+	const currentKey = resolveAdapterOptionKey(formData, modelKindForModel(model), formData.provider_model_name);
 	const current = options.find((option) => option.descriptor.optionKey === currentKey);
 	const providerModelNamed = formData.provider_model_name.trim().length > 0;
 	const currentFits =
@@ -1236,7 +1243,7 @@ export function buildOpenAiAdapterCallSample(
 	const model = JSON.stringify(modelId);
 	const extra = descriptor.extraBodyExample ? formatPythonLiteral(descriptor.extraBodyExample) : null;
 	const extraLine = extra ? `,\n    extra_body=${extra}` : '';
-	if (descriptor.id === 'dashscope-asr-file-async') {
+	if (isDashScopeAsyncFileAdapter(descriptor.id)) {
 		return `import os
 import httpx
 

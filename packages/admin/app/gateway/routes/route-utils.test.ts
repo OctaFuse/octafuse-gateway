@@ -199,7 +199,7 @@ describe('route form capability filters', () => {
 		assert.equal(passthrough.adapter, 'passthrough');
 		const filetrans = applyDashScopeAsrRoutePreset(EMPTY_ROUTE_FORM, 'filetrans');
 		assert.equal(filetrans.upstream_operation, 'audio.transcriptions.async');
-		assert.equal(filetrans.adapter, 'dashscope-asr-file-async');
+		assert.equal(filetrans.adapter, 'dashscope-asr-qwen-audio-file-async');
 	});
 
 	it('wires qwen-audio-3.0-asr-flash on Token Plan to convert and passthrough, not filetrans', () => {
@@ -290,6 +290,36 @@ describe('route form capability filters', () => {
 				'llm',
 			),
 			'passthrough:gemini:models.generate',
+		);
+		assert.equal(
+			resolveAdapterOptionKey(
+				{
+					...EMPTY_ROUTE_FORM,
+					adapter: 'passthrough',
+					request_protocol: 'dashscope',
+					request_operation: 'audio.speech',
+					upstream_protocol: 'dashscope',
+					upstream_operation: 'audio.speech',
+				},
+				'tts',
+				'qwen-audio-3.1-tts-flash',
+			),
+			'passthrough:dashscope:audio.speech:qwen-audio',
+		);
+		assert.equal(
+			resolveAdapterOptionKey(
+				{
+					...EMPTY_ROUTE_FORM,
+					adapter: 'passthrough',
+					request_protocol: 'dashscope',
+					request_operation: 'audio.speech',
+					upstream_protocol: 'dashscope',
+					upstream_operation: 'audio.speech',
+				},
+				'tts',
+				'cosyvoice-v3-flash',
+			),
+			'passthrough:dashscope:audio.speech:cosyvoice',
 		);
 		const geminiOptions = listAdapterOptionsForModel(
 			imageModel,
@@ -563,7 +593,12 @@ describe('route form capability filters', () => {
 				upstream_protocol: 'dashscope',
 				upstream_operation: 'audio.transcriptions.async',
 			}),
-			['dashscope-asr-file-async'],
+			[
+				'dashscope-asr-qwen-file-async',
+				'dashscope-asr-qwen-audio-file-async',
+				'dashscope-asr-fun-async',
+				'dashscope-asr-paraformer-async',
+			],
 		);
 		assert.deepEqual(
 			compatibleAdaptersForRoute({
@@ -597,7 +632,7 @@ describe('route form capability filters', () => {
 			' · openai/audio.transcriptions → dashscope/audio.transcriptions.multimodal',
 		);
 
-		const asyncAsr = getAdapterByOptionKey('dashscope-asr-file-async');
+		const asyncAsr = getAdapterByOptionKey('dashscope-asr-qwen-audio-file-async');
 		assert.ok(asyncAsr);
 		assert.equal(
 			adapterOptionMappingSuffix(asyncAsr),
@@ -650,7 +685,7 @@ describe('route form capability filters', () => {
 		assert.equal(listed.modelUnrecognized, false);
 		assert.deepEqual(visibleAdapterKeys(listed), [
 			'dashscope-asr-qwen-file',
-			'passthrough:dashscope:audio.transcriptions.multimodal',
+			'passthrough:dashscope:audio.transcriptions.multimodal:qwen3',
 		]);
 	});
 
@@ -678,9 +713,9 @@ describe('route form capability filters', () => {
 			false,
 		);
 		assert.deepEqual(visibleAdapterKeys(listed), [
-			'dashscope-tts-speech',
-			'passthrough:dashscope:audio.speech',
-			'passthrough:dashscope:audio.speech.stream',
+			'dashscope-tts-qwen-audio',
+			'passthrough:dashscope:audio.speech.stream:qwen-audio',
+			'passthrough:dashscope:audio.speech:qwen-audio',
 		]);
 	});
 
@@ -761,13 +796,23 @@ describe('route form capability filters', () => {
 		const listed = listAdapterOptionsForModel(asr, dashscope, 'brand-new-asr');
 		assert.equal(listed.modelUnrecognized, true);
 		assert.deepEqual(visibleAdapterKeys(listed), [
-			'dashscope-asr-file-async',
+			'dashscope-asr-fun-async',
 			'dashscope-asr-fun-file',
+			'dashscope-asr-paraformer-async',
 			'dashscope-asr-qwen-audio-file',
+			'dashscope-asr-qwen-audio-file-async',
 			'dashscope-asr-qwen-file',
-			'passthrough:dashscope:audio.transcriptions.async',
-			'passthrough:dashscope:audio.transcriptions.multimodal',
-			'passthrough:dashscope:audio.transcriptions.realtime.inference',
+			'dashscope-asr-qwen-file-async',
+			'passthrough:dashscope:audio.transcriptions.async:fun',
+			'passthrough:dashscope:audio.transcriptions.async:paraformer',
+			'passthrough:dashscope:audio.transcriptions.async:qwen-audio',
+			'passthrough:dashscope:audio.transcriptions.async:qwen3',
+			'passthrough:dashscope:audio.transcriptions.multimodal:fun',
+			'passthrough:dashscope:audio.transcriptions.multimodal:qwen-audio',
+			'passthrough:dashscope:audio.transcriptions.multimodal:qwen3',
+			'passthrough:dashscope:audio.transcriptions.realtime.inference:fun',
+			'passthrough:dashscope:audio.transcriptions.realtime.inference:paraformer',
+			'passthrough:dashscope:audio.transcriptions.realtime.inference:qwen-audio',
 			'passthrough:dashscope:audio.transcriptions.realtime.session',
 		]);
 
@@ -1843,7 +1888,7 @@ describe('buildOpenAiAdapterCallSample', () => {
 		assert.equal(sample?.includes('your-model'), false);
 	});
 	it('submits a public URL as multipart for asynchronous transcription', () => {
-		const sample = buildOpenAiAdapterCallSample(getAdapterByOptionKey('dashscope-asr-file-async')!, 'asr:free');
+		const sample = buildOpenAiAdapterCallSample(getAdapterByOptionKey('dashscope-asr-qwen-audio-file-async')!, 'asr:free');
 		assert.match(sample ?? '', /httpx\.post\(/);
 		assert.match(sample ?? '', /"model": \(None, "asr:free"\)/);
 		assert.match(sample ?? '', /"file_url": \(None, "https:\/\/example\.com\/audio\.mp3"\)/);

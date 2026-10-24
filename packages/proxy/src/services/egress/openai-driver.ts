@@ -2,6 +2,7 @@ import { applyVertexOpenAiModelPrefix, applyRouteExtraHeaders, resolveProviderUp
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
+import { sanitizeRewrappedHeaders } from './response-headers';
 import { extractUpstreamRequestId, normalizeUpstreamId } from './upstream-request-id';
 import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
 import { peekResponseFirstEvent, type FirstEventTimeoutOptions } from '../stream-first-event-timeout';
@@ -432,7 +433,7 @@ async function nonStreamResponseWithUsage(
       response: new Response(text, {
         status: response.status,
         statusText: response.statusText,
-        headers: response.headers,
+        headers: sanitizeRewrappedHeaders(response.headers),
       }),
       usagePromise: Promise.resolve(usage),
     };

@@ -110,7 +110,7 @@ export function requestLogFeatureKind(
 	const billing = log.billing_kind?.trim() ?? '';
 	if (billing === 'image_per_image' || billing === 'image_tokens') return 'image';
 	if (billing === 'audio_per_character') return 'tts';
-	if (billing === 'audio_per_second' || billing === 'audio_tokens') return 'asr';
+	if (billing === 'audio_per_second') return 'asr';
 
 	const operation = joinedOperations(log);
 	if (operation.includes('images.')) return 'image';
@@ -124,6 +124,8 @@ export function requestLogFeatureKind(
 		if (isAudioSpeechModel(catalogModel)) return 'tts';
 		if (isAudioTranscriptionModel(catalogModel)) return 'asr';
 	}
+	// `audio_tokens` 同时用于 ASR 与 token 计费 TTS，无法单靠计费类型区分，仅作最后兜底。
+	if (billing === 'audio_tokens') return 'asr';
 	return 'llm';
 }
 

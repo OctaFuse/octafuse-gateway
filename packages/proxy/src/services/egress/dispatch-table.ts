@@ -43,6 +43,7 @@ import {
 import {
 	dispatchDashScopeMiniMaxTts,
 	dispatchDashScopeQwenTts,
+	dispatchDashScopeQwenAudioSpeech,
 	dispatchDashScopeSpeechSynthesizer,
 	dispatchOpenAiAudioSpeech,
 	type AudioSpeechDispatchOptions,
@@ -68,13 +69,17 @@ const AUDIO_TRANSCRIPTION_ADAPTERS = [
 	'dashscope-asr-qwen-file',
 	'dashscope-asr-qwen-audio-file',
 	'dashscope-asr-fun-file',
-	'dashscope-asr-file-async',
+	'dashscope-asr-qwen-file-async',
+	'dashscope-asr-qwen-audio-file-async',
+	'dashscope-asr-fun-async',
+	'dashscope-asr-paraformer-async',
 	'minimax-asr-file',
 	'elevenlabs-asr-file',
 ] as const satisfies readonly RouteAdapter[];
 
 const AUDIO_SPEECH_ADAPTERS = [
 	'dashscope-tts-speech',
+	'dashscope-tts-qwen-audio',
 	'dashscope-tts-qwen',
 	'dashscope-tts-minimax',
 	'minimax-tts',
@@ -122,7 +127,12 @@ export function dispatchAudioTranscriptions(
 	) {
 		return dispatchDashScopeSyncAsr(route, req, ctx.signal, ctx.timing, ctx.attempt, options);
 	}
-	if (route.adapter === 'dashscope-asr-file-async') {
+	if (
+		route.adapter === 'dashscope-asr-qwen-file-async' ||
+		route.adapter === 'dashscope-asr-qwen-audio-file-async' ||
+		route.adapter === 'dashscope-asr-fun-async' ||
+		route.adapter === 'dashscope-asr-paraformer-async'
+	) {
 		return dispatchDashScopeAsyncAsr(route, req, ctx.signal, ctx.timing, ctx.attempt, options);
 	}
 	if (route.adapter === 'minimax-asr-file') {
@@ -136,6 +146,7 @@ export function dispatchAudioTranscriptions(
 
 const SPEECH_DISPATCH = {
 	'dashscope-tts-speech': dispatchDashScopeSpeechSynthesizer,
+	'dashscope-tts-qwen-audio': dispatchDashScopeQwenAudioSpeech,
 	'dashscope-tts-qwen': dispatchDashScopeQwenTts,
 	'dashscope-tts-minimax': dispatchDashScopeMiniMaxTts,
 	'minimax-tts': dispatchMiniMaxOpenAiSpeech,

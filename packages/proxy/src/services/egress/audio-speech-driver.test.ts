@@ -75,6 +75,28 @@ describe('DashScope TTS request mapping', () => {
 		);
 	});
 
+	it('keeps the Qwen-Audio SpeechSynthesizer body independent of CosyVoice', () => {
+		assert.deepEqual(
+			buildDashScopeTtsBody(
+				route({
+					adapter: 'dashscope-tts-qwen-audio',
+					providerModelName: 'qwen-audio-3.1-tts-flash',
+				}),
+				request({ responseFormat: 'mp3', voice: 'longanhuan_v3.1', speed: 1 }),
+				'qwen-audio',
+			),
+			{
+				model: 'qwen-audio-3.1-tts-flash',
+				input: {
+					text: '你好',
+					voice: 'longanhuan_v3.1',
+					format: 'mp3',
+					rate: 1,
+				},
+			},
+		);
+	});
+
 	it('merges extra voice settings without replacing the billed format', () => {
 		const body = buildDashScopeTtsBody(
 			route({ adapter: 'dashscope-tts-minimax', providerModelName: 'speech-02-hd' }),

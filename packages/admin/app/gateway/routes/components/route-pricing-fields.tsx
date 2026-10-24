@@ -140,32 +140,42 @@ export function RoutePricingFields({
 					timezone={businessTimezone}
 					onChange={onFormChange}
 					renderPrices={
-						catalogScheduleLocked &&
 						selectedModel &&
 						!selectedModelIsImage &&
 						!selectedModelIsAudio &&
 						catalogStandardTierRows.length > 0
-							? (i) => (
-									<details>
-										<summary className="cursor-pointer py-1 text-xs font-medium text-blue-600 hover:text-blue-800">
-											{t('editor.effectivePrices')}
-										</summary>
-										<p className="mb-2 text-xs leading-5 text-slate-500">{t('editor.pricesAtCurrentDate')}</p>
-										<ScheduleWindowEffectivePrices
-											billingCurrency={billingCurrency}
-											catalogFactor={catalogScheduleWindows[i]?.factor ?? 1}
-											chargedFactorText={editorScheduleWindows[i]?.charged_factor ?? ''}
-											meteredFactorText={editorScheduleWindows[i]?.metered_factor ?? ''}
-											providerFactorText={
-												editorScheduleWindows[i]?.provider_factor ?? formData.provider_factor
-											}
-											providerValidity={
-												independentProviderWindows(formData, editorScheduleWindows)[i]?.provider_validity
-											}
-											model={selectedModel}
-										/>
-									</details>
-							  )
+							? (i) => {
+									const window = i == null ? null : editorScheduleWindows[i];
+									return (
+										<details>
+											<summary className="cursor-pointer py-1 text-xs font-medium text-blue-600 hover:text-blue-800">
+												{t('editor.effectivePrices')}
+											</summary>
+											<p className="mb-2 text-xs leading-5 text-slate-500">{t('editor.pricesAtCurrentDate')}</p>
+											<ScheduleWindowEffectivePrices
+												billingCurrency={billingCurrency}
+												catalogFactor={i == null ? 1 : catalogScheduleWindows[i]?.factor ?? 1}
+												chargedFactorText={window?.charged_factor ?? formData.charged_factor}
+												meteredFactorText={window?.metered_factor ?? formData.metered_factor}
+												providerFactorText={window?.provider_factor ?? formData.provider_factor}
+												providerValidity={
+													i == null
+														? {
+																...(formData.provider_factor_starts_at
+																	? { starts_at: formData.provider_factor_starts_at }
+																	: {}),
+																...(formData.provider_factor_expires_at
+																	? { expires_at: formData.provider_factor_expires_at }
+																	: {}),
+														  }
+														: independentProviderWindows(formData, editorScheduleWindows)[i]
+																?.provider_validity
+												}
+												model={selectedModel}
+											/>
+										</details>
+									);
+							  }
 							: undefined
 					}
 				/>

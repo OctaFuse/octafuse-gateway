@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PlayIcon, StopIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
+import { isDashScopeAsyncFileAdapter } from '@octafuse/core/adapters/registry';
 import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import { isDashScopeRealtimeOperation } from '@/lib/dashscope-realtime-client';
 import { validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
@@ -69,7 +70,7 @@ function QuickTestContent({
 	const needsAudioFile =
 		isAudio &&
 		modelKind === 'asr' &&
-		form.adapter !== 'dashscope-asr-file-async' &&
+		!isDashScopeAsyncFileAdapter(form.adapter) &&
 		form.upstream_operation !== 'audio.transcriptions.multimodal' &&
 		!realtime;
 	const needsImageFiles = isImage && imageOperation === 'edits';

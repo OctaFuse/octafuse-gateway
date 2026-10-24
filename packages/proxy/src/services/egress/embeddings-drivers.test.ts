@@ -43,14 +43,15 @@ afterEach(() => {
 function mockFetch(
 	status: number,
 	body: string,
-	contentType = 'application/json'
+	contentType = 'application/json',
+	extraHeaders: Record<string, string> = {}
 ): { calls: Array<{ url: string; init: RequestInit | undefined }> } {
 	const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
 	globalThis.fetch = (async (input: unknown, init?: RequestInit) => {
 		calls.push({ url: String(input), init });
 		return new Response(body, {
 			status,
-			headers: { 'Content-Type': contentType, 'x-request-id': 'req-1' },
+			headers: { 'Content-Type': contentType, 'x-request-id': 'req-1', ...extraHeaders },
 		});
 	}) as typeof fetch;
 	return { calls };
@@ -109,6 +110,25 @@ describe('dispatchOpenAiEmbeddingsRoute', () => {
 		const result = await dispatchOpenAiEmbeddingsRoute(route({}), { model: 'm', input: 'x' });
 		assert.equal(result.response.status, 429);
 		assert.equal((await result.usagePromise).input_tokens, 0);
+	});
+
+	it('drops compression and length headers after the body is already decoded', async () => {
+		const upstream = { object: 'list', data: [{ embedding: [0.1, 0.2] }], usage: { prompt_tokens: 4, total_tokens: 4 } };
+		mockFetch(200, JSON.stringify(upstream), 'application/json', {
+			'Content-Encoding': 'gzip',
+			'Content-Length': '999',
+			'Transfer-Encoding': 'chunked',
+			Connection: 'keep-alive',
+		});
+		const result = await dispatchOpenAiEmbeddingsRoute(route({}), { model: 'm', input: 'x' });
+		assert.equal(result.response.headers.get('content-encoding'), null);
+		assert.equal(result.response.headers.get('content-length'), null);
+		assert.equal(result.response.headers.get('transfer-encoding'), null);
+		assert.equal(result.response.headers.get('connection'), null);
+		assert.equal(result.response.headers.get('content-type'), 'application/json');
+		assert.equal(result.response.headers.get('x-request-id'), 'req-1');
+		assert.equal(await result.response.text(), JSON.stringify(upstream));
+		assert.equal((await result.usagePromise).input_tokens, 4);
 	});
 });
 
@@ -200,5 +220,24 @@ describe('dispatchGeminiEmbedRoute', () => {
 		assert.equal(sent.model, undefined);
 		assert.equal(sent.outputDimensionality, 256);
 		assert.equal((await result.usagePromise).input_tokens, 3);
+	});
+
+	it('drops compression and length headers after the body is already decoded', async () => {
+		const upstream = { embedding: { values: [0.1] }, usageMetadata: { promptTokenCount: 2 } };
+		mockFetch(200, JSON.stringify(upstream), 'application/json', {
+			'Content-Encoding': 'gzip',
+			'Content-Length': '999',
+		});
+		const result = await dispatchGeminiEmbedRoute(
+			geminiRoute,
+			{ content: { parts: [{ text: 'hi' }] } },
+			'embedContent',
+			''
+		);
+		assert.equal(result.response.headers.get('content-encoding'), null);
+		assert.equal(result.response.headers.get('content-length'), null);
+		assert.equal(result.response.headers.get('content-type'), 'application/json');
+		assert.equal(await result.response.text(), JSON.stringify(upstream));
+		assert.equal((await result.usagePromise).input_tokens, 2);
 	});
 });

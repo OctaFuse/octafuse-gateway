@@ -243,5 +243,103 @@
 			]
 		},
 		"released": "2026-07-16"
+	},
+	{
+		"id": "kimi-k3.1-pro",
+		"display_name": "Kimi K3.1 Pro",
+		"description": "The first K3.1-series flagship and Kimi's most capable 3T-class open-weight model, with native visual understanding and a 1M context. It improves coding, 3D creation, financial research, and long-horizon agent work.",
+		"i18n": {
+			"en": "The first K3.1-series flagship and Kimi's most capable 3T-class open-weight model, with native visual understanding and a 1M context. It improves coding, 3D creation, financial research, and long-horizon agent work.",
+			"zh": "K3.1 系列首个旗舰，也是 Kimi 迄今能力最强的 3 万亿级开放权重模型，具备原生视觉理解与 1M 上下文。面向编程、3D 创作、金融研究与长时间 Agent 工作。",
+			"ja": "K3.1 系列の最初の旗艦で、Kimi で最も能力の高い 3T 級オープンウェイトです。視覚理解と 1M のコンテキストを備え、コーディング、3D 制作、金融調査、長いエージェント作業を強化します。",
+			"ko": "K3.1 시리즈의 첫 플래그십이자 Kimi에서 가장 강한 3T급 오픈 웨이트입니다. 시각 이해와 1M 컨텍스트를 갖추고, 코딩, 3D 제작, 금융 조사, 긴 에이전트 작업을 강화합니다."
+		},
+		"vendor": "moonshot",
+		"context_window": 1000000,
+		"max_tokens": 1000000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2,
+						"output_price": 10,
+						"cache_read_price": 0.2,
+						"cache_write_price": 2
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 13,
+						"output_price": 68,
+						"cache_read_price": 1.3,
+						"cache_write_price": 13
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-10-23"
+	},
+	{
+		"id": "kimi-k3.1-pro-highspeed",
+		"display_name": "Kimi K3.1 Pro Highspeed",
+		"description": "The high-speed variant of Kimi K3.1 Pro with the same intelligence and a 1M context, at about 2-3× the speed. It stays in the multimodal model list and keeps the same parameter constraints as K3.1 Pro.",
+		"i18n": {
+			"en": "The high-speed variant of Kimi K3.1 Pro with the same intelligence and a 1M context, at about 2-3× the speed. It stays in the multimodal model list and keeps the same parameter constraints as K3.1 Pro.",
+			"zh": "Kimi K3.1 Pro 高速版，同等智能与 1M 上下文，速度约为 K3.1 Pro 的 2–3 倍。仍列在多模态模型中，参数约束与 K3.1 Pro 相同。",
+			"ja": "Kimi K3.1 Pro の高速版です。同じ知能と 1M コンテキストのまま、速度はおよそ 2～3 倍です。マルチモーダルの一覧にあり、パラメータ制約は K3.1 Pro と同じです。",
+			"ko": "Kimi K3.1 Pro 고속 버전입니다. 같은 지능과 1M 컨텍스트를 유지한 채 속도는 약 2–3배입니다. 멀티모달 목록에 있으며 파라미터 제약은 K3.1 Pro와 같습니다."
+		},
+		"vendor": "moonshot",
+		"context_window": 1000000,
+		"max_tokens": 1000000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 4,
+						"output_price": 20,
+						"cache_read_price": 0.2,
+						"cache_write_price": 4
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 26,
+						"output_price": 136,
+						"cache_read_price": 1.3,
+						"cache_write_price": 26
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-10-23"
 	}
 ]

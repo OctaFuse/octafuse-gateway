@@ -1351,9 +1351,9 @@
 			"audioPresetHint": "モードを選ぶと公開プロトコル、アップストリーム機能、アダプターを自動入力します。Provider モデル名を確認してください。",
 			"audioPresetNonRealtime": "DashScope 非リアルタイム TTS（OpenAI 互換）",
 			"audioPresetRealtime": "DashScope リアルタイム TTS（WebSocket）",
-			"audioPresetAsrFlashConvert": "Qwen-Audio-3.0 flash（OpenAI 変換）",
-			"audioPresetAsrFlashPassthrough": "Qwen-Audio-3.0 flash（DashScope HTTP）",
-			"audioPresetAsrFiletrans": "DashScope filetrans（非同期 file_url）",
+			"audioPresetAsrFlashConvert": "Qwen-Audio flash（OpenAI 変換）",
+			"audioPresetAsrFlashPassthrough": "Qwen-Audio flash（DashScope HTTP）",
+			"audioPresetAsrFiletrans": "Qwen-Audio filetrans（非同期 file_url）",
 			"modelRequired": "モデル *",
 			"selectModel": "モデルを選択",
 			"modelId": "モデル ID",
@@ -1369,10 +1369,20 @@
 			"adapterNames": {
 				"passthrough": "パススルー",
 				"dashscope-asr-qwen-file": "Qwen3 ファイル音声認識",
-				"dashscope-asr-qwen-audio-file": "Qwen-Audio-3.0 ファイル音声認識",
+				"dashscope-asr-qwen-audio-file": "Qwen-Audio ファイル音声認識",
 				"dashscope-asr-fun-file": "Fun-ASR ファイル音声認識",
-				"dashscope-asr-file-async": "非同期ファイル音声認識",
-				"dashscope-tts-speech": "CosyVoice / Qwen-Audio-3.0 TTS",
+				"dashscope-asr-qwen-file-async": "Qwen3 非同期ファイル音声認識",
+				"dashscope-asr-qwen-audio-file-async": "Qwen-Audio 非同期ファイル音声認識",
+				"dashscope-asr-fun-async": "Fun-ASR 非同期ファイル音声認識",
+				"dashscope-asr-paraformer-async": "Paraformer 非同期ファイル音声認識",
+				"dashscope-tts-speech": "CosyVoice TTS",
+				"dashscope-tts-qwen-audio": "Qwen-Audio TTS",
+				"passthrough-cosyvoice": "パススルー CosyVoice",
+				"passthrough-qwen-audio-tts": "パススルー Qwen-Audio",
+				"passthrough-qwen3": "パススルー Qwen3",
+				"passthrough-qwen-audio-asr": "パススルー Qwen-Audio",
+				"passthrough-fun-asr": "パススルー Fun-ASR",
+				"passthrough-paraformer": "パススルー Paraformer",
 				"dashscope-tts-qwen": "Qwen-TTS（マルチモーダル）",
 				"dashscope-tts-minimax": "MiniMax TTS",
 				"dashscope-image-qwen": "Qwen Image 3.0",
@@ -1399,7 +1409,7 @@
 					]
 				},
 				"dashscope-asr-qwen-audio-file": {
-					"purpose": "qwen-audio-3.0-asr-flash 用。",
+					"purpose": "qwen-audio-3.0-asr-flash と qwen-audio-3.1-asr-flash 用。filetrans には Qwen-Audio 非同期ファイル音声認識を選んでください。",
 					"mapping": [
 						"language は parameters.language_hints に書き込まれます。",
 						"prompt は input_text になります。",
@@ -1413,8 +1423,35 @@
 						"format は MIME または拡張子から推定します。"
 					]
 				},
-				"dashscope-asr-file-async": {
-					"purpose": "filetrans、fun-asr、paraformer の非同期文字起こし用。プロバイダーには送信とタスク照会の両方のエンドポイントが必要です。",
+				"dashscope-asr-qwen-file-async": {
+					"purpose": "qwen3-asr-flash-filetrans 用。プロバイダーには送信とタスク照会の両方のエンドポイントが必要です。",
+					"mapping": [
+						"公開 file_url フォーム項目が必須です（http、https、oss）。",
+						"prompt は input.context に書き込まれます。",
+						"language は parameters.language_hints に書き込まれます。",
+						"ゲートウェイがタスクを送信し、結果をポーリングします。"
+					]
+				},
+				"dashscope-asr-qwen-audio-file-async": {
+					"purpose": "Qwen-Audio の filetrans 用。プロバイダーには送信とタスク照会の両方のエンドポイントが必要です。",
+					"mapping": [
+						"公開 file_url フォーム項目が必須です（http、https、oss）。",
+						"prompt は input.context に書き込まれます。",
+						"language は parameters.language_hints に書き込まれます。",
+						"ゲートウェイがタスクを送信し、結果をポーリングします。"
+					]
+				},
+				"dashscope-asr-fun-async": {
+					"purpose": "fun-asr と fun-asr-2 の非同期文字起こし用（realtime を除く）。プロバイダーには送信とタスク照会の両方のエンドポイントが必要です。",
+					"mapping": [
+						"公開 file_url フォーム項目が必須です（http、https、oss）。",
+						"prompt は input.context に書き込まれます。",
+						"language は parameters.language_hints に書き込まれます。",
+						"ゲートウェイがタスクを送信し、結果をポーリングします。"
+					]
+				},
+				"dashscope-asr-paraformer-async": {
+					"purpose": "paraformer-v の非同期文字起こし用。プロバイダーには送信とタスク照会の両方のエンドポイントが必要です。",
 					"mapping": [
 						"公開 file_url フォーム項目が必須です（http、https、oss）。",
 						"prompt は input.context に書き込まれます。",
@@ -1423,7 +1460,15 @@
 					]
 				},
 				"dashscope-tts-speech": {
-					"purpose": "CosyVoice と Qwen-Audio-3.0-TTS 用。",
+					"purpose": "CosyVoice 用。Qwen-Audio には Qwen-Audio TTS を選んでください。",
+					"mapping": [
+						"response_format は mp3、opus、wav、pcm に対応します。",
+						"speed は 0.5–2 で、input.rate に書き込まれます。",
+						"instructions は input.instruction に書き込まれます。"
+					]
+				},
+				"dashscope-tts-qwen-audio": {
+					"purpose": "qwen-audio-3.0-tts と qwen-audio-3.1-tts-flash 用。声はモデルに従います。3.1 は _v3.1 の声を使います。",
 					"mapping": [
 						"response_format は mp3、opus、wav、pcm に対応します。",
 						"speed は 0.5–2 で、input.rate に書き込まれます。",
@@ -1431,7 +1476,7 @@
 					]
 				},
 				"dashscope-tts-qwen": {
-					"purpose": "qwen3-tts-flash などの非リアルタイムモデル用。Qwen-Audio-3.0-TTS には CosyVoice / Qwen-Audio-3.0 TTS を選んでください。",
+					"purpose": "qwen3-tts-flash などの非リアルタイムモデル用。Qwen-Audio には Qwen-Audio TTS を選んでください。",
 					"mapping": [
 						"wav のみを返すため、response_format は wav である必要があります。",
 						"speed は 1 である必要があります。",

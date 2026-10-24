@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { flushSync } from 'react-dom';
 import { validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
+import { isDashScopeAsyncFileAdapter } from '@octafuse/core/adapters/registry';
 import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import { emptyModelKindCounts } from '@/lib/invoke-kind';
 import {
@@ -189,7 +190,7 @@ export function usePlaygroundPageState() {
 		selectedElevenLabsRealtimeOperation === 'audio.transcriptions.realtime';
 	const selectedNeedsAudioFile =
 		selectedIsAudioTranscription &&
-		selected?.adapter !== 'dashscope-asr-file-async' &&
+		!isDashScopeAsyncFileAdapter(selected?.adapter ?? '') &&
 		!(
 			selected?.adapter === 'passthrough' &&
 			selected?.upstream_operation === 'audio.transcriptions.multimodal'

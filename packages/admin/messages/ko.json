@@ -1351,9 +1351,9 @@
 			"audioPresetHint": "모드를 선택하면 공개 프로토콜, 업스트림 기능, 어댑터를 자동으로 입력합니다. Provider 모델명을 확인하세요.",
 			"audioPresetNonRealtime": "DashScope 비실시간 TTS(OpenAI 호환)",
 			"audioPresetRealtime": "DashScope 실시간 TTS(WebSocket)",
-			"audioPresetAsrFlashConvert": "Qwen-Audio-3.0 flash(OpenAI 변환)",
-			"audioPresetAsrFlashPassthrough": "Qwen-Audio-3.0 flash(DashScope HTTP)",
-			"audioPresetAsrFiletrans": "DashScope filetrans(비동기 file_url)",
+			"audioPresetAsrFlashConvert": "Qwen-Audio flash(OpenAI 변환)",
+			"audioPresetAsrFlashPassthrough": "Qwen-Audio flash(DashScope HTTP)",
+			"audioPresetAsrFiletrans": "Qwen-Audio filetrans(비동기 file_url)",
 			"modelRequired": "모델 *",
 			"selectModel": "모델 선택",
 			"modelId": "모델 ID",
@@ -1369,10 +1369,20 @@
 			"adapterNames": {
 				"passthrough": "패스스루",
 				"dashscope-asr-qwen-file": "Qwen3 파일 음성인식",
-				"dashscope-asr-qwen-audio-file": "Qwen-Audio-3.0 파일 음성인식",
+				"dashscope-asr-qwen-audio-file": "Qwen-Audio 파일 음성인식",
 				"dashscope-asr-fun-file": "Fun-ASR 파일 음성인식",
-				"dashscope-asr-file-async": "비동기 파일 음성인식",
-				"dashscope-tts-speech": "CosyVoice / Qwen-Audio-3.0 TTS",
+				"dashscope-asr-qwen-file-async": "Qwen3 비동기 파일 음성인식",
+				"dashscope-asr-qwen-audio-file-async": "Qwen-Audio 비동기 파일 음성인식",
+				"dashscope-asr-fun-async": "Fun-ASR 비동기 파일 음성인식",
+				"dashscope-asr-paraformer-async": "Paraformer 비동기 파일 음성인식",
+				"dashscope-tts-speech": "CosyVoice TTS",
+				"dashscope-tts-qwen-audio": "Qwen-Audio TTS",
+				"passthrough-cosyvoice": "패스스루 CosyVoice",
+				"passthrough-qwen-audio-tts": "패스스루 Qwen-Audio",
+				"passthrough-qwen3": "패스스루 Qwen3",
+				"passthrough-qwen-audio-asr": "패스스루 Qwen-Audio",
+				"passthrough-fun-asr": "패스스루 Fun-ASR",
+				"passthrough-paraformer": "패스스루 Paraformer",
 				"dashscope-tts-qwen": "Qwen-TTS(멀티모달)",
 				"dashscope-tts-minimax": "MiniMax TTS",
 				"dashscope-image-qwen": "Qwen Image 3.0",
@@ -1399,7 +1409,7 @@
 					]
 				},
 				"dashscope-asr-qwen-audio-file": {
-					"purpose": "qwen-audio-3.0-asr-flash용입니다.",
+					"purpose": "qwen-audio-3.0-asr-flash와 qwen-audio-3.1-asr-flash용입니다. filetrans는 Qwen-Audio 비동기 파일 음성인식을 선택하세요.",
 					"mapping": [
 						"language는 parameters.language_hints에 씁니다.",
 						"prompt는 input_text로 보냅니다.",
@@ -1413,8 +1423,35 @@
 						"format은 MIME 또는 파일 확장자에서 추론합니다."
 					]
 				},
-				"dashscope-asr-file-async": {
-					"purpose": "filetrans, fun-asr, paraformer 비동기 전사용입니다. 공급자에 제출과 작업 조회 엔드포인트가 모두 필요합니다.",
+				"dashscope-asr-qwen-file-async": {
+					"purpose": "qwen3-asr-flash-filetrans용입니다. 공급자에 제출과 작업 조회 엔드포인트가 모두 필요합니다.",
+					"mapping": [
+						"공개 file_url 폼 필드가 필요합니다(http, https 또는 oss).",
+						"prompt는 input.context에 씁니다.",
+						"language는 parameters.language_hints에 씁니다.",
+						"게이트웨이가 작업을 제출하고 결과를 폴링합니다."
+					]
+				},
+				"dashscope-asr-qwen-audio-file-async": {
+					"purpose": "Qwen-Audio filetrans용입니다. 공급자에 제출과 작업 조회 엔드포인트가 모두 필요합니다.",
+					"mapping": [
+						"공개 file_url 폼 필드가 필요합니다(http, https 또는 oss).",
+						"prompt는 input.context에 씁니다.",
+						"language는 parameters.language_hints에 씁니다.",
+						"게이트웨이가 작업을 제출하고 결과를 폴링합니다."
+					]
+				},
+				"dashscope-asr-fun-async": {
+					"purpose": "fun-asr와 fun-asr-2 비동기 전사용입니다(realtime 제외). 공급자에 제출과 작업 조회 엔드포인트가 모두 필요합니다.",
+					"mapping": [
+						"공개 file_url 폼 필드가 필요합니다(http, https 또는 oss).",
+						"prompt는 input.context에 씁니다.",
+						"language는 parameters.language_hints에 씁니다.",
+						"게이트웨이가 작업을 제출하고 결과를 폴링합니다."
+					]
+				},
+				"dashscope-asr-paraformer-async": {
+					"purpose": "paraformer-v 비동기 전사용입니다. 공급자에 제출과 작업 조회 엔드포인트가 모두 필요합니다.",
 					"mapping": [
 						"공개 file_url 폼 필드가 필요합니다(http, https 또는 oss).",
 						"prompt는 input.context에 씁니다.",
@@ -1423,7 +1460,15 @@
 					]
 				},
 				"dashscope-tts-speech": {
-					"purpose": "CosyVoice와 Qwen-Audio-3.0-TTS용입니다.",
+					"purpose": "CosyVoice용입니다. Qwen-Audio는 Qwen-Audio TTS를 선택하세요.",
+					"mapping": [
+						"response_format은 mp3, opus, wav, pcm을 지원합니다.",
+						"speed는 0.5–2이며 input.rate에 씁니다.",
+						"instructions는 input.instruction에 씁니다."
+					]
+				},
+				"dashscope-tts-qwen-audio": {
+					"purpose": "qwen-audio-3.0-tts와 qwen-audio-3.1-tts-flash용입니다. 목소리는 모델을 따릅니다. 3.1은 _v3.1 목소리를 사용합니다.",
 					"mapping": [
 						"response_format은 mp3, opus, wav, pcm을 지원합니다.",
 						"speed는 0.5–2이며 input.rate에 씁니다.",
@@ -1431,7 +1476,7 @@
 					]
 				},
 				"dashscope-tts-qwen": {
-					"purpose": "qwen3-tts-flash 같은 비실시간 모델용입니다. Qwen-Audio-3.0-TTS는 CosyVoice / Qwen-Audio-3.0 TTS를 선택하세요.",
+					"purpose": "qwen3-tts-flash 같은 비실시간 모델용입니다. Qwen-Audio는 Qwen-Audio TTS를 선택하세요.",
 					"mapping": [
 						"wav만 반환하므로 response_format은 wav여야 합니다.",
 						"speed는 1이어야 합니다.",

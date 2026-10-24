@@ -34,7 +34,8 @@ Kind 共 5 个：`llm`、`image`、`asr`、`tts`、`embedding`。
 | 2 | `output_modalities` 含 `image` | `image` | `output_modalities` |
 | 2a | `output_modalities` 缺失，且旧版 `pricing_profile.image` 存在 | `image` | `legacy_pricing` |
 | 3 | `audio_billing_mode` 有效：`per_character` 且有 `audio.price_per_character` | `tts` | `billing` |
-| 3 | `audio_billing_mode` 有效：`per_second` 且有 `audio` 块，或 `token` 且 `tiers` 非空 | `asr` | `billing` |
+| 3 | `audio_billing_mode` 有效：`token` 且 `tiers` 非空，并且输入只含文本（或未填）、输出只有 `audio` | `tts` | `billing` |
+| 3 | `audio_billing_mode` 有效：`per_second` 且有 `audio` 块，或其余 `token` 且 `tiers` 非空 | `asr` | `billing` |
 | 4 | 没有有效计费模式时按模态签名（见下表） | `asr` / `tts` | `modality_signature` |
 | 5 | 其余 | `llm` | `default` |
 
@@ -64,7 +65,8 @@ Kind 共 5 个：`llm`、`image`、`asr`、`tts`、`embedding`。
 | 配置 | 判为冲突的情形 |
 | ---- | -------------- |
 | `audio_billing_mode=per_character`（TTS） | 输出模态已填写但不含 `audio` |
-| `audio_billing_mode=per_second` / `token`（ASR） | 输出模态含 `audio`；或输入模态已填写但不含 `audio` |
+| `audio_billing_mode=token` 且签名是文本进、音频出（TTS） | 不按 ASR 冲突处理 |
+| `audio_billing_mode=per_second` / 其余 `token`（ASR） | 输出模态含 `audio`；或输入模态已填写但不含 `audio` |
 | 任一音频计费模式 | 输出模态含 `embedding` 或 `image` |
 | 输出模态 | 同时含 `embedding` 与 `image` / `audio` |
 
@@ -76,7 +78,7 @@ Kind 共 5 个：`llm`、`image`、`asr`、`tts`、`embedding`。
 
 Kind 回答「它是什么模型」；Proxy 的音频入口还要回答「能不能放行」。两者刻意分开：
 
-- `checkAudioModelGuard(model, 'asr' | 'tts')` 先要求 Kind 吻合，再要求音频计费就绪（ASR 需要 `per_second` 或 `token`，TTS 需要 `per_character`）。
+- `checkAudioModelGuard(model, 'asr' | 'tts')` 先要求 Kind 吻合，再要求音频计费就绪（ASR 需要 `per_second` 或 `token`，TTS 需要 `per_character` 或 `token`）。
 - 计费未就绪的模型即使按模态签名被判成 `asr` / `tts`，也不会被受理，避免没有定价却产生调用。
 - 两种失败给出不同的错误信息：「模型类型不符」与「缺少音频计费」。
 
@@ -86,7 +88,7 @@ Kind 回答「它是什么模型」；Proxy 的音频入口还要回答「能不
 
 - 新建 / 编辑模型：Kind 分段控件直接选 **ASR** 或 **TTS**，没有「音频能力」二级开关。切换 Kind 时会同步默认输入输出模态与计费方式：
   - ASR：输入 `audio`、输出 `text`；计费可选按秒或 Token。
-  - TTS：输入 `text`、输出 `audio`；只支持按字符计费。
+  - TTS：输入 `text`、输出 `audio`；计费可选按字符或 Token。按 Token 时输入输出单价与 ASR 的 Token 档相同，用官方返回的 input / output token 计费。
 - 模型页、路由页、调试台、模拟器的 Kind 筛选都使用同一组取值，URL 参数为 `?kind=asr` 等。
 - 预设目录（导入面板）每条预设的 `kind` 同样由 `resolveModelKind` 算出。
 

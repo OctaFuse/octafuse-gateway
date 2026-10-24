@@ -1,7 +1,7 @@
 /**
  * 管理 UI：`pricing_profile` 的 `{ tiers }` 表单行与 JSON 序列化（与 `@octafuse/core` 解析一致）。
  * Image 双模式：`image_billing_mode` token / per_image + 可选 `image` 块。
- * Audio 三模式：ASR per_second/token，TTS per_character。
+ * Audio 计费：ASR 为 per_second 或 token；TTS 为 per_character 或 token。
  */
 import type { ModelKind } from '@octafuse/core/db/model-kind';
 import {

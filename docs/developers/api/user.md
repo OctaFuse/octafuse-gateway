@@ -1203,7 +1203,7 @@ Content-Type: multipart/form-data
 |------|------|
 | `model` | 必填；支持 `id:route_group` 后缀 |
 | `file` | 同步转换链必填；音频文件（如 `webm` / `mp3` / `wav` / `ogg` / `m4a`）；Gateway 硬上限约 **25MB** |
-| `file_url` | 异步 filetrans（`dashscope-asr-file-async`）必填；公网 HTTP(S)/OSS URL。有 `file_url` 时可不传 `file` |
+| `file_url` | 异步 filetrans（Qwen3 / Qwen-Audio / Fun-ASR / Paraformer 的 async adapter）必填；公网 HTTP(S)/OSS URL。有 `file_url` 时可不传 `file` |
 | `language` | 可选；ISO-639-1（如 `zh`、`en`） |
 | `response_format` | 可选；`json`（默认）/ `text` / `srt` / `verbose_json` / `vtt` / `diarized_json`（说话人分离模型） |
 | `prompt` / `temperature` | 可选；OpenAI 透传原样转发，`minimax-asr-file` 不转发 |

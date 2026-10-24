@@ -9,7 +9,7 @@
  * - `<vendor>.json` — LLM（`modalities.output` 以 `text` 为主，含多模态「看图」LLM）
  * - `<vendor>-image.json` — 纯文生图（`modalities.output` 含 `image`）
  * - `<vendor>-audio-asr.json` — 语音转写 ASR（`audio_billing_mode: per_second | token`）
- * - `<vendor>-audio-tts.json` — 语音合成 TTS（`audio_billing_mode: per_character`）
+ * - `<vendor>-audio-tts.json` — 语音合成 TTS（`audio_billing_mode: per_character | token`）
  * - `<vendor>-embedding.json` — 向量模型（`modalities.output` 为 `embedding`；仅按输入 token 计费，output / cache 价为 0 / null）
  *
  * 各预设内 **`pricing.usd`** 与 D1 导出 `data/remote/.../data-remote-table-models-*.sql` 中 `pricing_profile` 一致（美元口径）；
@@ -27,6 +27,7 @@
  * Xiaomi MiMo-V2.6 目录价为实时推理刊例（USD / CNY 分源）。Pro 与 Flash 的批量推理半价不写入 preset；UltraSpeed 无批量推理。缓存写入官网标明限时免费，`cache_write_price` 保持 null。
  * MiniMax M3 目录价为官方标准现价（按量页永久五折后的价格）：输入 ≤512K 时美元 $0.30 / $1.20、缓存读取 $0.06，中国区 ¥2.10 / ¥8.40、缓存读取 ¥0.42；输入超过 512K 时整档加倍。不含 Priority 与划线原价。`cache_write_price` 留空。
  * MiniMax M3.1 Flash 目录价为 2026-10-19 起的官方单一档标准刊例：美元 $0.15 / $0.60，缓存读取 $0.015；中国区按量价 ¥1 / ¥4，缓存读取 ¥0.1。不含 Priority。`cache_write_price` 留空。预览 id `minimax-m3.1-flash-preview` 已从静态目录移除。
+ * Kimi K3.1 Pro / Highspeed 目录价取 2026-10-23 的 platform.kimi.ai 与 platform.kimi.com 首页刊例。Pro：美元 $2 / $10、缓存读取 $0.20、缓存写入 $2；人民币 ¥13 / ¥68、缓存读取 ¥1.30、缓存写入 ¥13。Highspeed：美元 $4 / $20、缓存读取 $0.20、缓存写入 $4；人民币 ¥26 / ¥136、缓存读取 ¥1.30、缓存写入 ¥26。高速版缓存命中与 Pro 相同，不是输入价的 10%。`cache_write_price` 取默认 5 分钟档；1 小时档官网只以 kimi-k3 举例为 5 分钟的 2 倍，K3.1 未单列，不写入。上下文与最大输出按 1M 记为 1000000。
  * 面向管理后台的英文摘要与中、英、日、韩介绍均与模型预设共同维护，按界面语言只读展示，不写入数据库。
  *
  * 合并顺序：与下方 import 列表一致（尚未录入价目的厂商保留 `[]` 占位文件；image 文件紧挨同 vendor 的 LLM 之后）。

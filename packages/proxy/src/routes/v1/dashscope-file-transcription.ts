@@ -230,6 +230,7 @@ async function runAsyncPassthrough(
 					durationSeconds: response.ok ? (meta?.audioDurationSeconds ?? 0) : 0,
 					durationSource: response.ok && meta?.audioDurationSource ? meta.audioDurationSource : 'estimated',
 					fileBytes: 0,
+					tokenUsage: response.ok ? (meta?.audioTokenUsage ?? null) : null,
 					requestStartedAtMs: start,
 				},
 				providerKeyId: proxyResult.chosenRoute.providerKeyId ?? null,

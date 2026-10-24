@@ -11,6 +11,20 @@ describe('audioModelGuardMessage', () => {
 		assert.equal(audioModelGuardMessage({ pricing_profile: asr }, 'asr', 'X'), null);
 	});
 
+	it('accepts token-billed speech models and names both modes when billing is missing', () => {
+		const tokenTts = {
+			input_modalities: ['text'],
+			output_modalities: ['audio'],
+			pricing_profile: JSON.stringify({
+				audio_billing_mode: 'token',
+				tiers: [{ upto: null, input_price: 1.5, output_price: 12 }],
+			}),
+		};
+		assert.equal(audioModelGuardMessage(tokenTts, 'tts', 'X'), null);
+		const missing = audioModelGuardMessage({ input_modalities: ['text'], output_modalities: ['audio'] }, 'tts', 'X');
+		assert.match(missing ?? '', /per_character or token/);
+	});
+
 	it('reports wrong kind', () => {
 		assert.equal(audioModelGuardMessage({ pricing_profile: asr }, 'tts', 'X'), 'X requires a speech model');
 		assert.equal(audioModelGuardMessage({}, 'asr', 'X'), 'X requires a transcription model');

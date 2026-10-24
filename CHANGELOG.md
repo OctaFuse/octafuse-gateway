@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Kimi K3.1 Pro**：静态目录增加 `kimi-k3.1-pro` 与 `kimi-k3.1-pro-highspeed`（发布日 2026-10-23）。上下文与最大输出为 1M。刊例取官网首页：Pro 美元 $2 / $10、缓存读取 $0.20、5 分钟缓存写入 $2，人民币 ¥13 / ¥68、缓存读取 ¥1.30、缓存写入 ¥13；Highspeed 美元 $4 / $20、缓存读取 $0.20、缓存写入 $4，人民币 ¥26 / ¥136、缓存读取 ¥1.30、缓存写入 ¥26。高速版缓存命中与 Pro 相同。1 小时缓存写入官网未给 K3.1 单列价格，不写入。导入后需自行挂路由，不会自动打标签。
+- **向量接口响应头**：`POST /v1/embeddings` 与 Gemini embed 读完上游 JSON 后重新封装响应时，去掉 `Content-Encoding`、`Content-Length`、`Transfer-Encoding` 和 `Connection`。上游非 2xx 错误体在记日志并重建响应时同样去掉这些头。上游 gzip 压缩的向量结果和错误 JSON 不再被浏览器当成压缩正文，网关模拟测试不再出现 Failed to fetch。聊天等非流式 JSON 响应同样处理。
+- **DashScope 语音适配器按系列拆开**：CosyVoice 继续用 `dashscope-tts-speech`；Qwen-Audio 3.0 / 3.1 语音合成改用 `dashscope-tts-qwen-audio`。异步文件转写拆成 Qwen3、Qwen-Audio、Fun-ASR、Paraformer 四个转换适配器，透传选项也按系列分开。迁移 0032 会改写已有转换路由：供应商模型名以 `qwen-audio-` 开头的 `dashscope-tts-speech`，以及能对上系列的 `dashscope-asr-file-async`。对不上的旧异步行会留在库里，直到改成新适配器才重新可用。透传行仍是 `passthrough`。
+- **Qwen-Audio 3.1**：静态目录增加 `qwen-audio-3.1-asr-flash`、`qwen-audio-3.1-asr-flash-filetrans`、`qwen-audio-3.1-asr-flash-streaming`、`qwen-audio-3.1-asr-flash-message` 和 `qwen-audio-3.1-tts-flash`。中国区与国际区都按官方 input/output token 刊例计费，不再沿用 3.0 的按秒或按字符价。同步识别、文件转写、inference 实时识别和 SpeechSynthesizer 会读取上游 token 用量。`qwen-audio-3.1-realtime-plus` 与 `qwen-audio-3.1-tts-next` 仍未接入。已导入的 3.0 模型不会被覆盖，3.1 需要另导入并挂到对应适配器。
+- **路由时段价格明细**：计费规则里每个文本模型时段都可以展开查看本时段价格明细，包括只有「全部时段」、以及未命中窗口时的「其他时段」。没有目录时段倍率时按基准价 ×1，再乘以该行当前生效的供应商、计费和成本倍率。
 - **MiniMax M3 目录价**：静态目录改为官网标准现价（永久五折后）。输入不超过 512K 时，美元 $0.30 / $1.20、缓存读取 $0.06，中国区 ¥2.10 / ¥8.40、缓存读取 ¥0.42；超过 512K 时整档加倍。不含 Priority 与划线原价。已导入的模型不会被覆盖，需要重新导入或手工改价。
 - **可靠性首 Token**：供应商质量与按模型对比供应商增加 TTFT 列，放在平均延迟旁。主数字是用户感知的有效首 Token（有推理时标 R，否则标 C），悬停查看正文、推理、有效值和覆盖率，口径与用量分析一致。没有首 Token 样本时显示 —。近期错误列表不变。
 - **用户用量明细**：展开用户后的模型明细增加缓存命中率，口径与模型、供应商分析一致（无输入 Token 时显示 —）。同一张表增加 TTFT 与平均上游，并去掉平均计费/请求；计费总额仍保留。没有首 Token 或上游耗时样本时显示 —。

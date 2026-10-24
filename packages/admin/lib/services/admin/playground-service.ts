@@ -9,6 +9,7 @@ import {
 	resolveProviderUpstreamSecret,
 	routeCustomParamsBody,
 } from '@octafuse/core';
+import { isDashScopeAsyncFileAdapter } from '@octafuse/core/adapters/registry';
 import { mergeRouteRequestBody } from '@octafuse/core/route-custom-params';
 import {
 	AUDIO_SPEECH_KNOWN_KEYS,
@@ -867,7 +868,7 @@ export function buildPlaygroundDashScopeAsyncAsrRequest(
 	route: PlaygroundResolvedRoute,
 	body: Record<string, unknown>,
 ): PlaygroundDashScopeSyncAsrRequest {
-	if (route.upstreamOperation !== 'audio.transcriptions.async' || route.adapter !== 'dashscope-asr-file-async') {
+	if (route.upstreamOperation !== 'audio.transcriptions.async' || !isDashScopeAsyncFileAdapter(route.adapter)) {
 		throw badRequest(`Playground does not support DashScope async adapter ${JSON.stringify(route.adapter)}`);
 	}
 	const fileUrl = typeof body.file_url === 'string' ? body.file_url.trim() : '';

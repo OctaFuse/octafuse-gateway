@@ -12,6 +12,7 @@ import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
 import { buildRouteRequestBody } from '../route-default-params';
+import { sanitizeRewrappedHeaders } from './response-headers';
 import { extractUpstreamRequestId } from './upstream-request-id';
 
 const EMPTY_USAGE_LOCAL: UsageFromStream = {
@@ -101,7 +102,7 @@ export async function dispatchOpenAiEmbeddingsRoute(
 			response: new Response(text, {
 				status: response.status,
 				statusText: response.statusText,
-				headers: response.headers,
+				headers: sanitizeRewrappedHeaders(response.headers),
 			}),
 			usagePromise: Promise.resolve(usage),
 			upstreamRequestId,

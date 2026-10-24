@@ -38,7 +38,7 @@ export type AudioSpeechDispatchOptions = {
 	fetchImpl?: typeof fetch;
 };
 
-type DashScopeTtsKind = 'speech' | 'qwen' | 'minimax';
+type DashScopeTtsKind = 'speech' | 'qwen-audio' | 'qwen' | 'minimax';
 
 type ParsedTtsEvent = {
 	audioBase64: string | null;
@@ -332,19 +332,33 @@ async function firstDashScopeEvents(
 	}
 }
 
+function validateCosyVoiceSpeech(request: NormalizedAudioSpeechRequest): string | null {
+	if (!['mp3', 'opus', 'wav', 'pcm'].includes(request.responseFormat)) {
+		return `DashScope SpeechSynthesizer does not support response_format=${request.responseFormat}`;
+	}
+	if (request.speed < 0.5 || request.speed > 2) {
+		return 'DashScope SpeechSynthesizer speed must be between 0.5 and 2.0';
+	}
+	return null;
+}
+
+/** 与 CosyVoice 今天的 SpeechSynthesizer 字段相同，但单独维护，避免改一边带上另一边。 */
+function validateQwenAudioSpeech(request: NormalizedAudioSpeechRequest): string | null {
+	if (!['mp3', 'opus', 'wav', 'pcm'].includes(request.responseFormat)) {
+		return `DashScope Qwen-Audio TTS does not support response_format=${request.responseFormat}`;
+	}
+	if (request.speed < 0.5 || request.speed > 2) {
+		return 'DashScope Qwen-Audio TTS speed must be between 0.5 and 2.0';
+	}
+	return null;
+}
+
 function validateDashScopeRequest(
 	kind: DashScopeTtsKind,
 	request: NormalizedAudioSpeechRequest
 ): string | null {
-	if (kind === 'speech') {
-		if (!['mp3', 'opus', 'wav', 'pcm'].includes(request.responseFormat)) {
-			return `DashScope SpeechSynthesizer does not support response_format=${request.responseFormat}`;
-		}
-		if (request.speed < 0.5 || request.speed > 2) {
-			return 'DashScope SpeechSynthesizer speed must be between 0.5 and 2.0';
-		}
-		return null;
-	}
+	if (kind === 'speech') return validateCosyVoiceSpeech(request);
+	if (kind === 'qwen-audio') return validateQwenAudioSpeech(request);
 	if (kind === 'qwen') {
 		if (request.responseFormat !== 'wav') return 'DashScope Qwen-TTS only returns wav audio';
 		if (request.speed !== 1) return 'DashScope Qwen-TTS does not support speed';
@@ -376,6 +390,17 @@ export function composeDashScopeTtsBody(
 						...(request.instructions ? { instruction: request.instructions } : {}),
 					},
 				}
+			: kind === 'qwen-audio'
+				? {
+						model: route.providerModelName,
+						input: {
+							text: request.input,
+							voice,
+							format: request.responseFormat,
+							rate: request.speed,
+							...(request.instructions ? { instruction: request.instructions } : {}),
+						},
+					}
 			: kind === 'qwen'
 				? {
 						model: route.providerModelName,
@@ -458,7 +483,7 @@ async function dispatchDashScopeTts(
 			upstreamRequestId: null,
 		};
 	}
-	const capability = kind === 'speech' ? 'audio.speech' : 'audio.speech.multimodal';
+	const capability = kind === 'speech' || kind === 'qwen-audio' ? 'audio.speech' : 'audio.speech.multimodal';
 	const url = resolveUpstreamEndpoint('dashscope', capability, route.providerEndpoints, {
 		providerId: route.providerId,
 	});
@@ -640,6 +665,17 @@ export async function dispatchOpenAiAudioSpeech(
 		upstreamRequestId,
 		meta: { restoredUpstreamPaths: applied.restoredPaths },
 	};
+}
+
+export function dispatchDashScopeQwenAudioSpeech(
+	route: RouteResult,
+	request: NormalizedAudioSpeechRequest,
+	requestSignal?: AbortSignal,
+	timing?: RequestTimingCollector | null,
+	attempt?: RequestTimingAttempt,
+	options?: AudioSpeechDispatchOptions
+): Promise<SpeechDispatchResult> {
+	return dispatchDashScopeTts(route, request, 'qwen-audio', requestSignal, timing, attempt, options);
 }
 
 export function dispatchDashScopeSpeechSynthesizer(

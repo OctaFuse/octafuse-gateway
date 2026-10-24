@@ -10,6 +10,7 @@ import {
 	DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE,
 } from '@/lib/audio-transcriptions';
 import { embeddingBodyTemplateFor } from '@/lib/embeddings';
+import { isDashScopeAsyncFileAdapter } from '@octafuse/core/adapters/registry';
 import { resolveModelKind, type ModelKindFields } from '@octafuse/core/db/model-kind';
 import { extraHeadersFromCustomParams, mergeRouteRequestBody, mergeUpstreamHeaders, splitRouteCustomParams } from '@octafuse/core/route-custom-params';
 import {
@@ -378,7 +379,7 @@ export function templateForRoute(
 			if (proto === 'dashscope' && route.adapter === 'passthrough' && route.upstream_operation === 'audio.transcriptions.async') {
 				return DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE;
 			}
-			if (route.adapter === 'dashscope-asr-file-async' || route.upstream_operation === 'audio.transcriptions.async') {
+			if (isDashScopeAsyncFileAdapter(route.adapter ?? '') || route.upstream_operation === 'audio.transcriptions.async') {
 				return AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE;
 			}
 			if (proto === 'dashscope' && route.adapter === 'passthrough') {

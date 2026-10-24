@@ -40,9 +40,9 @@ DashScope 原生路径相对 `providers.endpoints.dashscope.base`（如 `https:/
 | Anthropic Messages | `/apps/anthropic/v1/messages` | ✅ | — | |
 | Responses | `/compatible-mode/v1/responses` | ✅ | — | 百炼国内 / 国际与千问 AI 平台（含 Token Plan）预设已写入；Coding Plan 官方只提供 Chat 与 Anthropic |
 | 原生文本生成 | `services/aigc/text-generation/generation` | ❌ | ❌ | 兼容模式已覆盖，优先级低 |
-| 同步 ASR | `services/aigc/multimodal-generation/generation` | ✅ | ✅ | Qwen3 / Qwen-Audio-3.0 / Fun-ASR 三个适配器 |
+| 同步 ASR | `services/aigc/multimodal-generation/generation` | ✅ | ✅ | Qwen3 / Qwen-Audio-3.0 与 3.1 / Fun-ASR。3.1 按 input/output token 计费 |
 | 异步文件转写 | `services/audio/asr/transcription` + `tasks/{task_id}` | ✅ | ✅ | 转换只接受公网 `file_url` |
-| 实时 ASR | `/api-ws/v1/inference`、`/api-ws/v1/realtime` | ⚠️ | ❌ | 无 OpenAI Realtime 映射；`qwen-audio-3.1-asr-flash-streaming` 不在模型名规则内 |
+| 实时 ASR | `/api-ws/v1/inference`、`/api-ws/v1/realtime` | ⚠️ | ❌ | 无 OpenAI Realtime 映射。`qwen-audio-3.1-asr-flash-streaming` 与 `qwen-audio-3.1-asr-flash-message` 走 inference，按 token 计费 |
 | 语音合成 SpeechSynthesizer | `services/audio/tts/SpeechSynthesizer` | ✅ | ✅ | 含 SSE |
 | 多模态语音合成 | `services/aigc/multimodal-generation/generation` | ✅ | ✅ | Qwen-TTS 与百炼 MiniMax 语音；缺模型预设 |
 | 实时语音合成 | `/api-ws/v1/inference`、`/api-ws/v1/realtime` | ⚠️ | ❌ | inference 规则只认 `cosyvoice-*`，Qwen-Audio-3.0-TTS 实时与 Sambert 会被标为未识别 |
@@ -122,7 +122,7 @@ ElevenLabs 原生路径相对 `providers.endpoints.elevenlabs.base`（默认 `ht
 
 | 类型 | 缺失项 |
 |------|--------|
-| DashScope 模型 | `qwen3-tts-*` / `qwen-tts*`、`qwen-tts-realtime*`、`MiniMax/speech-2.8-hd`、`paraformer-*`、`qwen-audio-3.1-asr-flash-*`、`qwen-image-edit*` |
+| DashScope 模型 | `qwen3-tts-*` / `qwen-tts*`、`qwen-tts-realtime*`、`MiniMax/speech-2.8-hd`、`paraformer-*`、`qwen-audio-3.1-tts-next`、`qwen-audio-3.1-realtime-plus`、`qwen-image-edit*` |
 | ElevenLabs 模型 | `scribe_v1`（已弃用，定价页不再列价） |
 | MiniMax 模型 | `MiniMax-M2.5-highspeed`、`MiniMax-M2.1`、`MiniMax-M2.1-highspeed`、`MiniMax-M2`、`speech-2.6-hd` / `speech-2.6-turbo`、`speech-02-hd` / `speech-02-turbo`。`MiniMax-M3.1-Flash` 已有正式刊例预设 `minimax-m3.1-flash`；预览 id 已从静态目录移除 |
 

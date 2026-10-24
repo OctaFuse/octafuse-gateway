@@ -1,6 +1,7 @@
 /**
  * `api_key_request_logs` 状态与上游错误摘要：供 v1 代理路由在 `waitUntil` 记账时复用。
  */
+import { sanitizeRewrappedHeaders } from './egress/response-headers';
 import { withUpstreamErrorCodeHeader } from './upstream-error-code';
 
 /** 与 `InsertRequestLogParams.status` / 白名单一致。 */
@@ -116,7 +117,7 @@ export async function materializeNonOkResponse(response: Response): Promise<{
       new Response(errorBodyText, {
         status: response.status,
         statusText: response.statusText,
-        headers: response.headers,
+        headers: sanitizeRewrappedHeaders(response.headers),
       }),
       errorBodyText
     ),

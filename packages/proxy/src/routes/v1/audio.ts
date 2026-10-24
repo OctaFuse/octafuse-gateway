@@ -3,7 +3,7 @@
  * ASR 使用 multipart 文件，TTS 使用 JSON；两者共用鉴权、路由、预算和用量日志流程。
  * 日志只保存脱敏后的元数据，不保存音频二进制。
  */
-import type { GatewayRepositories, ModelRow, ResolvedModelSurfaceRow } from '@octafuse/core';
+import { audioTokenUsageFromCounts, type GatewayRepositories, type ModelRow, type ResolvedModelSurfaceRow } from '@octafuse/core';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { Env } from '../../app';
@@ -713,17 +713,7 @@ async function finalizeSpeechResponse(params: {
 				raw_usage: null,
 			}))
 			.then((usage) => {
-				const tokenUsage =
-					usage.input_tokens > 0 || usage.output_tokens > 0 || usage.total_tokens > 0
-						? {
-								input_tokens: usage.input_tokens,
-								output_tokens: usage.output_tokens,
-								total_tokens: usage.total_tokens,
-								audio_tokens: usage.output_tokens,
-								text_tokens: usage.input_tokens,
-								raw_usage: usage.raw_usage,
-							}
-						: null;
+				const tokenUsage = audioTokenUsageFromCounts(usage);
 				const status: 'success' | 'error' =
 					response.ok && !usage.cancelled && !usage.stream_error ? 'success' : 'error';
 				const errorMessage = speechErrorMessage(usage);
