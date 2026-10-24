@@ -20,14 +20,26 @@ export type RequestLogSummaryQueryOptions = {
 	modelIdPrefix?: string;
 	routeGroup?: string;
 	status?: string;
+	includeLabels?: boolean;
 	limit: number;
+	offset?: number;
 };
 
-const DIMENSION_COLUMN: Record<RequestLogSummaryDimension, 'provider_id' | 'model_id' | 'route_group' | 'status'> = {
+const DIMENSION_COLUMN = {
 	provider: 'provider_id',
 	model: 'model_id',
+	user: 'user_id',
+	provider_key: 'provider_key_id',
 	route_group: 'route_group',
 	status: 'status',
+} as const satisfies Record<RequestLogSummaryDimension, string>;
+
+/** 维度 → 日志表里对应的名称快照列（`include_labels` 时用 `MAX()` 带出）。 */
+const DIMENSION_LABEL_COLUMN: Partial<Record<RequestLogSummaryDimension, string>> = {
+	provider: 'provider_name',
+	model: 'model_name',
+	user: 'user_email',
+	provider_key: 'provider_key_label',
 };
 
 const TOKEN_COLUMNS = [
@@ -81,22 +93,32 @@ export function buildRequestLogSummaryQuery(
 		binds.push(isoToSqlUtcMillis(options.startDate), isoToSqlUtcMillis(options.endDate));
 	}
 
+	const labelColumns = options.includeLabels
+		? options.groupBy.map((dimension) => DIMENSION_LABEL_COLUMN[dimension]).filter((column): column is string => !!column)
+		: [];
+	const statusCount = (status: string) => `COALESCE(SUM(CASE WHEN status = '${status}' THEN 1 ELSE 0 END), 0)`;
+	const errorCost = (column: string) => moneyText(dialect, `SUM(CASE WHEN status = 'error' THEN ${column} ELSE 0 END)`);
 	const metrics = [
+		...labelColumns.map((column) => `MAX(${column}) AS ${column}`),
 		'COUNT(*) AS request_count',
-		"COALESCE(SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END), 0) AS success_count",
-		"COALESCE(SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END), 0) AS error_count",
+		`${statusCount('success')} AS success_count`,
+		`${statusCount('error')} AS error_count`,
+		`${statusCount('incomplete')} AS incomplete_count`,
+		`${statusCount('cancelled')} AS cancelled_count`,
 		...TOKEN_COLUMNS.map((column) => `COALESCE(SUM(${column}), 0) AS ${column}`),
 		...COST_COLUMNS.map((column) => `${moneyText(dialect, `SUM(${column})`)} AS ${column}`),
+		`${errorCost('metered_cost')} AS error_metered_cost`,
+		`${errorCost('charged_cost')} AS error_charged_cost`,
 	];
 	const group = groupColumns.join(', ');
-	binds.push(options.limit);
+	binds.push(options.limit, options.offset ?? 0);
 	return {
 		sql: `SELECT ${group}, ${metrics.join(', ')}
 			FROM api_key_request_logs
 			WHERE ${conditions.join(' AND ')}
 			GROUP BY ${group}
 			ORDER BY ${group}
-			LIMIT ?`,
+			LIMIT ? OFFSET ?`,
 		binds,
 	};
 }
@@ -107,8 +129,12 @@ type RawSummaryRow = Record<string, unknown>;
 export function mapRequestLogSummaryRows(
 	rows: RawSummaryRow[],
 	groupBy: RequestLogSummaryDimension[],
+	includeLabels = false,
 ): RequestLogSummaryRow[] {
-	const keys = groupBy.map((dimension) => DIMENSION_COLUMN[dimension]);
+	const keys: string[] = groupBy.map((dimension) => DIMENSION_COLUMN[dimension]);
+	const labels: string[] = includeLabels
+		? groupBy.map((dimension) => DIMENSION_LABEL_COLUMN[dimension]).filter((column): column is string => !!column)
+		: [];
 	const text = (value: unknown) => (value === null || value === undefined ? null : String(value));
 	const money = (value: unknown) => {
 		const number = Number(value ?? 0);
@@ -117,12 +143,14 @@ export function mapRequestLogSummaryRows(
 	};
 	return rows.map((row) => {
 		const key: Record<string, string | null> = {};
-		for (const column of keys) key[column] = text(row[column]);
+		for (const column of [...keys, ...labels]) key[column] = text(row[column]);
 		return {
 			...key,
 			request_count: Number(row.request_count ?? 0),
 			success_count: Number(row.success_count ?? 0),
 			error_count: Number(row.error_count ?? 0),
+			incomplete_count: Number(row.incomplete_count ?? 0),
+			cancelled_count: Number(row.cancelled_count ?? 0),
 			input_tokens: Number(row.input_tokens ?? 0),
 			output_tokens: Number(row.output_tokens ?? 0),
 			cache_read_tokens: Number(row.cache_read_tokens ?? 0),
@@ -133,6 +161,8 @@ export function mapRequestLogSummaryRows(
 			metered_cost: money(row.metered_cost),
 			charged_cost: money(row.charged_cost),
 			charged_wallet_cost: money(row.charged_wallet_cost),
+			error_metered_cost: money(row.error_metered_cost),
+			error_charged_cost: money(row.error_charged_cost),
 		};
 	});
 }

@@ -26,7 +26,7 @@ export function createPostgresRequestLogsRepository(db: PostgresDatabaseClient):
 				sqlitePlaceholdersToPg(sql),
 				binds as Parameters<typeof pg.unsafe>[1]
 			)) as Record<string, unknown>[];
-			return mapRequestLogSummaryRows(rows, options.groupBy);
+			return mapRequestLogSummaryRows(rows, options.groupBy, options.includeLabels);
 		},
 
 		async getRequestLogsByKeyId(

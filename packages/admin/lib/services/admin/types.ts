@@ -484,12 +484,12 @@ export type AdminRequestLogsOutput = {
 export type AdminRequestLogSummaryOutput = {
 	start: string;
 	end: string;
-	group_by: RequestLogSummaryGroupBy;
+	/** 规范化后的分组维度，逗号分隔，按固定顺序（provider、model、user、provider_key、route_group、status）。 */
+	group_by: string;
 	groups: RequestLogSummaryRow[];
+	/** 仅显式分页（传了 `limit`）时可能为 true。 */
+	has_more: boolean;
 };
-
-/** `group_by` 的取值白名单；`provider,model` 与 `model,provider` 等价。 */
-export type RequestLogSummaryGroupBy = 'provider' | 'model' | 'provider,model' | 'route_group' | 'status';
 
 /** `GET /admin/config` 单行 */
 export type AdminConfigRow = {

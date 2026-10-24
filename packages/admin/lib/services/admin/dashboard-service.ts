@@ -72,7 +72,6 @@ import type {
 	AdminReliabilityModelProviderRow,
 	AdminReliabilityProviderRow,
 	AdminRequestLogSummaryOutput,
-	RequestLogSummaryGroupBy,
 	AdminRequestLogsOutput,
 	AdminStatsOutput,
 	AdminUserAnalyticsRow,
@@ -169,26 +168,42 @@ function parseIsoInstant(raw: string | undefined, name: string): string {
 	return new Date(value).toISOString();
 }
 
-/** 汇总接口 `group_by` 白名单 → 仓储分组维度。 */
-const SUMMARY_GROUP_BY_DIMENSIONS: Record<RequestLogSummaryGroupBy, RequestLogSummaryDimension[]> = {
-	provider: ['provider'],
-	model: ['model'],
-	'provider,model': ['provider', 'model'],
-	route_group: ['route_group'],
-	status: ['status'],
-};
+/** 汇总分组维度的规范顺序；`group_by` 里的书写顺序无关，响应统一按此顺序回显。 */
+const SUMMARY_DIMENSION_ORDER: readonly RequestLogSummaryDimension[] = [
+	'provider',
+	'model',
+	'user',
+	'provider_key',
+	'route_group',
+	'status',
+];
 
-/** 单次汇总最多返回的分组数；超出直接报错，不静默截断。 */
+/** 默认模式（不传 `limit`）单次最多返回的分组数；超出直接报错，不静默截断。 */
 export const REQUEST_LOG_SUMMARY_MAX_GROUPS = 1000;
+/** 显式分页（传了 `limit`）时每页最多的分组数。 */
+export const REQUEST_LOG_SUMMARY_MAX_PAGE_SIZE = 5000;
+/** 没有任何筛选条件时允许汇总的最长区间，避免对全表无界聚合。 */
+export const REQUEST_LOG_SUMMARY_UNFILTERED_MAX_DAYS = 31;
 
-function parseSummaryGroupBy(raw: string | undefined): RequestLogSummaryGroupBy {
-	const value = (raw ?? '').trim() || 'provider';
-	// provider 与 model 的两种书写顺序等价。
-	const normalized = value === 'model,provider' ? 'provider,model' : value;
-	if (!(normalized in SUMMARY_GROUP_BY_DIMENSIONS)) {
-		throw badRequest(`group_by must be one of: ${Object.keys(SUMMARY_GROUP_BY_DIMENSIONS).join(', ')}`);
+/** 逗号分隔的维度列表 → 去重、校验、按规范顺序排列。 */
+function parseSummaryGroupBy(raw: string | undefined): RequestLogSummaryDimension[] {
+	const parts = (raw ?? '').split(',').map((value) => value.trim()).filter((value) => value !== '');
+	if (parts.length === 0) return ['provider'];
+	const allowed = new Set<string>(SUMMARY_DIMENSION_ORDER);
+	for (const part of parts) {
+		if (!allowed.has(part)) {
+			throw badRequest(`group_by must be a comma-separated list of: ${SUMMARY_DIMENSION_ORDER.join(', ')}`);
+		}
 	}
-	return normalized as RequestLogSummaryGroupBy;
+	if (new Set(parts).size !== parts.length) throw badRequest('group_by must not contain duplicates');
+	return SUMMARY_DIMENSION_ORDER.filter((dimension) => parts.includes(dimension));
+}
+
+function parseNonNegativeInt(raw: string | undefined, name: string): number | undefined {
+	const value = raw?.trim() ?? '';
+	if (value === '') return undefined;
+	if (!/^\d+$/.test(value)) throw badRequest(`${name} must be a non-negative integer`);
+	return Number.parseInt(value, 10);
 }
 
 function zeroSummaryMetrics(): Omit<RequestLogSummaryRow, 'provider_id'> {
@@ -196,6 +211,8 @@ function zeroSummaryMetrics(): Omit<RequestLogSummaryRow, 'provider_id'> {
 		request_count: 0,
 		success_count: 0,
 		error_count: 0,
+		incomplete_count: 0,
+		cancelled_count: 0,
 		input_tokens: 0,
 		output_tokens: 0,
 		cache_read_tokens: 0,
@@ -206,14 +223,18 @@ function zeroSummaryMetrics(): Omit<RequestLogSummaryRow, 'provider_id'> {
 		metered_cost: '0.000000',
 		charged_cost: '0.000000',
 		charged_wallet_cost: '0.000000',
+		error_metered_cost: '0.000000',
+		error_charged_cost: '0.000000',
 	};
 }
 
 /**
- * 请求日志汇总（门户对账等精确核对场景）。
+ * 请求日志汇总（门户对账、成本监控等精确核对场景）。
  * 区间为半开 `[start, end)`，精度到毫秒；所有状态的日志都计入，与明细分页口径一致。
- * 金额为 6 位小数十进制字符串。无 `provider_ids` 时至少要带一个其他筛选条件，避免全表无条件聚合。
- * 仅在 `group_by=provider` 且传了 `provider_ids` 时，请求的每个 Provider 都有一行，没有日志的记 0。
+ * 金额为 6 位小数十进制字符串。没有任何筛选条件时区间不得超过 31 天。
+ * 仅在 `group_by=provider`、传了 `provider_ids` 且未显式分页时，请求的每个 Provider 都有一行，没有日志的记 0。
+ * 分页：不传 `limit` 时一次返回全部分组，超过 1000 组报错；传 `limit`（≤5000）后按分组键排序分页，
+ * 用 `has_more` 判断是否还有下一页，`offset` 必须配合 `limit`。
  */
 export async function getRequestLogSummaryService(
 	repos: GatewayRepositories,
@@ -226,6 +247,9 @@ export async function getRequestLogSummaryService(
 		status?: string;
 		start?: string;
 		end?: string;
+		include_labels?: string;
+		limit?: string;
+		offset?: string;
 	}
 ): Promise<AdminRequestLogSummaryOutput> {
 	const groupBy = parseSummaryGroupBy(input.group_by);
@@ -234,15 +258,28 @@ export async function getRequestLogSummaryService(
 	const modelIdPrefix = input.model_id_prefix?.trim() || undefined;
 	const routeGroup = input.route_group?.trim() || undefined;
 	const status = input.status?.trim() || undefined;
-	if (!providerIds && !modelId && !modelIdPrefix && !routeGroup && !status) {
-		throw badRequest('at least one of provider_ids, model_id, model_id_prefix, route_group, status is required');
-	}
 	const start = parseIsoInstant(input.start, 'start');
 	const end = parseIsoInstant(input.end, 'end');
 	if (Date.parse(start) >= Date.parse(end)) throw badRequest('start must be earlier than end');
+	const filtered = !!(providerIds || modelId || modelIdPrefix || routeGroup || status);
+	if (!filtered && Date.parse(end) - Date.parse(start) > REQUEST_LOG_SUMMARY_UNFILTERED_MAX_DAYS * 86_400_000) {
+		throw badRequest(
+			`without provider_ids, model_id, model_id_prefix, route_group or status the range must not exceed ${REQUEST_LOG_SUMMARY_UNFILTERED_MAX_DAYS} days`
+		);
+	}
+	const includeLabels = ['1', 'true'].includes((input.include_labels ?? '').trim().toLowerCase());
+
+	const pageLimit = parseNonNegativeInt(input.limit, 'limit');
+	const offset = parseNonNegativeInt(input.offset, 'offset');
+	if (pageLimit !== undefined && (pageLimit < 1 || pageLimit > REQUEST_LOG_SUMMARY_MAX_PAGE_SIZE)) {
+		throw badRequest(`limit must be between 1 and ${REQUEST_LOG_SUMMARY_MAX_PAGE_SIZE}`);
+	}
+	if (offset !== undefined && pageLimit === undefined) throw badRequest('offset requires limit');
+	const paginated = pageLimit !== undefined;
+	const fetchLimit = (paginated ? pageLimit : REQUEST_LOG_SUMMARY_MAX_GROUPS) + 1;
 
 	const rows = await repos.requestLogs.getRequestLogSummary({
-		groupBy: SUMMARY_GROUP_BY_DIMENSIONS[groupBy],
+		groupBy,
 		startDate: start,
 		endDate: end,
 		providerIds,
@@ -250,19 +287,22 @@ export async function getRequestLogSummaryService(
 		modelIdPrefix,
 		routeGroup,
 		status,
-		limit: REQUEST_LOG_SUMMARY_MAX_GROUPS + 1,
+		includeLabels,
+		limit: fetchLimit,
+		offset: offset ?? 0,
 	});
-	if (rows.length > REQUEST_LOG_SUMMARY_MAX_GROUPS) {
+	const exceeded = rows.length >= fetchLimit;
+	if (exceeded && !paginated) {
 		throw badRequest(
-			`summary has more than ${REQUEST_LOG_SUMMARY_MAX_GROUPS} groups, narrow the filters or choose a coarser group_by`
+			`summary has more than ${REQUEST_LOG_SUMMARY_MAX_GROUPS} groups, narrow the filters, choose a coarser group_by, or paginate with limit/offset`
 		);
 	}
-	let groups = rows;
-	if (groupBy === 'provider' && providerIds) {
+	let groups = exceeded ? rows.slice(0, fetchLimit - 1) : rows;
+	if (!paginated && groupBy.length === 1 && groupBy[0] === 'provider' && providerIds) {
 		const byId = new Map(rows.map((row) => [row.provider_id, row]));
 		groups = providerIds.map((id) => byId.get(id) ?? { provider_id: id, ...zeroSummaryMetrics() });
 	}
-	return { start, end, group_by: groupBy, groups };
+	return { start, end, group_by: groupBy.join(','), groups, has_more: paginated && exceeded };
 }
 
 const MAX_PROVIDER_IDS = 10;

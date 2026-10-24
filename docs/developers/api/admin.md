@@ -1073,31 +1073,41 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 
 ### `GET /admin/request-logs/summary`
 
-按维度精确汇总区间内的请求日志。门户对账等核对场景只需要合计，用它代替分页拉全量明细：一次查询，耗时与日志条数无关。权限同 `/admin/request-logs`（`logs.read`）。
+按维度精确汇总区间内的请求日志。门户对账、成本监控等核对场景只需要合计，用它代替分页拉全量明细：一次聚合查询，耗时与日志条数无关。权限同 `/admin/request-logs`（`logs.read`）。
 
 | 查询参数 | 说明 |
 |----------|------|
 | `start` / `end` | 必填，带时区的 ISO 8601（如 `2026-10-20T10:00:00.000Z`），半开区间 `[start, end)`，精度到毫秒；`start` 必须早于 `end` |
-| `group_by` | 默认 `provider`。可选 `provider`、`model`、`provider,model`（`model,provider` 等价）、`route_group`、`status`；其他值返回 400 |
+| `group_by` | 逗号分隔的维度，默认 `provider`。可选 `provider`、`model`、`user`、`provider_key`、`route_group`、`status`，可任意组合、书写顺序无关；响应按上述固定顺序回显。有重复或未知维度返回 400 |
 | `provider_ids` | 逗号分隔，最多 10 个，匹配其中任一 `provider_id` |
 | `model_id` | 精确匹配 |
 | `model_id_prefix` | `model_id` 前缀；`%`、`_` 和 `\` 按字面量匹配 |
 | `route_group` | 精确匹配 |
 | `status` | 精确匹配 |
+| `include_labels` | `1` 或 `true` 时附带名称快照：`user` → `user_email`，`model` → `model_name`，`provider` → `provider_name`，`provider_key` → `provider_key_label`。只对参与分组的维度输出，取组内 `MAX()`，空为 `null` |
+| `limit` / `offset` | 显式分页，见下 |
 
-没有 `provider_ids` 时，至少要带 `model_id`、`model_id_prefix`、`route_group`、`status` 之一，避免全表无条件聚合。
+没有 `provider_ids`、`model_id`、`model_id_prefix`、`route_group`、`status` 任何一个筛选条件时，区间不得超过 31 天，避免对全表无界聚合。
 
-响应：`{ success, data, group_by, start, end }`。`data` 每组一行，包含参与分组的键（`provider_id`、`model_id`、`route_group`、`status`，列值为空时为 `null`）和下列指标：
+响应：`{ success, data, group_by, start, end, has_more }`。`data` 每组一行，包含参与分组的键（`provider_id`、`model_id`、`user_id`、`provider_key_id`、`route_group`、`status`，列值为空时为 `null`）、可选的名称快照和下列指标：
 
 | 字段 | 说明 |
 |------|------|
-| `request_count` / `success_count` / `error_count` | 条数；`success_count`、`error_count` 只统计 `status` 恰为 `success`、`error` 的日志，`cancelled` 等其他状态只计入 `request_count` |
+| `request_count` | 条数 |
+| `success_count` / `error_count` / `incomplete_count` / `cancelled_count` | 对应 `status` 的条数；其他状态只计入 `request_count` |
 | `input_tokens` / `output_tokens` / `cache_read_tokens` / `cache_write_tokens` / `reasoning_tokens` / `total_tokens` | Token 合计，整数 |
 | `standard_cost` / `metered_cost` / `charged_cost` / `charged_wallet_cost` | 金额合计，6 位小数十进制字符串 |
+| `error_metered_cost` / `error_charged_cost` | `status = 'error'` 的日志上 `metered_cost`、`charged_cost` 的合计，已包含在总额里；要「排除失败请求的 `charged_cost`」用 `charged_cost − error_charged_cost` |
 
-所有状态的日志都计入，与明细分页口径一致。只有 `group_by=provider` 且传了 `provider_ids` 时，请求的**每个** Provider 都有一行，区间内没有日志的所有指标为 0。其他分组只返回有日志的分组。单次最多 1000 组，超出返回 400，需要缩小筛选或换更粗的 `group_by`，不会静默截断。D1 的 `created_at` 为秒级文本，毫秒边界按字典序比较，同秒内以 `.000` 对待。
+所有状态的日志都计入，与明细分页口径一致。
 
-`provider_ids` 加时间范围的查询走索引 `(provider_id, created_at)`（迁移 0033），`model`、`route_group`、`status` 分组没有专用索引，区间越长越慢。老版本网关没有这个路径，调用方应在收到 404 时回退到分页明细。
+分页：不传 `limit` 时一次返回全部分组，超过 1000 组返回 400，不会静默截断；传 `limit`（1 到 5000）后按分组键排序分页，`offset` 必须与 `limit` 一起使用，`has_more` 为 `true` 表示还有下一页。每一页都会重新执行聚合，组数很多时应优先缩小区间或换更粗的分组，而不是翻很多页。显式分页的 `group_by=provider` 汇总不补零行。
+
+只有不分页、`group_by=provider` 且传了 `provider_ids` 时，请求的**每个** Provider 都有一行，区间内没有日志的所有指标为 0。其他情况只返回有日志的分组。
+
+D1 的 `created_at` 是秒级文本。服务端对整秒边界省略 `.000` 后再按字典序比较，起点所在秒包含、终点所在秒不含，与 Postgres、MySQL 的半开区间结果一致。
+
+`provider_ids` 加时间范围走索引 `(provider_id, created_at)`（迁移 0033），仅按时间范围走 `created_at` 索引；`model`、`route_group`、`status` 等分组没有专用索引，区间越长越慢。老版本网关没有这个路径，调用方应在收到 404 时回退到分页明细。
 
 ### `GET /admin/budget-audit-logs`
 
