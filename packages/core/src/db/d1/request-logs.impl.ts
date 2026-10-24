@@ -102,7 +102,7 @@ export function createD1RequestLogsRepository(db: D1DatabaseClient): RequestLogs
 				.prepare(sql)
 				.bind(...binds)
 				.all<Record<string, unknown>>();
-			return mapRequestLogSummaryRows(result.results ?? [], options.groupBy);
+			return mapRequestLogSummaryRows(result.results ?? [], options.groupBy, options.includeLabels);
 		},
 
 		async getRequestLogsByKeyId(

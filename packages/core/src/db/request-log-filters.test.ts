@@ -10,7 +10,8 @@ import {
 describe('request log list filters', () => {
 	it('converts ISO instants to UTC SQL text with milliseconds', () => {
 		assert.equal(isoToSqlUtcMillis('2026-10-22T16:36:23.123Z'), '2026-10-22 16:36:23.123');
-		assert.equal(isoToSqlUtcMillis('2026-10-22T16:36:23Z'), '2026-10-22 16:36:23.000');
+		assert.equal(isoToSqlUtcMillis('2026-10-22T16:36:23Z'), '2026-10-22 16:36:23');
+		assert.equal(isoToSqlUtcMillis('2026-10-22T16:36:23.000Z'), '2026-10-22 16:36:23');
 		assert.equal(isoToSqlUtcMillis('2026-10-23T00:36:23.5+08:00'), '2026-10-22 16:36:23.500');
 	});
 

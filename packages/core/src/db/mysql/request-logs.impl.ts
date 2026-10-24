@@ -30,7 +30,7 @@ export function createMySqlRequestLogsRepository(db: MySqlDatabaseClient): Reque
 		async getRequestLogSummary(options): Promise<RequestLogSummaryRow[]> {
 			const { sql, binds } = buildRequestLogSummaryQuery(options, 'mysql');
 			const [rows] = await pool.query<(RowDataPacket & Record<string, unknown>)[]>(sql, binds);
-			return mapRequestLogSummaryRows(rows, options.groupBy);
+			return mapRequestLogSummaryRows(rows, options.groupBy, options.includeLabels);
 		},
 
 		async getRequestLogsByKeyId(

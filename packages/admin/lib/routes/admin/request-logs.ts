@@ -15,9 +15,10 @@ export const adminRequestLogsRoutes = new Hono<AdminEnv>();
 adminRequestLogsRoutes.use('*', requireAdminPrincipal);
 
 /**
- * 精确汇总：按维度聚合区间内的请求条数、Token 与四项金额（门户对账等核对场景，不必分页拉明细）。
- * 查询参数：start / end（必填，带时区的 ISO 8601，半开区间 [start, end)）、group_by（provider 默认 | model | provider,model | route_group | status）、
- * 筛选 provider_ids（逗号分隔，最多 10 个）、model_id、model_id_prefix、route_group、status；无 provider_ids 时至少带一个筛选条件。
+ * 精确汇总：按维度聚合区间内的请求条数、Token 与各项金额（门户对账、成本监控等核对场景，不必分页拉明细）。
+ * 查询参数：start / end（必填，带时区的 ISO 8601，半开区间 [start, end)）、group_by（逗号分隔：provider 默认 | model | user | provider_key | route_group | status，可任意组合）、
+ * 筛选 provider_ids（逗号分隔，最多 10 个）、model_id、model_id_prefix、route_group、status；没有任何筛选条件时区间不得超过 31 天。
+ * include_labels=1 附带名称快照；limit（≤5000）/ offset 显式分页，响应 has_more。
  */
 adminRequestLogsRoutes.get('/summary', async (c) => {
 	try {
@@ -31,8 +32,18 @@ adminRequestLogsRoutes.get('/summary', async (c) => {
 			status: c.req.query('status') ?? undefined,
 			start: c.req.query('start') ?? undefined,
 			end: c.req.query('end') ?? undefined,
+			include_labels: c.req.query('include_labels') ?? undefined,
+			limit: c.req.query('limit') ?? undefined,
+			offset: c.req.query('offset') ?? undefined,
 		});
-		return c.json({ success: true, data: result.groups, group_by: result.group_by, start: result.start, end: result.end });
+		return c.json({
+			success: true,
+			data: result.groups,
+			group_by: result.group_by,
+			start: result.start,
+			end: result.end,
+			has_more: result.has_more,
+		});
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to summarize request logs');
 	}

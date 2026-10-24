@@ -376,15 +376,28 @@ export type RequestLogsByKeyIdFilter = {
 };
 
 /** {@link RequestLogsRepository.getRequestLogSummary} 可用的分组维度。 */
-export const REQUEST_LOG_SUMMARY_DIMENSIONS = ['provider', 'model', 'route_group', 'status'] as const;
+export const REQUEST_LOG_SUMMARY_DIMENSIONS = ['provider', 'model', 'user', 'provider_key', 'route_group', 'status'] as const;
 export type RequestLogSummaryDimension = (typeof REQUEST_LOG_SUMMARY_DIMENSIONS)[number];
 
 /** 汇总行的分组键字段；未参与分组的维度不出现。`null` 表示该列在日志里为空。 */
 export type RequestLogSummaryKey = {
 	provider_id?: string | null;
 	model_id?: string | null;
+	user_id?: string | null;
+	provider_key_id?: string | null;
 	route_group?: string | null;
 	status?: string | null;
+};
+
+/**
+ * 展示快照：仅在 `includeLabels` 且对应维度参与分组时出现，取组内 `MAX()`（日志写入时的名称快照，组内通常唯一）。
+ * `null` 表示组内该列全为空。
+ */
+export type RequestLogSummaryLabels = {
+	user_email?: string | null;
+	model_name?: string | null;
+	provider_name?: string | null;
+	provider_key_label?: string | null;
 };
 
 /** 汇总指标：条数与 Token 为整数，金额为 6 位小数十进制字符串（避免浮点往返）。 */
@@ -392,6 +405,8 @@ export type RequestLogSummaryMetrics = {
 	request_count: number;
 	success_count: number;
 	error_count: number;
+	incomplete_count: number;
+	cancelled_count: number;
 	input_tokens: number;
 	output_tokens: number;
 	cache_read_tokens: number;
@@ -402,9 +417,12 @@ export type RequestLogSummaryMetrics = {
 	metered_cost: string;
 	charged_cost: string;
 	charged_wallet_cost: string;
+	/** `status = 'error'` 的日志上的 `metered_cost` / `charged_cost` 合计，已包含在上面的总额里。 */
+	error_metered_cost: string;
+	error_charged_cost: string;
 };
 
-export type RequestLogSummaryRow = RequestLogSummaryKey & RequestLogSummaryMetrics;
+export type RequestLogSummaryRow = RequestLogSummaryKey & RequestLogSummaryLabels & RequestLogSummaryMetrics;
 
 export interface RequestLogsRepository {
 	/**
@@ -420,7 +438,11 @@ export interface RequestLogsRepository {
 		modelIdPrefix?: string;
 		routeGroup?: string;
 		status?: string;
+		/** 附带展示快照（见 {@link RequestLogSummaryLabels}）。 */
+		includeLabels?: boolean;
 		limit: number;
+		/** 跳过前 N 组（按分组键排序），默认 0。 */
+		offset?: number;
 	}): Promise<RequestLogSummaryRow[]>;
 	getRequestLogsByKeyId(
 		apiKeyId: string,
