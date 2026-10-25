@@ -76,6 +76,24 @@ test('permission matrix protects console-only surfaces and defaults to deny', ()
 	});
 });
 
+test('maintenance has its own read/write permission pair', () => {
+	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/maintenance'), {
+		kind: 'permission', permission: 'maintenance.read',
+	});
+	assert.deepEqual(getAdminAuthorizationDecision('PUT', '/admin/maintenance'), {
+		kind: 'permission', permission: 'maintenance.write',
+	});
+	const configWriter: AdminPrincipal = {
+		type: 'api_key', id: 'admin_key:cfg', keyId: 'cfg', permissions: ['config.write'],
+	};
+	assert.equal(hasAdminPermission(configWriter, 'maintenance.write'), false);
+	const operator: AdminPrincipal = {
+		type: 'api_key', id: 'admin_key:ops', keyId: 'ops', permissions: ['maintenance.write'],
+	};
+	assert.equal(hasAdminPermission(operator, 'maintenance.read'), true);
+	assert.equal(hasAdminPermission(operator, 'config.write'), false);
+});
+
 test('config masking removes legacy MASTER_KEY and recursively masks catalog credentials', () => {
 	const rows = prepareAdminConfigRows([
 		{ key: 'MASTER_KEY', value: 'legacy', description: null },

@@ -150,7 +150,8 @@
 			"userUsage": "ユーザー使用量",
 			"reliability": "信頼性",
 			"config": "設定",
-			"adminApiKeys": "連携キー"
+			"adminApiKeys": "連携キー",
+			"maintenance": "メンテナンス"
 		},
 		"version": "v{version}"
 	},
@@ -2965,6 +2966,74 @@
 			"unknown": "種別不明",
 			"gatewayTools": "ゲートウェイツール",
 			"noMatchingKind": "選択した種別のデータなし"
+		}
+	},
+	"maintenance": {
+		"title": "メンテナンスモード",
+		"subtitle": "データ移行などのメンテナンス中、推論リクエストにわかりやすい 503 を返します。ヘルスチェックと読み取り専用の一覧は引き続き利用できます。",
+		"state": {
+			"off": "通常稼働",
+			"on": "メンテナンス中"
+		},
+		"offHint": "ゲートウェイは通常どおりリクエストを処理しています。",
+		"onHint": "推論リクエストは HTTP 503 で拒否されます。リクエストログは書き込まれず、課金もされません。",
+		"remaining": "残り約 {minutes} 分",
+		"overdue": "終了予定時刻を過ぎています",
+		"noEta": "終了予定は未設定",
+		"expectedEnd": "終了予定",
+		"propagation": "すべてのゲートウェイノードに {seconds} 秒以内に反映されます。",
+		"adminWrites": {
+			"label": "管理画面の書き込み",
+			"blocked": "Admin の書き込みを拒否中",
+			"allowed": "Admin の書き込みは可能"
+		},
+		"statusCard": { "title": "現在の状態" },
+		"settingsCard": {
+			"title": "メンテナンスを開始",
+			"description": "予定時間とメッセージを選択します。開始前に確認が表示されます。"
+		},
+		"configured": {
+			"title": "メッセージ",
+			"description": "クライアントにはリクエスト言語に応じて次のいずれかが返されます。",
+			"default": "デフォルト",
+			"builtin": "カスタムメッセージは未設定です。クライアントの言語に合わせた組み込み文言を使用します。"
+		},
+		"preview": "クライアントに表示されるメッセージ",
+		"form": {
+			"duration": "想定時間",
+			"noDuration": "見積もりなし",
+			"customMinutes": "カスタム（分）",
+			"minutes": "{minutes} 分",
+			"message": "メッセージ",
+			"messageHelp": "残り分数は {token} で表します。空欄の場合は内蔵文言を使い、クライアントの言語に合わせて選びます。",
+			"messagePlaceholder": "ゲートウェイはメンテナンス中です。約 {token} 分後に復旧予定です。しばらくしてからお試しください。",
+			"messageZh": "中国語メッセージ（zh）",
+			"messageEn": "英語メッセージ（en）",
+			"blockAdmin": "Admin の書き込みも拒否する",
+			"blockAdminHelp": "データ移行中は推奨です。Admin API を呼ぶポータル（ユーザー作成、チャージ）は 503 を受け取るため、再試行が必要です。連携キー、このページ、Playground は引き続き操作できます。"
+		},
+		"actions": {
+			"enable": "メンテナンスを開始",
+			"extend": "{minutes} 分延長",
+			"disable": "メンテナンスを終了"
+		},
+		"confirm": {
+			"enableTitle": "メンテナンスモードを開始しますか？",
+			"enableMessage": "終了するまで、すべての推論リクエストが拒否されます。",
+			"enableConfirm": "開始",
+			"disableTitle": "メンテナンスを終了しますか？",
+			"disableMessage": "数秒以内にリクエストの処理を再開します。",
+			"disableConfirm": "終了"
+		},
+		"toast": {
+			"enabled": "メンテナンスモードを開始しました",
+			"extended": "メンテナンスを延長しました",
+			"disabled": "メンテナンスを終了しました"
+		},
+		"loadFailed": "メンテナンス状態を読み込めませんでした",
+		"banner": {
+			"text": "メンテナンスモード中：推論リクエストは 503 で拒否されます。",
+			"manage": "管理"
 		}
 	},
 	"adminApiKeys": {

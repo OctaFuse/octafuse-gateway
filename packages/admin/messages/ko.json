@@ -150,7 +150,8 @@
 			"userUsage": "사용자 사용량",
 			"reliability": "신뢰성",
 			"config": "설정",
-			"adminApiKeys": "통합 키"
+			"adminApiKeys": "통합 키",
+			"maintenance": "점검 모드"
 		},
 		"version": "v{version}"
 	},
@@ -2965,6 +2966,74 @@
 			"unknown": "알 수 없는 유형",
 			"gatewayTools": "게이트웨이 도구",
 			"noMatchingKind": "선택한 유형의 데이터 없음"
+		}
+	},
+	"maintenance": {
+		"title": "점검 모드",
+		"subtitle": "데이터 이전 등 점검 중에 추론 요청에 친절한 503 응답을 반환합니다. 상태 확인과 읽기 전용 목록은 계속 동작합니다.",
+		"state": {
+			"off": "정상 운영",
+			"on": "점검 중"
+		},
+		"offHint": "게이트웨이가 요청을 정상적으로 처리하고 있습니다.",
+		"onHint": "추론 요청은 HTTP 503으로 거부됩니다. 요청 로그는 기록되지 않으며 과금도 되지 않습니다.",
+		"remaining": "약 {minutes}분 남음",
+		"overdue": "예상 종료 시각을 지났습니다",
+		"noEta": "예상 종료 시각 없음",
+		"expectedEnd": "예상 종료",
+		"propagation": "모든 게이트웨이 노드에 {seconds}초 이내에 반영됩니다.",
+		"adminWrites": {
+			"label": "관리자 쓰기 작업",
+			"blocked": "Admin 쓰기 차단 중",
+			"allowed": "Admin 쓰기 허용"
+		},
+		"statusCard": { "title": "현재 상태" },
+		"settingsCard": {
+			"title": "점검 시작",
+			"description": "예상 시간과 메시지를 선택합니다. 시작하기 전에 확인 창이 표시됩니다."
+		},
+		"configured": {
+			"title": "메시지",
+			"description": "클라이언트는 요청 언어에 따라 아래 메시지 중 하나를 받습니다.",
+			"default": "기본",
+			"builtin": "사용자 지정 메시지가 없어 클라이언트 언어에 맞는 기본 문구를 사용합니다."
+		},
+		"preview": "클라이언트에 표시되는 메시지",
+		"form": {
+			"duration": "예상 소요 시간",
+			"noDuration": "예상 안 함",
+			"customMinutes": "직접 입력(분)",
+			"minutes": "{minutes}분",
+			"message": "메시지",
+			"messageHelp": "남은 시간(분)은 {token}으로 표시합니다. 비워 두면 클라이언트 언어에 맞는 기본 문구를 사용합니다.",
+			"messagePlaceholder": "게이트웨이 점검 중입니다. 약 {token}분 후 복구될 예정이니 잠시 후 다시 시도해 주세요.",
+			"messageZh": "중국어 메시지(zh)",
+			"messageEn": "영어 메시지(en)",
+			"blockAdmin": "Admin 쓰기도 차단",
+			"blockAdminHelp": "데이터 이전 중에는 켜 두는 것을 권장합니다. Admin API를 호출하는 포털(사용자 생성, 충전)은 503을 받으므로 재시도해야 합니다. 통합 키, 이 페이지, 플레이그라운드는 계속 사용할 수 있습니다."
+		},
+		"actions": {
+			"enable": "점검 시작",
+			"extend": "{minutes}분 연장",
+			"disable": "점검 종료"
+		},
+		"confirm": {
+			"enableTitle": "점검 모드를 시작할까요?",
+			"enableMessage": "점검을 종료할 때까지 모든 추론 요청이 거부됩니다.",
+			"enableConfirm": "시작",
+			"disableTitle": "점검을 종료할까요?",
+			"disableMessage": "몇 초 안에 게이트웨이가 요청 처리를 재개합니다.",
+			"disableConfirm": "종료"
+		},
+		"toast": {
+			"enabled": "점검 모드를 시작했습니다",
+			"extended": "점검 시간을 연장했습니다",
+			"disabled": "점검을 종료했습니다"
+		},
+		"loadFailed": "점검 상태를 불러오지 못했습니다",
+		"banner": {
+			"text": "점검 모드가 켜져 있습니다. 추론 요청은 503으로 거부됩니다.",
+			"manage": "관리"
 		}
 	},
 	"adminApiKeys": {

@@ -12,6 +12,8 @@ import { adminBudgetAuditLogsRoutes } from '@/lib/routes/admin/budget-audit-logs
 import { adminBusinessTimezoneRoutes } from '@/lib/routes/admin/business-timezone';
 import { adminConfigRoutes } from '@/lib/routes/admin/config';
 import { adminKeysRoutes } from '@/lib/routes/admin/keys';
+import { adminMaintenanceRoutes } from '@/lib/routes/admin/maintenance';
+import { getAdminWriteFreeze } from '@/lib/services/admin/maintenance-service';
 import { adminUsersRoutes } from '@/lib/routes/admin/users';
 import { adminModelRoutes } from '@/lib/routes/admin/model-routes';
 import { adminModelsRoutes } from '@/lib/routes/admin/models';
@@ -45,6 +47,19 @@ export function createAdminApp(): Hono<AdminEnv> {
 		if (!principal) return c.json({ success: false, message: 'Unauthorized' }, 401);
 		c.set('principal', principal);
 		await next();
+	});
+
+	// 维护模式（block_admin_writes）：冻结期间拒绝写接口，维护开关 / 集成密钥 / 调试台除外。
+	app.use('/admin/*', async (c, next) => {
+		const freeze = await getAdminWriteFreeze(c.get('repositories'), c.req.method, c.req.path);
+		if (freeze) {
+			return c.json(
+				{ success: false, message: freeze.message, code: 'gateway.maintenance' },
+				503,
+				{ 'Retry-After': String(freeze.retryAfterSeconds), 'X-OctaFuse-Error-Code': 'gateway.maintenance' }
+			);
+		}
+		return next();
 	});
 
 	app.use('/admin/*', async (c, next) => {
@@ -82,6 +97,7 @@ export function createAdminApp(): Hono<AdminEnv> {
 	app.route('/admin/request-logs', adminRequestLogsRoutes);
 	app.route('/admin/budget-audit-logs', adminBudgetAuditLogsRoutes);
 	app.route('/admin/business-timezone', adminBusinessTimezoneRoutes);
+	app.route('/admin/maintenance', adminMaintenanceRoutes);
 	app.route('/admin/analytics', adminAnalyticsRoutes);
 	app.route('/admin/access-keys', adminAccessKeysRoutes);
 	app.route('/admin/mcp-servers', adminMcpServersRoutes);

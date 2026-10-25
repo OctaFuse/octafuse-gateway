@@ -24,6 +24,7 @@ import {
   UsersIcon,
   ShieldCheckIcon,
   Cog6ToothIcon,
+  PauseCircleIcon,
   WrenchScrewdriverIcon,
   QueueListIcon,
   Squares2X2Icon,
@@ -53,6 +54,7 @@ const NAV_ICONS: Record<AdminNavNameKey, React.ComponentType<{ className?: strin
   reliability: ShieldCheckIcon,
   adminApiKeys: KeyIcon,
   config: Cog6ToothIcon,
+  maintenance: PauseCircleIcon,
 };
 
 export default function Sidebar({ mobile = false, onNavigate }: { mobile?: boolean; onNavigate?: () => void }) {

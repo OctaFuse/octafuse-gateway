@@ -21,7 +21,8 @@ export type AdminNavNameKey =
 	| 'userUsage'
 	| 'reliability'
 	| 'adminApiKeys'
-	| 'config';
+	| 'config'
+	| 'maintenance';
 
 export type AdminNavGroupKey =
 	| 'overview'
@@ -89,7 +90,10 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
 	},
 	{
 		groupKey: 'system',
-		items: [{ nameKey: 'config', href: '/gateway/config' }],
+		items: [
+			{ nameKey: 'config', href: '/gateway/config' },
+			{ nameKey: 'maintenance', href: '/gateway/maintenance' },
+		],
 	},
 ];
 

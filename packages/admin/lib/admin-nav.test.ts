@@ -22,6 +22,16 @@ describe('matchAdminNavRoute', () => {
 		);
 	});
 
+	it('puts Maintenance next to Config in the System group', () => {
+		const system = ADMIN_NAV_GROUPS.find((group) => group.groupKey === 'system');
+		assert.deepEqual(
+			system?.items.map((item) => item.nameKey),
+			['config', 'maintenance'],
+		);
+		assert.equal(matchAdminNavRoute('/gateway/maintenance')?.nameKey, 'maintenance');
+		assert.equal(matchAdminNavRoute('/gateway/config')?.nameKey, 'config');
+	});
+
 	it('treats user detail as Users', () => {
 		assert.equal(matchAdminNavRoute('/gateway/users/abc-123')?.nameKey, 'users');
 	});

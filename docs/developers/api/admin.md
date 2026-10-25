@@ -17,7 +17,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 浏览器登录会创建数据库 Session，并通过 `admin_session` Cookie 识别为 `console:<username>`。Console 拥有完整业务权限，也是唯一可以管理集成密钥的主体。
 
-集成密钥（Integration Keys）在后台 **系统集成 → 集成密钥（Integration Keys）** 创建。每个外部集成应使用独立、最小权限 Key；Key 主体记录为 `admin_key:<id>`。权限包括 `users.*`、`user_keys.*`、`providers.*`、`models.*`、`routes.*`、`config.*`、`analytics.read`、`logs.read`、`playground.execute`、`mcp.read`、`mcp.write` 和 `mcp.secrets.read`；`*.write` 自动包含对应 `*.read`，`*.secrets.read` 不随 write 授予，`*` 代表全部可委派业务权限，但不包含集成密钥或 Session 管理。
+集成密钥（Integration Keys）在后台 **系统集成 → 集成密钥（Integration Keys）** 创建。每个外部集成应使用独立、最小权限 Key；Key 主体记录为 `admin_key:<id>`。权限包括 `users.*`、`user_keys.*`、`providers.*`、`models.*`、`routes.*`、`config.*`、`analytics.read`、`logs.read`、`playground.execute`、`mcp.read`、`mcp.write`、`mcp.secrets.read` 和 `maintenance.*`；`*.write` 自动包含对应 `*.read`，`*.secrets.read` 不随 write 授予，`*` 代表全部可委派业务权限，但不包含集成密钥或 Session 管理。
 
 升级迁移会把非空 `system_config.MASTER_KEY` 原值复制为普通全权限 Key `legacy-master`，确保旧调用方继续工作；随后的迁移会删除该配置行。新认证只读取 `admin_api_keys`。请在稳定后为外部系统创建具名 Key，并轮换或吊销 `legacy-master`。
 
@@ -98,6 +98,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/config` | GET, PUT | `system_config`（含 `ROUTE_STRATEGY`、`USER_CHARGED_COST_FACTOR_MODE`） | Admin UI |
 | `/admin/access-keys`、`/:id`、`/:id/secret`、`/:id/rotate`、`/:id/revoke` | GET, POST, PATCH | `admin_api_keys`；仅 Console Session，同源写请求 | Admin UI |
 | `/admin/business-timezone` | GET | `system_config.BUSINESS_TIMEZONE` | Admin UI（Provider 首屏加载） |
+| `/admin/maintenance` | GET（`maintenance.read`）, PUT（`maintenance.write`） | `system_config.MAINTENANCE_MODE`；见下文「维护模式」 | Admin UI、数据迁移、运维脚本 |
 | `/admin/request-logs` | GET | `api_key_request_logs`（**GlobalLogs**，多条件筛选分页） | Admin UI |
 | `/admin/request-logs/summary` | GET | `api_key_request_logs`，按维度精确汇总条数、Token 与四项金额 | 外部集成方（门户对账） |
 | `/admin/budget-audit-logs` | GET | **`user_audit_logs`**（左联 **`users`** 取 `email` 等，多维筛选分页） | Admin UI |
@@ -122,6 +123,58 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | **`GET /admin/models/import/catalog`** | Admin | Console Session 或 `models.read` | 仓库内 **静态 preset** 摘要，供导入 UI 勾选，**非**运行时 route 真相 |
 
 门户 / 公开站应使用 Proxy **`GET /catalog/models`**，详见 [用户接口 · 公开模型目录](./user.md#公开模型目录catalog-discovery)。用户个性化折扣用 **`GET /admin/users/:id/display-discounts`** overlay。门户仍走 Catalog + display-discounts；Agent 拉列表不再计入 RPM。Agent 与兼容客户端默认仍用 **`GET /v1/models`**（需用户 Key，默认 `default,free` route group）。
+
+---
+
+## 维护模式（`/admin/maintenance`） {#admin-maintenance}
+
+开启后，Proxy 对推理入口返回 **503** + `Retry-After`（错误码 `gateway.maintenance`），并可选同时冻结 Admin 的写接口。数据迁移的核心切换用它冻结写入；它也可单独用于任何维护窗口。运维说明见 [维护模式](../../operators/maintenance-mode.md)，客户端看到的响应见 [错误码](./error-codes.md)。
+
+状态存在 `system_config.MAINTENANCE_MODE`（JSON 文本，无 schema 迁移）。`PUT /admin/config` 不接受这个键，一律走本接口，避免写入未经校验的值。
+
+### `GET /admin/maintenance`
+
+需要 `maintenance.read`。直接读库（不走缓存），返回当前状态：
+
+```json
+{
+  "success": true,
+  "data": {
+    "config": {
+      "enabled": true,
+      "message": "",
+      "messages": { "en": "Back in about {minutes} minutes", "zh": "维护中，预计 {minutes} 分钟后恢复" },
+      "expected_end_at": "2026-10-25T05:30:00.000Z",
+      "block_admin_writes": true
+    },
+    "effective_message": "维护中，预计 29 分钟后恢复",
+    "remaining_minutes": 29,
+    "retry_after_seconds": 300,
+    "propagation_seconds": 5
+  }
+}
+```
+
+关闭时 `effective_message`、`remaining_minutes`、`retry_after_seconds` 为 `null`。`propagation_seconds` 是各 Proxy 节点读取配置的缓存上限，即开关最迟多久后全网生效。
+
+### `PUT /admin/maintenance`
+
+需要 `maintenance.write`。整体覆盖当前状态，请求体：
+
+| 字段 | 说明 |
+|------|------|
+| `enabled` | **必填**，布尔。`false` 时其余字段忽略，库里只留 `{"enabled":false}` |
+| `message` | 默认提示，≤500 字符，可含 `{minutes}`；空则用内置文案 |
+| `messages` | `{ "<语言>": "<提示>" }`，键如 `zh`、`en`、`zh-CN`，按请求的 `Accept-Language` 先精确后主语言匹配 |
+| `duration_minutes` | 预计时长（分钟，> 0，≤ 10080），由**服务端**按当前时间折算成 `expected_end_at` |
+| `expected_end_at` | ISO 8601 绝对时间；与 `duration_minutes` 二选一，同时给返回 400 |
+| `block_admin_writes` | 默认 `true`：冻结期间 Admin 写接口返回 503 |
+
+文案选择顺序：`messages` 匹配 → `message` → 内置文案（`Accept-Language` 首选 `zh*` 用中文，其余用英文）。模板含 `{minutes}` 但没有预计时间时，退回不带时间的内置文案，不会出现"预计  分钟"。
+
+### Admin 写冻结
+
+`block_admin_writes` 为真时，除 `GET` / `HEAD` / `OPTIONS` 外的 Admin 请求返回 `503`（`{ "success": false, "message": "...", "code": "gateway.maintenance" }` + `Retry-After`）。**不受影响**：`/admin/maintenance`（否则无法解除）、`/admin/access-keys/*`（迁移要临时签发密钥）、`/admin/playground/*`。门户的开通用户、加额请求会收到 503，应自行重试；加额有 `dedup_key` 幂等，重试不会重复加。读取配置失败时 Proxy 与 Admin 都 **fail-open**，宁可继续服务，也不因配置读取故障冻结全网。
 
 ---
 
