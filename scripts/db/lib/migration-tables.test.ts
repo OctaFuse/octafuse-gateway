@@ -222,3 +222,21 @@ describe('parseKinds', () => {
 		assert.throws(() => parseKinds(''));
 	});
 });
+
+describe('sinceIndex', () => {
+	it('登记的索引确实在 D1 迁移里建过，且建在 sinceColumn 上', () => {
+		const sql = readdirSync(join(CORE, 'migrations-d1'))
+			.filter((file) => file.endsWith('.sql'))
+			.sort()
+			.map((file) => readFileSync(join(CORE, 'migrations-d1', file), 'utf8').replace(/--[^\n]*/g, ''))
+			.join('\n');
+		for (const spec of ETL_TABLES as readonly { name: string; sinceColumn?: string; sinceIndex?: string }[]) {
+			if (!spec.sinceIndex) {
+				continue;
+			}
+			assert.ok(spec.sinceColumn, `${spec.name} 登记了 sinceIndex 却没有 sinceColumn`);
+			const created = new RegExp(`CREATE\\s+INDEX\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?${spec.sinceIndex}\\s+ON\\s+${spec.name}\\s*\\(\\s*${spec.sinceColumn}\\s*\\)`, 'i');
+			assert.match(sql, created, `${spec.name}: D1 迁移里没有建过 ${spec.sinceIndex}(${spec.sinceColumn})`);
+		}
+	});
+});

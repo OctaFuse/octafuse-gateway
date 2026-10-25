@@ -21,6 +21,8 @@ import {
 	normalizeSince,
 	quoteIdentifier,
 } from '../lib/etl-sql';
+import { createRemoteD1Reader, type D1Reader } from '../lib/d1-rest';
+import { ETL_PG_TYPES } from '../lib/pg-types';
 import {
 	type D1ExecutionConfig,
 	getTablesColumns,
@@ -38,8 +40,16 @@ interface EtlConfig {
 	prune: boolean;
 	dryRun: boolean;
 	check: boolean;
+	/** 读 D1 大表分页的方式：api = 直连 REST（默认，快）；wrangler = 每批启动一次 wrangler。 */
+	d1Transport: 'api' | 'wrangler';
+	/** 同时写 Postgres 的连接数。 */
+	pgConcurrency: number;
 	kinds: Set<EtlTableKind>;
 	since: string | null;
+	/** 日志表中断续跑：只同步 id > 该值的行（通常取 Postgres 里该表 MAX(id)）。 */
+	afterId: string | null;
+	/** 只同步 id < 该值的日志行，与 --after-id 一起圈出一个区间做定点修复。 */
+	beforeId: string | null;
 	tableFilter: Set<string> | null;
 	/** table → 明确同意丢弃的 D1 列（目标库已无此列）。 */
 	skipColumns: Map<string, Set<string>>;
@@ -52,6 +62,9 @@ function printUsage(): void {
 
 Options:
   --batch-size=<n>           Rows fetched from D1 per round trip (default: 500)
+  --d1-transport=api|wrangler  读 D1 分页的方式（default: api）。api 直连 Cloudflare REST，省掉每批约 3 秒的
+                             wrangler 启动；取不到令牌或账号时自动退回 wrangler。小表与预检仍用 wrangler。
+  --pg-concurrency=<n>       同时写 Postgres 的连接数（default: 3）
   --kind=all|<list>          按“谁会改它”选组，可逗号组合（default: all）：
                                config = 只有管理员会写的配置表
                                state  = users / api_keys / 粘性绑定 / system_config（请求或维护开关会改）
@@ -59,6 +72,11 @@ Options:
                              例：--kind=config  ·  --kind=state,log
   --since=<time>             仅同步 log 表中 created_at >= 该时间的行（UTC；如 2026-10-25T06:00:00Z）。
                              config / state 表始终全量 upsert。用于维护窗口内补日志尾部。
+  --after-id=<id>            只同步 id > 该值的日志行。中断续跑时不要直接取 Postgres 的 MAX(id)：
+                             同一批的几段是并发写入的，中途被打断时后段可能已提交而前段没有，
+                             MAX(id) 会跳过前段。请再往回多退一批以上（重复写入是幂等的）。
+  --before-id=<id>           只同步 id < 该值的日志行；与 --after-id 圈出区间，用于定点修复。
+                             只能与 --kind=log 搭配，且必须指定单张表（--tables=）。
   --check                    只校验、零写入：逐行让 Postgres 判断与 D1 是否不同（事务内回滚），
                              并统计 Postgres 比 D1 多出的行。有差异则以退出码 2 结束。
   --tables=<a,b,c>           只迁移指定表（不能与 --truncate 同用）
@@ -102,6 +120,16 @@ function parseConfig(): EtlConfig {
 		throw new Error('Invalid --batch-size, expected a positive integer');
 	}
 
+	const transportArg = argValue('--d1-transport') ?? 'api';
+	if (transportArg !== 'api' && transportArg !== 'wrangler') {
+		throw new Error(`Invalid --d1-transport "${transportArg}", expected "api" or "wrangler"`);
+	}
+	const pgConcurrencyArg = argValue('--pg-concurrency');
+	const pgConcurrency = pgConcurrencyArg ? Number(pgConcurrencyArg) : 3;
+	if (!Number.isInteger(pgConcurrency) || pgConcurrency <= 0 || pgConcurrency > 16) {
+		throw new Error('Invalid --pg-concurrency, expected an integer between 1 and 16');
+	}
+
 	const kinds = parseKinds(argValue('--kind'));
 
 	const tablesArg = argValue('--tables');
@@ -137,6 +165,17 @@ function parseConfig(): EtlConfig {
 
 	const sinceArg = argValue('--since');
 	const since = sinceArg ? normalizeSince(sinceArg) : null;
+	const afterId = argValue('--after-id')?.trim() || null;
+	const beforeId = argValue('--before-id')?.trim() || null;
+	if ((afterId || beforeId) && (!kinds.has('log') || kinds.size !== 1)) {
+		throw new Error('--after-id / --before-id only apply to log tables; use --kind=log.');
+	}
+	if ((afterId || beforeId) && (!tableFilter || tableFilter.size !== 1)) {
+		throw new Error('--after-id / --before-id require --tables=<one log table> so the cursor applies to a single table.');
+	}
+	if (afterId && beforeId && afterId >= beforeId) {
+		throw new Error(`Invalid id range: --after-id=${afterId} must be smaller than --before-id=${beforeId}.`);
+	}
 
 	const truncateBeforeLoad = args.includes('--truncate');
 	const prune = args.includes('--prune');
@@ -167,8 +206,12 @@ function parseConfig(): EtlConfig {
 		prune,
 		dryRun: args.includes('--dry-run'),
 		check,
+		d1Transport: transportArg,
+		pgConcurrency,
 		kinds,
 		since,
+		afterId,
+		beforeId,
 		tableFilter,
 		skipColumns,
 		d1: parseD1ExecutionConfig(args),
@@ -263,10 +306,18 @@ function sinceFor(spec: EtlTableSpec, config: EtlConfig): string | null {
 	return spec.sinceColumn ? config.since : null;
 }
 
+function afterIdFor(spec: EtlTableSpec, config: EtlConfig): string | null {
+	return spec.keysetColumn ? config.afterId : null;
+}
+
+function beforeIdFor(spec: EtlTableSpec, config: EtlConfig): string | null {
+	return spec.keysetColumn ? config.beforeId : null;
+}
+
 function loadSnapshot(tables: EtlTableSpec[], config: EtlConfig): D1Snapshot {
 	const counts = new Map<string, number>();
 	const countBatches = runD1ExecuteMany(
-		tables.map((spec) => buildCountSql(spec, sinceFor(spec, config))),
+		tables.map((spec) => buildCountSql(spec, sinceFor(spec, config), afterIdFor(spec, config), beforeIdFor(spec, config))),
 		config.d1
 	);
 	tables.forEach((spec, index) => counts.set(spec.name, parseCount(countBatches[index])));
@@ -289,7 +340,9 @@ function loadSnapshot(tables: EtlTableSpec[], config: EtlConfig): D1Snapshot {
 
 	const firstPages = new Map<string, Record<string, unknown>[]>();
 	if (!config.dryRun) {
-		const nonEmpty = tables.filter((spec) => (counts.get(spec.name) ?? 0) > 0);
+		// 日志表（keyset 分页）的每一页都走 streamD1Batches 的读取器，不在这里预取：
+		// 两张大表的首页塞进同一次 wrangler 调用，响应体过大会让该请求直接失败。
+		const nonEmpty = tables.filter((spec) => !spec.keysetColumn && (counts.get(spec.name) ?? 0) > 0);
 		const pageBatches = runD1ExecuteMany(
 			nonEmpty.map((spec) =>
 				buildSelectBatchSql(spec, { batchSize: config.batchSize, offset: 0, lastKey: null, since: sinceFor(spec, config) })
@@ -306,6 +359,40 @@ async function pruneTable(sql: postgres.Sql, spec: EtlTableSpec, snapshot: D1Sna
 	console.log(`[ETL] prune ${spec.name}: removed ${deleted.count} stale row(s) not present in D1`);
 }
 
+let readerPromise: Promise<D1Reader> | undefined;
+
+/** 分页读取用的 D1 读取器（进程内只建一次）。remote + api 时直连 REST，失败则退回 wrangler。 */
+function getD1Reader(config: EtlConfig): Promise<D1Reader> {
+	readerPromise ??= (async (): Promise<D1Reader> => {
+		const viaWrangler: D1Reader = async (sqlText) => runD1ExecuteJson(sqlText, config.d1);
+		if (config.d1.source !== 'remote' || config.d1Transport !== 'api') {
+			return viaWrangler;
+		}
+		try {
+			const reader = createRemoteD1Reader(config.d1.databaseName);
+			console.log('[ETL] D1 读取：直连 Cloudflare REST /raw');
+			return reader;
+		} catch (error) {
+			console.warn(`[ETL] 无法直连 REST，退回 wrangler：${error instanceof Error ? error.message : String(error)}`);
+			return viaWrangler;
+		}
+	})();
+	return readerPromise;
+}
+
+/** 以最多 `limit` 个并发处理 items。 */
+async function runLimited<T>(items: readonly T[], limit: number, work: (item: T) => Promise<void>): Promise<void> {
+	let next = 0;
+	const worker = async (): Promise<void> => {
+		while (next < items.length) {
+			const item = items[next];
+			next += 1;
+			await work(item);
+		}
+	};
+	await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+}
+
 /** 按 keyset（日志）或 rowid+OFFSET（其余）分批读 D1，逐批交给 onBatch。返回读到的总行数。 */
 async function streamD1Batches(
 	spec: EtlTableSpec,
@@ -315,27 +402,44 @@ async function streamD1Batches(
 	firstPage: Record<string, unknown>[] | undefined,
 	onBatch: (rows: Record<string, unknown>[]) => Promise<void>
 ): Promise<number> {
+	const reader = await getD1Reader(config);
 	let read = 0;
-	let lastKey: string | null = null;
-	let prefetched = firstPage;
+	let lastKey: string | null = afterIdFor(spec, config);
+	const fetchPage = (key: string | null, offset: number): Promise<Record<string, unknown>[]> => {
+		const pending = reader(
+			buildSelectBatchSql(spec, { batchSize: config.batchSize, offset, lastKey: key, since, beforeId: beforeIdFor(spec, config) })
+		);
+		pending.catch(() => undefined); // 出错时由 await 处抛出；避免写入失败后这里变成未处理的 rejection
+		return pending;
+	};
+	let upcoming: Promise<Record<string, unknown>[]> | undefined = firstPage ? Promise.resolve(firstPage) : undefined;
 	while (true) {
-		const d1Rows: Record<string, unknown>[] =
-			prefetched ??
-			runD1ExecuteJson(
-				buildSelectBatchSql(spec, { batchSize: config.batchSize, offset: read, lastKey, since }),
-				config.d1
-			);
-		prefetched = undefined;
+		const readStartedAt = Date.now();
+		const d1Rows: Record<string, unknown>[] = await (upcoming ?? fetchPage(lastKey, read));
+		upcoming = undefined;
 		if (d1Rows.length === 0) {
 			break;
 		}
-		await onBatch(d1Rows);
-		read += d1Rows.length;
-		if (spec.keysetColumn) {
-			lastKey = String(d1Rows[d1Rows.length - 1][spec.keysetColumn]);
+		const readWaitMs = Date.now() - readStartedAt;
+
+		const nextKey: string | null = spec.keysetColumn ? String(d1Rows[d1Rows.length - 1][spec.keysetColumn]) : lastKey;
+		const hasMore = d1Rows.length >= config.batchSize;
+		// 写当前批的同时就开始读下一批：D1 单线程串行出数据，Postgres 写入与它重叠，总耗时取二者较大者。
+		if (hasMore) {
+			upcoming = fetchPage(nextKey, read + d1Rows.length);
 		}
-		console.log(`[ETL] ${spec.name}: ${read}/${totalRows}`);
-		if (d1Rows.length < config.batchSize) {
+
+		const writeStartedAt = Date.now();
+		await onBatch(d1Rows);
+		const writeMs = Date.now() - writeStartedAt;
+
+		read += d1Rows.length;
+		lastKey = nextKey;
+		// 分段耗时：读等待 = 写完后还要等多久才拿到下一批（接近 0 说明瓶颈在 Postgres 写入，否则在 D1 读取）。
+		console.log(
+			`[ETL] ${spec.name}: ${read}/${totalRows} (等待 D1 ${(readWaitMs / 1000).toFixed(1)}s · PG 写 ${(writeMs / 1000).toFixed(1)}s)`
+		);
+		if (!hasMore) {
 			break;
 		}
 	}
@@ -346,9 +450,25 @@ function rowsPerInsertFor(columns: string[], config: EtlConfig): number {
 	return Math.max(1, Math.min(config.batchSize, Math.floor(MAX_PG_PARAMS / columns.length)));
 }
 
-function announceTable(spec: EtlTableSpec, totalRows: number, since: string | null): void {
-	const scope = since ? ` (created_at >= ${since} UTC)` : '';
-	console.log(`\n[ETL] ${spec.name} [${spec.kind}]: ${totalRows} rows${scope}`);
+function announceTable(
+	spec: EtlTableSpec,
+	totalRows: number,
+	since: string | null,
+	afterId: string | null,
+	beforeId: string | null
+): void {
+	const parts: string[] = [];
+	if (since) {
+		parts.push(`created_at >= ${since} UTC`);
+	}
+	if (afterId) {
+		parts.push(`id > ${afterId}`);
+	}
+	if (beforeId) {
+		parts.push(`id < ${beforeId}`);
+	}
+	const scope = parts.length ? ` (${parts.join('; ')})` : '';
+	console.log(`\n[ETL] ${spec.name} [${spec.kind}]: ${totalRows} rows remaining${scope}`);
 }
 
 async function migrateTable(
@@ -360,18 +480,23 @@ async function migrateTable(
 ): Promise<number> {
 	const since = sinceFor(spec, config);
 	const totalRows = snapshot.counts.get(spec.name) ?? 0;
-	announceTable(spec, totalRows, since);
+	announceTable(spec, totalRows, since, afterIdFor(spec, config), beforeIdFor(spec, config));
 	if (config.dryRun || totalRows === 0) {
 		return 0;
 	}
 
 	const rowsPerInsert = rowsPerInsertFor(columns, config);
 	return streamD1Batches(spec, config, since, totalRows, snapshot.firstPages.get(spec.name), async (d1Rows) => {
+		const starts: number[] = [];
 		for (let start = 0; start < d1Rows.length; start += rowsPerInsert) {
+			starts.push(start);
+		}
+		// 同一批里主键互不相同，多连接并发 upsert 不会互相冲突。
+		await runLimited(starts, config.pgConcurrency, async (start) => {
 			const chunk = d1Rows.slice(start, start + rowsPerInsert);
 			const params = chunk.flatMap((row) => columns.map((column) => toSqlValue(row[column])));
 			await sql.unsafe(buildUpsertSql(spec, columns, chunk.length), params as postgres.ParameterOrJSON<never>[]);
-		}
+		});
 	});
 }
 
@@ -394,7 +519,7 @@ async function checkTable(
 ): Promise<CheckResult> {
 	const since = sinceFor(spec, config);
 	const totalRows = snapshot.counts.get(spec.name) ?? 0;
-	announceTable(spec, totalRows, since);
+	announceTable(spec, totalRows, since, afterIdFor(spec, config), beforeIdFor(spec, config));
 	let differ = 0;
 
 	if (totalRows > 0) {
@@ -460,8 +585,10 @@ async function main(): Promise<void> {
 	// 表在专用 schema 里，必须与 Proxy/Admin/迁移保持同一 search_path。
 	// D1 的 created_at 是不带时区的 UTC 文本，session 时区必须是 UTC，否则 timestamptz 会整体偏移。
 	const sql = postgres(config.postgresUrl, {
-		max: 1,
-		connection: { search_path: GATEWAY_POSTGRES_SEARCH_PATH, timezone: 'UTC' },
+		max: config.pgConcurrency,
+		types: ETL_PG_TYPES,
+		// 迁移可整体重跑（按主键 upsert），所以关闭同步提交：事务不等 WAL 落盘，写入更快。
+		connection: { search_path: GATEWAY_POSTGRES_SEARCH_PATH, timezone: 'UTC', synchronous_commit: 'off' },
 	});
 
 	try {
