@@ -49,6 +49,7 @@
 | `gateway.no_route` | 404 | `No available route` | 模型在，但当前协议 / operation / 路由组没有可用上游目标。去路由工作台补请求入口或上游目标，不要当成「模型拼写错误」 |
 | `gateway.budget_exceeded` | 403 | `Budget exceeded` | 周期额度或永久额度用尽；充值或等重置。不要立刻重试同一请求 |
 | `gateway.rate_limited` | 429 | `Rate limit exceeded` | Key 或用户 RPM 窗口满。等 `Retry-After` 后再发 |
+| `gateway.maintenance` | 503 | 友好提示，如 `网关维护中，预计 10 分钟后恢复，请稍后再试` | 运营开启了维护模式。按 `Retry-After`（秒）退避后重试，不要立刻重发；响应头另带 `X-OctaFuse-Maintenance: 1`。body 形状随入口协议：OpenAI 系为嵌套 `error`，`/v1/messages` 为 Anthropic `type: "error"`，`/v1beta` 为 Gemini `status: "UNAVAILABLE"`，顶层都有 `code` 与 `message`。拒绝发生在鉴权之前，**不写请求日志、不扣费、不占 RPM**。详见 [维护模式](../../operators/maintenance-mode.md) |
 | `gateway.route_resolution_failed` | 502 | 选路查询抛错原文 | 网关读库 / 解析路由失败。可有限次重试；持续出现查运维 |
 | `gateway.upstream_request_failed` | 502 | `Upstream request failed: …` | 出站 fetch 失败（DNS / TLS / 网络）。可换供应商故障转移已发生时，这是最后一次失败；可短退避重试 |
 
@@ -101,6 +102,7 @@
 | 426 | `gateway.invalid_request`（实时入口需要 WebSocket） |
 | 429 | `gateway.rate_limited`、`circuit.sensitive_content`、`circuit.upstream_capacity_exhausted`、`upstream.rate_limited` |
 | 502 | `gateway.route_resolution_failed`、`gateway.upstream_request_failed`、以及上游 502 透传时的 `upstream.server_error` |
+| 503 | `gateway.maintenance` |
 
 ## 维护
 

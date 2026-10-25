@@ -28,6 +28,8 @@ export const GatewayErrorCode = {
 	mcpItemDisabled: 'gateway.mcp_item_disabled',
 	mcpPricingInvalid: 'gateway.mcp_pricing_invalid',
 	upstreamRequestFailed: 'gateway.upstream_request_failed',
+	/** 维护模式开启，推理入口被拒绝；503 + `Retry-After`。 */
+	maintenance: 'gateway.maintenance',
 	responsesStateRouteUnavailable: 'responses.state_route_unavailable',
 	responsesUnsupportedStateOperation: 'responses.unsupported_state_operation',
 

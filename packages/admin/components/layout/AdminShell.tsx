@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import LocaleSwitcher from './LocaleSwitcher';
+import MaintenanceBanner from './MaintenanceBanner';
 import Sidebar from './Sidebar';
 
 export default function AdminShell({ children }: { children: ReactNode }) {
@@ -51,6 +52,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
           </div>
           <LocaleSwitcher variant="header" />
         </header>
+        <MaintenanceBanner />
         <main className="min-h-0 min-w-0 flex-1 overflow-auto bg-gray-50">
           {children}
         </main>

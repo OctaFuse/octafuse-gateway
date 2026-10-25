@@ -150,7 +150,8 @@
 			"userUsage": "用户用量",
 			"reliability": "可靠性",
 			"config": "配置",
-			"adminApiKeys": "集成密钥"
+			"adminApiKeys": "集成密钥",
+			"maintenance": "维护模式"
 		},
 		"version": "v{version}"
 	},
@@ -2965,6 +2966,74 @@
 			"unknown": "类型未知",
 			"gatewayTools": "网关工具",
 			"noMatchingKind": "该类型暂无数据"
+		}
+	},
+	"maintenance": {
+		"title": "维护模式",
+		"subtitle": "在迁移数据或其它维护期间，让推理请求收到友好的 503 提示。健康检查和只读列表接口不受影响。",
+		"state": {
+			"off": "正常服务",
+			"on": "维护中"
+		},
+		"offHint": "网关正在正常处理请求。",
+		"onHint": "推理请求会被拒绝并返回 HTTP 503，不写请求日志，也不扣费。",
+		"remaining": "预计还剩约 {minutes} 分钟",
+		"overdue": "已超过预计结束时间",
+		"noEta": "未设置预计结束时间",
+		"expectedEnd": "预计结束",
+		"propagation": "最迟 {seconds} 秒内在所有网关节点生效。",
+		"adminWrites": {
+			"label": "后台写操作",
+			"blocked": "已拒绝后台写操作",
+			"allowed": "后台写操作可用"
+		},
+		"statusCard": { "title": "当前状态" },
+		"settingsCard": {
+			"title": "开启维护",
+			"description": "选择预计时长和提示文案，开启前会再次确认。"
+		},
+		"configured": {
+			"title": "提示文案",
+			"description": "客户端会按请求语言收到下列文案。",
+			"default": "默认",
+			"builtin": "未自定义文案，使用内置文案并按客户端语言自动选择。"
+		},
+		"preview": "客户端看到的提示",
+		"form": {
+			"duration": "预计时长",
+			"noDuration": "不预估",
+			"customMinutes": "自定义（分钟）",
+			"minutes": "{minutes} 分钟",
+			"message": "提示文案",
+			"messageHelp": "用 {token} 表示剩余分钟数。留空则使用内置文案，并按客户端语言自动选择。",
+			"messagePlaceholder": "网关维护中，预计 {token} 分钟后恢复，请稍后再试",
+			"messageZh": "中文文案（zh）",
+			"messageEn": "英文文案（en）",
+			"blockAdmin": "同时拒绝后台写操作",
+			"blockAdminHelp": "数据迁移期间建议开启。调用 Admin API 的门户（开通用户、加额）会收到 503，应自行重试。集成密钥、本页和调试台仍可操作。"
+		},
+		"actions": {
+			"enable": "开启维护",
+			"extend": "延长 {minutes} 分钟",
+			"disable": "结束维护"
+		},
+		"confirm": {
+			"enableTitle": "开启维护模式？",
+			"enableMessage": "结束维护之前，所有推理请求都会被拒绝。",
+			"enableConfirm": "开启",
+			"disableTitle": "结束维护？",
+			"disableMessage": "网关会在几秒内恢复处理请求。",
+			"disableConfirm": "结束维护"
+		},
+		"toast": {
+			"enabled": "已开启维护模式",
+			"extended": "已延长维护时间",
+			"disabled": "已结束维护"
+		},
+		"loadFailed": "无法加载维护状态",
+		"banner": {
+			"text": "维护模式已开启：推理请求会被拒绝并返回 503。",
+			"manage": "管理"
 		}
 	},
 	"adminApiKeys": {

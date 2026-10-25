@@ -34,6 +34,9 @@ export function getAdminAuthorizationDecision(method: string, pathname: string):
 	if (pathname.startsWith('/admin/users')) return readOrWrite(normalizedMethod, 'users');
 	if (pathname.startsWith('/admin/keys')) return readOrWrite(normalizedMethod, 'user_keys');
 	if (pathname === '/admin/config' || pathname === '/admin/config/') return readOrWrite(normalizedMethod, 'config');
+	if (pathname === '/admin/maintenance' || pathname === '/admin/maintenance/') {
+		return readOrWrite(normalizedMethod, 'maintenance');
+	}
 	if (pathname.startsWith('/admin/business-timezone')) return { kind: 'permission', permission: 'config.read' };
 	if (pathname.startsWith('/admin/analytics') || pathname.startsWith('/admin/stats')) {
 		return { kind: 'permission', permission: 'analytics.read' };

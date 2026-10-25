@@ -150,7 +150,8 @@
 			"userUsage": "User Usage",
 			"reliability": "Reliability",
 			"config": "Config",
-			"adminApiKeys": "Integration Keys"
+			"adminApiKeys": "Integration Keys",
+			"maintenance": "Maintenance"
 		},
 		"version": "v{version}"
 	},
@@ -2965,6 +2966,74 @@
 			"unknown": "Unknown type",
 			"gatewayTools": "Gateway tools",
 			"noMatchingKind": "No data for selected type"
+		}
+	},
+	"maintenance": {
+		"title": "Maintenance mode",
+		"subtitle": "Reject inference requests with a friendly 503 while you migrate data or do other maintenance. Health checks and read-only listings keep working.",
+		"state": {
+			"off": "Normal",
+			"on": "Maintenance on"
+		},
+		"offHint": "The gateway is serving requests normally.",
+		"onHint": "Inference requests are rejected with HTTP 503. No request logs are written and nothing is billed.",
+		"remaining": "About {minutes} min remaining",
+		"overdue": "Past the expected end time",
+		"noEta": "No expected end time",
+		"expectedEnd": "Expected end",
+		"propagation": "Takes effect on every gateway node within {seconds} seconds.",
+		"adminWrites": {
+			"label": "Admin writes",
+			"blocked": "Admin writes are blocked",
+			"allowed": "Admin writes are allowed"
+		},
+		"statusCard": { "title": "Current status" },
+		"settingsCard": {
+			"title": "Start maintenance",
+			"description": "Choose the expected duration and message. You will be asked to confirm before it starts."
+		},
+		"configured": {
+			"title": "Messages",
+			"description": "Clients receive one of these based on their request language.",
+			"default": "Default",
+			"builtin": "No custom message. The built-in text is used and follows the client language."
+		},
+		"preview": "Message shown to clients",
+		"form": {
+			"duration": "Expected duration",
+			"noDuration": "No estimate",
+			"customMinutes": "Custom (minutes)",
+			"minutes": "{minutes} min",
+			"message": "Message",
+			"messageHelp": "Use {token} for the remaining minutes. Leave empty to use the built-in text, which follows the client's language.",
+			"messagePlaceholder": "Gateway under maintenance, back in about {token} minutes. Please try again later.",
+			"messageZh": "Chinese message (zh)",
+			"messageEn": "English message (en)",
+			"blockAdmin": "Also block Admin writes",
+			"blockAdminHelp": "Recommended during data migration. Portals that call the Admin API (provisioning, top-ups) will get 503 and should retry. Integration Keys, this page and the Playground stay writable."
+		},
+		"actions": {
+			"enable": "Enable maintenance",
+			"extend": "Extend {minutes} min",
+			"disable": "End maintenance"
+		},
+		"confirm": {
+			"enableTitle": "Enable maintenance mode?",
+			"enableMessage": "All inference requests will be rejected until you end maintenance.",
+			"enableConfirm": "Enable",
+			"disableTitle": "End maintenance?",
+			"disableMessage": "The gateway starts serving requests again within a few seconds.",
+			"disableConfirm": "End maintenance"
+		},
+		"toast": {
+			"enabled": "Maintenance mode enabled",
+			"extended": "Maintenance extended",
+			"disabled": "Maintenance ended"
+		},
+		"loadFailed": "Could not load maintenance status",
+		"banner": {
+			"text": "Maintenance mode is on: inference requests are rejected with 503.",
+			"manage": "Manage"
 		}
 	},
 	"adminApiKeys": {

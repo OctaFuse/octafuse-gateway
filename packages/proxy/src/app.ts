@@ -58,6 +58,7 @@ import {
 	VOLCENGINE_IMAGE_GENERATIONS_PATH,
 } from '@octafuse/core/route-topology';
 import { proxyAppVersion } from './app-version';
+import { maintenanceGuard } from './services/maintenance-guard';
 import type { DashScopeRealtimeNodeDispatch } from './services/egress/dashscope-realtime-driver';
 import type { DeferredRealtimeRuntime } from './services/egress/dashscope-realtime-session';
 import type { ElevenLabsRealtimeNodeDispatch } from './services/egress/elevenlabs-realtime-driver';
@@ -86,6 +87,8 @@ export type Env = {
 	Variables: {
 		apiKey?: ApiKeyContext;
 		repositories: GatewayRepositories;
+		/** 维护模式开启（仅放行的只读路径会走到这里；`/health` 据此带上标记）。 */
+		maintenance?: boolean;
 	};
 };
 
@@ -149,6 +152,9 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 		c.set('repositories', storage.repositories);
 		await next();
 	});
+
+	// 维护模式：在鉴权与任何记账之前拒绝推理请求（放行只读与探活路径）。
+	app.use('*', maintenanceGuard);
 
 	app.route('/health', healthRoutes);
 	app.route('/v1/chat/completions', chatRoutes);

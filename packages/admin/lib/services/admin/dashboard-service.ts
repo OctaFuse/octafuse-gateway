@@ -3,6 +3,7 @@
  */
 import type { GatewayRepositories, RequestLogSummaryDimension, RequestLogSummaryRow } from '@octafuse/core';
 import { BILLING_CURRENCY_KEY, tryParseGatewaySupportedBillingCurrencyInput } from '@octafuse/core/lib/billing-currency';
+import { MAINTENANCE_MODE_KEY } from '@octafuse/core/lib/maintenance-mode';
 import {
 	parseWebSearchActiveInput,
 	parseWebSearchCatalogInput,
@@ -396,6 +397,9 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 	const key = body.key.trim();
 	if (key === 'MASTER_KEY') {
 		throw badRequest('MASTER_KEY is removed; use Integration Keys');
+	}
+	if (key === MAINTENANCE_MODE_KEY) {
+		throw badRequest('MAINTENANCE_MODE is managed via PUT /api/admin/maintenance');
 	}
 	let value = body.value == null ? '' : String(body.value);
 	if (key === BILLING_CURRENCY_KEY) {
