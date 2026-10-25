@@ -17,6 +17,7 @@
 | 场景 | 文档 |
 |------|------|
 | 维护窗口里让推理请求收到友好的 503（数据迁移前冻结写入） | [maintenance-mode.md](./maintenance-mode.md) |
+| 从 D1 切到 Postgres：照着执行的操作手册（命令可直接复制） | [migrations/d1-postgres-cutover-runbook.md](./migrations/d1-postgres-cutover-runbook.md) |
 | D1 与 Postgres 之间 ETL、对账和切换 | [migrations/d1-postgres-cutover.md](./migrations/d1-postgres-cutover.md) |
 | 1.11.x → 2.0：单键 Provider + 路由拓扑（迁移 0015 / 0016） | [migrations/single-provider-key-cutover.md](./migrations/single-provider-key-cutover.md) |
 | 2.1.2 → 2.2.0：Gemini operation 收敛（迁移 0017） | [migrations/gemini-models-generate-cutover.md](./migrations/gemini-models-generate-cutover.md) |
