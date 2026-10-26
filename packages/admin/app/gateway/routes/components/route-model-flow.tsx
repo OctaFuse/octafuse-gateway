@@ -322,6 +322,7 @@ function stickyTargetsFromSection(
 		providerName: routeProviderAccountLabel(route, providerMeta.get(route.provider_id), locale, customLabel),
 		priority: route.priority,
 		weight: Number(route.weight ?? 1) || 1,
+		enabled: isRouteConfigurationAvailable(route, providerMeta.get(route.provider_id)),
 	}));
 }
 

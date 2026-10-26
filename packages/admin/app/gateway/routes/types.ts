@@ -39,6 +39,8 @@ export type RouteProtocolGroupSection<T> = {
 };
 
 export type ProviderStickyDialogTarget = {
+	/** Whether both the route and its Provider are enabled. */
+	enabled?: boolean;
 	id: string;
 	providerName: string;
 	priority: number;
