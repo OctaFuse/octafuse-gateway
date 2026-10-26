@@ -29,8 +29,9 @@
 | 2.6.0 → 2.7.0：用户级模型计费倍率（迁移 0026） | [2.7.0 发布说明](../releases/2.7.0.md#升级说明) |
 | 2.7.0 → 2.8.0：周期额度与永久额度拆分（迁移 0027） | [2.8.0 发布说明](../releases/2.8.0.md#升级说明) · [0027 迁移说明](./migrations/0027-user-wallet-credit.md) |
 | 2.14.0 → 2.15.0：MCP 服务与目录快照（迁移 0030） | [migrations/0030-mcp-servers.md](./migrations/0030-mcp-servers.md) |
-| 请求日志按 Provider 与时间检索的索引（迁移 0033） | [migrations/0033-request-log-provider-index.md](./migrations/0033-request-log-provider-index.md) |
 | 2.15.0 → 2.16.0：介绍改为静态目录，库内列改为备注（迁移 0031） | [migrations/0031-catalog-notes.md](./migrations/0031-catalog-notes.md) |
+| 2.16.0 → 2.17.0：DashScope 语音适配器按系列拆分（迁移 0032） | [migrations/0032-dashscope-audio-adapters.md](./migrations/0032-dashscope-audio-adapters.md) |
+| 2.16.0 → 2.17.0：请求日志按 Provider 与时间检索（迁移 0033） | [migrations/0033-request-log-provider-index.md](./migrations/0033-request-log-provider-index.md) |
 | User audit 兼容导出移除说明 | [migrations/user-audit-legacy-exports.md](./migrations/user-audit-legacy-exports.md) |
 
 升级到 **2.3.0** 时应在同一维护窗口内按 **0020 → 0021 → 同版本 Proxy / Admin 部署**执行；0021 无旧策略 ID 别名，禁止新旧版本混跑。

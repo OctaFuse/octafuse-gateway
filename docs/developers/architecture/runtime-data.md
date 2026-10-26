@@ -105,6 +105,8 @@ flowchart TB
 - 迁移 **`0029_provider_kind`**：`providers.kind`（`TEXT` / MySQL `VARCHAR(128)`，`NOT NULL DEFAULT ''`）。已有行保持空字符串，表示尚未分类。去掉 `providers.name` 的全局唯一，改为 `UNIQUE (name, kind)`（约束名 `uk_providers_name_kind`）。D1 不能直接删除仍被 `model_routes` 引用的 `providers`，因此先复制 `providers`、`model_routes`、`route_pool_sticky_bindings` 再替换。不回写已有账号别名，也不回写请求日志里的 `provider_name` 快照。模板英文名变更后，已保存的旧 `kind` 不自动改写，由管理员在编辑时重新选择。
 - 迁移 **`0030_mcp_servers`**：新增 `mcp_servers`（远程 MCP 服务，`slug` 唯一，`url` / `auth_headers` 按密钥存储，默认计费规则与超时在服务行上）与 `mcp_server_items`（同步下来的 tool / prompt / resource 目录快照，新条目默认 `disabled`，定义变化先进入 `pending_definition`）。三库语义一致，`pricing` 为文本 JSON。见 [0030 迁移说明](../../operators/migrations/0030-mcp-servers.md) 与 [MCP 聚合入口](./mcp-gateway.md)。
 - 迁移 **`0031_catalog_notes`**：`models.description`、`providers.description` 改名为 `note`，已有内容保留为运营备注。目录介绍不再写入数据库。见 [0031 迁移说明](../../operators/migrations/0031-catalog-notes.md)。
+- 迁移 **`0032_split_audio_adapter_families`**：按供应商模型名改写 DashScope 语音转换路由的 `adapter`。对不上系列的异步转写行保留。见 [0032 迁移说明](../../operators/migrations/0032-dashscope-audio-adapters.md)。
+- 迁移 **`0033_request_log_provider_index`**：`api_key_request_logs` 增加 `(provider_id, created_at)` 索引。见 [0033 迁移说明](../../operators/migrations/0033-request-log-provider-index.md)。
 - **`USER_CHARGED_COST_FACTOR_MODE` 无 schema 迁移**：用户 `charged_cost_factors` 与路由 Charged 有效倍率的合成由 `system_config` 该键控制（`multiply` 叠乘，`min` 取较小倍率）。缺键或非法值运行时回退 `multiply`；首次在网关配置（Gateway Config）保存才写入，不必补进 `0002_seed`。
 
 #### Endpoint capability 维护规则

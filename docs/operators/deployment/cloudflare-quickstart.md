@@ -29,7 +29,7 @@ Operator
 
 ## 版本基线
 
-当前 `package.json` 版本号仍是 **Octafuse Gateway 2.15.0**。D1 迁移共 **31 个**（截至 `0031_catalog_notes.sql`）。跨版本升级必须按编号应用全部未执行迁移；从 1.11.x 升级先阅读 [2.0 升级指南](../migrations/single-provider-key-cutover.md)，后续版本的迁移顺序见[迁移与切换索引](../README.md#迁移与切换)。从 2.14.0 升级到 2.15.0 必须应用 0030（见 [0030 迁移说明](../migrations/0030-mcp-servers.md)）。从 2.15.0 升级到含 0031 的代码必须应用 0031（见 [0031 迁移说明](../migrations/0031-catalog-notes.md)），先执行迁移，再部署同版本 Proxy / Admin。
+当前版本是 **Octafuse Gateway 2.17.0**。D1 迁移共 **33 个**（截至 `0033_request_log_provider_index.sql`）。跨版本升级必须按编号应用全部未执行迁移；从 1.11.x 升级先阅读 [2.0 升级指南](../migrations/single-provider-key-cutover.md)，后续版本的迁移顺序见[迁移与切换索引](../README.md#迁移与切换)。从 2.14.0 升级到 2.15.0 必须应用 0030（见 [0030 迁移说明](../migrations/0030-mcp-servers.md)）。从 2.15.0 升级到 2.16.0 必须应用 0031（见 [0031 迁移说明](../migrations/0031-catalog-notes.md)）。从 2.16.0 升级到 2.17.0 必须应用 0032 和 0033（见 [0032 迁移说明](../migrations/0032-dashscope-audio-adapters.md)、[0033 迁移说明](../migrations/0033-request-log-provider-index.md)）。先执行迁移，再部署同版本 Proxy / Admin。
 
 下列构建体积来自 2026-07-24 对 `1.10.2` 的历史实测，仅用于量级参考；当前部署应以本次终端输出为准：
 
@@ -41,7 +41,7 @@ Operator
 | `@opennextjs/cloudflare` | 1.19.4 |
 | 代理服务 gzip | 194.31 KiB |
 | 管理后台 gzip | 2925.55 KiB |
-| 当时 D1 migrations | 13 个全部成功（2.15.0 当前为 30 个） |
+| 当时 D1 migrations | 13 个全部成功（2.17.0 当前为 33 个） |
 
 Cloudflare Workers Free 的单 Worker gzip 上限为 3 MiB；管理后台实测低于该上限，但余量不大。部署时应检查自己终端中的 `Total Upload ... gzip`，不要只依赖本文的历史数值。限制以 [Cloudflare Workers Limits](https://developers.cloudflare.com/workers/platform/limits/#worker-size) 为准。若免费额度余量吃紧或流量上来，也推荐升级 [Workers Paid](https://developers.cloudflare.com/workers/platform/pricing/)（约 $5/月）——量大管饱，性价比极高。
 

@@ -54,6 +54,17 @@ describe('buildSelectBatchSql', () => {
 		assert.match(sql, /\("created_at" >= '2026-10-25 06:00:00' OR "created_at" IS NULL\) AND "id" > 'k1'/);
 	});
 
+	it('有 since 且登记了索引时强制走时间列索引，避免顺着主键全表扫描', () => {
+		const sql = buildSelectBatchSql(logs, { batchSize: 500, offset: 0, lastKey: null, since: '2026-10-25 06:00:00' });
+		assert.match(sql, /^SELECT \* FROM "api_key_request_logs" INDEXED BY "idx_api_key_request_logs_created" WHERE /);
+		// 没有 since 时不加提示：全量读取就是按主键顺序扫。
+		assert.ok(!buildSelectBatchSql(logs, { batchSize: 500, offset: 0, lastKey: null, since: null }).includes('INDEXED BY'));
+		// 审计日志在 D1 里没有 created_at 索引，不能写 INDEXED BY。
+		assert.ok(
+			!buildSelectBatchSql(getEtlTableSpec('user_audit_logs'), { batchSize: 500, offset: 0, lastKey: null, since: '2026-10-25 06:00:00' }).includes('INDEXED BY')
+		);
+	});
+
 	it('核心表按 rowid + OFFSET，且不受 --since 影响', () => {
 		const sql = buildSelectBatchSql(users, { batchSize: 500, offset: 1000, lastKey: null, since: '2026-10-25 06:00:00' });
 		assert.equal(sql, 'SELECT * FROM "users" ORDER BY rowid LIMIT 500 OFFSET 1000');
@@ -63,6 +74,36 @@ describe('buildSelectBatchSql', () => {
 		assert.equal(quoteLiteral("a'b"), "'a''b'");
 		const sql = buildSelectBatchSql(logs, { batchSize: 1, offset: 0, lastKey: "x'; DROP--", since: null });
 		assert.ok(sql.includes(`'x''; DROP--'`));
+	});
+});
+
+describe('after-id / 中断续跑', () => {
+	it('计数与首批都从 id > afterId 开始', () => {
+		assert.equal(
+			buildCountSql(logs, null, 'abc'),
+			`SELECT COUNT(*) AS count FROM "api_key_request_logs" WHERE "id" > 'abc'`
+		);
+		assert.equal(
+			buildSelectBatchSql(logs, { batchSize: 10, offset: 0, lastKey: 'abc', since: null }),
+			`SELECT * FROM "api_key_request_logs" WHERE "id" > 'abc' ORDER BY "id" LIMIT 10`
+		);
+	});
+});
+
+describe('--before-id 定点修复区间', () => {
+	it('与 afterId 圈出 (after, before) 区间，计数与分页一致', () => {
+		assert.equal(
+			buildCountSql(logs, null, 'a', 'b'),
+			`SELECT COUNT(*) AS count FROM "api_key_request_logs" WHERE "id" > 'a' AND "id" < 'b'`
+		);
+		assert.equal(
+			buildSelectBatchSql(logs, { batchSize: 10, offset: 0, lastKey: 'a1', since: null, beforeId: 'b' }),
+			`SELECT * FROM "api_key_request_logs" WHERE "id" > 'a1' AND "id" < 'b' ORDER BY "id" LIMIT 10`
+		);
+	});
+
+	it('核心表不受 beforeId 影响', () => {
+		assert.equal(buildCountSql(users, null, null, 'b'), 'SELECT COUNT(*) AS count FROM "users"');
 	});
 });
 

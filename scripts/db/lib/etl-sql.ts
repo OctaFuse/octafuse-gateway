@@ -31,7 +31,7 @@ export function normalizeSince(raw: string): string {
 	return new Date(ms).toISOString().slice(0, 19).replace('T', ' ');
 }
 
-function buildWhere(spec: EtlTableSpec, since: string | null, lastKey: string | null): string {
+function buildWhere(spec: EtlTableSpec, since: string | null, lastKey: string | null, beforeId: string | null = null): string {
 	const clauses: string[] = [];
 	if (since && spec.sinceColumn) {
 		const column = quoteIdentifier(spec.sinceColumn);
@@ -41,27 +41,39 @@ function buildWhere(spec: EtlTableSpec, since: string | null, lastKey: string | 
 	if (spec.keysetColumn && lastKey !== null) {
 		clauses.push(`${quoteIdentifier(spec.keysetColumn)} > ${quoteLiteral(lastKey)}`);
 	}
+	if (spec.keysetColumn && beforeId !== null) {
+		clauses.push(`${quoteIdentifier(spec.keysetColumn)} < ${quoteLiteral(beforeId)}`);
+	}
 	return clauses.length > 0 ? ` WHERE ${clauses.join(' AND ')}` : '';
 }
 
-export function buildCountSql(spec: EtlTableSpec, since: string | null): string {
-	return `SELECT COUNT(*) AS count FROM ${quoteIdentifier(spec.name)}${buildWhere(spec, since, null)}`;
+export function buildCountSql(
+	spec: EtlTableSpec,
+	since: string | null,
+	afterId: string | null = null,
+	beforeId: string | null = null
+): string {
+	const resume = afterId && spec.keysetColumn ? afterId : null;
+	return `SELECT COUNT(*) AS count FROM ${quoteIdentifier(spec.name)}${buildWhere(spec, since, resume, beforeId)}`;
 }
 
 export interface SelectBatchOptions {
 	batchSize: number;
 	/** 仅无 keysetColumn 的表使用。 */
 	offset: number;
-	/** 仅有 keysetColumn 的表使用；首批传 null。 */
+	/** 仅有 keysetColumn 的表使用；首批传 null。中断续跑时首批可传 --after-id。 */
 	lastKey: string | null;
 	since: string | null;
+	/** 仅有 keysetColumn 的表使用：只读 id < 该值的行（--before-id，用于只修复一个区间）。 */
+	beforeId?: string | null;
 }
 
 export function buildSelectBatchSql(spec: EtlTableSpec, options: SelectBatchOptions): string {
 	const table = quoteIdentifier(spec.name);
 	if (spec.keysetColumn) {
 		const key = quoteIdentifier(spec.keysetColumn);
-		return `SELECT * FROM ${table}${buildWhere(spec, options.since, options.lastKey)} ORDER BY ${key} LIMIT ${options.batchSize}`;
+		const indexed = options.since && spec.sinceIndex ? ` INDEXED BY ${quoteIdentifier(spec.sinceIndex)}` : '';
+		return `SELECT * FROM ${table}${indexed}${buildWhere(spec, options.since, options.lastKey, options.beforeId ?? null)} ORDER BY ${key} LIMIT ${options.batchSize}`;
 	}
 	return `SELECT * FROM ${table}${buildWhere(spec, options.since, null)} ORDER BY rowid LIMIT ${options.batchSize} OFFSET ${options.offset}`;
 }

@@ -56,6 +56,13 @@ export interface EtlTableSpec {
 	/** `--since` 过滤所用的时间列（仅 `log` 表）。 */
 	readonly sinceColumn?: string;
 	/**
+	 * D1 里 `sinceColumn` 上的索引名。设置后 `--since` 的分页查询强制走它（`INDEXED BY`）。
+	 * 不加的话 SQLite 为了满足 `ORDER BY id LIMIT` 会顺着主键全表扫描：
+	 * 线上 85 万行请求日志补 2000 行尾部要 10 到 39 秒，走索引只要几毫秒。
+	 * 索引不存在时 D1 会直接报错（不会静默变慢），测试也会核对迁移里确实建了这个索引。
+	 */
+	readonly sinceIndex?: string;
+	/**
 	 * `--check` 比较时忽略的列：运行中会被请求不断改写、与业务内容无关的使用时间戳。
 	 * 只影响校验；同步（upsert）仍会照常复制这些列。
 	 */
@@ -87,6 +94,7 @@ export const ETL_TABLES = [
 		conflictKeys: ['id'],
 		keysetColumn: 'id',
 		sinceColumn: 'created_at',
+		sinceIndex: 'idx_api_key_request_logs_created',
 	},
 	{
 		name: 'user_audit_logs',

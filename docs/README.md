@@ -47,7 +47,8 @@
 | 2.8.0 升级（周期额度 + 永久额度，0027） | [releases/2.8.0.md](./releases/2.8.0.md#升级说明) |
 | 2.15.0 升级（MCP 服务与目录快照，0030） | [operators/migrations/0030-mcp-servers.md](./operators/migrations/0030-mcp-servers.md) |
 | 2.16.0 升级（介绍改为静态目录，库内列改为备注，0031） | [operators/migrations/0031-catalog-notes.md](./operators/migrations/0031-catalog-notes.md) |
-| 请求日志 Provider 索引（0033，对账聚合接口依赖） | [operators/migrations/0033-request-log-provider-index.md](./operators/migrations/0033-request-log-provider-index.md) |
+| 2.17.0 升级（DashScope 语音适配器拆分，0032） | [operators/migrations/0032-dashscope-audio-adapters.md](./operators/migrations/0032-dashscope-audio-adapters.md) |
+| 2.17.0 升级（请求日志 Provider 索引，0033） | [operators/migrations/0033-request-log-provider-index.md](./operators/migrations/0033-request-log-provider-index.md) |
 | 文档规范 | [CONVENTIONS.md](./CONVENTIONS.md) |
 
 ## 文档规范
