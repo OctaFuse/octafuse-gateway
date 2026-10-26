@@ -1214,7 +1214,8 @@
 				"retained": "停用后仍有绑定",
 				"off": "粘性未开启",
 				"offTooltip": "此路由组未开启粘性，不统计绑定用户。",
-				"tooltip": "统计本路由组内未过期的粘性绑定用户；横条表示组内占比。绑定人数不代表实时并发或请求量。"
+				"tooltip": "统计本路由组内未过期的粘性绑定；绑定数量不代表实时并发或请求量。",
+				"openDetails": "查看 {provider} 的绑定明细"
 			},
 			"providerFactorBadge": "供应商倍率 {value} · {status}",
 			"providerFactorTiming": {

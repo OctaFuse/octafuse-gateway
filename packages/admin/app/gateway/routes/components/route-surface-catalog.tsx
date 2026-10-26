@@ -52,7 +52,8 @@ type Props = {
 		poolId: string | null,
 		enabled: boolean,
 		idleTtlSeconds: number,
-		targets: Array<{ id: string; providerName: string; priority: number; weight: number }>
+		targets: Array<{ id: string; providerName: string; priority: number; weight: number }>,
+		initialTargetId?: string
 	) => void;
 };
 
@@ -200,6 +201,7 @@ function CatalogUpstream({
 	onEdit,
 	onToggleStatus,
 	onOpenStrategyDialog,
+	onOpenProviderStickyDialog,
 }: {
 	section: RouteProtocolGroupSection<RouteListRow>;
 	card: RouteModelGroup;
@@ -211,6 +213,7 @@ function CatalogUpstream({
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
+	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
 }) {
 	return (
 		<UpstreamPoolPanel
@@ -224,6 +227,7 @@ function CatalogUpstream({
 			onEdit={onEdit}
 			onToggleStatus={onToggleStatus}
 			onOpenStrategyDialog={onOpenStrategyDialog}
+			onOpenProviderStickyDialog={onOpenProviderStickyDialog}
 		/>
 	);
 }
@@ -320,6 +324,7 @@ function GroupToUpstreamBranch({
 					onEdit={onEdit}
 					onToggleStatus={onToggleStatus}
 					onOpenStrategyDialog={onOpenStrategyDialog}
+					onOpenProviderStickyDialog={onOpenProviderStickyDialog}
 				/>
 			</div>
 		</div>

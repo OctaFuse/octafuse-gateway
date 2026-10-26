@@ -61,7 +61,7 @@ export function ProviderStickyDialog(props: Props) {
 	const [summary, setSummary] = useState<StickyBindingsSummary | null>(null);
 	const [summaryLoading, setSummaryLoading] = useState(false);
 	const [summaryError, setSummaryError] = useState('');
-	const [targetFilter, setTargetFilter] = useState('');
+	const [targetFilter, setTargetFilter] = useState(dialog.initialTargetId ?? '');
 	const [userQuery, setUserQuery] = useState('');
 	const [lookupLoading, setLookupLoading] = useState(false);
 	const [lookupError, setLookupError] = useState('');
@@ -72,7 +72,7 @@ export function ProviderStickyDialog(props: Props) {
 	/** Bumped after lookup-unbind / pool reset so the user list reloads. */
 	const [listReloadToken, setListReloadToken] = useState(0);
 	const [activeTab, setActiveTab] = useState<(typeof TABS)[number]['id']>(
-		dialog.enabled ? 'distribution' : 'settings'
+		dialog.initialTargetId ? 'bindings' : dialog.enabled ? 'distribution' : 'settings'
 	);
 	const [customTtl, setCustomTtl] = useState(!TTL_PRESETS.includes(form.idleTtlSeconds));
 	const [submittedQuery, setSubmittedQuery] = useState('');

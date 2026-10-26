@@ -1214,7 +1214,8 @@
 				"retained": "無効化後も紐付けあり",
 				"off": "Sticky 無効",
 				"offTooltip": "このプールでは Sticky が無効のため、紐付け数を集計しません。",
-				"tooltip": "このルートプール内の有効期限内の Sticky ユーザー数。バーはプール内の割合を示し、同時接続数やリクエスト数ではありません。"
+				"tooltip": "このルートグループ内の期限内バインドを集計します。バインド数は同時リクエスト数やリクエスト量ではありません。",
+				"openDetails": "{provider} のバインド詳細を表示"
 			},
 			"providerFactorBadge": "プロバイダー倍率 {value} · {status}",
 			"providerFactorTiming": {

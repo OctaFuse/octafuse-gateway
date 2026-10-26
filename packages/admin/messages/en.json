@@ -1214,7 +1214,8 @@
 				"retained": "Bindings retained while disabled",
 				"off": "Sticky routing off",
 				"offTooltip": "Sticky routing is off for this pool; binding counts are not tracked.",
-				"tooltip": "Unexpired sticky users in this route pool. The bar shows the share of pool bindings, not live concurrency or request volume."
+				"tooltip": "Counts unexpired sticky bindings in this route group. Binding counts are not concurrent requests or traffic volume.",
+				"openDetails": "View bindings for {provider}"
 			},
 			"providerFactorBadge": "Provider multiplier {value} · {status}",
 			"providerFactorTiming": {

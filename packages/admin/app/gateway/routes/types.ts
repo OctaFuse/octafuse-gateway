@@ -56,6 +56,8 @@ export type ProviderStickyDialogTarget = {
 };
 
 export type ProviderStickyDialogState = {
+	/** Open the bindings tab with this route target selected. */
+	initialTargetId?: string;
 	modelId: string;
 	modelTitle: string;
 	protocol: string;

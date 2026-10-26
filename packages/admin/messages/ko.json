@@ -1214,7 +1214,8 @@
 				"retained": "비활성화 후 바인딩 유지",
 				"off": "Sticky 꺼짐",
 				"offTooltip": "이 풀은 Sticky가 꺼져 있어 바인딩 사용자를 집계하지 않습니다.",
-				"tooltip": "이 라우트 풀의 만료되지 않은 Sticky 사용자 수입니다. 막대는 풀 내 비율이며 실시간 동시 접속 수나 요청량이 아닙니다."
+				"tooltip": "이 라우트 그룹의 만료 전 고정 바인딩을 집계합니다. 바인딩 수는 동시 요청 수나 요청량이 아닙니다.",
+				"openDetails": "{provider}의 바인딩 상세 보기"
 			},
 			"providerFactorBadge": "공급자 배율 {value} · {status}",
 			"providerFactorTiming": {

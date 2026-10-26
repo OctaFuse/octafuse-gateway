@@ -75,7 +75,8 @@ type OpenProviderStickyDialog = (
 	poolId: string | null,
 	enabled: boolean,
 	idleTtlSeconds: number,
-	targets: Array<{ id: string; providerName: string; priority: number; weight: number }>
+	targets: Array<{ id: string; providerName: string; priority: number; weight: number }>,
+	initialTargetId?: string
 ) => void;
 
 type Props = {
@@ -105,6 +106,7 @@ function RouteTarget({
 	togglingId,
 	onEdit,
 	onToggleStatus,
+	onOpenStickyBindings,
 }: {
 	listView?: boolean;
 	route: RouteListRow;
@@ -115,6 +117,7 @@ function RouteTarget({
 	togglingId: string | null;
 	onEdit: (route: RouteListRow, initialTab?: RouteEditorTab) => void;
 	onToggleStatus: (route: RouteListRow) => void;
+	onOpenStickyBindings: () => void;
 }) {
 	const t = useTranslations('routes.flow');
 	const tList = useTranslations('routes.listItem');
@@ -174,6 +177,8 @@ function RouteTarget({
 			count={stickyBindingCount}
 			total={stickyTotal}
 			routeAvailable={available}
+			providerName={providerName}
+			onClick={onOpenStickyBindings}
 		/>
 	);
 
@@ -343,6 +348,7 @@ export function openSectionStickyDialog(
 	providerMeta: Map<string, GatewayProvider>,
 	locale: string,
 	customLabel: string,
+	initialTargetId?: string,
 ) {
 	onOpen(
 		card.model_id,
@@ -355,6 +361,7 @@ export function openSectionStickyDialog(
 		section.poolStickyEnabled,
 		section.poolStickyIdleTtlSeconds,
 		stickyTargetsFromSection(section, providerMeta, locale, customLabel),
+		initialTargetId,
 	);
 }
 
@@ -556,6 +563,7 @@ function PriorityTierPanel({
 	onToggleStatus,
 	onOpenStrategyDialog,
 	onOpenFailover,
+	onOpenStickyBindings,
 }: {
 	priority: number;
 	routes: RouteListRow[];
@@ -573,6 +581,7 @@ function PriorityTierPanel({
 	onToggleStatus: Props['onToggleStatus'];
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
 	onOpenFailover: () => void;
+	onOpenStickyBindings: (targetId: string) => void;
 }) {
 	const t = useTranslations('routes.flow');
 	const tStrategy = useTranslations('routes.strategy');
@@ -675,6 +684,7 @@ function PriorityTierPanel({
 						togglingId={togglingId}
 						onEdit={onEdit}
 						onToggleStatus={onToggleStatus}
+						onOpenStickyBindings={() => onOpenStickyBindings(route.id)}
 					/>
 				))}
 				{routes.length === 0 ? (
@@ -696,6 +706,7 @@ type UpstreamPoolPanelProps = {
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
+	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
 };
 
 export function UpstreamPoolPanel({
@@ -709,6 +720,7 @@ export function UpstreamPoolPanel({
 	onEdit,
 	onToggleStatus,
 	onOpenStrategyDialog,
+	onOpenProviderStickyDialog,
 }: UpstreamPoolPanelProps) {
 	const t = useTranslations('routes.flow');
 	const tKind = useTranslations('providers.kind');
@@ -774,6 +786,7 @@ export function UpstreamPoolPanel({
 							onToggleStatus={onToggleStatus}
 							onOpenFailover={() => setFailoverOpen(true)}
 							onOpenStrategyDialog={onOpenStrategyDialog}
+							onOpenStickyBindings={(targetId) => openSectionStickyDialog(onOpenProviderStickyDialog, card, section, providerMeta, locale, tKind('custom'), targetId)}
 						/>
 					</div>
 				))}
@@ -871,6 +884,7 @@ function FlowBranch({
 					onEdit={onEdit}
 					onToggleStatus={onToggleStatus}
 					onOpenStrategyDialog={onOpenStrategyDialog}
+					onOpenProviderStickyDialog={onOpenProviderStickyDialog}
 				/>
 			</div>
 		</div>

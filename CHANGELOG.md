@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- **粘性绑定用户列表**：路由页「Provider 粘性」弹窗新增「当前绑定用户」，直接列出此刻粘在各 Provider 上的用户（邮箱、user id、模型、剩余时间），可按 Provider 筛选、分页、逐条解绑；原来的按邮箱 / user id 查询保留。新增 `GET /api/admin/routes/pools/:poolId/sticky/bindings`。为此 `route_pool_sticky_bindings` 增加可空列 `affinity_key`（迁移 **0034**，三库一致）。升级前先执行 0034，再更新 Proxy / Admin，否则新版 Proxy 写绑定会失败（失败放行，不影响请求）。迁移前的旧绑定显示为「未记录用户」，下次命中续期后补全，最迟在粘性 TTL 到期后消失。见 `docs/operators/migrations/0034-sticky-binding-affinity-key.md`。
+- **粘性绑定用户列表**：路由页「Provider 粘性」弹窗新增绑定明细列表，支持按 Provider 筛选、分页、逐条解绑，以及按邮箱 / 用户 ID 精确查询。新增 `GET /api/admin/routes/pools/:poolId/sticky/bindings`。为此 `route_pool_sticky_bindings` 增加可空列 `affinity_key`（迁移 **0034**，三库一致）。升级前先执行 0034，再更新 Proxy / Admin，否则新版 Proxy 写绑定会失败（失败放行，不影响请求）。迁移前的旧绑定显示为「未记录用户」，下次命中续期后补全，最迟在粘性 TTL 到期后消失。见 `docs/operators/migrations/0034-sticky-binding-affinity-key.md`。
+- **Provider 粘性管理界面**：弹窗拆分为「粘性设置 / 绑定分布 / 绑定明细 / 维护」四个页签；已启用时默认查看分布，未启用时默认进入设置。分布按优先级展示权重、绑定数和全池绑定占比，标记未启用路由；点击分布或路由页供应商行中的粘性绑定数，可直接打开对应 Provider 的绑定明细，并自动筛选。明细精简为用户、Provider、剩余有效时间和解绑操作；Provider 以类型图标、账户名称和类型名称展示，剩余时间自动更新，悬浮可查看具体过期时刻。绑定有效期提供 1 小时（默认）、2 小时、6 小时和自定义选项；未保存设置可撤销，全量绑定失效操作集中到维护页并说明影响范围。本次界面调整无需额外数据库迁移。
 - **Gemini thought signature 兜底**：同一会话被 failover 到另一类上游（例如 Vertex → 第三方中转）后，历史里会带上别家格式的 `thoughtSignature`，回到 Vertex 时返回 `HTTP 400: Invalid thought signature.`，客户端重试带的是同一份历史，会话会一直失败。现在 Gemini 原生入口收到这个 400 时，对同一个上游用清洗后的历史重试一次：`functionCall` 的签名换成 `skip_thought_signature_validator`，文本和思考 part 的签名直接去掉。只重试一次，只针对「签名无效」这个 400，请求里没有签名时不重试，其他请求不受影响。重试时网关日志会打印 `gemini invalid thought signature, retrying with sanitized signatures`。
 - **故障转移日志**：切换上游时，代理日志会写明本次是第几个候选、供应商名称、上游目标、模型、状态码、失败类别（限流 / 鉴权或额度 / 5xx / 524 / 网络）、熔断是否打开，以及上游错误摘要和下一个候选。401/402/403 仍只打一行。最后一个候选不再写成「trying next」。请求日志 `timing_metadata.attempts` 同步带上 `target_id`、`failure_kind` 和错误摘要。客户端收到的响应体不变。
 

@@ -747,7 +747,8 @@ export function useRoutesPageState() {
 			poolId: string | null,
 			enabled: boolean,
 			idleTtlSeconds: number,
-			targets: Array<{ id: string; providerName: string; priority: number; weight: number }> = []
+			targets: Array<{ id: string; providerName: string; priority: number; weight: number }> = [],
+			initialTargetId?: string
 		) => {
 			setStickyForm({
 				enabled,
@@ -769,6 +770,7 @@ export function useRoutesPageState() {
 					? idleTtlSeconds
 					: DEFAULT_STICKY_IDLE_TTL_SECONDS,
 				targets,
+				initialTargetId,
 			});
 		},
 		[]

@@ -45,7 +45,8 @@ type Props = {
 		poolId: string | null,
 		enabled: boolean,
 		idleTtlSeconds: number,
-		targets: Array<{ id: string; providerName: string; priority: number; weight: number }>
+		targets: Array<{ id: string; providerName: string; priority: number; weight: number }>,
+		initialTargetId?: string
 	) => void;
 };
 
