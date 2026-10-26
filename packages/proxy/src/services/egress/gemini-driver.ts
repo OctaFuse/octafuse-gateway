@@ -12,6 +12,11 @@ import {
 import type { RouteResult } from '../model-router';
 import type { UsageFromStream } from '../proxy';
 import { buildRouteRequestBody } from '../route-default-params';
+import {
+  isInvalidThoughtSignatureErrorBody,
+  sanitizeGeminiThoughtSignatures,
+  type SanitizedGeminiSignatures,
+} from './gemini-thought-signature';
 import { sanitizeRewrappedHeaders } from './response-headers';
 import { extractUpstreamRequestId, normalizeUpstreamId } from './upstream-request-id';
 import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
@@ -351,6 +356,25 @@ async function nonStreamResponseWithUsage(
 }
 
 /**
+ * 上游 400 且 body 表示 `Invalid thought signature` 时，返回清洗后的重试请求体；否则 `null`。
+ * 用 `clone()` 读 body，不消耗原响应，不满足条件时原响应原样返回给调用方。
+ */
+async function buildInvalidThoughtSignatureRetry(
+  response: Response,
+  requestBody: unknown
+): Promise<SanitizedGeminiSignatures | null> {
+  if (typeof requestBody !== 'object' || requestBody === null || Array.isArray(requestBody)) return null;
+  let text: string;
+  try {
+    text = await response.clone().text();
+  } catch {
+    return null;
+  }
+  if (!isInvalidThoughtSignatureErrorBody(text)) return null;
+  return sanitizeGeminiThoughtSignatures(requestBody as Record<string, unknown>);
+}
+
+/**
  * 调用 Gemini `{base}/{model}:{action}`（`endpoints.gemini.base` 须含完整路径前缀）：URL 查询串可与客户端 `search` 合并；
  * 官方上游缺省追加 `?key=`；`endpoints.gemini.auth` 为 `bearer` 时改用 `Authorization: Bearer`。
  * `streamGenerateContent` 走 SSE 解析（上游强制 `alt=sse`）；`generateContent` 单次 JSON 用 `usageMetadata`。
@@ -390,11 +414,28 @@ export async function dispatchGeminiRoute(
   });
 
   const requestBody = buildRouteRequestBody(route, body);
-  const response = await fetch(url.toString(), {
-    method: 'POST',
-    headers: applyRouteExtraHeaders(headers, route.customParams),
-    body: JSON.stringify(requestBody),
-  });
+  const fetchHeaders = applyRouteExtraHeaders(headers, route.customParams);
+  const send = (payload: unknown): Promise<Response> =>
+    fetch(url.toString(), {
+      method: 'POST',
+      headers: fetchHeaders,
+      body: JSON.stringify(payload),
+    });
+
+  let response = await send(requestBody);
+  if (response.status === 400) {
+    // 会话历史里混有别家上游签发的 thought signature 时，Vertex 会拒绝；400 不触发 failover，
+    // 客户端重试也只会带同一份历史。此处对同一上游用清洗后的历史重试一次。
+    const retryPayload = await buildInvalidThoughtSignatureRetry(response, requestBody);
+    if (retryPayload) {
+      console.log('[Gateway Proxy] gemini invalid thought signature, retrying with sanitized signatures', {
+        providerId: route.providerId,
+        replaced: retryPayload.replaced,
+        removed: retryPayload.removed,
+      });
+      response = await send(retryPayload.body);
+    }
+  }
   timing?.markAttemptHeaders(attempt, response.status);
   const upstreamRequestId = extractUpstreamRequestId(response.headers);
 

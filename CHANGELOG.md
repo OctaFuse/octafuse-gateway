@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Gemini thought signature 兜底**：同一会话被 failover 到另一类上游（例如 Vertex → 第三方中转）后，历史里会带上别家格式的 `thoughtSignature`，回到 Vertex 时返回 `HTTP 400: Invalid thought signature.`，客户端重试带的是同一份历史，会话会一直失败。现在 Gemini 原生入口收到这个 400 时，对同一个上游用清洗后的历史重试一次：`functionCall` 的签名换成 `skip_thought_signature_validator`，文本和思考 part 的签名直接去掉。只重试一次，只针对「签名无效」这个 400，请求里没有签名时不重试，其他请求不受影响。重试时网关日志会打印 `gemini invalid thought signature, retrying with sanitized signatures`。
+
 ## 2.17.0
 
 ### Minor Changes
