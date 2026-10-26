@@ -23,6 +23,17 @@ export type RoutePoolStickyBindingRow = {
 	expires_at: string;
 	created_at?: string;
 	updated_at?: string;
+	/** 明文 `userId|modelId|routeGroup|protocol`；迁移 0034 前写入的旧行为 null。 */
+	affinity_key?: string | null;
+};
+
+/** Paged active-binding row for the Admin "who is stuck where" list. */
+export type RoutePoolStickyActiveBindingRow = {
+	affinity_hash: string;
+	affinity_key: string | null;
+	route_target_id: string;
+	expires_at: string;
+	updated_at: string | null;
 };
 
 /** Aggregated active binding counts per target (epoch-valid + not expired). */

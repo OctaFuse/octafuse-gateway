@@ -125,6 +125,7 @@ export const routePoolStickyBindingsTable = sqliteTable('route_pool_sticky_bindi
 	expiresAt: text('expires_at').notNull(),
 	createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 	updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+	affinityKey: text('affinity_key'),
 });
 
 export const modelSurfacesTable = sqliteTable('model_surfaces', {

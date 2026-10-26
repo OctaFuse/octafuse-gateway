@@ -11,6 +11,7 @@ import {
 	getModelRouteService,
 	getStickyBindingsSummaryService,
 	listModelRoutesService,
+	listStickyBindingsService,
 	lookupStickyBindingService,
 	resetStickyBindingsService,
 	updateModelRouteService,
@@ -79,6 +80,21 @@ adminModelRoutes.get('/pools/:poolId/sticky/bindings/summary', async (c) => {
 		return c.json(normalizeApiTimeFields({ success: true, data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to get sticky bindings summary');
+	}
+});
+
+/** Page of users currently stuck to a Provider in this pool. */
+adminModelRoutes.get('/pools/:poolId/sticky/bindings', async (c) => {
+	try {
+		const repos = c.get('repositories');
+		const data = await listStickyBindingsService(repos, c.req.param('poolId'), {
+			page: c.req.query('page') ? Number(c.req.query('page')) : undefined,
+			page_size: c.req.query('page_size') ? Number(c.req.query('page_size')) : undefined,
+			route_target_id: c.req.query('route_target_id'),
+		});
+		return c.json(normalizeApiTimeFields({ success: true, data }));
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to list sticky bindings');
 	}
 });
 

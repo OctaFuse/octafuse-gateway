@@ -5,6 +5,7 @@ import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import type { MySqlDatabaseClient } from '../../storage/database-client';
 import type { RoutePoolStickyBindingsRepository } from '../../storage/gateway-repository-interfaces';
 import type {
+	RoutePoolStickyActiveBindingRow,
 	RoutePoolStickyBindingRow,
 	RoutePoolStickyBindingTargetCount,
 } from '../route-pool-sticky-types';
@@ -35,6 +36,12 @@ function toMySqlDateTime(iso: string): string {
 	return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}.${micros}`;
 }
 
+function stringifyMySqlTime(value: unknown): string | null {
+	if (value == null) return null;
+	if (value instanceof Date) return value.toISOString();
+	return String(value);
+}
+
 export function createMySqlRoutePoolStickyBindingsRepository(
 	db: MySqlDatabaseClient
 ): RoutePoolStickyBindingsRepository {
@@ -43,7 +50,7 @@ export function createMySqlRoutePoolStickyBindingsRepository(
 		async getBinding(routePoolId, affinityHash): Promise<RoutePoolStickyBindingRow | null> {
 			const [rows] = await pool.query<StickyBindingPacket[]>(
 				`SELECT route_pool_id, affinity_hash, route_target_id, binding_token,
-				        pool_epoch, expires_at, created_at, updated_at
+				        pool_epoch, expires_at, created_at, updated_at, affinity_key
 				 FROM route_pool_sticky_bindings
 				 WHERE route_pool_id = ? AND affinity_hash = ?
 				 LIMIT 1`,
@@ -59,8 +66,8 @@ export function createMySqlRoutePoolStickyBindingsRepository(
 			const [insertResult] = await pool.execute<ResultSetHeader>(
 				`INSERT IGNORE INTO route_pool_sticky_bindings (
 					route_pool_id, affinity_hash, route_target_id, binding_token,
-					pool_epoch, expires_at, created_at, updated_at
-				) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6))`,
+					pool_epoch, expires_at, created_at, updated_at, affinity_key
+				) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), ?)`,
 				[
 					params.routePoolId,
 					params.affinityHash,
@@ -68,6 +75,7 @@ export function createMySqlRoutePoolStickyBindingsRepository(
 					params.bindingToken,
 					params.poolEpoch,
 					expiresAt,
+					params.affinityKey ?? null,
 				]
 			);
 			if (insertResult.affectedRows === 1) return true;
@@ -78,6 +86,7 @@ export function createMySqlRoutePoolStickyBindingsRepository(
 				     binding_token = ?,
 				     pool_epoch = ?,
 				     expires_at = ?,
+				     affinity_key = COALESCE(?, affinity_key),
 				     updated_at = CURRENT_TIMESTAMP(6)
 				 WHERE route_pool_id = ?
 				   AND affinity_hash = ?
@@ -87,6 +96,7 @@ export function createMySqlRoutePoolStickyBindingsRepository(
 					params.bindingToken,
 					params.poolEpoch,
 					expiresAt,
+					params.affinityKey ?? null,
 					params.routePoolId,
 					params.affinityHash,
 					nowIso,
@@ -101,12 +111,13 @@ export function createMySqlRoutePoolStickyBindingsRepository(
 		async touchBinding(params): Promise<boolean> {
 			const [result] = await pool.execute<ResultSetHeader>(
 				`UPDATE route_pool_sticky_bindings
-				 SET expires_at = ?, updated_at = CURRENT_TIMESTAMP(6)
+				 SET expires_at = ?, affinity_key = COALESCE(affinity_key, ?), updated_at = CURRENT_TIMESTAMP(6)
 				 WHERE route_pool_id = ?
 				   AND affinity_hash = ?
 				   AND binding_token = ?`,
 				[
 					toMySqlDateTime(params.expiresAt),
+					params.affinityKey ?? null,
 					params.routePoolId,
 					params.affinityHash,
 					params.expectedToken,
@@ -166,6 +177,59 @@ export function createMySqlRoutePoolStickyBindingsRepository(
 				active_count: Number(r.active_count) || 0,
 				last_updated_at: r.last_updated_at ?? null,
 			}));
+		},
+
+		async listActiveBindings(params): Promise<{
+			rows: RoutePoolStickyActiveBindingRow[];
+			total: number;
+		}> {
+			const target = params.routeTargetId?.trim() || '';
+			const targetSql = target ? 'AND b.route_target_id = ?' : '';
+			const nowSql = toMySqlDateTime(params.nowIso);
+			const filterArgs = target
+				? [params.routePoolId, nowSql, target]
+				: [params.routePoolId, nowSql];
+			const base = `FROM route_pool_sticky_bindings b
+				 JOIN route_pools p ON p.id = b.route_pool_id
+				 WHERE b.route_pool_id = ?
+				   AND b.pool_epoch = p.sticky_epoch
+				   AND b.expires_at > ?
+				   ${targetSql}`;
+			const [[list], [count]] = await Promise.all([
+				pool.query<
+					Array<
+						{
+							affinity_hash: string;
+							affinity_key: string | null;
+							route_target_id: string;
+							expires_at: string;
+							updated_at: string | null;
+						} & RowDataPacket
+					>
+				>(
+					`SELECT b.affinity_hash AS affinity_hash, b.affinity_key AS affinity_key,
+					        b.route_target_id AS route_target_id, b.expires_at AS expires_at,
+					        b.updated_at AS updated_at
+					 ${base}
+					 ORDER BY b.updated_at DESC, b.affinity_hash ASC
+					 LIMIT ? OFFSET ?`,
+					[...filterArgs, params.limit, params.offset]
+				),
+				pool.query<Array<{ cnt: number } & RowDataPacket>>(
+					`SELECT COUNT(*) AS cnt ${base}`,
+					filterArgs
+				),
+			]);
+			return {
+				rows: list.map((r) => ({
+					affinity_hash: r.affinity_hash,
+					affinity_key: r.affinity_key ?? null,
+					route_target_id: r.route_target_id,
+					expires_at: stringifyMySqlTime(r.expires_at) ?? '',
+					updated_at: stringifyMySqlTime(r.updated_at),
+				})),
+				total: Number(count[0]?.cnt) || 0,
+			};
 		},
 
 		async countStaleBindings(routePoolId, nowIso): Promise<number> {

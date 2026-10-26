@@ -69,6 +69,27 @@ export type StickyBindingsSummary = {
 	}>;
 };
 
+export type StickyBindingListItem = {
+	affinity_hash: string;
+	/** null: 迁移 0034 之前写入、尚未被续期补全的旧绑定。 */
+	user_id: string | null;
+	email: string | null;
+	model_id: string | null;
+	route_group: string | null;
+	protocol: string | null;
+	route_target_id: string;
+	expires_at: string;
+	remaining_seconds: number;
+	updated_at: string | null;
+};
+
+export type StickyBindingsList = {
+	items: StickyBindingListItem[];
+	total: number;
+	page: number;
+	page_size: number;
+};
+
 export type StickyBindingLookup = {
 	user_id: string;
 	affinity_hash: string;

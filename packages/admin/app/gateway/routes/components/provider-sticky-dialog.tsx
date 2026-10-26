@@ -15,6 +15,7 @@ import {
 	resetStickyBindings,
 } from '../route-api';
 import { useStickyRefreshControls } from '../sticky-summary-store';
+import { StickyBindingsListPanel } from './sticky-bindings-list';
 import type {
 	ProviderStickyDialogState,
 	ProviderStickyFormState,
@@ -58,6 +59,8 @@ export function ProviderStickyDialog(props: Props) {
 	const [lookup, setLookup] = useState<StickyBindingLookup | null>(null);
 	const [actionBusy, setActionBusy] = useState(false);
 	const [actionMessage, setActionMessage] = useState('');
+	/** Bumped after lookup-unbind / pool reset so the user list reloads. */
+	const [listReloadToken, setListReloadToken] = useState(0);
 	/** When sticky is off but leftovers exist, ops panels stay collapsed until expanded. */
 	const [opsExpanded, setOpsExpanded] = useState(false);
 
@@ -159,6 +162,7 @@ export function ProviderStickyDialog(props: Props) {
 			}
 			setActionMessage(result.cleared ? t('clearDone') : t('clearMiss'));
 			setLookup((prev) => (prev ? { ...prev, binding: null } : prev));
+			setListReloadToken((n) => n + 1);
 			await refreshSummary();
 			await invalidate(dialog.poolId);
 			onBindingsChanged?.();
@@ -185,6 +189,7 @@ export function ProviderStickyDialog(props: Props) {
 			}
 			setActionMessage(t('resetDone', { epoch: result.sticky_epoch }));
 			setLookup((prev) => (prev ? { ...prev, binding: null } : prev));
+			setListReloadToken((n) => n + 1);
 			await refreshSummary();
 			await invalidate(dialog.poolId);
 			onBindingsChanged?.();
@@ -468,6 +473,25 @@ export function ProviderStickyDialog(props: Props) {
 									)}
 								</div>
 							</div>
+
+							<StickyBindingsListPanel
+								poolId={dialog.poolId as string}
+								targets={dialog.targets.map((row) => ({
+									id: row.id,
+									providerName: row.providerName,
+								}))}
+								reloadToken={listReloadToken}
+								disabled={saving || actionBusy}
+								onChanged={() => {
+									const poolId = dialog.poolId;
+									if (!poolId) return;
+									void (async () => {
+										await refreshSummary();
+										await invalidate(poolId);
+										onBindingsChanged?.();
+									})();
+								}}
+							/>
 
 							<div className="rounded-lg border border-gray-200 p-3.5">
 								<h3 className="text-sm font-semibold text-gray-900">{t('lookupTitle')}</h3>

@@ -127,6 +127,7 @@ export const routePoolStickyBindingsTable = pgTable('route_pool_sticky_bindings'
 	expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'string' }).notNull(),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).notNull(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull(),
+	affinityKey: text('affinity_key'),
 });
 
 export const modelSurfacesTable = pgTable('model_surfaces', {
