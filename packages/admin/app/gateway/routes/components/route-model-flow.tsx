@@ -186,7 +186,7 @@ function RouteTarget({
 		<div
 			role="listitem"
 			data-available={available}
-			className={`relative ${listView ? 'route-provider-list-grid w-full min-w-0 gap-x-3 gap-y-2 px-3 py-2' : 'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border transition'} ${
+			className={`relative ${listView ? 'route-provider-list-grid w-full min-w-0 border-y border-slate-200 first:border-t-0 last:border-b-0 gap-x-3 gap-y-2 px-3 py-2.5' : 'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border transition'} ${
 				available
 					? listView ? 'bg-white hover:bg-emerald-50/40' : 'border-emerald-200 bg-white shadow-[0_2px_6px_-2px_rgba(15,23,42,0.14)] hover:border-emerald-300 hover:shadow-md'
 					: listView ? 'bg-slate-100 hover:bg-slate-200/60' : 'border-dashed border-slate-300 bg-slate-100 hover:border-slate-400'
@@ -671,7 +671,7 @@ function PriorityTierPanel({
 				</div>
 			</div>
 
-			<div className={isList ? 'route-provider-list-body min-w-0 divide-y divide-slate-100' : 'route-provider-card-grid'} role="list" aria-label={t('listProvider')}>
+			<div className={isList ? 'route-provider-list-body flex min-w-0 flex-col gap-1.5 bg-white' : 'route-provider-card-grid'} role="list" aria-label={t('listProvider')}>
 				{routes.map((route) => (
 					<RouteTarget
 						listView={isList}
