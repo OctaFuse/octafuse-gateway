@@ -1907,7 +1907,6 @@
 			"usersFilterProvider": "Filter by Provider",
 			"usersEmpty": "No matching active bindings.",
 			"usersLegacy": "User not recorded (binding created before the upgrade; filled in on the next request)",
-			"usersRemaining": "{time} left",
 			"usersTotal": "{total} total · page {page}/{pages}",
 			"usersPrev": "Previous",
 			"usersNext": "Next",
@@ -1915,8 +1914,6 @@
 			"lookupPlaceholder": "User email or user ID",
 			"lookup": "Lookup",
 			"lookupRequired": "Enter a user email or user ID.",
-			"lookupTarget": "Bound to",
-			"lookupTtl": "{seconds}s remaining",
 			"lookupExpired": "Expired",
 			"lookupNone": "No binding for this user, model, route group, and protocol.",
 			"clearBinding": "Unbind",
@@ -1965,7 +1962,15 @@
 			"weightColumn": "Weight",
 			"targetDisabled": "Disabled",
 			"priorityHint": "Without a sticky match, higher priority tiers are tried first. The next tier is used after the current tier is exhausted. Disabled routes or Providers are excluded.",
-			"weightHint": "Weights affect selection within the same priority tier according to its strategy. Sticky routing prefers existing bindings, so actual binding shares may differ from weight ratios."
+			"weightHint": "Weights affect selection within the same priority tier according to its strategy. Sticky routing prefers existing bindings, so actual binding shares may differ from weight ratios.",
+			"userColumn": "User",
+			"unbindUser": "Unbind user {user}",
+			"viewProviderBindings": "View {count} bindings for {provider}",
+			"remainingColumn": "Time remaining",
+			"durationHoursMinutes": "{hours}h {minutes}m",
+			"durationMinutes": "{minutes}m",
+			"durationSeconds": "{seconds}s",
+			"expiresAtHint": "Expires at {time} ({timezone})"
 		},
 		"failover": {
 			"title": "Failover rules",

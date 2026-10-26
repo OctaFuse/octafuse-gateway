@@ -1907,7 +1907,6 @@
 			"usersFilterProvider": "按 Provider 筛选",
 			"usersEmpty": "没有符合条件的有效绑定。",
 			"usersLegacy": "未记录用户（升级前的旧绑定，下次调用后补全）",
-			"usersRemaining": "剩余 {time}",
 			"usersTotal": "共 {total} 条 · 第 {page}/{pages} 页",
 			"usersPrev": "上一页",
 			"usersNext": "下一页",
@@ -1915,8 +1914,6 @@
 			"lookupPlaceholder": "用户邮箱或用户 ID",
 			"lookup": "查询",
 			"lookupRequired": "请输入用户邮箱或用户 ID。",
-			"lookupTarget": "绑定到",
-			"lookupTtl": "剩余 {seconds}s",
 			"lookupExpired": "已过期",
 			"lookupNone": "该用户在当前模型、路由组和协议下没有绑定。",
 			"clearBinding": "解绑",
@@ -1965,7 +1962,15 @@
 			"weightColumn": "权重",
 			"targetDisabled": "未启用",
 			"priorityHint": "未命中粘性时，先尝试高优先级层，该层候选耗尽后再进入下一层；未启用的路由或供应商不参与选路。",
-			"weightHint": "权重用于同一优先级内选路，具体作用取决于层内策略。粘性优先复用已有绑定，因此实际绑定占比不必与权重比例一致。"
+			"weightHint": "权重用于同一优先级内选路，具体作用取决于层内策略。粘性优先复用已有绑定，因此实际绑定占比不必与权重比例一致。",
+			"userColumn": "用户",
+			"unbindUser": "解绑用户 {user}",
+			"viewProviderBindings": "查看 {provider} 的 {count} 条绑定",
+			"remainingColumn": "剩余有效时间",
+			"durationHoursMinutes": "{hours} 小时 {minutes} 分钟",
+			"durationMinutes": "{minutes} 分钟",
+			"durationSeconds": "{seconds} 秒",
+			"expiresAtHint": "过期时间：{time}（{timezone}）"
 		},
 		"failover": {
 			"title": "Failover 规则",

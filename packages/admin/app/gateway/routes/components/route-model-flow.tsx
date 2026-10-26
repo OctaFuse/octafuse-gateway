@@ -18,7 +18,7 @@ import {
 	isEmbeddingModel,
 	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
-import { providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provider-kind';
+import { providerAccountIdentity, providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provider-kind';
 import { useLocale, useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
@@ -317,13 +317,23 @@ function stickyTargetsFromSection(
 	locale: string,
 	customLabel: string,
 ) {
-	return section.routes.map((route) => ({
-		id: route.id,
-		providerName: routeProviderAccountLabel(route, providerMeta.get(route.provider_id), locale, customLabel),
-		priority: route.priority,
-		weight: Number(route.weight ?? 1) || 1,
-		enabled: isRouteConfigurationAvailable(route, providerMeta.get(route.provider_id)),
-	}));
+	return section.routes.map((route) => {
+		const provider = providerMeta.get(route.provider_id);
+		const identity = providerAccountIdentity(provider, locale, customLabel, route.provider_name || route.provider_id);
+		return {
+			id: route.id,
+			providerName: routeProviderAccountLabel(route, provider, locale, customLabel),
+			identity: {
+				accountName: identity.name,
+				kindLabel: identity.kind,
+				vendorKey: provider?.vendor_key,
+				iconKey: provider?.icon_key,
+			},
+			priority: route.priority,
+			weight: Number(route.weight ?? 1) || 1,
+			enabled: isRouteConfigurationAvailable(route, provider),
+		};
+	});
 }
 
 export function openSectionStickyDialog(

@@ -1907,7 +1907,6 @@
 			"usersFilterProvider": "Provider로 필터",
 			"usersEmpty": "조건에 맞는 유효 바인딩이 없습니다.",
 			"usersLegacy": "사용자 미기록(업그레이드 이전 바인딩, 다음 요청 후 채워집니다)",
-			"usersRemaining": "{time} 남음",
 			"usersTotal": "총 {total}건 · {page}/{pages} 페이지",
 			"usersPrev": "이전",
 			"usersNext": "다음",
@@ -1915,8 +1914,6 @@
 			"lookupPlaceholder": "사용자 이메일 또는 사용자 ID",
 			"lookup": "조회",
 			"lookupRequired": "사용자 이메일 또는 사용자 ID를 입력하세요.",
-			"lookupTarget": "고정 대상",
-			"lookupTtl": "{seconds}s 남음",
 			"lookupExpired": "만료됨",
 			"lookupNone": "이 사용자, 모델, 라우트 그룹 및 프로토콜에 대한 바인딩이 없습니다.",
 			"clearBinding": "해제",
@@ -1965,7 +1962,15 @@
 			"weightColumn": "가중치",
 			"targetDisabled": "비활성화됨",
 			"priorityHint": "고정 바인딩이 없으면 높은 우선순위 계층부터 시도하고 후보를 모두 소진하면 다음 계층으로 이동합니다. 비활성 라우트나 Provider는 제외됩니다.",
-			"weightHint": "가중치는 같은 우선순위 계층의 전략에 따라 적용됩니다. 고정 라우팅은 기존 바인딩을 우선하므로 실제 바인딩 비율은 가중치 비율과 다를 수 있습니다."
+			"weightHint": "가중치는 같은 우선순위 계층의 전략에 따라 적용됩니다. 고정 라우팅은 기존 바인딩을 우선하므로 실제 바인딩 비율은 가중치 비율과 다를 수 있습니다.",
+			"userColumn": "사용자",
+			"unbindUser": "사용자 {user} 바인딩 해제",
+			"viewProviderBindings": "{provider}의 바인딩 {count}개 보기",
+			"remainingColumn": "남은 유효 시간",
+			"durationHoursMinutes": "{hours}시간 {minutes}분",
+			"durationMinutes": "{minutes}분",
+			"durationSeconds": "{seconds}초",
+			"expiresAtHint": "만료 시간: {time} ({timezone})"
 		},
 		"failover": {
 			"title": "Failover 규칙",

@@ -38,7 +38,15 @@ export type RouteProtocolGroupSection<T> = {
 	routes: T[];
 };
 
+export type ProviderStickyIdentity = {
+	accountName: string;
+	kindLabel: string | null;
+	vendorKey?: string | null;
+	iconKey?: string | null;
+};
+
 export type ProviderStickyDialogTarget = {
+	identity?: ProviderStickyIdentity;
 	/** Whether both the route and its Provider are enabled. */
 	enabled?: boolean;
 	id: string;

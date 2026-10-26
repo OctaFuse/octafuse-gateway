@@ -1907,7 +1907,6 @@
 			"usersFilterProvider": "Provider で絞り込み",
 			"usersEmpty": "条件に一致する有効なバインドはありません。",
 			"usersLegacy": "ユーザー未記録（アップグレード前のバインディング。次回リクエスト後に補完されます）",
-			"usersRemaining": "残り {time}",
 			"usersTotal": "全 {total} 件 · {page}/{pages} ページ",
 			"usersPrev": "前へ",
 			"usersNext": "次へ",
@@ -1915,8 +1914,6 @@
 			"lookupPlaceholder": "メールアドレスまたはユーザー ID",
 			"lookup": "検索",
 			"lookupRequired": "メールアドレスまたはユーザー ID を入力してください。",
-			"lookupTarget": "固定先",
-			"lookupTtl": "残り {seconds}s",
 			"lookupExpired": "期限切れ",
 			"lookupNone": "このユーザー・モデル・ルートグループ・プロトコルのバインドはありません。",
 			"clearBinding": "解除",
@@ -1965,7 +1962,15 @@
 			"weightColumn": "重み",
 			"targetDisabled": "無効",
 			"priorityHint": "粘性に一致しない場合は優先度の高い層から試し、その層の候補を使い切ると次の層へ進みます。無効なルートや Provider は対象外です。",
-			"weightHint": "重みは同じ優先度の層内で適用され、その動作は層の戦略に従います。粘性は既存のバインドを優先するため、実際の割合は重みの比率と一致するとは限りません。"
+			"weightHint": "重みは同じ優先度の層内で適用され、その動作は層の戦略に従います。粘性は既存のバインドを優先するため、実際の割合は重みの比率と一致するとは限りません。",
+			"userColumn": "ユーザー",
+			"unbindUser": "{user} のバインドを解除",
+			"viewProviderBindings": "{provider} のバインド {count} 件を表示",
+			"remainingColumn": "残り有効時間",
+			"durationHoursMinutes": "{hours} 時間 {minutes} 分",
+			"durationMinutes": "{minutes} 分",
+			"durationSeconds": "{seconds} 秒",
+			"expiresAtHint": "有効期限：{time}（{timezone}）"
 		},
 		"failover": {
 			"title": "Failover ルール",

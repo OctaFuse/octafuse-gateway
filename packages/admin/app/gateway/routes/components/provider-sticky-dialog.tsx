@@ -14,7 +14,8 @@ import {
 	resetStickyBindings,
 } from '../route-api';
 import { useStickyRefreshControls } from '../sticky-summary-store';
-import { StickyBindingsListPanel } from './sticky-bindings-list';
+import { StickyBindingTable, StickyBindingsListPanel } from './sticky-bindings-list';
+import { StickyProviderIdentity } from './sticky-provider-identity';
 import type {
 	ProviderStickyDialogState,
 	ProviderStickyFormState,
@@ -60,6 +61,7 @@ export function ProviderStickyDialog(props: Props) {
 	const [summary, setSummary] = useState<StickyBindingsSummary | null>(null);
 	const [summaryLoading, setSummaryLoading] = useState(false);
 	const [summaryError, setSummaryError] = useState('');
+	const [targetFilter, setTargetFilter] = useState('');
 	const [userQuery, setUserQuery] = useState('');
 	const [lookupLoading, setLookupLoading] = useState(false);
 	const [lookupError, setLookupError] = useState('');
@@ -217,6 +219,7 @@ export function ProviderStickyDialog(props: Props) {
 				return {
 					id,
 					providerName: meta?.providerName ?? id,
+					identity: meta?.identity,
 					priority: meta?.priority ?? null,
 					weight: meta?.weight ?? null,
 					enabled: meta?.enabled,
@@ -563,20 +566,33 @@ export function ProviderStickyDialog(props: Props) {
 												{group.rows.map((row) => (
 													<tr key={row.id} className="border-t border-gray-100">
 														<td className="px-4 py-3">
-															<span className="break-words font-medium text-gray-800">
-																{row.providerName}
-															</span>
-															{row.enabled === false ? (
-																<span className="ml-2 inline-block rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
-																	{t('targetDisabled')}
-																</span>
-															) : null}
+															<StickyProviderIdentity
+																identity={row.identity}
+																fallbackName={row.providerName}
+																enabled={row.enabled}
+															/>
 														</td>
 														<td className="px-3 py-3 text-right font-mono text-gray-600">
 															{row.weight ?? '—'}
 														</td>
 														<td className="px-3 py-3 text-right tabular-nums text-gray-700">
-															{row.activeCount}
+															<button
+																type="button"
+																disabled={busy}
+																aria-label={t('viewProviderBindings', {
+																	provider: row.providerName,
+																	count: row.activeCount,
+																})}
+																onClick={() => {
+																	resetLookup();
+																	setTargetFilter(row.id);
+																	setActiveTab('bindings');
+																	document.getElementById('sticky-tab-bindings')?.focus();
+																}}
+																className="min-w-8 rounded-md px-2 py-1 font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:bg-blue-50 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50"
+															>
+																{row.activeCount}
+															</button>
 														</td>
 														<td className="w-28 px-4 py-3">
 															<p className="text-right tabular-nums text-gray-600">
@@ -619,7 +635,9 @@ export function ProviderStickyDialog(props: Props) {
 						{activeTab === 'bindings' && dialog.poolId ? (
 							<StickyBindingsListPanel
 								poolId={dialog.poolId}
-								targets={dialog.targets}
+								targets={distributionRows}
+								targetFilter={targetFilter}
+								onTargetFilterChange={setTargetFilter}
 								reloadToken={listReloadToken}
 								disabled={busy}
 								onBusyChange={setListBusy}
@@ -690,35 +708,29 @@ export function ProviderStickyDialog(props: Props) {
 													{actionMessage}
 												</p>
 											) : null}
-											{lookup ? (
-												<div className="rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
-													<p className="break-all font-medium text-gray-900">{submittedQuery}</p>
-													<p className="mt-1 break-all font-mono text-gray-500">{lookup.user_id}</p>
-													{lookup.binding ? (
-														<>
-															<p className="mt-2 break-words">
-																{t('lookupTarget')} · {lookupTargetLabel}
-															</p>
-															<p className="mt-1">
-																{!lookup.binding.epoch_valid
-																	? t('lookupInvalid')
-																	: lookup.binding.expired
-																	? t('lookupExpired')
-																	: t('lookupTtl', { seconds: lookup.binding.remaining_seconds })}
-															</p>
-															<button
-																type="button"
-																onClick={() => void handleClearLookup()}
-																disabled={busy}
-																className="mt-3 rounded-md border border-red-200 bg-white px-3 py-1.5 font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-															>
-																{t('clearBinding')}
-															</button>
-														</>
-													) : (
-														<p className="mt-2">{t('lookupNone')}</p>
-													)}
-												</div>
+											{lookup?.binding ? (
+												<StickyBindingTable
+													rows={[
+														{
+															id: lookup.affinity_hash,
+															userLabel: submittedQuery,
+															userHint: lookup.user_id,
+															providerLabel: lookupTargetLabel ?? lookup.binding.route_target_id,
+															providerIdentity: targetMeta.get(lookup.binding.route_target_id)
+																?.identity,
+															expiresAt: lookup.binding.expires_at,
+															status: !lookup.binding.epoch_valid
+																? 'invalid'
+																: lookup.binding.expired
+																? 'expired'
+																: undefined,
+														},
+													]}
+													disabled={busy}
+													onUnbind={() => void handleClearLookup()}
+												/>
+											) : lookup ? (
+												<p className="text-xs text-gray-500">{t('lookupNone')}</p>
 											) : null}
 										</div>
 									) : undefined
