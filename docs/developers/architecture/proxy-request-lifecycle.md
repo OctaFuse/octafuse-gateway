@@ -299,11 +299,17 @@ sequenceDiagram
 
 | 日志片段 | 含义 |
 |----------|------|
-| `calling provider providerId=...` | 开始 attempt |
-| `provider non-OK, trying next candidate ... status=...` | 可重试失败，换供应商 |
-| `fetch failed ... error=...` | 网络/fetch 异常 |
-| `provider auth or quota issue, trying next provider ...` | 401/402/403 告警（key 失效或上游额度 / 余额用尽） |
+| `calling provider ... providerId=... target=...` | 开始一次上游尝试。`candidate=i/n` 是本次计划中的序号 |
+| `provider non-OK, trying next candidate ...` | 可重试的 HTTP 失败，后面还有候选。含状态、`kind`、错误摘要、下一个供应商和上游目标 |
+| `provider non-OK, no remaining candidate ...` | 同上，但是最后一个候选 |
+| `fetch failed, trying next candidate ...` | 网络或 `fetch` 异常。`circuit=none`，不写跨请求熔断 |
+| `provider auth or quota issue, trying next provider ...` | 401/402/403。同一行带上游错误摘要，不再另打一条 `non-OK` |
+| `provider cooling down mid-request, skipping ...` | 本请求里刚熔断的供应商，后续目标不再打。含 `remainingMs` |
 | `recordUsage failed ...` | 后台记账失败 |
+
+故障转移行里的 `kind` 为 `rate_limit`（429）、`auth`（401/402/403）、`server`（普通 5xx）、`timeout`（524）或 `fetch`。`circuit=open cooldownMs=...` 表示这次失败打开或延长了熔断；`circuit=closed` 表示记了失败但窗口还没打开（普通 5xx 要连续 3 次）；`circuit=none` 表示这次不写熔断。`reason` 是上游错误体里的一行摘要，网络失败时是异常信息。
+
+同一次请求的各次尝试也写入请求日志 `timing_metadata.attempts`：`target_id`、`status`、`error`、`failure_kind`。成功的那次 `selected=true`，`error` 仍为空。
 
 ### 6.2 用量日志字段
 

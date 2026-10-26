@@ -28,6 +28,7 @@ import {
 import type { RequestTimingAttempt, RequestTimingCollector } from './request-timing';
 import { GatewayErrorCode, NO_AVAILABLE_ROUTE_MESSAGE } from './gateway-error-codes';
 import { gatewayErrorResponse, gatewayNestedErrorResponse } from './gateway-error-response';
+import { formatHttpErrorTextForRequestLog } from './request-log-record-status';
 import {
 	clearStickyBindingSync,
 	mergeStickyIntoAttempts,
@@ -171,10 +172,105 @@ function emptyRoute(protocol: UpstreamProtocol): RouteResult {
 	};
 }
 
-function logProviderSwitchAlert(route: RouteResult, classification: UpstreamFailureClassification, status?: number): void {
-	if (!classification.alertOnKeySwitch) return;
+/** 故障转移前最多读这么多错误体，避免把大响应整段拉进日志。 */
+const FAILOVER_ERROR_BODY_CHARS = 8192;
+/** 错误体迟迟不结束时放弃等待，先切下一候选。 */
+const FAILOVER_ERROR_BODY_READ_MS = 300;
+const FAILOVER_LOG_REASON_CHARS = 240;
+
+function providerLabel(route: RouteResult): string {
+	const name = route.providerName?.trim();
+	return name || route.providerId;
+}
+
+function clipLogReason(reason: string): string {
+	const collapsed = reason.replace(/\s+/g, ' ').trim();
+	const clipped =
+		collapsed.length > FAILOVER_LOG_REASON_CHARS
+			? `${collapsed.slice(0, FAILOVER_LOG_REASON_CHARS)}…`
+			: collapsed;
+	return JSON.stringify(clipped);
+}
+
+/**
+ * 只读错误体的前一段。用 clone，不消耗返回给客户端的原响应。
+ * 读超时或 body 已锁定时返回已读到的文本，调用方退回 `HTTP <status>`。
+ */
+async function readResponsePrefix(response: Response, maxChars: number, timeoutMs: number): Promise<string> {
+	const body = response.body;
+	if (!body) return '';
+	const reader = body.getReader();
+	const decoder = new TextDecoder();
+	let text = '';
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	try {
+		const timeout = new Promise<null>((resolve) => {
+			timer = setTimeout(() => resolve(null), timeoutMs);
+		});
+		while (text.length < maxChars) {
+			// 读失败并到超时分支时不能变成未处理的 rejection。
+			const read = reader.read().then(
+				(result) => result,
+				() => null
+			);
+			const next = await Promise.race([read, timeout]);
+			if (!next || next.done) break;
+			text += decoder.decode(next.value, { stream: true });
+		}
+		text += decoder.decode();
+		return text.length > maxChars ? text.slice(0, maxChars) : text;
+	} finally {
+		if (timer) clearTimeout(timer);
+		try {
+			await reader.cancel();
+		} catch {
+			// 原响应仍可用；取消 clone 失败不影响故障转移。
+		}
+	}
+}
+
+async function summarizeUpstreamHttpError(response: Response): Promise<string> {
+	const contentType = response.headers.get('content-type');
+	try {
+		const text = await readResponsePrefix(
+			response.clone(),
+			FAILOVER_ERROR_BODY_CHARS,
+			FAILOVER_ERROR_BODY_READ_MS
+		);
+		return formatHttpErrorTextForRequestLog(response.status, contentType, text);
+	} catch {
+		return `HTTP ${response.status}`;
+	}
+}
+
+type FailoverCircuitNote = 'none' | 'closed' | `open:${number}`;
+
+function logFailoverDecision(input: {
+	headline: string;
+	candidateIndex: number;
+	candidateCount: number;
+	route: RouteResult;
+	next: RouteResult | null;
+	status: number | 'fetch';
+	kind: string;
+	reason: string;
+	sticky: boolean;
+	stickyCleared: boolean;
+	circuit: FailoverCircuitNote;
+}): void {
+	const circuit =
+		input.circuit === 'none'
+			? ' circuit=none'
+			: input.circuit === 'closed'
+				? ' circuit=closed'
+				: ` circuit=open cooldownMs=${input.circuit.slice('open:'.length)}`;
+	const next = input.next
+		? ` nextProviderId=${input.next.providerId} nextProvider=${providerLabel(input.next)} nextTarget=${input.next.targetId}`
+		: ' next=none';
+	const sticky = input.sticky ? ' sticky=1' : '';
+	const stickyCleared = input.stickyCleared ? ' stickyCleared=1' : '';
 	console.warn(
-		`[Gateway Proxy] provider auth or quota issue, trying next provider providerId=${route.providerId} status=${status ?? 'fetch_error'}`
+		`[Gateway Proxy] ${input.headline} candidate=${input.candidateIndex + 1}/${input.candidateCount} providerId=${input.route.providerId} provider=${providerLabel(input.route)} target=${input.route.targetId} model=${input.route.providerModelName} priority=${input.route.routePriority} key=${input.route.providerKeyFingerprint ?? '-'} status=${input.status} kind=${input.kind}${circuit}${sticky}${stickyCleared}${next} reason=${clipLogReason(input.reason)}`
 	);
 }
 
@@ -312,9 +408,10 @@ export async function failoverDispatch(
 		const isStickyAttempt =
 			Boolean(stickyRoute) && route.targetId === stickyRoute!.targetId && attemptIndex === 0;
 
-		if (getProviderCircuitRemainingMs(route.providerId) > 0) {
+		const circuitRemainingMs = getProviderCircuitRemainingMs(route.providerId);
+		if (circuitRemainingMs > 0) {
 			console.warn(
-				`[Gateway Proxy] provider cooling down mid-request, skipping providerId=${route.providerId}`
+				`[Gateway Proxy] provider cooling down mid-request, skipping candidate=${attemptIndex + 1}/${attempts.length} providerId=${route.providerId} provider=${providerLabel(route)} target=${route.targetId} remainingMs=${circuitRemainingMs}`
 			);
 			continue;
 		}
@@ -322,8 +419,9 @@ export async function failoverDispatch(
 		const timingAttempt = timing?.startAttempt(route);
 		lastTimingAttempt = timingAttempt;
 		const hasNextAttempt = attemptIndex < attempts.length - 1;
+		const nextRoute = hasNextAttempt ? attempts[attemptIndex + 1]! : null;
 		console.log(
-			`[Gateway Proxy] calling provider providerId=${route.providerId} model=${route.providerModelName}${isStickyAttempt ? ' sticky=1' : ''}`
+			`[Gateway Proxy] calling provider candidate=${attemptIndex + 1}/${attempts.length} providerId=${route.providerId} provider=${providerLabel(route)} target=${route.targetId} model=${route.providerModelName} priority=${route.routePriority}${isStickyAttempt ? ' sticky=1' : ''}`
 		);
 
 		let response: Response;
@@ -337,13 +435,11 @@ export async function failoverDispatch(
 			upstreamRequestId = dispatched.upstreamRequestId;
 			dispatchMeta = dispatched.meta;
 		} catch (err) {
-			timing?.markAttemptError(timingAttempt, err);
-			if (hasNextAttempt) timing?.markAttemptFailover(timingAttempt);
 			const errMessage = err instanceof Error ? err.message : String(err);
-			console.warn(
-				`[Gateway Proxy] fetch failed providerId=${route.providerId} error=${errMessage}`
-			);
+			timing?.markAttemptFailure(timingAttempt, { error: errMessage, failureKind: 'fetch' });
+			if (hasNextAttempt) timing?.markAttemptFailover(timingAttempt);
 			const fetchClassification = classifyUpstreamFetchFailure();
+			let stickyCleared = false;
 			if (
 				stickySession &&
 				isStickyAttempt &&
@@ -351,7 +447,23 @@ export async function failoverDispatch(
 			) {
 				await clearStickyBindingSync(repos, stickySession);
 				stickyAttemptCleared = true;
+				stickyCleared = true;
 			}
+			logFailoverDecision({
+				headline: nextRoute
+					? 'fetch failed, trying next candidate'
+					: 'fetch failed, no remaining candidate',
+				candidateIndex: attemptIndex,
+				candidateCount: attempts.length,
+				route,
+				next: nextRoute,
+				status: 'fetch',
+				kind: 'fetch',
+				reason: errMessage || 'fetch failed',
+				sticky: isStickyAttempt,
+				stickyCleared,
+				circuit: 'none',
+			});
 			// 与 route_resolution_failed 一致：把 fetch 层原文带给客户端（DNS/TLS/abort 等，不含凭据）
 			lastResponse = gatewayErrorResponse({
 				status: 502,
@@ -398,7 +510,7 @@ export async function failoverDispatch(
 		const classification: UpstreamFailureClassification = shouldFailImmediatelyForImageAbort(dispatchMeta)
 			? { action: 'fail_immediately' }
 			: classifyUpstreamHttpFailure(response.status);
-		logProviderSwitchAlert(route, classification, response.status);
+		let stickyCleared = false;
 
 		if (
 			stickySession &&
@@ -409,6 +521,7 @@ export async function failoverDispatch(
 		) {
 			await clearStickyBindingSync(repos, stickySession);
 			stickyAttemptCleared = true;
+			stickyCleared = true;
 		}
 
 		if (classification.action === 'fail_immediately') {
@@ -424,6 +537,7 @@ export async function failoverDispatch(
 			});
 		}
 
+		let circuit: FailoverCircuitNote = 'none';
 		if (classification.failureKind) {
 			const circuitResult = markProviderFailure(
 				route.providerId,
@@ -432,6 +546,7 @@ export async function failoverDispatch(
 					? parseRetryAfterMs(response.headers.get('retry-after'))
 					: null
 			);
+			circuit = circuitResult.openedOrExtended ? `open:${circuitResult.cooldownMs}` : 'closed';
 			if (circuitResult.openedOrExtended) {
 				circuitEvents.push({
 					kind: 'provider',
@@ -446,10 +561,35 @@ export async function failoverDispatch(
 				});
 			}
 		}
+		const failureKind =
+			classification.failureKind ?? (response.status === 524 ? 'timeout' : 'retry');
+		const reason = await summarizeUpstreamHttpError(response);
+		timing?.markAttemptFailure(timingAttempt, {
+			status: response.status,
+			error: reason,
+			failureKind,
+		});
 		if (hasNextAttempt) timing?.markAttemptFailover(timingAttempt);
-		console.warn(
-			`[Gateway Proxy] provider non-OK, trying next candidate providerId=${route.providerId} status=${response.status}`
-		);
+		const authOrQuota = classification.alertOnKeySwitch === true;
+		logFailoverDecision({
+			headline: authOrQuota
+				? nextRoute
+					? 'provider auth or quota issue, trying next provider'
+					: 'provider auth or quota issue, no remaining candidate'
+				: nextRoute
+					? 'provider non-OK, trying next candidate'
+					: 'provider non-OK, no remaining candidate',
+			candidateIndex: attemptIndex,
+			candidateCount: attempts.length,
+			route,
+			next: nextRoute,
+			status: response.status,
+			kind: failureKind,
+			reason,
+			sticky: isStickyAttempt,
+			stickyCleared,
+			circuit,
+		});
 	}
 
 	if (!lastResponse) {

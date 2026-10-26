@@ -4,6 +4,8 @@ export type RequestTimingAttempt = {
 	index: number;
 	provider_id: string;
 	provider_name: string | null;
+	/** 上游目标（`model_routes.id`）。故障转移时用来区分同一供应商下的不同目标。 */
+	target_id: string | null;
 	provider_key_id: string | null;
 	provider_key_label: string | null;
 	provider_key_fingerprint: string | null;
@@ -12,7 +14,13 @@ export type RequestTimingAttempt = {
 	headers_ms: number | null;
 	headers_elapsed_ms: number | null;
 	status: number | null;
+	/** 可重试失败的一行摘要（HTTP 错误体或 fetch 异常）。成功尝试保持 null。 */
 	error: string | null;
+	/**
+	 * 触发故障转移的失败类别：`rate_limit` / `auth` / `server` / `timeout` / `fetch`。
+	 * 524 与网络错误记为 `timeout` / `fetch`，它们不写入跨请求熔断。
+	 */
+	failure_kind: string | null;
 	selected: boolean;
 };
 
@@ -81,6 +89,7 @@ export class RequestTimingCollector {
 			index: this.attempts.length + 1,
 			provider_id: route.providerId,
 			provider_name: route.providerName || null,
+			target_id: route.targetId || null,
 			provider_key_id: route.providerKeyId ?? null,
 			provider_key_label: route.providerKeyLabel ?? null,
 			provider_key_fingerprint: route.providerKeyFingerprint ?? null,
@@ -90,6 +99,7 @@ export class RequestTimingCollector {
 			headers_elapsed_ms: null,
 			status: null,
 			error: null,
+			failure_kind: null,
 			selected: false,
 		};
 		this.attempts.push(attempt);
@@ -107,6 +117,22 @@ export class RequestTimingCollector {
 	markAttemptError(attempt: RequestTimingAttempt | undefined, error: unknown): void {
 		if (!attempt) return;
 		attempt.error = errorMessage(error).slice(0, 300);
+	}
+
+	/** 记录一次可重试失败，供请求日志 `timing_metadata.attempts` 对照故障转移原因。 */
+	markAttemptFailure(
+		attempt: RequestTimingAttempt | undefined,
+		failure: { status?: number | null; error?: unknown; failureKind?: string | null }
+	): void {
+		if (!attempt) return;
+		if (attempt.status == null && failure.status != null) {
+			attempt.status = failure.status;
+		}
+		if (failure.error != null) {
+			attempt.error = errorMessage(failure.error).slice(0, 300);
+		}
+		const kind = failure.failureKind?.trim();
+		if (kind) attempt.failure_kind = kind.slice(0, 40);
 	}
 
 	markAttemptFailover(attempt: RequestTimingAttempt | undefined): void {
