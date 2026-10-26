@@ -177,10 +177,18 @@ export function ProviderStickyDialog(props: Props) {
 	};
 
 	const handleResetPool = async () => {
-		if (!dialog.poolId || hasChanges || busy) return;
+		if (
+			!dialog.poolId ||
+			hasChanges ||
+			busy ||
+			summaryLoading ||
+			!summary ||
+			summary.total_active === 0
+		)
+			return;
 		const ok = await confirm({
 			title: t('resetTitle'),
-			message: t('resetConfirm'),
+			message: t('resetConfirm', { count: summary.total_active }),
 			danger: true,
 		});
 		if (!ok) return;
@@ -746,49 +754,83 @@ export function ProviderStickyDialog(props: Props) {
 						hidden={activeTab !== 'maintenance'}
 						className="space-y-5"
 					>
-						<div className="rounded-lg border border-gray-200 p-4">
-							<div className="flex items-center justify-between gap-3">
-								<h3 className="text-sm font-semibold text-gray-900">{t('historyTitle')}</h3>
+						<div className="border-b border-gray-200 pb-5" aria-busy={summaryLoading}>
+							<div className="flex flex-wrap items-center justify-between gap-4">
+								<dl className="flex flex-wrap gap-6 sm:gap-10">
+									<div>
+										<dt className="text-xs text-gray-500">{t('maintenanceActive')}</dt>
+										<dd className="mt-1.5 text-2xl font-semibold tabular-nums text-gray-900">
+											{summary?.total_active ?? '—'}
+										</dd>
+									</div>
+									<div className="border-l border-gray-200 pl-6 sm:pl-10">
+										<dt className="text-xs text-gray-500">{t('maintenanceHistory')}</dt>
+										<dd className="mt-1.5 text-2xl font-semibold tabular-nums text-gray-500">
+											{summary?.stale_count ?? '—'}
+										</dd>
+									</div>
+								</dl>
 								<button
 									type="button"
 									onClick={() => void refreshSummary()}
 									disabled={summaryLoading || busy}
-									className="rounded-md px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+									className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
 								>
 									{summaryLoading ? tCommon('loadingEllipsis') : t('refresh')}
 								</button>
 							</div>
-							<p className="mt-2 text-sm text-gray-700">
-								{t('historyCount', { count: summary?.stale_count ?? '—' })}
-							</p>
-							<p className="mt-1 text-xs leading-relaxed text-gray-500">{t('historyHint')}</p>
+							<p className="mt-3 text-xs leading-relaxed text-gray-500">{t('historyHint')}</p>
 							{summaryError ? (
 								<p role="alert" className="mt-2 text-xs text-red-600">
 									{summaryError}
 								</p>
 							) : null}
 						</div>
-						<div className="rounded-lg border border-red-200 bg-red-50/30 p-4">
+						<section className="rounded-lg border border-red-200 bg-red-50/30 p-4">
 							<h3 className="text-sm font-semibold text-gray-900">{t('resetTitle')}</h3>
-							<p className="mt-2 text-xs leading-relaxed text-gray-600">{t('resetHint')}</p>
-							<p className="mt-2 text-xs leading-relaxed text-gray-500">{t('resetScopeHint')}</p>
+							<p className="mt-2 text-sm leading-relaxed text-gray-700">
+								{summary?.total_active === 0
+									? t('nothingToReset')
+									: summary
+									? t('resetImpact', { count: summary.total_active })
+									: t('resetHint')}
+							</p>
+							<p className="mt-1.5 text-xs leading-relaxed text-gray-500">
+								{t('resetReselectHint')}
+							</p>
 							{hasChanges ? (
 								<p className="mt-3 text-xs text-amber-800">{t('maintenanceUnsavedHint')}</p>
 							) : null}
-							<button
-								type="button"
-								onClick={() => void handleResetPool()}
-								disabled={
-									busy || hasChanges || summaryLoading || !summary || summary.total_active === 0
-								}
-								className="mt-4 rounded-md border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-							>
-								{t('resetButton')}
-							</button>
-							{summary?.total_active === 0 ? (
-								<p className="mt-2 text-xs text-gray-500">{t('nothingToReset')}</p>
-							) : null}
-						</div>
+							<div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+								<button
+									type="button"
+									disabled={busy}
+									onClick={() => {
+										resetLookup();
+										setTargetFilter('');
+										setActiveTab('bindings');
+										document.getElementById('sticky-tab-bindings')?.focus();
+									}}
+									className="rounded-md px-1 py-2 text-xs font-medium text-blue-600 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50"
+								>
+									{t('viewBindings')}
+								</button>
+								<button
+									type="button"
+									onClick={() => void handleResetPool()}
+									disabled={
+										busy || hasChanges || summaryLoading || !summary || summary.total_active === 0
+									}
+									className="rounded-md bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+								>
+									{actionBusy
+										? tCommon('loadingEllipsis')
+										: summary
+										? t('resetButton', { count: summary.total_active })
+										: t('resetTitle')}
+								</button>
+							</div>
+						</section>
 						{actionError ? (
 							<p role="alert" className="text-xs text-red-600">
 								{actionError}
