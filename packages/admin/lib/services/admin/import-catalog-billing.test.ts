@@ -348,6 +348,31 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(profile?.tiers[1]?.cache_write_price, 5);
 	});
 
+	it('includes gpt-6.1-terra at Standard list prices with 5% cached input', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gpt-6.1-terra');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gpt-6.1-terra');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'GPT-6.1 Terra');
+		assert.equal(usd!.context_window, 1050000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$1 / $5 /M');
+		assert.equal(cny!.pricing_label, '¥7 / ¥35 /M');
+
+		const preset = listStaticModelPresets().find((p) => p.id === 'gpt-6.1-terra');
+		assert.ok(preset);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers[0]?.upto, 272000);
+		assert.equal(profile?.tiers[0]?.input_price, 1);
+		assert.equal(profile?.tiers[0]?.output_price, 5);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.05);
+		assert.equal(profile?.tiers[0]?.cache_write_price, 1.25);
+		assert.equal(profile?.tiers[1]?.input_price, 2);
+		assert.equal(profile?.tiers[1]?.output_price, 7.5);
+		assert.equal(profile?.tiers[1]?.cache_read_price, 0.1);
+		assert.equal(profile?.tiers[1]?.cache_write_price, 2.5);
+	});
+
 	it('includes claude-opus-5-5 at the $4 / $20 list price with 5-minute cache writes', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'claude-opus-5-5');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'claude-opus-5-5');
