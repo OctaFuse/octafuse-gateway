@@ -48,7 +48,6 @@ import { FailoverRulesDialog } from './failover-rules-dialog';
 import { ProviderStickyChip } from './provider-sticky-chip';
 import { RouteStickyUsage } from './route-sticky-usage';
 import { RouteTargetPricing } from './route-target-pricing';
-import { useRoutePricingDisplay } from '../use-route-pricing-display';
 import { useRoutePathDisplay } from '../use-route-path-display';
 
 const EMPTY_STICKY_COUNTS = new Map<string, number>();
@@ -521,38 +520,6 @@ function strategyDisplayKey(strategy: string): string {
 	return strategy;
 }
 
-function RouteProviderListHeader() {
-	const t = useTranslations('routes.flow');
-	const modal = useTranslations('routes.modal');
-	const [pricingDisplay] = useRoutePricingDisplay();
-	const configuredView = pricingDisplay === 'configured';
-	return (
-		<div className="route-provider-list-header route-provider-list-grid gap-3 border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-[10px] font-medium text-slate-600" aria-hidden>
-			<span>{t('listProviderAccount')}</span>
-			<span>{t('listUpstreamModel')}</span>
-			<span className="text-center">{t('listStatus')}</span>
-			<span className="text-center">{t('listWeight')}</span>
-			<span className="text-center">{t('listStickyUsers')}</span>
-			<span>{t('listParams')}</span>
-			<div className={`route-provider-pricing-columns ${configuredView ? 'route-provider-pricing-configured' : ''}`}>
-				<span>{t('pricingPeriod')}</span>
-				{configuredView ? (
-					<>
-						<span className="text-right whitespace-nowrap" title={modal('providerFactor')}>{t('pricingProviderFactor')}</span>
-						<span className="text-right whitespace-nowrap" title={modal('editor.chargedFactorLabel')}>{t('pricingBillingMultiplier')}</span>
-						<span className="text-right whitespace-nowrap" title={modal('editor.meteredFactorLabel')}>{t('pricingCostMultiplier')}</span>
-					</>
-				) : (
-					<>
-						<span className="text-right whitespace-nowrap">{t('effectivePricing.charged')}</span>
-						<span className="text-right whitespace-nowrap">{t('effectivePricing.metered')}</span>
-					</>
-				)}
-			</div>
-		</div>
-	);
-}
-
 function PriorityTierPanel({
 	priority,
 	routes,
@@ -770,7 +737,6 @@ export function UpstreamPoolPanel({
 				data-route-group={section.group}
 				aria-label={t('routeGroupProviders', { group: section.group })}
 			>
-				{isList ? <RouteProviderListHeader /> : null}
 				{priorityLayers.map(([priority, routes], layerIndex) => (
 					<div
 						key={priority}
