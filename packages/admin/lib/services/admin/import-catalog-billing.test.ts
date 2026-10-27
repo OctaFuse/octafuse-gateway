@@ -348,6 +348,51 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(profile?.tiers[1]?.cache_write_price, 5);
 	});
 
+	it('includes gpt-6.1-terra at Standard list prices, including the 272K tier and 30-minute cache writes', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gpt-6.1-terra');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gpt-6.1-terra');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'GPT-6.1 Terra');
+		assert.equal(usd!.context_window, 1050000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$1 / $5 /M');
+		assert.equal(cny!.pricing_label, '¥7 / ¥35 /M');
+
+		const preset = listStaticModelPresets().find((p) => p.id === 'gpt-6.1-terra');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-10-26');
+		assert.deepEqual(preset!.modalities, { input: ['text', 'image'], output: ['text'] });
+		assert.match(preset!.description ?? '', /USD list price × 7/);
+		assert.match(preset!.i18n?.en ?? '', /USD list price × 7/);
+		assert.match(preset!.i18n?.zh ?? '', /人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例/);
+		assert.match(preset!.i18n?.ja ?? '', /米ドル定価の7倍/);
+		assert.match(preset!.i18n?.ko ?? '', /미국 달러 정가의 7배/);
+
+		const usdProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.equal(usdProfile?.tiers[0]?.upto, 272000);
+		assert.equal(usdProfile?.tiers[0]?.input_price, 1);
+		assert.equal(usdProfile?.tiers[0]?.output_price, 5);
+		assert.equal(usdProfile?.tiers[0]?.cache_read_price, 0.05);
+		assert.equal(usdProfile?.tiers[0]?.cache_write_price, 1.25);
+		assert.equal(usdProfile?.tiers[1]?.upto, null);
+		assert.equal(usdProfile?.tiers[1]?.input_price, 2);
+		assert.equal(usdProfile?.tiers[1]?.output_price, 7.5);
+		assert.equal(usdProfile?.tiers[1]?.cache_read_price, 0.1);
+		assert.equal(usdProfile?.tiers[1]?.cache_write_price, 2.5);
+		assert.equal(cnyProfile?.tiers[0]?.upto, 272000);
+		assert.equal(cnyProfile?.tiers[0]?.input_price, 7);
+		assert.equal(cnyProfile?.tiers[0]?.output_price, 35);
+		assert.equal(cnyProfile?.tiers[0]?.cache_read_price, 0.35);
+		assert.equal(cnyProfile?.tiers[0]?.cache_write_price, 8.75);
+		assert.equal(cnyProfile?.tiers[1]?.upto, null);
+		assert.equal(cnyProfile?.tiers[1]?.input_price, 14);
+		assert.equal(cnyProfile?.tiers[1]?.output_price, 52.5);
+		assert.equal(cnyProfile?.tiers[1]?.cache_read_price, 0.7);
+		assert.equal(cnyProfile?.tiers[1]?.cache_write_price, 17.5);
+	});
+
 	it('includes claude-opus-5-5 at the $4 / $20 list price with 5-minute cache writes', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'claude-opus-5-5');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'claude-opus-5-5');
