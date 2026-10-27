@@ -297,6 +297,78 @@ describe('provider import preset catalog metadata', () => {
 		});
 	});
 
+	it('keeps Baidu Cloud Model Service on region-scoped LLM and image endpoints', () => {
+		const rows = listStaticProviderImportPresets();
+		const guangzhou = rows.find((row) => row.name === 'Baidu Cloud Model Service (Guangzhou)');
+		assert.ok(guangzhou);
+		assert.equal(guangzhou.vendor_key, 'baidu');
+		assert.equal(guangzhou.icon_key, undefined);
+		assert.equal(guangzhou.endpoints.openai?.base, undefined);
+		assert.equal(guangzhou.endpoints.gemini, undefined);
+		assert.deepEqual(guangzhou.endpoints.openai?.endpoints, {
+			chat: 'https://vod.gz.baidubce.com/v1/chat/completions',
+			responses: 'https://vod.gz.baidubce.com/v1/responses',
+		});
+		assert.equal(guangzhou.endpoints.anthropic?.base, 'https://vod.gz.baidubce.com');
+		assert.deepEqual(listConfiguredCapabilities(guangzhou.endpoints, 'openai'), ['chat', 'responses']);
+		assert.equal(
+			resolveUpstreamEndpoint('anthropic', 'messages', guangzhou.endpoints),
+			'https://vod.gz.baidubce.com/v1/messages'
+		);
+		const guangzhouCatalog = listStaticProviderImportCatalogForAdmin().find(
+			(row) => row.name === 'Baidu Cloud Model Service (Guangzhou)'
+		);
+		assert.equal(providerImportCatalogCopy(guangzhouCatalog!, 'zh').name, '百度云模型服务（广州）');
+		assert.equal(providerImportCatalogMatchesQuery(guangzhouCatalog!, 'vod.gz.baidubce.com'), true);
+
+		const overseas = [
+			['Baidu Cloud Model Service (Singapore)', 'https://eos-sg.aigc.exp.bcevod.com'],
+			['Baidu Cloud Model Service (California)', 'https://eos-ca.aigc.exp.bcevod.com'],
+			['Baidu Cloud Model Service (Frankfurt)', 'https://eos-de.aigc.exp.bcevod.com'],
+		] as const;
+		for (const [name, origin] of overseas) {
+			const row = rows.find((item) => item.name === name);
+			assert.ok(row, name);
+			assert.equal(row.vendor_key, 'baidu');
+			assert.equal(row.endpoints.openai?.base, undefined);
+			assert.deepEqual(row.endpoints.openai?.endpoints, {
+				chat: `${origin}/v1/chat/completions`,
+				responses: `${origin}/v1/responses`,
+				'images.generations': `${origin}/v1/images/generations`,
+				'images.edits': `${origin}/v1/images/edits`,
+			});
+			assert.equal(row.endpoints.anthropic?.base, origin);
+			assert.equal(row.endpoints.gemini?.base, undefined);
+			assert.equal(row.endpoints.gemini?.auth, 'bearer');
+			assert.equal(
+				row.endpoints.gemini?.endpoints?.['models.generate'],
+				`${origin}/v1beta/models/{model}:{action}`
+			);
+			assert.deepEqual(listConfiguredCapabilities(row.endpoints, 'openai'), [
+				'chat',
+				'responses',
+				'images.generations',
+				'images.edits',
+			]);
+			assert.deepEqual(listConfiguredCapabilities(row.endpoints, 'gemini'), ['models.generate']);
+			assert.equal(
+				resolveUpstreamEndpoint('anthropic', 'messages', row.endpoints),
+				`${origin}/v1/messages`
+			);
+			assert.equal(
+				resolveUpstreamEndpoint('openai', 'images.generations', row.endpoints),
+				`${origin}/v1/images/generations`
+			);
+			assert.equal(
+				resolveUpstreamEndpoint('gemini', 'models.generate', row.endpoints, {
+					model: 'gemini-3.5-flash',
+					action: 'generateContent',
+				}),
+				`${origin}/v1beta/models/gemini-3.5-flash:generateContent`
+			);
+		}
+	});
+
 	it('keeps localized catalog copy and an official platform link for every preset', () => {
 		const rows = listStaticProviderImportPresets();
 

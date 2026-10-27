@@ -295,6 +295,8 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 		['volces.com', identity('volcengine')],
 		['bytepluses.com', identity('volcengine')],
 		['qianfan.baidubce.com', identity('baidu')],
+		['vod.gz.baidubce.com', identity('baidu')],
+		['aigc.exp.bcevod.com', identity('baidu')],
 		['bigmodel.cn', identity('zhipu')],
 		['moonshot.cn', identity('moonshot')],
 		['minimaxi.com', identity('minimax')],
