@@ -12,6 +12,7 @@ import {
   peekResponseFirstEvent,
   type FirstEventTimeoutOptions,
 } from '../stream-first-event-timeout';
+import { fetchUntilHeaders, type UpstreamHeadersTimeoutOptions } from './upstream-fetch-timeout';
 import {
   applyStreamIdleTimeout,
   createStreamIdleClock,
@@ -315,7 +316,7 @@ export async function dispatchAnthropicRoute(
   requestSignal?: AbortSignal,
   timing?: RequestTimingCollector | null,
   attempt?: RequestTimingAttempt,
-  options?: FirstEventTimeoutOptions & StreamIdleClockOptions
+  options?: FirstEventTimeoutOptions & StreamIdleClockOptions & UpstreamHeadersTimeoutOptions
 ): Promise<{ response: Response; usagePromise: Promise<UsageFromStream>; upstreamRequestId: string | null }> {
   const url = resolveUpstreamEndpoint('anthropic', 'messages', route.providerEndpoints, {
     providerId: route.providerId,
@@ -325,18 +326,23 @@ export async function dispatchAnthropicRoute(
     ...buildRouteRequestBody(route, body),
     model: route.providerModelName,
   };
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: applyRouteExtraHeaders(
-      {
-        'Content-Type': 'application/json',
-        'x-api-key': secret,
-        'anthropic-version': '2023-06-01',
-      },
-      route.customParams
-    ),
-    body: JSON.stringify(requestBody),
-  });
+  const isStreamRequest = (requestBody as { stream?: unknown }).stream === true;
+  const response = await fetchUntilHeaders(
+    url,
+    {
+      method: 'POST',
+      headers: applyRouteExtraHeaders(
+        {
+          'Content-Type': 'application/json',
+          'x-api-key': secret,
+          'anthropic-version': '2023-06-01',
+        },
+        route.customParams
+      ),
+      body: JSON.stringify(requestBody),
+    },
+    isStreamRequest ? options?.headersTimeoutMs : undefined
+  );
   timing?.markAttemptHeaders(attempt, response.status);
   const upstreamRequestId = extractUpstreamRequestId(response.headers);
 

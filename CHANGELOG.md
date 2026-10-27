@@ -4,6 +4,7 @@
 
 ### Proxy
 
+- **流式超时与重试**：修复上游只发 `: keep-alive` 注释心跳、迟迟不出字时，请求被拖到 10 分钟兜底才以 `Stream usage timeout` 收口的问题。首包与空闲计时、首事件预读现在只认带内容的 SSE 事件，注释心跳和空行不再续命。首个事件超时（`STREAM_FIRST_EVENT_TIMEOUT_MS`）改为默认开启：未配置或为空时 60 秒，配成 `0` 关闭；`STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS` 为空时作用于全部路由组，之前只在 `default` 组灰度的部署范围会随之扩大。首事件超时只在后面还有未熔断候选时才触发 524 换路由，最后一个候选改由首包超时兜底。新增 `STREAM_HEADERS_TIMEOUT_MS`（默认 60 秒）：流式请求等不到上游响应头时，同次请求内换下一个候选；最后一个候选至少等满首包上限，全部失败返回 504。
 - **Gemini 签名兼容**：修复跨上游切换后，历史 `thoughtSignature` 不兼容导致会话持续返回 400 的问题。Gemini 原生入口收到 `Invalid thought signature` 的 400 时，清洗历史签名并对同一上游重试一次；没有可处理签名或遇到其他 400 时保持原有行为。
 - **故障转移排查**：日志补充候选序号、Provider 名称、上游目标、失败类别、熔断状态和错误摘要，明确下一候选或候选已耗尽；鉴权与额度错误合并为单条告警。请求日志 `timing_metadata.attempts` 增加 `target_id`、`failure_kind`，并记录 HTTP 失败摘要，便于关联每次上游尝试。客户端错误响应不变。
 

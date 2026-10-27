@@ -6,6 +6,7 @@ import { sanitizeRewrappedHeaders } from './response-headers';
 import { extractUpstreamRequestId, normalizeUpstreamId } from './upstream-request-id';
 import type { RequestTimingAttempt, RequestTimingCollector } from '../request-timing';
 import { peekResponseFirstEvent, type FirstEventTimeoutOptions } from '../stream-first-event-timeout';
+import { fetchUntilHeaders, type UpstreamHeadersTimeoutOptions } from './upstream-fetch-timeout';
 import {
 	applyStreamIdleTimeout,
 	createStreamIdleClock,
@@ -44,7 +45,9 @@ const EMPTY_USAGE_LOCAL: UsageFromStream = {
 /** Client disconnected后继续从上游读取以争取拿到末尾 usage 的最大时长。 */
 const POST_DISCONNECT_DRAIN_MS = 90_000;
 
-export type OpenAiDispatchOptions = FirstEventTimeoutOptions & StreamIdleClockOptions;
+export type OpenAiDispatchOptions = FirstEventTimeoutOptions &
+  StreamIdleClockOptions &
+  UpstreamHeadersTimeoutOptions;
 
 /** Provider usage object (OpenAI / Claude via OpenAI-compatible API). */
 type ProviderUsage = {
@@ -471,17 +474,22 @@ export async function dispatchOpenAiRoute(
     model: applyVertexOpenAiModelPrefix(url, route.providerModelName),
   };
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: applyRouteExtraHeaders(
-      {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${secret}`,
-      },
-      route.customParams
-    ),
-    body: JSON.stringify(requestBody),
-  });
+  const isStreamRequest = (requestBody as { stream?: unknown }).stream === true;
+  const response = await fetchUntilHeaders(
+    url,
+    {
+      method: 'POST',
+      headers: applyRouteExtraHeaders(
+        {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${secret}`,
+        },
+        route.customParams
+      ),
+      body: JSON.stringify(requestBody),
+    },
+    isStreamRequest ? options?.headersTimeoutMs : undefined
+  );
   timing?.markAttemptHeaders(attempt, response.status);
   const upstreamRequestId = extractUpstreamRequestId(response.headers);
 

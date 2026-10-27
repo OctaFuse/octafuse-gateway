@@ -9,6 +9,7 @@ import {
 	peekResponseFirstEvent,
 	type FirstEventTimeoutOptions,
 } from '../stream-first-event-timeout';
+import { fetchUntilHeaders, type UpstreamHeadersTimeoutOptions } from './upstream-fetch-timeout';
 import {
 	applyStreamIdleTimeout,
 	createStreamIdleClock,
@@ -459,7 +460,7 @@ export async function dispatchOpenAiResponsesRoute(
 	requestSignal?: AbortSignal,
 	timing?: RequestTimingCollector | null,
 	attempt?: RequestTimingAttempt,
-	options?: FirstEventTimeoutOptions & StreamIdleClockOptions,
+	options?: FirstEventTimeoutOptions & StreamIdleClockOptions & UpstreamHeadersTimeoutOptions,
 ): Promise<{ response: Response; usagePromise: Promise<UsageFromStream>; upstreamRequestId: string | null }> {
 	const url = resolveUpstreamEndpoint('openai', 'responses', route.providerEndpoints, {
 		providerId: route.providerId,
@@ -470,17 +471,22 @@ export async function dispatchOpenAiResponsesRoute(
 		model: applyVertexOpenAiModelPrefix(url, route.providerModelName),
 	};
 
-	const response = await fetch(url, {
-		method: 'POST',
-		headers: applyRouteExtraHeaders(
-			{
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${secret}`,
-			},
-			route.customParams,
-		),
-		body: JSON.stringify(requestBody),
-	});
+	const isStreamRequest = (requestBody as { stream?: unknown }).stream === true;
+	const response = await fetchUntilHeaders(
+		url,
+		{
+			method: 'POST',
+			headers: applyRouteExtraHeaders(
+				{
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${secret}`,
+				},
+				route.customParams,
+			),
+			body: JSON.stringify(requestBody),
+		},
+		isStreamRequest ? options?.headersTimeoutMs : undefined,
+	);
 	timing?.markAttemptHeaders(attempt, response.status);
 	const upstreamRequestId = extractUpstreamRequestId(response.headers);
 

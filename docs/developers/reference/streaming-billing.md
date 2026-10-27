@@ -67,10 +67,11 @@ flowchart LR
 | 常量 / 环境变量 | 默认 | 含义 |
 |------|--------|------|
 | `POST_DISCONNECT_DRAIN_MS` | 各 driver 内定义（如 90s） | 断连后继续从上游读取的上限（暂不可配） |
-| `STREAM_FIRST_CHUNK_TIMEOUT_MS` | 2 min | 尚未收到任何非空 chunk 时的等待上限，避免静默思考 / 超长上下文首包被 90s 空闲误杀 |
-| `STREAM_IDLE_TIMEOUT_MS` | 90s | **已吐过 chunk 之后**两次上游 chunk 之间的空闲上限；超时则 cancel 上游，写入 `usage.stream_error=Stream idle timeout`，请求日志 `incomplete` |
+| `STREAM_HEADERS_TIMEOUT_MS` | 60s | 流式请求发出后等待**上游响应头**的上限。超时同次请求换下一个候选（不写跨请求熔断），尝试记 `failure_kind=timeout`，全部候选失败时返回 504。最后一个候选至少等满 `STREAM_FIRST_CHUNK_TIMEOUT_MS`（部分上游出首个 token 才回响应头）。只管到响应头为止，不影响之后的流；非流式请求不受限 |
+| `STREAM_FIRST_CHUNK_TIMEOUT_MS` | 2 min | 尚未收到**带内容的 SSE 事件**时的等待上限，避免静默思考 / 超长上下文首包被 90s 空闲误杀。`:` 注释心跳和空行不算事件，也不会重置这个预算 |
+| `STREAM_IDLE_TIMEOUT_MS` | 90s | **已出过内容之后**两次带内容的 SSE 事件之间的空闲上限；超时则 cancel 上游，写入 `usage.stream_error=Stream idle timeout`，请求日志 `incomplete`。纯心跳不续命 |
 | `USAGE_SAFETY_TIMEOUT_MS` | 10 min | `usagePromise` 未 resolve 的绝对兜底。正常长思考依赖空闲超时收口，不会把 Worker 拖满 10 分钟 |
-| `STREAM_FIRST_EVENT_TIMEOUT_MS` | `system_config`，默认关闭 | 收到 2xx 后等待首个 SSE 事件的上限；超时返回 524 并 failover。覆盖 Chat Completions、Responses、Anthropic Messages、Gemini 流式。Images / Audio / Realtime / Tools **不**走此开关。未设路由组时只作用于 `default` |
+| `STREAM_FIRST_EVENT_TIMEOUT_MS` | `system_config`，**默认 60s** | 收到 2xx 后等待首个**带内容的 SSE 事件**的上限；超时返回 524 并 failover。**仅在后面还有未熔断的候选时生效**，最后一个候选改由 `STREAM_FIRST_CHUNK_TIMEOUT_MS` 兜底。未配置或空为默认值，`0` 关闭。覆盖 Chat Completions、Responses、Anthropic Messages、Gemini 流式。Images / Audio / Realtime / Tools **不**走此开关。未设 `STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS` 时作用于全部路由组 |
 
 **Workers**：`scheduleBackgroundWork` 内用 `ExecutionContext.waitUntil` 跑 `recordUsage`。**Node**：无 ExecutionContext 时退化为 detached Promise，语义仍是先响应、后台记账。
 
@@ -102,8 +103,11 @@ flowchart LR
 
 - 上游在 drain 窗口内仍可能不发含 usage 的 chunk → 取消后 token 仍可能为 0。
 - 部分请求仅出现 “Network connection lost” 而无 signal → 依赖写失败、空闲超时或安全超时。
-- **静默思考 vs 持续吐 token**：首包到达前最多等 2 分钟（可用 `STREAM_FIRST_CHUNK_TIMEOUT_MS` 覆盖）；一旦开始吐 chunk，间隔超过 90s 才掐流（`STREAM_IDLE_TIMEOUT_MS`）。持续吐 chunk 的长思考会等到流结束再记账，不再被空 usage 兜底记成 0 token。
-- **SSE 心跳会重置空闲计时**：计时按 TCP chunk，不区分 `data:` 与 comment / ping。上游若定期打心跳却永不给 usage，要等到绝对兜底（默认 10 分钟，`USAGE_SAFETY_TIMEOUT_MS`）才记 `incomplete`。
-- **首包 524 灰度覆盖四个文本流式入口**（Chat Completions、Responses、Anthropic Messages、Gemini `streamGenerateContent`）。Images / Audio / Realtime / Tools 假 2xx 不会走 `STREAM_FIRST_EVENT_TIMEOUT_MS`。
+- **静默思考 vs 持续吐 token**：首个带内容的事件到达前最多等 2 分钟（可用 `STREAM_FIRST_CHUNK_TIMEOUT_MS` 覆盖）；一旦开始出内容，间隔超过 90s 才掐流（`STREAM_IDLE_TIMEOUT_MS`）。持续出内容的长思考会等到流结束再记账，不再被空 usage 兜底记成 0 token。
+- **SSE 心跳不再续命**：首包 / 空闲计时与首事件预读只认带内容的 SSE 行，`: keep-alive` 一类注释和空行不算进展，也不重置预算。DeepSeek 等上游排队时会一直发心跳；以前这会把连接拖到绝对兜底（10 分钟）才记 `Stream usage timeout`，现在最迟在首包 / 首事件阈值内收口。Anthropic 的 `event: ping` 是带 `event:` 行的真事件，仍会续命。
+- **能换就换，不能换就等**：后面还有可切换的候选时，等响应头最多 `STREAM_HEADERS_TIMEOUT_MS`、等首个真事件最多 `STREAM_FIRST_EVENT_TIMEOUT_MS`，超时即同次请求内换下一个候选。最后一个候选不做首事件预读，等响应头也放宽到至少 `STREAM_FIRST_CHUNK_TIMEOUT_MS`，由流内首包 / 空闲计时收口。一旦已向客户端转发过 2xx 与内容，中途失败只能掐流并发错误帧，无法再换上游。
+- **多候选会累加等待**：每个被放弃的候选最多耗掉「响应头 + 首事件」两段阈值（默认共 2 分钟），网关不设跨候选的总时限。候选很多时，客户端读超时应留出余量。
+- **524 / 响应头超时不写跨请求熔断**：同一个慢上游在下一次请求仍会排在原位，每次最多多等一个首事件阈值。
+- **首事件 524 覆盖四个文本流式入口**（Chat Completions、Responses、Anthropic Messages、Gemini `streamGenerateContent`）。Images / Audio / Realtime / Tools 假 2xx 不会走 `STREAM_FIRST_EVENT_TIMEOUT_MS`。
 
 日志关键词：`client disconnected, draining upstream`、`drain timeout`、`stream idle timeout`、`first SSE event timeout`、`recordUsage`、`status=cancelled`、`error_message=Stream idle timeout`。

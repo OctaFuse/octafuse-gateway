@@ -1041,10 +1041,10 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 - **`BILLING_CURRENCY`**：仅允许写入 **`USD`** 或 **`CNY`**（大写）；否则返回 `400` 与 `success: false`。
 - **`ROUTE_STRATEGY`**：仅允许 **`hash_affinity`** \| **`weighted_random`** \| **`weight_priority`** \| **`weighted_round_robin`**（小写）；非法 → `400`。这是全局同层路由策略缺省，模型 `route_policy` 与 `route_pools.strategy` 可覆盖。详见 [route-strategies.md](../reference/route-strategies.md)。Proxy 进程内缓存约 **30s**。
 - **`USER_CHARGED_COST_FACTOR_MODE`**：仅允许 **`multiply`** \| **`min`**（小写）；非法 → `400`。控制 `users.charged_cost_factors` 如何与路由 Charged 有效倍率合成最终用户费用：默认 **`multiply`** 为路由用户计费 × 用户倍率；**`min`** 取两者较小值。用户倍率按本次 route group 查找（具体分组，其次 `"*"`，数字覆盖全部分组）。该模型与分组都未配置时两种模式都保持路由价。Proxy 进程内缓存约 **30s**。
-- **`STREAM_FIRST_EVENT_TIMEOUT_MS`**：空 / `0` 关闭；正整数毫秒开启文本流式首个 SSE 事件超时（超时返回 524 并 failover）。覆盖 Chat Completions、Responses、Anthropic Messages、Gemini `streamGenerateContent`。**不**作用于 Images / Audio / Realtime / Tools。未另设 `STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS` 时只作用于路由组 `default`。Proxy 进程内缓存约 **30s**。
-- **`STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS`**：空则在超时开启时只作用于 `default`；`*` / `all` 作用于全部路由组；否则为逗号分隔的路由组 id。非法空列表（例如只有逗号）→ `400`。
+- **`STREAM_FIRST_EVENT_TIMEOUT_MS`**：文本流式首个**带内容的 SSE 事件**超时（超时返回 524 并 failover；`:` 注释心跳不算事件；后面没有可切换的候选时不生效）。**未配置或空时默认 60000**；正整数毫秒为自定义值；`0` 关闭。覆盖 Chat Completions、Responses、Anthropic Messages、Gemini `streamGenerateContent`。**不**作用于 Images / Audio / Realtime / Tools。Proxy 进程内缓存约 **30s**。
+- **`STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS`**：空 / 未配置 / `*` / `all` 作用于全部路由组；否则为逗号分隔的路由组 id。非法空列表（例如只有逗号）→ `400`。
 
-文本流式空闲 / 记账兜底时长（`STREAM_FIRST_CHUNK_TIMEOUT_MS` / `STREAM_IDLE_TIMEOUT_MS` / `USAGE_SAFETY_TIMEOUT_MS`）是代理服务**部署环境变量**，不在本接口。见 [streaming-billing.md](../reference/streaming-billing.md)。
+文本流式响应头 / 空闲 / 记账兜底时长（`STREAM_HEADERS_TIMEOUT_MS` / `STREAM_FIRST_CHUNK_TIMEOUT_MS` / `STREAM_IDLE_TIMEOUT_MS` / `USAGE_SAFETY_TIMEOUT_MS`）是代理服务**部署环境变量**，不在本接口。见 [streaming-billing.md](../reference/streaming-billing.md)。
 
 Agent Tools 也通过该接口维护配置：
 

@@ -430,7 +430,9 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 	if (key === 'STREAM_FIRST_EVENT_TIMEOUT_MS') {
 		const trimmed = value.trim();
 		if (trimmed && !/^\d+$/.test(trimmed)) {
-			throw badRequest('STREAM_FIRST_EVENT_TIMEOUT_MS must be a positive integer millisecond value or empty');
+			throw badRequest(
+				'STREAM_FIRST_EVENT_TIMEOUT_MS must be an integer millisecond value (0 disables) or empty (default 60000)'
+			);
 		}
 		value = trimmed;
 	}

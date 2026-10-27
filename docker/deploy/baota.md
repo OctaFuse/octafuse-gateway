@@ -51,6 +51,7 @@ services:
       STREAM_FIRST_CHUNK_TIMEOUT_MS: ${STREAM_FIRST_CHUNK_TIMEOUT_MS:-120000}
       STREAM_IDLE_TIMEOUT_MS: ${STREAM_IDLE_TIMEOUT_MS:-90000}
       USAGE_SAFETY_TIMEOUT_MS: ${USAGE_SAFETY_TIMEOUT_MS:-600000}
+      STREAM_HEADERS_TIMEOUT_MS: ${STREAM_HEADERS_TIMEOUT_MS:-60000}
     healthcheck:
       test: [CMD, node, -e, "fetch('http://127.0.0.1:8787/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s

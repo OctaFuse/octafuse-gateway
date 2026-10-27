@@ -10,26 +10,35 @@
 export const STREAM_FIRST_CHUNK_TIMEOUT_MS_ENV = 'STREAM_FIRST_CHUNK_TIMEOUT_MS';
 export const STREAM_IDLE_TIMEOUT_MS_ENV = 'STREAM_IDLE_TIMEOUT_MS';
 export const USAGE_SAFETY_TIMEOUT_MS_ENV = 'USAGE_SAFETY_TIMEOUT_MS';
+export const STREAM_HEADERS_TIMEOUT_MS_ENV = 'STREAM_HEADERS_TIMEOUT_MS';
 
-/** 尚未收到非空 chunk 时的等待上限（默认 2 分钟，对齐 Worker）。 */
+/** 尚未收到带内容的 SSE 事件时的等待上限（默认 2 分钟，对齐 Worker）；纯心跳不算。 */
 export const DEFAULT_STREAM_FIRST_CHUNK_TIMEOUT_MS = 120_000;
 
-/** 已吐过 chunk 之后两次 chunk 之间的空闲上限（默认 90 秒）。 */
+/** 已出过内容之后，两次带内容的 SSE 事件之间的空闲上限（默认 90 秒）；纯心跳不算。 */
 export const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 90_000;
 
 /** `usagePromise` 未 resolve 的绝对兜底（默认 10 分钟）。 */
 export const DEFAULT_USAGE_SAFETY_TIMEOUT_MS = 10 * 60 * 1000;
 
+/**
+ * 流式请求发出后等待上游响应头的上限（默认 60 秒，与首事件超时对齐）；超时按 fetch 失败换候选。
+ * 最后一个候选至少等满首包预算，见 `textStreamDispatchOptions`。
+ */
+export const DEFAULT_STREAM_HEADERS_TIMEOUT_MS = 60_000;
+
 export type StreamTimeoutBindings = {
 	STREAM_FIRST_CHUNK_TIMEOUT_MS?: string;
 	STREAM_IDLE_TIMEOUT_MS?: string;
 	USAGE_SAFETY_TIMEOUT_MS?: string;
+	STREAM_HEADERS_TIMEOUT_MS?: string;
 };
 
 export type ResolvedStreamTimeouts = {
 	firstChunkTimeoutMs: number;
 	idleTimeoutMs: number;
 	usageSafetyTimeoutMs: number;
+	headersTimeoutMs: number;
 };
 
 export function parsePositiveTimeoutMs(raw: unknown, fallback: number): number {
@@ -71,6 +80,10 @@ export function resolveStreamTimeouts(
 		usageSafetyTimeoutMs: parsePositiveTimeoutMs(
 			readEnvValue(bindings, USAGE_SAFETY_TIMEOUT_MS_ENV),
 			DEFAULT_USAGE_SAFETY_TIMEOUT_MS
+		),
+		headersTimeoutMs: parsePositiveTimeoutMs(
+			readEnvValue(bindings, STREAM_HEADERS_TIMEOUT_MS_ENV),
+			DEFAULT_STREAM_HEADERS_TIMEOUT_MS
 		),
 	};
 }

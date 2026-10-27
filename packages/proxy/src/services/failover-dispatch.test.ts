@@ -2,8 +2,9 @@ import { beforeEach, describe, it, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import type { GatewayRepositories } from '@octafuse/core';
 import type { RouteResult } from './model-router';
-import { EMPTY_USAGE } from './proxy';
+import { EMPTY_USAGE, textStreamDispatchOptions } from './proxy';
 import { failoverDispatch, isSuccessfulDispatchResponse } from './failover-dispatch';
+import { UPSTREAM_HEADERS_TIMEOUT_MESSAGE_PREFIX } from './egress/upstream-fetch-timeout';
 import { RequestTimingCollector } from './request-timing';
 import {
 	isProviderCircuitOpen,
@@ -410,6 +411,90 @@ describe('failoverDispatch — soft server failures', () => {
 		assert.deepEqual(seen, ['high', 'low']);
 		assert.equal(result.response.status, 200);
 		assert.equal(result.chosenRoute.providerId, 'low');
+	});
+});
+
+describe('failoverDispatch — attempt context', () => {
+	it('reports canFailover=false once every remaining candidate is cooling down', async () => {
+		const seen: Array<[string, boolean | undefined]> = [];
+		const dispatch = mock.fn(
+			async (
+				route: RouteResult,
+				_signal?: AbortSignal,
+				_timing?: RequestTimingCollector | null,
+				_attempt?: unknown,
+				context?: { canFailover: boolean }
+			) => {
+				seen.push([route.targetId, context?.canFailover]);
+				return {
+					response:
+						route.providerId === 'p1'
+							? new Response('rate limited', { status: 429, headers: { 'Retry-After': '30' } })
+							: new Response('error', { status: 503 }),
+					usagePromise: Promise.resolve(EMPTY_USAGE),
+					upstreamRequestId: null,
+				};
+			}
+		);
+		// t1 的 429 让 p1 熔断，t2 之后只剩同 provider 的 t3
+		const routes = [
+			makeRoute('p1', { targetId: 't1', routePriority: 30 }),
+			makeRoute('p2', { targetId: 't2', routePriority: 20 }),
+			makeRoute('p1', { targetId: 't3', routePriority: 10 }),
+		];
+
+		await failoverDispatch(emptyRepos, routes, 'openai', dispatch, undefined, defaultOptions);
+
+		assert.deepEqual(seen, [
+			['t1', true],
+			['t2', false],
+		]);
+	});
+
+	it('maps an upstream headers timeout to failure kind timeout and 504', async () => {
+		const timing = new RequestTimingCollector();
+		const dispatch = mock.fn(async () => {
+			throw new Error(`${UPSTREAM_HEADERS_TIMEOUT_MESSAGE_PREFIX} after 60000ms`);
+		});
+
+		const result = await failoverDispatch(emptyRepos, [makeRoute('p1')], 'openai', dispatch, undefined, {
+			...defaultOptions,
+			timing,
+		});
+
+		assert.equal(result.response.status, 504);
+		const metadata = JSON.parse(timing.snapshot().timingMetadata ?? '{}') as {
+			attempts?: Array<{ failure_kind: string | null }>;
+		};
+		assert.equal(metadata.attempts?.[0]?.failure_kind, 'timeout');
+		assert.equal(isProviderCircuitOpen('p1'), false);
+	});
+});
+
+describe('textStreamDispatchOptions', () => {
+	const firstEvent = { timeoutMs: 60_000, groups: '*' as const };
+	const options = { firstChunkTimeoutMs: 120_000, idleTimeoutMs: 90_000, headersTimeoutMs: 60_000 };
+
+	it('keeps fast-fail timeouts while another candidate is available', () => {
+		const resolved = textStreamDispatchOptions(firstEvent, 'default', options, { canFailover: true });
+		assert.equal(resolved.firstEventTimeoutMs, 60_000);
+		assert.equal(resolved.headersTimeoutMs, 60_000);
+	});
+
+	it('drops the first-event timeout and widens the headers wait on the last candidate', () => {
+		const resolved = textStreamDispatchOptions(firstEvent, 'default', options, { canFailover: false });
+		assert.equal(resolved.firstEventTimeoutMs, 0);
+		assert.equal(resolved.headersTimeoutMs, 120_000);
+	});
+
+	it('leaves the headers wait unlimited when it is not configured', () => {
+		const resolved = textStreamDispatchOptions(
+			firstEvent,
+			'default',
+			{ firstChunkTimeoutMs: 120_000 },
+			{ canFailover: false }
+		);
+		assert.equal(resolved.headersTimeoutMs, undefined);
 	});
 });
 

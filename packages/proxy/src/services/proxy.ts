@@ -12,6 +12,8 @@ import {
 	type FirstEventTimeoutOptions,
 } from "./stream-first-event-timeout";
 import type { StreamIdleClockOptions } from "./egress/stream-idle-timeout";
+import type { UpstreamHeadersTimeoutOptions } from "./egress/upstream-fetch-timeout";
+import { DEFAULT_STREAM_FIRST_CHUNK_TIMEOUT_MS } from "./stream-timeout-env";
 import {
 	dispatchOpenAiImageEdits,
 	type NormalizedImageEditRequest,
@@ -75,6 +77,7 @@ import {
 } from "./egress/gemini-embed-driver";
 import {
 	failoverDispatch,
+	type DispatchAttemptContext,
 	type FailoverDispatchOptions,
 	type ProxyDispatchMeta,
 	type ProxyFailoverResult,
@@ -156,15 +159,27 @@ function firstEventTimeoutMsFor(
 	return resolveFirstEventTimeoutMs(config.timeoutMs, config.groups, routeGroup);
 }
 
-function textStreamDispatchOptions(
+export function textStreamDispatchOptions(
 	firstEvent: { timeoutMs: number; groups: string[] | "*" },
 	routeGroup: string,
-	options?: FailoverDispatchOptions
-): FirstEventTimeoutOptions & StreamIdleClockOptions {
+	options?: FailoverDispatchOptions,
+	context?: DispatchAttemptContext
+): FirstEventTimeoutOptions & StreamIdleClockOptions & UpstreamHeadersTimeoutOptions {
+	const lastCandidate = context?.canFailover === false;
+	const headersTimeoutMs = options?.headersTimeoutMs;
 	return {
-		firstEventTimeoutMs: firstEventTimeoutMsFor(firstEvent, routeGroup),
+		// 首个真事件超时靠换候选兜底；没有可切换的候选时不启用，由流内首包 / 空闲计时收口。
+		firstEventTimeoutMs: lastCandidate ? 0 : firstEventTimeoutMsFor(firstEvent, routeGroup),
 		firstChunkTimeoutMs: options?.firstChunkTimeoutMs,
 		idleTimeoutMs: options?.idleTimeoutMs,
+		// 部分上游出首个 token 才回响应头；最后一个候选至少等满首包预算，只防挂死连接。
+		headersTimeoutMs:
+			lastCandidate && headersTimeoutMs != null
+				? Math.max(
+						headersTimeoutMs,
+						options?.firstChunkTimeoutMs ?? DEFAULT_STREAM_FIRST_CHUNK_TIMEOUT_MS
+					)
+				: headersTimeoutMs,
 	};
 }
 
@@ -198,9 +213,10 @@ export async function proxyChatCompletions(
 			route,
 			signal,
 			timing?: RequestTimingCollector | null,
-			attempt?: RequestTimingAttempt
+			attempt?: RequestTimingAttempt,
+			context?: DispatchAttemptContext
 		) =>
-			dispatchOpenAiRoute(route, body, signal, timing, attempt, textStreamDispatchOptions(firstEvent, route.routeGroup, options)),
+			dispatchOpenAiRoute(route, body, signal, timing, attempt, textStreamDispatchOptions(firstEvent, route.routeGroup, options, context)),
 		requestSignal,
 		options
 	);
@@ -226,9 +242,10 @@ export async function proxyResponses(
 			route,
 			signal,
 			timing?: RequestTimingCollector | null,
-			attempt?: RequestTimingAttempt
+			attempt?: RequestTimingAttempt,
+			context?: DispatchAttemptContext
 		) =>
-			dispatchOpenAiResponsesRoute(route, body, signal, timing, attempt, textStreamDispatchOptions(firstEvent, route.routeGroup, options)),
+			dispatchOpenAiResponsesRoute(route, body, signal, timing, attempt, textStreamDispatchOptions(firstEvent, route.routeGroup, options, context)),
 		requestSignal,
 		options
 	);
@@ -253,9 +270,10 @@ export async function proxyAnthropicMessages(
 			route,
 			signal,
 			timing?: RequestTimingCollector | null,
-			attempt?: RequestTimingAttempt
+			attempt?: RequestTimingAttempt,
+			context?: DispatchAttemptContext
 		) =>
-			dispatchAnthropicRoute(route, body, signal, timing, attempt, textStreamDispatchOptions(firstEvent, route.routeGroup, options)),
+			dispatchAnthropicRoute(route, body, signal, timing, attempt, textStreamDispatchOptions(firstEvent, route.routeGroup, options, context)),
 		requestSignal,
 		options
 	);
@@ -731,9 +749,10 @@ export async function proxyGeminiContent(
 			route,
 			signal,
 			timing?: RequestTimingCollector | null,
-			attempt?: RequestTimingAttempt
+			attempt?: RequestTimingAttempt,
+			context?: DispatchAttemptContext
 		) =>
-			dispatchGeminiRoute(route, body, action, search, signal, timing, attempt, textStreamDispatchOptions(firstEvent, route.routeGroup, options)),
+			dispatchGeminiRoute(route, body, action, search, signal, timing, attempt, textStreamDispatchOptions(firstEvent, route.routeGroup, options, context)),
 		requestSignal,
 		options
 	);
