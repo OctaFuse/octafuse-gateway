@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
 	DEFAULT_STREAM_FIRST_CHUNK_TIMEOUT_MS,
+	DEFAULT_STREAM_HEADERS_TIMEOUT_MS,
 	DEFAULT_STREAM_IDLE_TIMEOUT_MS,
 	DEFAULT_USAGE_SAFETY_TIMEOUT_MS,
 	parsePositiveTimeoutMs,
@@ -12,6 +13,7 @@ const ENV_KEYS = [
 	'STREAM_FIRST_CHUNK_TIMEOUT_MS',
 	'STREAM_IDLE_TIMEOUT_MS',
 	'USAGE_SAFETY_TIMEOUT_MS',
+	'STREAM_HEADERS_TIMEOUT_MS',
 ] as const;
 
 function withProcessEnv(overrides: Record<string, string | undefined>, fn: () => void): void {
@@ -58,6 +60,7 @@ describe('resolveStreamTimeouts', () => {
 				firstChunkTimeoutMs: DEFAULT_STREAM_FIRST_CHUNK_TIMEOUT_MS,
 				idleTimeoutMs: DEFAULT_STREAM_IDLE_TIMEOUT_MS,
 				usageSafetyTimeoutMs: DEFAULT_USAGE_SAFETY_TIMEOUT_MS,
+				headersTimeoutMs: DEFAULT_STREAM_HEADERS_TIMEOUT_MS,
 			});
 		});
 	});
@@ -68,12 +71,14 @@ describe('resolveStreamTimeouts', () => {
 				STREAM_FIRST_CHUNK_TIMEOUT_MS: '180000',
 				STREAM_IDLE_TIMEOUT_MS: '80000',
 				USAGE_SAFETY_TIMEOUT_MS: '900000',
+				STREAM_HEADERS_TIMEOUT_MS: '45000',
 			},
 			() => {
 				assert.deepEqual(resolveStreamTimeouts(), {
 					firstChunkTimeoutMs: 180_000,
 					idleTimeoutMs: 80_000,
 					usageSafetyTimeoutMs: 900_000,
+					headersTimeoutMs: 45_000,
 				});
 			}
 		);
@@ -87,6 +92,7 @@ describe('resolveStreamTimeouts', () => {
 					firstChunkTimeoutMs: DEFAULT_STREAM_FIRST_CHUNK_TIMEOUT_MS,
 					idleTimeoutMs: 45_000,
 					usageSafetyTimeoutMs: DEFAULT_USAGE_SAFETY_TIMEOUT_MS,
+					headersTimeoutMs: DEFAULT_STREAM_HEADERS_TIMEOUT_MS,
 				}
 			);
 		});

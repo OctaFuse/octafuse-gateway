@@ -24,6 +24,7 @@ import {
   peekResponseFirstEvent,
   type FirstEventTimeoutOptions,
 } from '../stream-first-event-timeout';
+import { fetchUntilHeaders, type UpstreamHeadersTimeoutOptions } from './upstream-fetch-timeout';
 import {
   applyStreamIdleTimeout,
   createStreamIdleClock,
@@ -388,7 +389,7 @@ export async function dispatchGeminiRoute(
   requestSignal?: AbortSignal,
   timing?: RequestTimingCollector | null,
   attempt?: RequestTimingAttempt,
-  options?: FirstEventTimeoutOptions & StreamIdleClockOptions
+  options?: FirstEventTimeoutOptions & StreamIdleClockOptions & UpstreamHeadersTimeoutOptions
 ): Promise<{ response: Response; usagePromise: Promise<UsageFromStream>; upstreamRequestId: string | null }> {
   const resolvedUrl = resolveUpstreamEndpoint(
     'gemini',
@@ -415,12 +416,17 @@ export async function dispatchGeminiRoute(
 
   const requestBody = buildRouteRequestBody(route, body);
   const fetchHeaders = applyRouteExtraHeaders(headers, route.customParams);
+  const headersTimeoutMs = action === 'streamGenerateContent' ? options?.headersTimeoutMs : undefined;
   const send = (payload: unknown): Promise<Response> =>
-    fetch(url.toString(), {
-      method: 'POST',
-      headers: fetchHeaders,
-      body: JSON.stringify(payload),
-    });
+    fetchUntilHeaders(
+      url.toString(),
+      {
+        method: 'POST',
+        headers: fetchHeaders,
+        body: JSON.stringify(payload),
+      },
+      headersTimeoutMs
+    );
 
   let response = await send(requestBody);
   if (response.status === 400) {

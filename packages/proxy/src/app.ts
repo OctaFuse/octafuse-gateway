@@ -80,6 +80,8 @@ export type GatewayBindings = {
 	STREAM_IDLE_TIMEOUT_MS?: string;
 	/** 可选；usagePromise 绝对兜底（毫秒）。空则代码默认 10 分钟。 */
 	USAGE_SAFETY_TIMEOUT_MS?: string;
+	/** 可选；流式请求等待上游响应头的上限（毫秒）。空则代码默认 60 秒。 */
+	STREAM_HEADERS_TIMEOUT_MS?: string;
 };
 
 export type Env = {

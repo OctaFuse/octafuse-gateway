@@ -26,6 +26,7 @@ import {
 	type UpstreamFailureClassification,
 } from './upstream-failure-classifier';
 import type { RequestTimingAttempt, RequestTimingCollector } from './request-timing';
+import { isUpstreamHeadersTimeoutMessage } from './egress/upstream-fetch-timeout';
 import { GatewayErrorCode, NO_AVAILABLE_ROUTE_MESSAGE } from './gateway-error-codes';
 import { gatewayErrorResponse, gatewayNestedErrorResponse } from './gateway-error-response';
 import { formatHttpErrorTextForRequestLog } from './request-log-record-status';
@@ -137,13 +138,22 @@ export type FailoverDispatchOptions = {
 	firstChunkTimeoutMs?: number;
 	/** 已吐 chunk 后两次 chunk 之间的空闲上限；未设则 driver 用代码默认。 */
 	idleTimeoutMs?: number;
+	/** 流式请求等待上游响应头的上限；未设则不限时。最后一个候选会放宽到首包预算。 */
+	headersTimeoutMs?: number;
+};
+
+/** failover 循环传给 driver 的本次尝试上下文。 */
+export type DispatchAttemptContext = {
+	/** 后面是否还有未熔断的候选可切换。为 false 时 driver 不应再用「快速失败」类超时。 */
+	canFailover: boolean;
 };
 
 type DispatchFn = (
 	route: RouteResult,
 	requestSignal?: AbortSignal,
 	timing?: RequestTimingCollector | null,
-	attempt?: RequestTimingAttempt
+	attempt?: RequestTimingAttempt,
+	context?: DispatchAttemptContext
 ) => Promise<ProxyDispatchResult>;
 
 function emptyRoute(protocol: UpstreamProtocol): RouteResult {
@@ -420,6 +430,9 @@ export async function failoverDispatch(
 		lastTimingAttempt = timingAttempt;
 		const hasNextAttempt = attemptIndex < attempts.length - 1;
 		const nextRoute = hasNextAttempt ? attempts[attemptIndex + 1]! : null;
+		const canFailover = attempts
+			.slice(attemptIndex + 1)
+			.some((candidate) => getProviderCircuitRemainingMs(candidate.providerId) <= 0);
 		console.log(
 			`[Gateway Proxy] calling provider candidate=${attemptIndex + 1}/${attempts.length} providerId=${route.providerId} provider=${providerLabel(route)} target=${route.targetId} model=${route.providerModelName} priority=${route.routePriority}${isStickyAttempt ? ' sticky=1' : ''}`
 		);
@@ -429,14 +442,18 @@ export async function failoverDispatch(
 		let upstreamRequestId: string | null = null;
 		let dispatchMeta: ProxyDispatchMeta | undefined;
 		try {
-			const dispatched = await dispatch(route, requestSignal, timing, timingAttempt);
+			const dispatched = await dispatch(route, requestSignal, timing, timingAttempt, {
+				canFailover,
+			});
 			response = dispatched.response;
 			usagePromise = dispatched.usagePromise;
 			upstreamRequestId = dispatched.upstreamRequestId;
 			dispatchMeta = dispatched.meta;
 		} catch (err) {
 			const errMessage = err instanceof Error ? err.message : String(err);
-			timing?.markAttemptFailure(timingAttempt, { error: errMessage, failureKind: 'fetch' });
+			const headersTimedOut = isUpstreamHeadersTimeoutMessage(errMessage);
+			const fetchFailureKind = headersTimedOut ? 'timeout' : 'fetch';
+			timing?.markAttemptFailure(timingAttempt, { error: errMessage, failureKind: fetchFailureKind });
 			if (hasNextAttempt) timing?.markAttemptFailover(timingAttempt);
 			const fetchClassification = classifyUpstreamFetchFailure();
 			let stickyCleared = false;
@@ -458,7 +475,7 @@ export async function failoverDispatch(
 				route,
 				next: nextRoute,
 				status: 'fetch',
-				kind: 'fetch',
+				kind: fetchFailureKind,
 				reason: errMessage || 'fetch failed',
 				sticky: isStickyAttempt,
 				stickyCleared,
@@ -466,7 +483,7 @@ export async function failoverDispatch(
 			});
 			// 与 route_resolution_failed 一致：把 fetch 层原文带给客户端（DNS/TLS/abort 等，不含凭据）
 			lastResponse = gatewayErrorResponse({
-				status: 502,
+				status: headersTimedOut ? 504 : 502,
 				code: GatewayErrorCode.upstreamRequestFailed,
 				message: errMessage.trim()
 					? `Upstream request failed: ${errMessage.trim()}`

@@ -114,7 +114,7 @@ DATABASE_DRIVER=postgres
 DATABASE_URL=postgresql://user:pass@host:5432/db?options=-c%20timezone%3DUTC
 PORT=8787
 AUTO_MIGRATE=1
-# 可选：文本流式超时（毫秒）。空则代码默认 2min / 90s / 10min。
+# 可选：文本流式超时（毫秒）。空则代码默认 2min / 90s / 10min，等响应头 STREAM_HEADERS_TIMEOUT_MS 默认 60s。
 # Docker 若要更宽：STREAM_FIRST_CHUNK_TIMEOUT_MS=180000 USAGE_SAFETY_TIMEOUT_MS=900000
 ```
 

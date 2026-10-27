@@ -345,6 +345,7 @@ export async function runProxyPipeline<TBody>(
 		})),
 		firstChunkTimeoutMs: streamTimeouts.firstChunkTimeoutMs,
 		idleTimeoutMs: streamTimeouts.idleTimeoutMs,
+		headersTimeoutMs: streamTimeouts.headersTimeoutMs,
 	};
 	timing.markGatewayComplete();
 	const proxyResult = await spec.dispatch({

@@ -1,17 +1,30 @@
 /**
- * 流式首个 SSE 事件超时（灰度）：收到 2xx headers 后若上游长时间不吐第一个 chunk，
- * 可在换路由前把本次 attempt 判为瞬时失败。默认关闭。
+ * 流式首个 SSE 事件超时：收到 2xx headers 后若上游长时间不吐出第一个「真事件」，
+ * 在换路由前把本次 attempt 判为瞬时失败（524），交给 failover 换下一个候选。
+ *
+ * 「真事件」指带内容的 SSE 行；`: keep-alive` 一类注释心跳和空行不算（上游排队时会一直发心跳）。
+ * 只在后面还有可切换的候选时才生效；已是最后一个候选时跳过，改由流内首包 / 空闲计时兜底，
+ * 避免把唯一一条路由上的慢首包直接打成错误。
  *
  * 作用于文本流式入口：Chat Completions、Responses、Anthropic Messages、Gemini `streamGenerateContent`。
  * Images / Audio / Realtime / Tools 不走此开关。
  *
- * `system_config.STREAM_FIRST_EVENT_TIMEOUT_MS`：正整数毫秒；空 / 0 / 非法 = 关闭。
+ * `system_config.STREAM_FIRST_EVENT_TIMEOUT_MS`：未配置 / 空 = 默认 60s；正整数毫秒 = 自定义；
+ * `0` = 关闭；非法值回退默认。
  * `system_config.STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS`：逗号分隔路由组；
- * 超时开启且该键为空时只作用于 `default`（`@default` 灰度）；`*` / `all` 作用于全部。
+ * 空 / 未配置 / `*` / `all` 作用于全部路由组。
  */
+
+import {
+	createSseProgressScanner,
+	readWithIdleTimeout,
+} from './egress/stream-idle-timeout';
 
 export const STREAM_FIRST_EVENT_TIMEOUT_MS_KEY = 'STREAM_FIRST_EVENT_TIMEOUT_MS';
 export const STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS_KEY = 'STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS';
+
+/** 未配置 `system_config.STREAM_FIRST_EVENT_TIMEOUT_MS` 时的首个真事件等待上限。 */
+export const DEFAULT_STREAM_FIRST_EVENT_TIMEOUT_MS = 60_000;
 
 const CACHE_TTL_MS = 30_000;
 
@@ -27,25 +40,26 @@ export function resetStreamFirstEventTimeoutCacheForTests(): void {
 	cache = null;
 }
 
+/** 未配置 / 空串 / 非法 = 默认；`<= 0` = 关闭。 */
 export function parseFirstEventTimeoutMs(raw: string | null | undefined): number {
 	const s = (raw ?? '').trim();
-	if (!s) return 0;
+	if (!s) return DEFAULT_STREAM_FIRST_EVENT_TIMEOUT_MS;
 	const n = Number.parseInt(s, 10);
-	if (!Number.isFinite(n) || n <= 0) return 0;
-	return n;
+	if (!Number.isFinite(n)) return DEFAULT_STREAM_FIRST_EVENT_TIMEOUT_MS;
+	return n > 0 ? n : 0;
 }
 
 export function parseFirstEventTimeoutRouteGroups(
 	raw: string | null | undefined
 ): string[] | '*' {
 	const s = (raw ?? '').trim();
-	if (!s) return ['default'];
+	if (!s) return '*';
 	if (s === '*' || s.toLowerCase() === 'all') return '*';
 	const groups = s
 		.split(',')
 		.map((part) => part.trim())
 		.filter(Boolean);
-	return groups.length > 0 ? groups : ['default'];
+	return groups.length > 0 ? groups : '*';
 }
 
 export function resolveFirstEventTimeoutMs(
@@ -76,7 +90,7 @@ export async function loadFirstEventTimeoutConfig(repos: {
 }
 
 export type FirstEventTimeoutOptions = {
-	/** 收到 2xx 后等待首个 SSE chunk 的上限；未设或 ≤0 则不预读。超时返回 524 供 failover。 */
+	/** 收到 2xx 后等待首个带内容的 SSE 事件的上限；未设或 ≤0 则不预读。超时返回 524 供 failover。 */
 	firstEventTimeoutMs?: number;
 };
 
@@ -93,7 +107,7 @@ export function firstEventTimeoutErrorResponse(timeoutMs: number): Response {
 }
 
 /**
- * 在转发给客户端之前预读首个 SSE chunk。超时则返回 524；未开启时原样返回。
+ * 在转发给客户端之前预读首个真 SSE 事件。超时则返回 524；未开启时原样返回。
  */
 export async function peekResponseFirstEvent(
 	response: Response,
@@ -119,8 +133,9 @@ export async function peekResponseFirstEvent(
 }
 
 /**
- * 预读上游流的第一个 chunk。超时则 cancel 并返回 timedOut。
- * 成功时把首 chunk prepend 回新的 ReadableStream，供后续 pump 使用。
+ * 预读上游流直到出现第一个「真事件」（带内容的 SSE 行；注释心跳和空行不算）。
+ * 总等待超过 `timeoutMs` 则 cancel 并返回 timedOut；流在此之前自然结束则原样放行。
+ * 成功时把已读到的 chunk（含期间的心跳）按序 prepend 回新的 ReadableStream，供后续 pump 使用。
  */
 export async function peekFirstStreamChunk(
 	body: ReadableStream<Uint8Array>,
@@ -130,55 +145,56 @@ export async function peekFirstStreamChunk(
 	| { timedOut: false; body: ReadableStream<Uint8Array> }
 > {
 	const reader = body.getReader();
-	const first = await readFirstChunk(reader, timeoutMs);
-	if (first.timedOut) {
-		try {
-			await reader.cancel();
-		} catch {
-			// ignore
+	const scanner = createSseProgressScanner();
+	const buffered: Uint8Array[] = [];
+	const deadline = Date.now() + timeoutMs;
+	let streamDone = false;
+
+	while (true) {
+		const remaining = deadline - Date.now();
+		const next =
+			remaining > 0 ? await readWithIdleTimeout(reader, remaining) : { idleTimedOut: true as const };
+		if (next.idleTimedOut) {
+			try {
+				await reader.cancel();
+			} catch {
+				// ignore
+			}
+			return { timedOut: true };
 		}
-		return { timedOut: true };
+		if (next.done) {
+			streamDone = true;
+			break;
+		}
+		const value = next.value;
+		if (value && value.byteLength > 0) {
+			buffered.push(value);
+			if (scanner.feed(value)) break;
+		}
 	}
+
 	return {
 		timedOut: false,
-		body: prependChunk(reader, first.value, first.done),
+		body: prependChunks(reader, buffered, streamDone),
 	};
 }
 
-async function readFirstChunk(
+function prependChunks(
 	reader: ReadableStreamDefaultReader<Uint8Array>,
-	timeoutMs: number
-): Promise<{ timedOut: true } | { timedOut: false; value?: Uint8Array; done: boolean }> {
-	let timeoutId: ReturnType<typeof setTimeout> | undefined;
-	const timeoutPromise = new Promise<{ timedOut: true }>((resolve) => {
-		timeoutId = setTimeout(() => resolve({ timedOut: true }), timeoutMs);
-	});
-	try {
-		const raced = await Promise.race([
-			reader.read().then((chunk) => ({ timedOut: false as const, ...chunk })),
-			timeoutPromise,
-		]);
-		return raced;
-	} finally {
-		if (timeoutId !== undefined) clearTimeout(timeoutId);
-	}
-}
-
-function prependChunk(
-	reader: ReadableStreamDefaultReader<Uint8Array>,
-	first: Uint8Array | undefined,
+	chunks: Uint8Array[],
 	alreadyDone: boolean
 ): ReadableStream<Uint8Array> {
-	let emittedFirst = first == null;
+	let index = 0;
 	return new ReadableStream<Uint8Array>({
 		async pull(controller) {
-			if (!emittedFirst) {
-				emittedFirst = true;
-				if (first && first.byteLength > 0) controller.enqueue(first);
-				if (alreadyDone) {
-					controller.close();
-					return;
-				}
+			if (index < chunks.length) {
+				controller.enqueue(chunks[index]!);
+				index += 1;
+				return;
+			}
+			if (alreadyDone) {
+				controller.close();
+				return;
 			}
 			const next = await reader.read();
 			if (next.done) {
