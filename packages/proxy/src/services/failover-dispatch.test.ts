@@ -4,6 +4,7 @@ import type { GatewayRepositories } from '@octafuse/core';
 import type { RouteResult } from './model-router';
 import { EMPTY_USAGE } from './proxy';
 import { failoverDispatch, isSuccessfulDispatchResponse } from './failover-dispatch';
+import { RequestTimingCollector } from './request-timing';
 import {
 	isProviderCircuitOpen,
 	markProviderFailure,
@@ -732,5 +733,211 @@ describe('failoverDispatch — provider sticky', () => {
 		const trace = await result.stickyTrace!();
 		assert.equal(trace.lookup, 'invalid_circuit');
 		resetProviderCircuitStateForTests();
+	});
+});
+
+function captureWarns(): { warns: string[]; restore: () => void } {
+	const warns: string[] = [];
+	const original = console.warn;
+	console.warn = (...args: unknown[]) => {
+		warns.push(args.map((part) => String(part)).join(' '));
+	};
+	return {
+		warns,
+		restore: () => {
+			console.warn = original;
+		},
+	};
+}
+
+describe('failoverDispatch — failover logs', () => {
+	it('logs the upstream error and the next provider, and keeps the failed body readable', async () => {
+		const timing = new RequestTimingCollector();
+		const dispatch = mock.fn(async (route: RouteResult) => {
+			if (route.providerId === 'p1') {
+				return {
+					response: new Response(
+						JSON.stringify({ error: { message: 'rate limit exceeded for model-x' } }),
+						{ status: 429, headers: { 'content-type': 'application/json' } }
+					),
+					usagePromise: Promise.resolve(EMPTY_USAGE),
+					upstreamRequestId: null,
+				};
+			}
+			return {
+				response: new Response('ok', { status: 200 }),
+				usagePromise: Promise.resolve(EMPTY_USAGE),
+				upstreamRequestId: null,
+			};
+		});
+		const logs = captureWarns();
+		try {
+			const result = await failoverDispatch(
+				emptyRepos,
+				[makeRoute('p1', { providerName: 'Alpha' }), makeRoute('p2', { providerName: 'Beta' })],
+				'openai',
+				dispatch,
+				undefined,
+				{ ...defaultOptions, timing }
+			);
+			assert.equal(result.response.status, 200);
+			assert.equal(result.chosenRoute.providerId, 'p2');
+		} finally {
+			logs.restore();
+		}
+
+		const failover = logs.warns.find((line) => line.includes('trying next candidate'));
+		assert.ok(failover, logs.warns.join('\n'));
+		assert.match(failover!, /candidate=1\/2/);
+		assert.match(failover!, /providerId=p1/);
+		assert.match(failover!, /provider=Alpha/);
+		assert.match(failover!, /target=target-p1/);
+		assert.match(failover!, /status=429/);
+		assert.match(failover!, /kind=rate_limit/);
+		assert.match(failover!, /circuit=open/);
+		assert.match(failover!, /nextProviderId=p2/);
+		assert.match(failover!, /nextProvider=Beta/);
+		assert.match(failover!, /nextTarget=target-p2/);
+		assert.match(failover!, /rate limit exceeded for model-x/);
+
+		const metadata = JSON.parse(timing.snapshot().timingMetadata ?? '{}') as {
+			attempts: Array<{
+				provider_id: string;
+				target_id: string | null;
+				status: number | null;
+				error: string | null;
+				failure_kind: string | null;
+				selected: boolean;
+			}>;
+		};
+		assert.equal(metadata.attempts[0]?.failure_kind, 'rate_limit');
+		assert.equal(metadata.attempts[0]?.target_id, 'target-p1');
+		assert.match(metadata.attempts[0]?.error ?? '', /rate limit exceeded/);
+		assert.equal(metadata.attempts[1]?.selected, true);
+		assert.equal(metadata.attempts[1]?.failure_kind, null);
+		assert.equal(metadata.attempts[1]?.error, null);
+	});
+
+	it('logs auth failures once, with the upstream message and no second non-OK line', async () => {
+		const dispatch = mock.fn(async (route: RouteResult) => {
+			if (route.providerId === 'p1') {
+				return {
+					response: new Response(JSON.stringify({ error: { message: 'invalid api key' } }), {
+						status: 401,
+						headers: { 'content-type': 'application/json' },
+					}),
+					usagePromise: Promise.resolve(EMPTY_USAGE),
+					upstreamRequestId: null,
+				};
+			}
+			return {
+				response: new Response('ok', { status: 200 }),
+				usagePromise: Promise.resolve(EMPTY_USAGE),
+				upstreamRequestId: null,
+			};
+		});
+		const logs = captureWarns();
+		try {
+			const result = await failoverDispatch(
+				emptyRepos,
+				[makeRoute('p1'), makeRoute('p2')],
+				'openai',
+				dispatch,
+				undefined,
+				defaultOptions
+			);
+			assert.equal(result.response.status, 200);
+		} finally {
+			logs.restore();
+		}
+
+		const auth = logs.warns.filter((line) => line.includes('provider auth or quota issue'));
+		assert.equal(auth.length, 1);
+		assert.match(auth[0]!, /trying next provider/);
+		assert.match(auth[0]!, /status=401/);
+		assert.match(auth[0]!, /kind=auth/);
+		assert.match(auth[0]!, /invalid api key/);
+		assert.equal(
+			logs.warns.filter((line) => line.includes('provider non-OK')).length,
+			0
+		);
+	});
+
+	it('logs fetch failures with the next candidate and does not say a next hop exists on the last one', async () => {
+		const dispatch = mock.fn(async (route: RouteResult) => {
+			if (route.providerId === 'p1') throw new Error('connect ECONNREFUSED 10.0.0.8:443');
+			return {
+				response: new Response('upstream down', {
+					status: 503,
+					headers: { 'content-type': 'text/plain' },
+				}),
+				usagePromise: Promise.resolve(EMPTY_USAGE),
+				upstreamRequestId: null,
+			};
+		});
+		const logs = captureWarns();
+		try {
+			const result = await failoverDispatch(
+				emptyRepos,
+				[makeRoute('p1', { providerName: 'Alpha' }), makeRoute('p2', { providerName: 'Beta' })],
+				'openai',
+				dispatch,
+				undefined,
+				defaultOptions
+			);
+			assert.equal(result.response.status, 503);
+			const body = await result.response.text();
+			assert.equal(body, 'upstream down');
+		} finally {
+			logs.restore();
+		}
+
+		const fetchLine = logs.warns.find((line) => line.includes('fetch failed'));
+		assert.ok(fetchLine);
+		assert.match(fetchLine!, /trying next candidate/);
+		assert.match(fetchLine!, /kind=fetch/);
+		assert.match(fetchLine!, /circuit=none/);
+		assert.match(fetchLine!, /nextProviderId=p2/);
+		assert.match(fetchLine!, /ECONNREFUSED/);
+
+		const last = logs.warns.find((line) => line.includes('no remaining candidate'));
+		assert.ok(last);
+		assert.match(last!, /providerId=p2/);
+		assert.match(last!, /status=503/);
+		assert.match(last!, /kind=server/);
+		assert.match(last!, /circuit=closed/);
+		assert.match(last!, /next=none/);
+		assert.match(last!, /upstream down/);
+		assert.doesNotMatch(last!, /trying next/);
+	});
+
+	it('does not log a failover hop when the failure must stop immediately', async () => {
+		const dispatch = mock.fn(async () => ({
+			response: new Response(JSON.stringify({ error: { message: 'bad request' } }), {
+				status: 400,
+				headers: { 'content-type': 'application/json' },
+			}),
+			usagePromise: Promise.resolve(EMPTY_USAGE),
+			upstreamRequestId: null,
+		}));
+		const logs = captureWarns();
+		try {
+			const result = await failoverDispatch(
+				emptyRepos,
+				[makeRoute('p1'), makeRoute('p2')],
+				'openai',
+				dispatch,
+				undefined,
+				defaultOptions
+			);
+			assert.equal(result.response.status, 400);
+			assert.equal(dispatch.mock.callCount(), 1);
+		} finally {
+			logs.restore();
+		}
+		assert.equal(
+			logs.warns.filter((line) => line.includes('trying next') || line.includes('no remaining candidate')).length,
+			0
+		);
 	});
 });

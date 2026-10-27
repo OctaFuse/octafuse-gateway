@@ -19,3 +19,27 @@ export async function hashAffinityKey(affinityKey: string): Promise<string> {
 	const digest = await crypto.subtle.digest('SHA-256', data);
 	return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
+
+export type ParsedAffinityKey = {
+	userId: string;
+	modelId: string;
+	routeGroup: string;
+	protocol: string;
+};
+
+/**
+ * Inverse of `buildAffinityKey`. The user id is the first segment and
+ * route group / protocol are the last two; whatever is in between is the model id.
+ * Returns null for malformed keys.
+ */
+export function parseAffinityKey(affinityKey: string | null | undefined): ParsedAffinityKey | null {
+	if (!affinityKey) return null;
+	const parts = affinityKey.split('|');
+	if (parts.length < 4) return null;
+	const [userId, ...rest] = parts;
+	const protocol = rest.pop() as string;
+	const routeGroup = rest.pop() as string;
+	const modelId = rest.join('|');
+	if (!userId || !modelId) return null;
+	return { userId, modelId, routeGroup, protocol };
+}

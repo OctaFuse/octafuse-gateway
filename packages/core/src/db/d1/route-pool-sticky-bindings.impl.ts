@@ -4,6 +4,7 @@
 import type { D1DatabaseClient } from '../../storage/database-client';
 import type { RoutePoolStickyBindingsRepository } from '../../storage/gateway-repository-interfaces';
 import type {
+	RoutePoolStickyActiveBindingRow,
 	RoutePoolStickyBindingRow,
 	RoutePoolStickyBindingTargetCount,
 } from '../route-pool-sticky-types';
@@ -18,7 +19,7 @@ export function createD1RoutePoolStickyBindingsRepository(
 				(await raw
 					.prepare(
 						`SELECT route_pool_id, affinity_hash, route_target_id, binding_token,
-						        pool_epoch, expires_at, created_at, updated_at
+						        pool_epoch, expires_at, created_at, updated_at, affinity_key
 						 FROM route_pool_sticky_bindings
 						 WHERE route_pool_id = ? AND affinity_hash = ?`
 					)
@@ -33,14 +34,15 @@ export function createD1RoutePoolStickyBindingsRepository(
 				.prepare(
 					`INSERT INTO route_pool_sticky_bindings (
 						route_pool_id, affinity_hash, route_target_id, binding_token,
-						pool_epoch, expires_at, created_at, updated_at
-					) VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+						pool_epoch, expires_at, created_at, updated_at, affinity_key
+					) VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'), ?)
 					ON CONFLICT(route_pool_id, affinity_hash) DO UPDATE SET
 						route_target_id = excluded.route_target_id,
 						binding_token = excluded.binding_token,
 						pool_epoch = excluded.pool_epoch,
 						expires_at = excluded.expires_at,
-						updated_at = datetime('now')
+						updated_at = datetime('now'),
+						affinity_key = COALESCE(excluded.affinity_key, route_pool_sticky_bindings.affinity_key)
 					WHERE route_pool_sticky_bindings.expires_at <= ?
 					   OR route_pool_sticky_bindings.pool_epoch != excluded.pool_epoch
 					   OR (? != '' AND route_pool_sticky_bindings.binding_token = ?)`
@@ -52,6 +54,7 @@ export function createD1RoutePoolStickyBindingsRepository(
 					params.bindingToken,
 					params.poolEpoch,
 					params.expiresAt,
+					params.affinityKey ?? null,
 					params.nowIso,
 					expectedToken,
 					expectedToken
@@ -64,12 +67,19 @@ export function createD1RoutePoolStickyBindingsRepository(
 			const result = await raw
 				.prepare(
 					`UPDATE route_pool_sticky_bindings
-					 SET expires_at = ?, updated_at = datetime('now')
+					 SET expires_at = ?, updated_at = datetime('now'),
+					     affinity_key = COALESCE(affinity_key, ?)
 					 WHERE route_pool_id = ?
 					   AND affinity_hash = ?
 					   AND binding_token = ?`
 				)
-				.bind(params.expiresAt, params.routePoolId, params.affinityHash, params.expectedToken)
+				.bind(
+					params.expiresAt,
+					params.affinityKey ?? null,
+					params.routePoolId,
+					params.affinityHash,
+					params.expectedToken
+				)
 				.run();
 			return (result.meta.changes ?? 0) > 0;
 		},
@@ -127,6 +137,50 @@ export function createD1RoutePoolStickyBindingsRepository(
 				active_count: Number(r.active_count) || 0,
 				last_updated_at: r.last_updated_at ?? null,
 			}));
+		},
+
+		async listActiveBindings(params): Promise<{
+			rows: RoutePoolStickyActiveBindingRow[];
+			total: number;
+		}> {
+			const target = params.routeTargetId?.trim() || '';
+			const targetSql = target ? 'AND b.route_target_id = ?' : '';
+			const filterArgs = target
+				? [params.routePoolId, params.nowIso, target]
+				: [params.routePoolId, params.nowIso];
+			const base = `FROM route_pool_sticky_bindings b
+					 JOIN route_pools p ON p.id = b.route_pool_id
+					 WHERE b.route_pool_id = ?
+					   AND b.pool_epoch = p.sticky_epoch
+					   AND b.expires_at > ?
+					   ${targetSql}`;
+			const [list, count] = await Promise.all([
+				raw
+					.prepare(
+						`SELECT b.affinity_hash AS affinity_hash, b.affinity_key AS affinity_key,
+						        b.route_target_id AS route_target_id, b.expires_at AS expires_at,
+						        b.updated_at AS updated_at
+						 ${base}
+						 ORDER BY b.updated_at DESC, b.affinity_hash ASC
+						 LIMIT ? OFFSET ?`
+					)
+					.bind(...filterArgs, params.limit, params.offset)
+					.all<RoutePoolStickyActiveBindingRow>(),
+				raw
+					.prepare(`SELECT COUNT(*) AS cnt ${base}`)
+					.bind(...filterArgs)
+					.first<{ cnt: number }>(),
+			]);
+			return {
+				rows: (list.results ?? []).map((r) => ({
+					affinity_hash: r.affinity_hash,
+					affinity_key: r.affinity_key ?? null,
+					route_target_id: r.route_target_id,
+					expires_at: r.expires_at,
+					updated_at: r.updated_at ?? null,
+				})),
+				total: Number(count?.cnt) || 0,
+			};
 		},
 
 		async countStaleBindings(routePoolId, nowIso): Promise<number> {

@@ -37,6 +37,7 @@ import type {
 import type { ResolvedModelSurfaceRow } from '../route-topology';
 import type {
 	RoutePoolStickyBindingRow,
+	RoutePoolStickyActiveBindingRow,
 	RoutePoolStickyBindingTargetCount,
 } from '../db/route-pool-sticky-types';
 import type {
@@ -310,6 +311,8 @@ export interface RoutePoolStickyBindingsRepository {
 		nowIso: string;
 		/** When set, also allow overwrite of a still-valid row with this token. */
 		expectedToken?: string | null;
+		/** 明文 affinity key，供后台列出用户；缺省时保留已有值。 */
+		affinityKey?: string | null;
 	}): Promise<boolean>;
 	/** Sliding TTL renew; CAS on binding_token. Returns true when updated. */
 	touchBinding(params: {
@@ -318,6 +321,8 @@ export interface RoutePoolStickyBindingsRepository {
 		expectedToken: string;
 		expiresAt: string;
 		nowIso: string;
+		/** 补全旧行缺失的明文 affinity key（只在原值为空时写入）。 */
+		affinityKey?: string | null;
 	}): Promise<boolean>;
 	/** Clear sticky binding; CAS on binding_token. Returns true when deleted. */
 	clearBinding(params: {
@@ -340,6 +345,17 @@ export interface RoutePoolStickyBindingsRepository {
 		routePoolId: string,
 		nowIso: string
 	): Promise<RoutePoolStickyBindingTargetCount[]>;
+	/**
+	 * Page of active bindings (epoch matches pool.sticky_epoch and not expired),
+	 * most recently updated first. `total` counts all rows matching the filter.
+	 */
+	listActiveBindings(params: {
+		routePoolId: string;
+		nowIso: string;
+		limit: number;
+		offset: number;
+		routeTargetId?: string | null;
+	}): Promise<{ rows: RoutePoolStickyActiveBindingRow[]; total: number }>;
 	/** Rows that are expired or epoch-mismatched (GC debt). */
 	countStaleBindings(routePoolId: string, nowIso: string): Promise<number>;
 	/** Best-effort table hygiene; not required for correctness. */

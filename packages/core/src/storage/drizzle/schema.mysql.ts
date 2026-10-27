@@ -157,6 +157,7 @@ export const routePoolStickyBindingsTable = mysqlTable('route_pool_sticky_bindin
 	expiresAt: timestamp('expires_at', { fsp: 6, mode: 'string' }).notNull(),
 	createdAt: timestamp('created_at', { fsp: 6, mode: 'string' }).notNull(),
 	updatedAt: timestamp('updated_at', { fsp: 6, mode: 'string' }).notNull(),
+	affinityKey: varchar('affinity_key', { length: 512 }),
 });
 
 export const modelSurfacesTable = mysqlTable('model_surfaces', {

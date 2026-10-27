@@ -53,6 +53,7 @@ function createMemoryStickyBindingsRepository(): MemoryStickyRepo {
 				expires_at: params.expiresAt,
 				created_at: existing?.created_at ?? stamp,
 				updated_at: stamp,
+				affinity_key: params.affinityKey ?? existing?.affinity_key ?? null,
 			});
 			return true;
 		},
@@ -65,6 +66,7 @@ function createMemoryStickyBindingsRepository(): MemoryStickyRepo {
 				...existing,
 				expires_at: params.expiresAt,
 				updated_at: new Date().toISOString(),
+				affinity_key: existing.affinity_key ?? params.affinityKey ?? null,
 			});
 			return true;
 		},
@@ -117,6 +119,34 @@ function createMemoryStickyBindingsRepository(): MemoryStickyRepo {
 						b.active_count - a.active_count ||
 						a.route_target_id.localeCompare(b.route_target_id)
 				);
+		},
+
+		async listActiveBindings(params) {
+			const nowMs = Date.parse(params.nowIso);
+			const epoch = epochOf(params.routePoolId);
+			const active = [...rows.values()]
+				.filter(
+					(row) =>
+						row.route_pool_id === params.routePoolId &&
+						row.pool_epoch === epoch &&
+						Date.parse(row.expires_at) > nowMs &&
+						(!params.routeTargetId || row.route_target_id === params.routeTargetId)
+				)
+				.sort(
+					(a, b) =>
+						Date.parse(b.updated_at ?? '') - Date.parse(a.updated_at ?? '') ||
+						a.affinity_hash.localeCompare(b.affinity_hash)
+				);
+			return {
+				total: active.length,
+				rows: active.slice(params.offset, params.offset + params.limit).map((row) => ({
+					affinity_hash: row.affinity_hash,
+					affinity_key: row.affinity_key ?? null,
+					route_target_id: row.route_target_id,
+					expires_at: row.expires_at,
+					updated_at: row.updated_at ?? null,
+				})),
+			};
 		},
 
 		async countStaleBindings(routePoolId, nowIso) {
@@ -457,5 +487,90 @@ describe('route-pool-sticky-bindings CAS contract', () => {
 		assert.equal(next, 4);
 		assert.deepEqual(await repo.listBindingTargetCounts('pool-1', nowIso), []);
 		assert.equal(await repo.countStaleBindings('pool-1', nowIso), 1);
+	});
+
+	it('stores affinityKey on bind, backfills legacy rows on touch, and never overwrites it', async () => {
+		const repo = createMemoryStickyBindingsRepository();
+		const nowIso = new Date().toISOString();
+		const future = new Date(Date.now() + 3600_000).toISOString();
+		const base = { routePoolId: 'pool-1', poolEpoch: 0, expiresAt: future, nowIso };
+		await repo.tryBind({
+			...base,
+			affinityHash: 'legacy',
+			routeTargetId: 't1',
+			bindingToken: 'tok-l',
+		});
+		await repo.tryBind({
+			...base,
+			affinityHash: 'fresh',
+			routeTargetId: 't1',
+			bindingToken: 'tok-f',
+			affinityKey: 'u1|m|default|openai',
+		});
+		assert.equal((await repo.getBinding('pool-1', 'legacy'))?.affinity_key ?? null, null);
+		assert.equal((await repo.getBinding('pool-1', 'fresh'))?.affinity_key, 'u1|m|default|openai');
+
+		await repo.touchBinding({
+			routePoolId: 'pool-1',
+			affinityHash: 'legacy',
+			expectedToken: 'tok-l',
+			expiresAt: future,
+			nowIso,
+			affinityKey: 'u2|m|default|openai',
+		});
+		await repo.touchBinding({
+			routePoolId: 'pool-1',
+			affinityHash: 'fresh',
+			expectedToken: 'tok-f',
+			expiresAt: future,
+			nowIso,
+			affinityKey: 'other|m|default|openai',
+		});
+		assert.equal((await repo.getBinding('pool-1', 'legacy'))?.affinity_key, 'u2|m|default|openai');
+		assert.equal((await repo.getBinding('pool-1', 'fresh'))?.affinity_key, 'u1|m|default|openai');
+	});
+
+	it('listActiveBindings pages, filters by target and skips expired / stale-epoch rows', async () => {
+		const repo = createMemoryStickyBindingsRepository();
+		const nowIso = new Date().toISOString();
+		const past = new Date(Date.now() - 1000).toISOString();
+		const future = new Date(Date.now() + 3600_000).toISOString();
+		repo.setPoolEpoch('pool-1', 1);
+		const bind = (hash: string, target: string, expiresAt: string, affinityKey?: string) =>
+			repo.tryBind({
+				routePoolId: 'pool-1',
+				affinityHash: hash,
+				routeTargetId: target,
+				bindingToken: `tok-${hash}`,
+				poolEpoch: 1,
+				expiresAt,
+				nowIso,
+				affinityKey,
+			});
+		await bind('a', 't1', future, 'ua|m|default|openai');
+		await bind('b', 't1', future, 'ub|m|default|openai');
+		await bind('c', 't2', future);
+		await bind('d', 't2', past, 'ud|m|default|openai');
+
+		const all = await repo.listActiveBindings({
+			routePoolId: 'pool-1',
+			nowIso,
+			limit: 10,
+			offset: 0,
+		});
+		assert.equal(all.total, 3);
+		assert.deepEqual(all.rows.map((r) => r.affinity_hash).sort(), ['a', 'b', 'c']);
+		assert.equal(all.rows.find((r) => r.affinity_hash === 'c')?.affinity_key, null);
+
+		const t1 = await repo.listActiveBindings({
+			routePoolId: 'pool-1',
+			nowIso,
+			limit: 1,
+			offset: 1,
+			routeTargetId: 't1',
+		});
+		assert.equal(t1.total, 2);
+		assert.equal(t1.rows.length, 1);
+		assert.equal(t1.rows[0].route_target_id, 't1');
 	});
 });

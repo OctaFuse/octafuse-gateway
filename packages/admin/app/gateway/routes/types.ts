@@ -38,7 +38,17 @@ export type RouteProtocolGroupSection<T> = {
 	routes: T[];
 };
 
+export type ProviderStickyIdentity = {
+	accountName: string;
+	kindLabel: string | null;
+	vendorKey?: string | null;
+	iconKey?: string | null;
+};
+
 export type ProviderStickyDialogTarget = {
+	identity?: ProviderStickyIdentity;
+	/** Whether both the route and its Provider are enabled. */
+	enabled?: boolean;
 	id: string;
 	providerName: string;
 	priority: number;
@@ -46,6 +56,8 @@ export type ProviderStickyDialogTarget = {
 };
 
 export type ProviderStickyDialogState = {
+	/** Open the bindings tab with this route target selected. */
+	initialTargetId?: string;
 	modelId: string;
 	modelTitle: string;
 	protocol: string;
@@ -67,6 +79,27 @@ export type StickyBindingsSummary = {
 		share: number;
 		last_updated_at: string | null;
 	}>;
+};
+
+export type StickyBindingListItem = {
+	affinity_hash: string;
+	/** null: 迁移 0034 之前写入、尚未被续期补全的旧绑定。 */
+	user_id: string | null;
+	email: string | null;
+	model_id: string | null;
+	route_group: string | null;
+	protocol: string | null;
+	route_target_id: string;
+	expires_at: string;
+	remaining_seconds: number;
+	updated_at: string | null;
+};
+
+export type StickyBindingsList = {
+	items: StickyBindingListItem[];
+	total: number;
+	page: number;
+	page_size: number;
 };
 
 export type StickyBindingLookup = {

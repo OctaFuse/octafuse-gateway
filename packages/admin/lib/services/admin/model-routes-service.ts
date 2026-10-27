@@ -18,7 +18,11 @@ import { isImageGenerationModel } from '@octafuse/core/db/model-modalities';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import { isRouteStrategyName } from '@octafuse/core/db/model-route-policy';
 import { normalizeRoutePoolTierStrategiesInput } from '@octafuse/core/db/route-pool-tier-strategies';
-import { buildAffinityKey, hashAffinityKey } from '@octafuse/core/db/route-affinity-key';
+import {
+	buildAffinityKey,
+	hashAffinityKey,
+	parseAffinityKey,
+} from '@octafuse/core/db/route-affinity-key';
 import { normalizeStickyRoutingInput } from '@octafuse/core/db/route-pool-sticky-types';
 import { badRequest, notFound } from './errors';
 import {
@@ -664,6 +668,88 @@ export async function lookupStickyBindingService(
 			expired,
 		},
 	};
+}
+
+export type StickyBindingListItem = {
+	affinity_hash: string;
+	/** null when the row predates migration 0034 and has not been touched since. */
+	user_id: string | null;
+	email: string | null;
+	model_id: string | null;
+	route_group: string | null;
+	protocol: string | null;
+	route_target_id: string;
+	expires_at: string;
+	remaining_seconds: number;
+	updated_at: string | null;
+};
+
+export type StickyBindingsListResult = {
+	items: StickyBindingListItem[];
+	total: number;
+	page: number;
+	page_size: number;
+};
+
+const STICKY_LIST_DEFAULT_PAGE_SIZE = 20;
+const STICKY_LIST_MAX_PAGE_SIZE = 100;
+
+/**
+ * List the users currently stuck to a Provider in this pool (epoch-valid + not expired),
+ * most recently active first. Optional `route_target_id` narrows to one Provider.
+ */
+export async function listStickyBindingsService(
+	repos: GatewayRepositories,
+	poolId: string,
+	query: { page?: number; page_size?: number; route_target_id?: string | null }
+): Promise<StickyBindingsListResult> {
+	const id = poolId.trim();
+	if (!id) throw badRequest('poolId is required');
+	const page = Number.isFinite(query.page) && Number(query.page) >= 1 ? Math.floor(Number(query.page)) : 1;
+	const rawSize = Number.isFinite(query.page_size) ? Math.floor(Number(query.page_size)) : STICKY_LIST_DEFAULT_PAGE_SIZE;
+	const pageSize = Math.min(STICKY_LIST_MAX_PAGE_SIZE, Math.max(1, rawSize));
+
+	const nowMs = Date.now();
+	const { rows, total } = await repos.routePoolSticky.listActiveBindings({
+		routePoolId: id,
+		nowIso: new Date(nowMs).toISOString(),
+		limit: pageSize,
+		offset: (page - 1) * pageSize,
+		routeTargetId: query.route_target_id?.trim() || null,
+	});
+
+	const parsedRows = rows.map((row) => ({ row, parsed: parseAffinityKey(row.affinity_key) }));
+	const userIds = [...new Set(parsedRows.flatMap(({ parsed }) => (parsed ? [parsed.userId] : [])))];
+	const emailByUserId = new Map<string, string | null>();
+	await Promise.all(
+		userIds.map(async (userId) => {
+			try {
+				const user = await repos.users.getById(userId);
+				emailByUserId.set(userId, user?.email ? String(user.email) : null);
+			} catch {
+				emailByUserId.set(userId, null);
+			}
+		})
+	);
+
+	const items = parsedRows.map(({ row, parsed }): StickyBindingListItem => {
+		const expiresMs = Date.parse(row.expires_at);
+		return {
+			affinity_hash: row.affinity_hash,
+			user_id: parsed?.userId ?? null,
+			email: parsed ? (emailByUserId.get(parsed.userId) ?? null) : null,
+			model_id: parsed?.modelId ?? null,
+			route_group: parsed?.routeGroup ?? null,
+			protocol: parsed?.protocol ?? null,
+			route_target_id: row.route_target_id,
+			expires_at: row.expires_at,
+			remaining_seconds: Number.isFinite(expiresMs)
+				? Math.max(0, Math.floor((expiresMs - nowMs) / 1000))
+				: 0,
+			updated_at: row.updated_at,
+		};
+	});
+	return { items, total, page, page_size: pageSize };
 }
 
 /** Admin force-clear one sticky binding (no token CAS). */

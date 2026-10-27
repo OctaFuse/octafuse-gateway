@@ -107,6 +107,7 @@ flowchart TB
 - 迁移 **`0031_catalog_notes`**：`models.description`、`providers.description` 改名为 `note`，已有内容保留为运营备注。目录介绍不再写入数据库。见 [0031 迁移说明](../../operators/migrations/0031-catalog-notes.md)。
 - 迁移 **`0032_split_audio_adapter_families`**：按供应商模型名改写 DashScope 语音转换路由的 `adapter`。对不上系列的异步转写行保留。见 [0032 迁移说明](../../operators/migrations/0032-dashscope-audio-adapters.md)。
 - 迁移 **`0033_request_log_provider_index`**：`api_key_request_logs` 增加 `(provider_id, created_at)` 索引。见 [0033 迁移说明](../../operators/migrations/0033-request-log-provider-index.md)。
+- 迁移 **`0034_sticky_binding_affinity_key`**：`route_pool_sticky_bindings` 增加可空 `affinity_key`（明文 `userId|modelId|routeGroup|protocol`），供后台列出当前绑定用户。见 [0034 迁移说明](../../operators/migrations/0034-sticky-binding-affinity-key.md)。
 - **`USER_CHARGED_COST_FACTOR_MODE` 无 schema 迁移**：用户 `charged_cost_factors` 与路由 Charged 有效倍率的合成由 `system_config` 该键控制（`multiply` 叠乘，`min` 取较小倍率）。缺键或非法值运行时回退 `multiply`；首次在网关配置（Gateway Config）保存才写入，不必补进 `0002_seed`。
 
 #### Endpoint capability 维护规则

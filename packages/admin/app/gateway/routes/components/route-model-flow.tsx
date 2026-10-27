@@ -18,7 +18,7 @@ import {
 	isEmbeddingModel,
 	isImageGenerationModel,
 } from '@octafuse/core/db/model-modalities';
-import { providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provider-kind';
+import { providerAccountIdentity, providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provider-kind';
 import { useLocale, useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
@@ -48,7 +48,6 @@ import { FailoverRulesDialog } from './failover-rules-dialog';
 import { ProviderStickyChip } from './provider-sticky-chip';
 import { RouteStickyUsage } from './route-sticky-usage';
 import { RouteTargetPricing } from './route-target-pricing';
-import { useRoutePricingDisplay } from '../use-route-pricing-display';
 import { useRoutePathDisplay } from '../use-route-path-display';
 
 const EMPTY_STICKY_COUNTS = new Map<string, number>();
@@ -75,7 +74,8 @@ type OpenProviderStickyDialog = (
 	poolId: string | null,
 	enabled: boolean,
 	idleTtlSeconds: number,
-	targets: Array<{ id: string; providerName: string; priority: number; weight: number }>
+	targets: Array<{ id: string; providerName: string; priority: number; weight: number }>,
+	initialTargetId?: string
 ) => void;
 
 type Props = {
@@ -105,6 +105,7 @@ function RouteTarget({
 	togglingId,
 	onEdit,
 	onToggleStatus,
+	onOpenStickyBindings,
 }: {
 	listView?: boolean;
 	route: RouteListRow;
@@ -115,6 +116,7 @@ function RouteTarget({
 	togglingId: string | null;
 	onEdit: (route: RouteListRow, initialTab?: RouteEditorTab) => void;
 	onToggleStatus: (route: RouteListRow) => void;
+	onOpenStickyBindings: () => void;
 }) {
 	const t = useTranslations('routes.flow');
 	const tList = useTranslations('routes.listItem');
@@ -155,6 +157,28 @@ function RouteTarget({
 	);
 
 
+	const statusBadges = (
+		<div className={listView ? 'route-provider-list-status flex min-w-0 flex-wrap items-center gap-1 text-[10px]' : 'flex flex-wrap items-center gap-1.5'}>
+			<button
+				type="button"
+				onClick={() => onToggleStatus(route)}
+				disabled={togglingId === route.id}
+				aria-pressed={enabled}
+				className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-wait disabled:opacity-50 ${available ? 'bg-emerald-600 text-white hover:bg-emerald-700' : enabled ? 'bg-white text-slate-600 ring-1 ring-inset ring-slate-300 hover:bg-slate-200' : 'bg-slate-600 text-white hover:bg-slate-700'}`}
+				title={`${availabilityHint} · ${enabled ? tList('routeEnabled') : tList('routeDisabled')}`}
+				aria-label={enabled ? tList('routeEnabled') : tList('routeDisabled')}
+			>
+				{available ? <CheckCircleIcon className="h-3 w-3" aria-hidden /> : <PowerIcon className="h-3 w-3" aria-hidden />}
+				{available ? t('availableShort') : enabled ? t('enabledShort') : t('disabledShort')}
+			</button>
+			{providerDisabled ? (
+				<span className="rounded border border-amber-300 bg-amber-50 px-1 py-0.5 text-center text-[9px] font-semibold leading-3 text-amber-800" title={t('availabilityProviderDisabledTooltip')}>
+					{t('providerDisabled')}
+				</span>
+			) : null}
+		</div>
+	);
+
 	const upstreamModel = (
 		<button
 			type="button"
@@ -174,6 +198,8 @@ function RouteTarget({
 			count={stickyBindingCount}
 			total={stickyTotal}
 			routeAvailable={available}
+			providerName={providerName}
+			onClick={onOpenStickyBindings}
 		/>
 	);
 
@@ -181,79 +207,64 @@ function RouteTarget({
 		<div
 			role="listitem"
 			data-available={available}
-			className={`relative ${listView ? 'route-provider-list-grid w-full min-w-0 gap-x-3 gap-y-2 px-3 py-2' : 'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border transition'} ${
+			className={`relative ${listView ? 'route-provider-list-grid w-full min-w-0 border-y border-slate-200 first:border-t-0 last:border-b-0 gap-x-3 gap-y-2 px-3 py-2.5' : 'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border transition'} ${
 				available
 					? listView ? 'bg-white hover:bg-emerald-50/40' : 'border-emerald-200 bg-white shadow-[0_2px_6px_-2px_rgba(15,23,42,0.14)] hover:border-emerald-300 hover:shadow-md'
 					: listView ? 'bg-slate-100 hover:bg-slate-200/60' : 'border-dashed border-slate-300 bg-slate-100 hover:border-slate-400'
 			}`}
 		>
 			<span aria-hidden className={`pointer-events-none absolute inset-y-0 left-0 w-1 ${available ? 'bg-emerald-500' : enabled && providerDisabled ? 'bg-amber-500' : 'bg-slate-400'}`} />
-			<div className={listView ? 'contents' : 'p-3'}>
-				<div className={`flex min-w-0 items-center ${listView ? 'route-provider-list-identity gap-2' : 'gap-2.5'}`}>
-					<VendorIcon vendor={provider?.vendor_key} iconKey={provider?.icon_key} size="compact" className={available ? '' : 'opacity-60 grayscale'} />
-					<div className="flex min-w-0 flex-1 items-center gap-2">
+			<div className={listView ? 'route-provider-list-content' : 'p-3'}>
+				<div className={listView ? 'route-provider-list-summary' : 'contents'}>
+					<div className={`flex min-w-0 items-center ${listView ? 'route-provider-list-identity gap-2' : 'gap-2.5'}`}>
+						<VendorIcon vendor={provider?.vendor_key} iconKey={provider?.icon_key} size="compact" className={available ? '' : 'opacity-60 grayscale'} />
+						<div className="flex min-w-0 flex-1 items-center gap-2">
 
-						<button
-							type="button"
-							onClick={() => onEdit(route)}
-							className="group min-w-0 flex-1 rounded text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-							title={t('editRoute')}
-						>
-							<span className="flex items-center gap-1.5">
-								<span className={`min-w-0 truncate text-xs font-semibold group-hover:text-blue-700 ${available ? 'text-slate-900' : 'text-slate-600'}`} title={providerName}>{providerName}</span>
-							</span>
-							{showKind ? (
-								<span className="mt-0.5 block truncate text-[10px] leading-4 text-slate-500" title={kindLabel ?? undefined}>
-									{showKind ? kindLabel : null}
+							<button
+								type="button"
+								onClick={() => onEdit(route)}
+								className="group min-w-0 flex-1 rounded text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+								title={t('editRoute')}
+							>
+								<span className="flex items-center gap-1.5">
+									<span className={`${listView ? 'route-provider-list-name ' : ''}min-w-0 truncate text-xs font-semibold group-hover:text-blue-700 ${available ? 'text-slate-900' : 'text-slate-600'}`} title={providerName}>{providerName}</span>
 								</span>
+								{showKind ? (
+									<span className="mt-0.5 block truncate text-[10px] leading-4 text-slate-500" title={kindLabel ?? undefined}>
+										{showKind ? kindLabel : null}
+									</span>
+								) : null}
+							</button>
+							{!listView ? (
+								<div className="flex shrink-0 items-center gap-1.5">
+									<span
+										className={`inline-flex h-7 min-w-8 items-center justify-center gap-1 rounded-md border px-2 text-xs font-semibold tabular-nums ${available ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-300 bg-slate-100 text-slate-600'}`}
+										title={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
+										aria-label={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
+									>
+										<ScaleIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+										{route.weight ?? 1}
+									</span>
+									{stickyUsage}
+								</div>
 							) : null}
-						</button>
-						{!listView ? (
-							<div className="flex shrink-0 items-center gap-1.5">
-								<span
-									className={`inline-flex h-7 min-w-8 items-center justify-center gap-1 rounded-md border px-2 text-xs font-semibold tabular-nums ${available ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-300 bg-slate-100 text-slate-600'}`}
-									title={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
-									aria-label={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
-								>
-									<ScaleIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-									{route.weight ?? 1}
-								</span>
-								{stickyUsage}
-							</div>
-						) : null}
+						</div>
 					</div>
+					{listView ? statusBadges : null}
 				</div>
 				{!listView ? upstreamModel : null}
 				{listView ? <div className="route-provider-list-model min-w-0">{upstreamModel}</div> : null}
 				<div className={listView ? 'route-provider-list-meta' : 'mt-3 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-4'}>
-					<div className={listView ? 'flex min-w-0 flex-col items-center gap-1 text-[10px]' : 'flex flex-wrap items-center gap-1.5'}>
-						<button
-							type="button"
-							onClick={() => onToggleStatus(route)}
-							disabled={togglingId === route.id}
-							aria-pressed={enabled}
-							className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-wait disabled:opacity-50 ${available ? 'bg-emerald-600 text-white hover:bg-emerald-700' : enabled ? 'bg-white text-slate-600 ring-1 ring-inset ring-slate-300 hover:bg-slate-200' : 'bg-slate-600 text-white hover:bg-slate-700'}`}
-							title={`${availabilityHint} · ${enabled ? tList('routeEnabled') : tList('routeDisabled')}`}
-							aria-label={enabled ? tList('routeEnabled') : tList('routeDisabled')}
-						>
-							{available ? <CheckCircleIcon className="h-3 w-3" aria-hidden /> : <PowerIcon className="h-3 w-3" aria-hidden />}
-							{available ? t('availableShort') : enabled ? t('enabledShort') : t('disabledShort')}
-						</button>
-						{providerDisabled ? (
-							<span className="rounded border border-amber-300 bg-amber-50 px-1 py-0.5 text-center text-[9px] font-semibold leading-3 text-amber-800" title={t('availabilityProviderDisabledTooltip')}>
-								{t('providerDisabled')}
-							</span>
-						) : null}
-					</div>
+					{!listView ? statusBadges : null}
 					{listView ? (
-						<span className="inline-flex min-w-0 items-center justify-center gap-1 tabular-nums" title={t('badgeWeightTooltip', { value: route.weight ?? 1 })} aria-label={t('badgeWeightTooltip', { value: route.weight ?? 1 })}>
+						<span className="route-provider-list-weight inline-flex min-w-0 items-center justify-center gap-1 tabular-nums" title={t('badgeWeightTooltip', { value: route.weight ?? 1 })} aria-label={t('badgeWeightTooltip', { value: route.weight ?? 1 })}>
 							<span className="route-provider-mobile-label mr-1 text-[10px] text-slate-500">{t('listWeight')}</span>
 							<span className={`text-sm font-bold ${available ? 'text-slate-900' : 'text-slate-600'}`}>{route.weight ?? 1}</span>
 						</span>
 					) : null}
 					{!listView && (params.headers || params.body) ? paramsBadges : null}
 					{listView ? (
-						<div className="flex min-w-0 items-center justify-center gap-1">
+						<div className="route-provider-list-sticky flex min-w-0 items-center justify-center gap-1">
 							<span className="route-provider-mobile-label text-[10px] text-slate-500">{t('listStickyUsers')}</span>
 							{stickyUsage}
 						</div>
@@ -317,12 +328,23 @@ function stickyTargetsFromSection(
 	locale: string,
 	customLabel: string,
 ) {
-	return section.routes.map((route) => ({
-		id: route.id,
-		providerName: routeProviderAccountLabel(route, providerMeta.get(route.provider_id), locale, customLabel),
-		priority: route.priority,
-		weight: Number(route.weight ?? 1) || 1,
-	}));
+	return section.routes.map((route) => {
+		const provider = providerMeta.get(route.provider_id);
+		const identity = providerAccountIdentity(provider, locale, customLabel, route.provider_name || route.provider_id);
+		return {
+			id: route.id,
+			providerName: routeProviderAccountLabel(route, provider, locale, customLabel),
+			identity: {
+				accountName: identity.name,
+				kindLabel: identity.kind,
+				vendorKey: provider?.vendor_key,
+				iconKey: provider?.icon_key,
+			},
+			priority: route.priority,
+			weight: Number(route.weight ?? 1) || 1,
+			enabled: isRouteConfigurationAvailable(route, provider),
+		};
+	});
 }
 
 export function openSectionStickyDialog(
@@ -332,6 +354,7 @@ export function openSectionStickyDialog(
 	providerMeta: Map<string, GatewayProvider>,
 	locale: string,
 	customLabel: string,
+	initialTargetId?: string,
 ) {
 	onOpen(
 		card.model_id,
@@ -344,6 +367,7 @@ export function openSectionStickyDialog(
 		section.poolStickyEnabled,
 		section.poolStickyIdleTtlSeconds,
 		stickyTargetsFromSection(section, providerMeta, locale, customLabel),
+		initialTargetId,
 	);
 }
 
@@ -496,38 +520,6 @@ function strategyDisplayKey(strategy: string): string {
 	return strategy;
 }
 
-function RouteProviderListHeader() {
-	const t = useTranslations('routes.flow');
-	const modal = useTranslations('routes.modal');
-	const [pricingDisplay] = useRoutePricingDisplay();
-	const configuredView = pricingDisplay === 'configured';
-	return (
-		<div className="route-provider-list-header route-provider-list-grid gap-3 border-b border-slate-200 bg-slate-50 px-3 py-2.5 text-[10px] font-medium text-slate-600" aria-hidden>
-			<span>{t('listProviderAccount')}</span>
-			<span>{t('listUpstreamModel')}</span>
-			<span className="text-center">{t('listStatus')}</span>
-			<span className="text-center">{t('listWeight')}</span>
-			<span className="text-center">{t('listStickyUsers')}</span>
-			<span>{t('listParams')}</span>
-			<div className={`route-provider-pricing-columns ${configuredView ? 'route-provider-pricing-configured' : ''}`}>
-				<span>{t('pricingPeriod')}</span>
-				{configuredView ? (
-					<>
-						<span className="text-right whitespace-nowrap" title={modal('providerFactor')}>{t('pricingProviderFactor')}</span>
-						<span className="text-right whitespace-nowrap" title={modal('editor.chargedFactorLabel')}>{t('pricingBillingMultiplier')}</span>
-						<span className="text-right whitespace-nowrap" title={modal('editor.meteredFactorLabel')}>{t('pricingCostMultiplier')}</span>
-					</>
-				) : (
-					<>
-						<span className="text-right whitespace-nowrap">{t('effectivePricing.charged')}</span>
-						<span className="text-right whitespace-nowrap">{t('effectivePricing.metered')}</span>
-					</>
-				)}
-			</div>
-		</div>
-	);
-}
-
 function PriorityTierPanel({
 	priority,
 	routes,
@@ -545,6 +537,7 @@ function PriorityTierPanel({
 	onToggleStatus,
 	onOpenStrategyDialog,
 	onOpenFailover,
+	onOpenStickyBindings,
 }: {
 	priority: number;
 	routes: RouteListRow[];
@@ -562,6 +555,7 @@ function PriorityTierPanel({
 	onToggleStatus: Props['onToggleStatus'];
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
 	onOpenFailover: () => void;
+	onOpenStickyBindings: (targetId: string) => void;
 }) {
 	const t = useTranslations('routes.flow');
 	const tStrategy = useTranslations('routes.strategy');
@@ -651,7 +645,7 @@ function PriorityTierPanel({
 				</div>
 			</div>
 
-			<div className={isList ? 'route-provider-list-body min-w-0 divide-y divide-slate-100' : 'route-provider-card-grid'} role="list" aria-label={t('listProvider')}>
+			<div className={isList ? 'route-provider-list-body flex min-w-0 flex-col gap-1.5 bg-white' : 'route-provider-card-grid'} role="list" aria-label={t('listProvider')}>
 				{routes.map((route) => (
 					<RouteTarget
 						listView={isList}
@@ -664,6 +658,7 @@ function PriorityTierPanel({
 						togglingId={togglingId}
 						onEdit={onEdit}
 						onToggleStatus={onToggleStatus}
+						onOpenStickyBindings={() => onOpenStickyBindings(route.id)}
 					/>
 				))}
 				{routes.length === 0 ? (
@@ -685,6 +680,7 @@ type UpstreamPoolPanelProps = {
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
 	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
+	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
 };
 
 export function UpstreamPoolPanel({
@@ -698,6 +694,7 @@ export function UpstreamPoolPanel({
 	onEdit,
 	onToggleStatus,
 	onOpenStrategyDialog,
+	onOpenProviderStickyDialog,
 }: UpstreamPoolPanelProps) {
 	const t = useTranslations('routes.flow');
 	const tKind = useTranslations('providers.kind');
@@ -740,7 +737,6 @@ export function UpstreamPoolPanel({
 				data-route-group={section.group}
 				aria-label={t('routeGroupProviders', { group: section.group })}
 			>
-				{isList ? <RouteProviderListHeader /> : null}
 				{priorityLayers.map(([priority, routes], layerIndex) => (
 					<div
 						key={priority}
@@ -763,6 +759,7 @@ export function UpstreamPoolPanel({
 							onToggleStatus={onToggleStatus}
 							onOpenFailover={() => setFailoverOpen(true)}
 							onOpenStrategyDialog={onOpenStrategyDialog}
+							onOpenStickyBindings={(targetId) => openSectionStickyDialog(onOpenProviderStickyDialog, card, section, providerMeta, locale, tKind('custom'), targetId)}
 						/>
 					</div>
 				))}
@@ -860,6 +857,7 @@ function FlowBranch({
 					onEdit={onEdit}
 					onToggleStatus={onToggleStatus}
 					onOpenStrategyDialog={onOpenStrategyDialog}
+					onOpenProviderStickyDialog={onOpenProviderStickyDialog}
 				/>
 			</div>
 		</div>

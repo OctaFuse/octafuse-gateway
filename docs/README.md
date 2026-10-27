@@ -49,6 +49,7 @@
 | 2.16.0 升级（介绍改为静态目录，库内列改为备注，0031） | [operators/migrations/0031-catalog-notes.md](./operators/migrations/0031-catalog-notes.md) |
 | 2.17.0 升级（DashScope 语音适配器拆分，0032） | [operators/migrations/0032-dashscope-audio-adapters.md](./operators/migrations/0032-dashscope-audio-adapters.md) |
 | 2.17.0 升级（请求日志 Provider 索引，0033） | [operators/migrations/0033-request-log-provider-index.md](./operators/migrations/0033-request-log-provider-index.md) |
+| 后台列出粘性绑定用户（0034，Unreleased） | [operators/migrations/0034-sticky-binding-affinity-key.md](./operators/migrations/0034-sticky-binding-affinity-key.md) |
 | 文档规范 | [CONVENTIONS.md](./CONVENTIONS.md) |
 
 ## 文档规范

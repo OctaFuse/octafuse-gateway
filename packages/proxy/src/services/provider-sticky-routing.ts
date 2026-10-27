@@ -42,6 +42,8 @@ export type StickySession = {
 	config: RoutePoolStickyRoutingConfig;
 	routePoolId: string;
 	affinityHash: string;
+	/** 明文 affinity key，写入绑定行供后台列出用户。 */
+	affinityKey: string;
 	/** Previous expires_at from DB (for touch throttle). */
 	previousExpiresAt: string | null;
 	bindingToken: string | null;
@@ -154,6 +156,7 @@ export async function resolveStickySession(
 				config: params.config,
 				routePoolId,
 				affinityHash: '',
+				affinityKey: params.affinityKey,
 				previousExpiresAt: null,
 				bindingToken: null,
 				boundTargetId: null,
@@ -171,6 +174,7 @@ export async function resolveStickySession(
 		config: params.config,
 		routePoolId,
 		affinityHash,
+		affinityKey: params.affinityKey,
 		previousExpiresAt: null,
 		bindingToken: null,
 		boundTargetId: null,
@@ -251,6 +255,7 @@ export function scheduleStickyTouchIfNeeded(
 				expectedToken: token,
 				expiresAt,
 				nowIso: toIso(nowMs),
+				affinityKey: session.affinityKey,
 			})
 			.then((ok) => {
 				if (!ok) session.result = 'unchanged';
@@ -316,6 +321,7 @@ export function scheduleStickyBind(
 				expiresAt,
 				nowIso: toIso(nowMs),
 				expectedToken: expectedToken ?? undefined,
+				affinityKey: session.affinityKey,
 			})
 			.then((ok) => {
 				if (!ok) session.result = 'unchanged';

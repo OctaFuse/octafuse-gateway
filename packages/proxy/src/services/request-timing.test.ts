@@ -30,8 +30,12 @@ test('RequestTimingCollector snapshots stable timing metrics and attempt metadat
 	timing.markGatewayComplete();
 	timing.markGatewayComplete();
 
-	const first = timing.startAttempt(route());
+	const first = timing.startAttempt(route({ targetId: 'target-a' }));
 	timing.markAttemptHeaders(first, 429);
+	timing.markAttemptFailure(first, {
+		error: 'HTTP 429: slow down',
+		failureKind: 'rate_limit',
+	});
 	timing.markAttemptFailover(first);
 
 	const second = timing.startAttempt(route({ providerId: 'provider-b', providerKeyId: 'key-b' }));
@@ -58,12 +62,23 @@ test('RequestTimingCollector snapshots stable timing metrics and attempt metadat
 	const metadata = JSON.parse(snapshot.timingMetadata ?? '{}') as {
 		first_byte_ms?: number;
 		first_event_ms?: number;
-		attempts?: Array<{ provider_id: string; status: number; selected: boolean }>;
+		attempts?: Array<{
+			provider_id: string;
+			target_id: string | null;
+			status: number;
+			error: string | null;
+			failure_kind: string | null;
+			selected: boolean;
+		}>;
 	};
 	assert.equal(typeof metadata.first_byte_ms, 'number');
 	assert.equal(typeof metadata.first_event_ms, 'number');
 	assert.equal(metadata.attempts?.length, 2);
 	assert.equal(metadata.attempts?.[0]?.status, 429);
+	assert.equal(metadata.attempts?.[0]?.target_id, 'target-a');
+	assert.equal(metadata.attempts?.[0]?.error, 'HTTP 429: slow down');
+	assert.equal(metadata.attempts?.[0]?.failure_kind, 'rate_limit');
 	assert.equal(metadata.attempts?.[1]?.provider_id, 'provider-b');
 	assert.equal(metadata.attempts?.[1]?.selected, true);
+	assert.equal(metadata.attempts?.[1]?.failure_kind, null);
 });
