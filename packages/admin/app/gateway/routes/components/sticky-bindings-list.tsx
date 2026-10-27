@@ -6,6 +6,7 @@ import { useFeedback } from '@/components/feedback';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 import { parseGatewayDateTime } from '@/lib/datetime';
 import { StickyProviderIdentity } from './sticky-provider-identity';
+import { StickyProviderFilter } from './sticky-provider-filter';
 import { clearStickyBinding, fetchStickyBindingsList } from '../route-api';
 import type { ProviderStickyIdentity, StickyBindingsList } from '../types';
 
@@ -253,33 +254,23 @@ export function StickyBindingsListPanel(props: Props) {
 		<div>
 			<div className="flex flex-wrap items-center justify-between gap-2">
 				<h3 className="text-sm font-semibold text-gray-900">{t('usersTitle')}</h3>
-				<div className="flex flex-wrap items-center gap-2">
+				<div className="flex w-full min-w-0 items-center gap-2 sm:ml-auto sm:w-auto sm:justify-end">
 					{!showingLookup ? (
-						<div className="flex items-center gap-2">
-							<select
-								value={targetFilter}
-								onChange={(event) => {
-									onTargetFilterChange(event.target.value);
-									setPage(1);
-								}}
-								disabled={disabled || loading || Boolean(busyHash)}
-								aria-label={t('usersFilterProvider')}
-								className="max-w-[12rem] rounded-md border border-gray-300 bg-white px-2 py-1 text-[11px] text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:bg-gray-50"
-							>
-								<option value="">{t('usersAllProviders')}</option>
-								{targets.map((row) => (
-									<option key={row.id} value={row.id}>
-										{row.providerName}
-									</option>
-								))}
-							</select>
-						</div>
+						<StickyProviderFilter
+							targets={targets}
+							value={targetFilter}
+							onChange={(id) => {
+								onTargetFilterChange(id);
+								setPage(1);
+							}}
+							disabled={disabled || loading || Boolean(busyHash)}
+						/>
 					) : null}
 					<button
 						type="button"
 						onClick={onRefresh}
 						disabled={loading || refreshing || disabled || Boolean(busyHash)}
-						className="rounded-md px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+						className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50"
 					>
 						{refreshing || loading ? tCommon('loadingEllipsis') : t('refresh')}
 					</button>

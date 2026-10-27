@@ -8,10 +8,12 @@ export function StickyProviderIdentity({
 	identity,
 	fallbackName,
 	enabled,
+	wrap = false,
 }: {
 	identity?: ProviderStickyIdentity;
 	fallbackName: string;
 	enabled?: boolean;
+	wrap?: boolean;
 }) {
 	const t = useTranslations('routes.providerSticky');
 	const name = identity?.accountName || fallbackName;
@@ -25,7 +27,7 @@ export function StickyProviderIdentity({
 			/>
 			<div className="min-w-0 flex-1">
 				<div className="flex items-center gap-1.5">
-					<span title={name} className="truncate text-xs font-medium text-gray-800">
+					<span title={name} className={`${wrap ? '[overflow-wrap:anywhere]' : 'truncate'} text-xs font-medium text-gray-800`}>
 						{name}
 					</span>
 					{enabled === false ? (
@@ -35,7 +37,7 @@ export function StickyProviderIdentity({
 					) : null}
 				</div>
 				{identity?.kindLabel ? (
-					<p title={identity.kindLabel} className="mt-0.5 truncate text-[11px] text-gray-500">
+					<p title={identity.kindLabel} className={`mt-0.5 ${wrap ? '[overflow-wrap:anywhere]' : 'truncate'} text-[11px] text-gray-500`}>
 						{identity.kindLabel}
 					</p>
 				) : null}
