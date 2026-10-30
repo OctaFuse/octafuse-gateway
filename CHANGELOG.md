@@ -4,7 +4,7 @@
 
 ### Proxy
 
-- **MCP 批量请求与空结果**：`/mcp*` 现在拒绝 JSON-RPC 批量数组（400 `gateway.invalid_request`），此前一个数组请求可以绕过 `tools/call` 的 RPM 计数。上游对 `tools/call` 返回空 202、缺少 `result` 或响应 id 与请求不符时，按上游失败处理且不扣费，不再把空结果当成功计费。
+- **MCP 批量请求与空结果**：`/mcp*` 现在拒绝 JSON-RPC 批量数组（400 `gateway.invalid_request`），此前一个数组请求可以绕过 `tools/call` 的 RPM 计数。上游对 `tools/call` 返回空 202、缺少 `result` 或响应 id 与请求不符时，按上游失败处理且不扣费，不再把空结果当成功计费。上游返回的工具结果不符合 MCP 结果结构（如 `text` 不是字符串）时，同样在扣费前按失败处理，不再先扣费再由 SDK 拒绝。
 - **MCP OAuth 接入**：Proxy 新增 `GET /.well-known/oauth-protected-resource`（及 `/mcp`、`/mcp/{slug}` 后缀形式，RFC 9728），并在 `/mcp*` 的 401 响应加 `WWW-Authenticate: Bearer resource_metadata="…"`，让 ChatGPT 等 MCP 客户端自动发现授权服务器。授权服务器地址由 `system_config.MCP_OAUTH_AUTHORIZATION_SERVER` 配置；未配置时不暴露元数据，401 行为不变。维护模式下元数据仍可读取。
 - **MCP 资源模板**：`/mcp` 与 `/mcp/{slug}` 现在会响应 `resources/templates/list`（返回空列表）。此前网关声明了 `resources` 能力却对该标准方法返回 -32601，MCP Inspector 等客户端会因此报错。
 - **OAuth 访问令牌**：OAuth 授权服务器签发给第三方 MCP 客户端的凭证从用户 `api_keys` 里独立出来，存入新表 `oauth_access_tokens`：前缀 `oat_`、只存哈希、默认 1 小时过期、只能访问 `/mcp` 与 `/mcp/*`，用于其它入口返回 403 `gateway.scope_denied`。`sk-` Key 在 `/mcp*` 的行为不变，`api_keys` 不再需要作用域。令牌过期或被撤销时 `/mcp*` 返回 401 并带 `error="invalid_token"`，客户端据此刷新。来自访问令牌的调用在请求日志里 `api_key_id` 为空、`oauth_access_token_id` 指向令牌，按令牌所属用户扣费。

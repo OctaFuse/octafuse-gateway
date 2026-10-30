@@ -45,10 +45,15 @@ export function OAuthAccessTokensPanel() {
 	const sectionRef = useRef<HTMLElement>(null);
 
 	useEffect(() => {
-		if (window.location.hash === '#oauth-access-tokens') {
-			setOpen(true);
-			sectionRef.current?.scrollIntoView({ block: 'start' });
-		}
+		const revealHashTarget = () => {
+			if (window.location.hash === '#oauth-access-tokens') {
+				setOpen(true);
+				sectionRef.current?.scrollIntoView({ block: 'start' });
+			}
+		};
+		revealHashTarget();
+		window.addEventListener('hashchange', revealHashTarget);
+		return () => window.removeEventListener('hashchange', revealHashTarget);
 	}, []);
 
 	const fetchStats = useCallback(async () => {

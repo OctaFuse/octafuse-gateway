@@ -6,6 +6,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import {
 	CallToolRequestSchema,
+	CallToolResultSchema,
 	ErrorCode,
 	GetPromptRequestSchema,
 	ListPromptsRequestSchema,
@@ -271,6 +272,16 @@ export async function handleMcpAggregateRequest(
 						octafuse: { code: GatewayErrorCode.upstreamRequestFailed, charged: 0 },
 					},
 				};
+			}
+			// 先按 SDK 同一份 schema 校验将要返回的结果：否则会先扣费、随后 SDK 拒绝结果，客户端报错却被收费。
+			const candidate = CallToolResultSchema.safeParse({
+				...upstream.result,
+				content: asContent(upstream.result),
+				isError: false,
+			});
+			if (!candidate.success) {
+				await recordError('Upstream returned an invalid tool result', responseBody);
+				return textResult('MCP upstream returned an invalid tool result', GatewayErrorCode.upstreamRequestFailed);
 			}
 			const settled = settleMcpPricing(pricing.rule, args, upstream.result);
 			const charged = await input.deps.charge({

@@ -1,4 +1,23 @@
 /** Copy-paste samples for connecting an external agent to the Proxy MCP endpoint. */
+import { MCP_CATALOG_PROXY_STORAGE, SIMULATOR_PROXY_STORAGE, mcpProxyBaseUrl } from './mcp-catalog-test-utils';
+
+export function readSavedMcpProxyUrl(): string {
+	// The Admin and Proxy can use different origins; never infer the Proxy from the Admin in production.
+	if (typeof window === 'undefined') return '';
+	try {
+		const saved = localStorage.getItem(MCP_CATALOG_PROXY_STORAGE) || localStorage.getItem(SIMULATOR_PROXY_STORAGE);
+		if (saved && mcpProxyBaseUrl(saved)) return saved;
+	} catch {
+		/* Storage can be unavailable in private contexts. */
+	}
+	if (['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)) {
+		const local = new URL(window.location.origin);
+		local.port = '8787';
+		return local.origin;
+	}
+	return '';
+}
+
 export const MCP_KEY_PLACEHOLDER = '<YOUR_API_KEY>';
 export const MCP_KEY_ENV_NAME = 'OCTAFUSE_API_KEY';
 

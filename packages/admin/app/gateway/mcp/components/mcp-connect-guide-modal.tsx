@@ -7,7 +7,7 @@ import { readApiJson } from '@/lib/api-json';
 import type { SystemConfigRow } from '@/lib/types';
 import { MCP_OAUTH_AUTHORIZATION_SERVER_KEY } from '@octafuse/core/lib/mcp-oauth-system-config';
 import type { ServerSummary } from '../mcp-types';
-import { MCP_CATALOG_PROXY_STORAGE, SIMULATOR_PROXY_STORAGE, mcpProxyBaseUrl } from '../mcp-catalog-test-utils';
+import { MCP_CATALOG_PROXY_STORAGE, mcpProxyBaseUrl } from '../mcp-catalog-test-utils';
 import {
 	MCP_CONNECT_CLIENTS,
 	MCP_KEY_PLACEHOLDER,
@@ -15,6 +15,7 @@ import {
 	buildMcpConnectSnippets,
 	buildMcpOAuthSnippets,
 	mcpConnectEndpoint,
+	readSavedMcpProxyUrl,
 	mcpConnectServerName,
 	type McpConnectClient,
 } from '../mcp-connect-guide-utils';
@@ -27,22 +28,6 @@ const BUTTON =
 const CODE =
 	'overflow-auto whitespace-pre rounded-lg bg-slate-950 p-4 font-mono text-xs leading-6 text-slate-100';
 
-function readSavedProxyUrl(): string {
-	// 弹窗只在客户端交互后渲染；服务端渲染时没有 window，返回空串。
-	if (typeof window === 'undefined') return '';
-	try {
-		const saved = localStorage.getItem(MCP_CATALOG_PROXY_STORAGE) || localStorage.getItem(SIMULATOR_PROXY_STORAGE);
-		if (saved && mcpProxyBaseUrl(saved)) return saved;
-	} catch {
-		/* Storage can be unavailable in private contexts. */
-	}
-	if (['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)) {
-		const local = new URL(window.location.origin);
-		local.port = '8787';
-		return local.origin;
-	}
-	return '';
-}
 
 export type McpConnectAuth = 'key' | 'oauth';
 
@@ -59,7 +44,7 @@ export function McpConnectGuideModal({
 }) {
 	const t = useTranslations('mcp.connectGuide');
 	const common = useTranslations('common');
-	const [baseUrl, setBaseUrl] = useState(readSavedProxyUrl);
+	const [baseUrl, setBaseUrl] = useState(readSavedMcpProxyUrl);
 	const [slug, setSlug] = useState(initialSlug);
 	const [auth, setAuth] = useState<McpConnectAuth>(initialAuth);
 	const [client, setClient] = useState<McpConnectClient>(initialAuth === 'oauth' ? 'chatgpt' : 'cursor');

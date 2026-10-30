@@ -3575,6 +3575,16 @@
 		"followHint": "与预览同步更新，向上滚动可暂停跟随。"
 	},
 	"mcp": {
+		"clientEndpoint": "客户端接入地址",
+		"sections": {
+			"label": "MCP 管理分区",
+			"services": "服务管理",
+			"clients": "客户端接入与授权"
+		},
+		"clientAccess": {
+			"title": "客户端接入",
+			"description": "让外部 MCP 客户端通过 API Key 或 OAuth 2.0 连接网关。查看接入指南复制客户端配置，或测试网关对外提供的目录。"
+		},
 		"title": "MCP 服务",
 		"subtitle": "接入远程 MCP 服务，审核并启用工具，通过统一入口提供给客户端。",
 		"add": "添加服务",

@@ -3575,6 +3575,16 @@
 		"followHint": "Updates with the preview. Scroll up to pause following."
 	},
 	"mcp": {
+		"clientEndpoint": "Client endpoint",
+		"sections": {
+			"label": "MCP management",
+			"services": "Service management",
+			"clients": "Client access & authorization"
+		},
+		"clientAccess": {
+			"title": "Connect clients",
+			"description": "Connect external MCP clients to the gateway using an API Key or OAuth 2.0. Copy client configuration from the guide, or test the catalog exposed by the gateway."
+		},
 		"title": "MCP Servers",
 		"subtitle": "Connect remote MCP servers, review and enable tools, and make them available through a single client endpoint.",
 		"add": "Add server",

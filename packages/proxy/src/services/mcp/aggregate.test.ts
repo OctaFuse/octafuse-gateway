@@ -141,6 +141,25 @@ describe('mcp aggregate server', () => {
 		assert.equal(calls, 1);
 	});
 
+	it('does not charge when the upstream tool result fails the MCP result schema', async () => {
+		const charges: Array<{ status?: string; chargedCost: number }> = [];
+		const deps: McpAggregateDeps = {
+			listCallable: async () => [item()],
+			charge: async (params) => {
+				charges.push(params);
+				return { requestLogId: 'log', chargedCost: params.chargedCost };
+			},
+			callTool: async () => ({ result: { content: [{ type: 'text', text: 42 }] }, isError: false }),
+		};
+		const res = await rpc(deps, 'tools/call', { name: 'deepwiki__ask', arguments: {} });
+		const result = res.body?.result as { isError?: boolean } | undefined;
+		assert.equal(res.body?.error, undefined);
+		assert.equal(result?.isError, true);
+		assert.equal(charges.length, 1);
+		assert.equal(charges[0]?.status, 'error');
+		assert.equal(charges[0]?.chargedCost, 0);
+	});
+
 	it('attributes an access token call to the token, not to an api key', async () => {
 		const charged: Array<{ apiKeyId: string | null; oauthAccessTokenId?: string | null; userId: string }> = [];
 		const deps: McpAggregateDeps = {
