@@ -13,8 +13,10 @@ import { useTranslations } from 'next-intl';
 import { formatGatewayMoneyCompact, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 import type { ServerSummary } from '../mcp-types';
+import { mcpConnectEndpoint } from '../mcp-connect-guide-utils';
 
 export function McpServerTable({
+	proxyBaseUrl,
 	currency,
 	servers,
 	busy,
@@ -24,6 +26,7 @@ export function McpServerTable({
 	onCreate,
 	onRefresh,
 }: {
+	proxyBaseUrl: string;
 	currency: string;
 	servers: ServerSummary[];
 	busy: boolean;
@@ -49,7 +52,7 @@ export function McpServerTable({
 	const visible = servers.filter((server) => {
 		const matches =
 			!search ||
-			[server.name, server.slug, server.urlMasked, server.description].some((text) =>
+			[server.name, server.slug, server.urlMasked, server.description, mcpConnectEndpoint(proxyBaseUrl, server.slug)].some((text) =>
 				text?.toLocaleLowerCase().includes(search)
 			);
 		return (
@@ -172,10 +175,11 @@ export function McpServerTable({
 				</div>
 			) : (
 				<div className="overflow-x-auto">
-					<table className="w-full min-w-[920px] text-left text-sm">
+					<table className="w-full min-w-[1100px] text-left text-sm">
 						<thead className="border-b border-gray-100 bg-gray-50/80 text-xs text-gray-500">
 							<tr>
 								<th className="px-5 py-3 font-medium">{t('name')}</th>
+								<th className="px-4 py-3 font-medium">{t('url')}</th>
 								<th className="px-4 py-3 font-medium">{t('status')}</th>
 								<th className="px-4 py-3 font-medium">{t('catalog')}</th>
 								{(['standard', 'charged', 'metered'] as const).map((key) => (
@@ -190,6 +194,7 @@ export function McpServerTable({
 						</thead>
 						<tbody className="divide-y divide-gray-100">
 							{visible.map((server) => {
+								const endpoint = mcpConnectEndpoint(proxyBaseUrl, server.slug);
 								const prices = server.pricing ? summarizeMcpPricingRule(server.pricing) : null;
 								return (
 									<tr
@@ -205,9 +210,9 @@ export function McpServerTable({
 											onOpen(server.id);
 										}}
 									>
-										<td className="px-5 py-5">
-											<div className="flex items-start gap-3">
-												<div className="mt-0.5 rounded-lg border border-gray-200 bg-white p-2 text-gray-500">
+										<td className="px-5 py-3">
+											<div className="flex items-center gap-3">
+												<div className="shrink-0 rounded-lg border border-gray-200 bg-white p-2 text-gray-500">
 													<ServerStackIcon className="h-5 w-5" aria-hidden="true" />
 												</div>
 												<div className="min-w-0">
@@ -219,21 +224,26 @@ export function McpServerTable({
 															onOpen(server.id);
 														}}
 														disabled={busy}
-														className="max-w-[220px] break-words rounded text-left font-semibold text-gray-900 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
+														title={server.name}
+														className="max-w-[320px] truncate rounded text-left font-semibold text-gray-900 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
 													>
 														{server.name}
 													</button>
-													<div className="mt-1 font-mono text-xs text-gray-500">{server.slug}</div>
 													<div
-														className="mt-1 max-w-[260px] truncate text-xs text-gray-400"
-														title={server.urlMasked}
+														className="mt-1 max-w-[320px] truncate font-mono text-xs text-gray-500"
+														title={`${t('clientEndpoint')}: ${endpoint}`}
 													>
-														{server.urlMasked}
+														{endpoint}
 													</div>
 												</div>
 											</div>
 										</td>
-										<td className="px-4 py-5">
+										<td className="px-4 py-3">
+											<div className="max-w-[240px] truncate font-mono text-xs text-gray-500" title={server.urlMasked}>
+												{server.urlMasked}
+											</div>
+										</td>
+										<td className="px-4 py-3">
 											<span
 												className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
 													server.status === 'active'
@@ -254,7 +264,7 @@ export function McpServerTable({
 												<div className="mt-2 text-xs text-amber-700">{t('defaultPriceLoss')}</div>
 											) : null}
 										</td>
-										<td className="px-4 py-5">
+										<td className="px-4 py-3">
 											<div className="flex flex-wrap items-center gap-x-2 gap-y-1">
 												<div className="whitespace-nowrap text-gray-700">
 													<span className="font-semibold tabular-nums">{server.enabledCount}</span>{' '}
@@ -294,9 +304,6 @@ export function McpServerTable({
 													<span className={loss ? 'text-amber-700' : 'text-gray-600'}>
 														{formatGatewayMoneyCompact(pricing[key], currency)}
 													</span>
-													{key === 'charged' ? (
-														<div className="mt-1 font-sans text-[11px] text-gray-400">/ {pricing.unit}</div>
-													) : null}
 												</div>
 											) : (
 												<span className="text-gray-300">—</span>
@@ -304,7 +311,7 @@ export function McpServerTable({
 											return (
 												<td
 													key={key}
-													className="whitespace-nowrap px-4 py-5 text-right align-top font-mono tabular-nums"
+													className="whitespace-nowrap px-4 py-3 text-right align-middle font-mono tabular-nums"
 													title={
 														pricing
 															? t('priceLegend', {
@@ -317,7 +324,7 @@ export function McpServerTable({
 													}
 												>
 													{key === 'metered' ? (
-														<div className="flex items-start justify-end gap-4">
+														<div className="flex items-center justify-end gap-4">
 															{amount}
 															<ChevronRightIcon
 																className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:text-gray-600 group-focus-within:text-blue-500"

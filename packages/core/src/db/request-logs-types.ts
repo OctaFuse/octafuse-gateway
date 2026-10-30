@@ -7,7 +7,10 @@ import type { UpstreamProtocol } from '../upstream-protocol';
 export type InsertRequestLogParams = {
 	id: string;
 	userId: string | null;
-	apiKeyId: string;
+	/** 走 `sk-` 用户 Key 时为 Key id；走 `oat_` 访问令牌（MCP）时为 null */
+	apiKeyId: string | null;
+	/** 走 `oat_` 访问令牌时为令牌 id；走用户 Key 时为 null */
+	oauthAccessTokenId?: string | null;
 	userEmail: string | null;
 	modelId: string;
 	providerId: string;

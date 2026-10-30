@@ -13,6 +13,7 @@ import { createMySqlUserAuditLogsRepository } from '../db/mysql/user-audit-logs.
 import { createMySqlUsersRepository } from '../db/mysql/users.impl';
 import { createMySqlAdminAccessRepository } from '../db/mysql/admin-access.impl';
 import { createMySqlMcpServersRepository } from '../db/mysql/mcp-servers.impl';
+import { createMySqlOAuthAccessTokensRepository } from '../db/mysql/oauth-access-tokens.impl';
 
 export function createMySqlRepositories(client: GatewayDatabaseClient): GatewayRepositories {
 	if (client.driver !== 'mysql') {
@@ -33,5 +34,6 @@ export function createMySqlRepositories(client: GatewayDatabaseClient): GatewayR
 		routePoolSticky: createMySqlRoutePoolStickyBindingsRepository(client),
 		adminAccess: createMySqlAdminAccessRepository(client),
 		mcpServers: createMySqlMcpServersRepository(client),
+		oauthAccessTokens: createMySqlOAuthAccessTokensRepository(client),
 	};
 }

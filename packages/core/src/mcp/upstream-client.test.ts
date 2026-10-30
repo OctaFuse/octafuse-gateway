@@ -73,6 +73,28 @@ describe('mcp upstream client', () => {
 		assert.equal(calls, 2);
 	});
 
+	it('treats an empty 202 or a mismatched id as a failed tool call, not a success', async () => {
+		const serverId = `${target.serverId}-noresult`;
+		const makeFetch = (toolResponse: (id: number) => Response): typeof fetch => async (_input, init) => {
+			const message = JSON.parse(String(init?.body)) as { id?: number; method?: string };
+			if (message.method === 'notifications/initialized') return new Response(null, { status: 202 });
+			if (message.method === 'initialize') {
+				return jsonResponse({ jsonrpc: '2.0', id: message.id, result: { protocolVersion: '2025-06-18', serverInfo: {} } });
+			}
+			return toolResponse(message.id as number);
+		};
+		clearMcpUpstreamSession(serverId);
+		await assert.rejects(
+			() => callMcpUpstreamTool({ ...target, serverId }, 'ask', {}, makeFetch(() => new Response(null, { status: 202 }))),
+			/no tool result/i,
+		);
+		clearMcpUpstreamSession(serverId);
+		await assert.rejects(
+			() => callMcpUpstreamTool({ ...target, serverId }, 'ask', {}, makeFetch((id) => jsonResponse({ jsonrpc: '2.0', id: id + 1000, result: { content: [] } }))),
+			/mismatched/i,
+		);
+	});
+
 	it('rejects redirects and oversized bodies', async () => {
 		const redirectTarget = { ...target, serverId: `${target.serverId}-redirect` };
 		await assert.rejects(

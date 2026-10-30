@@ -2565,6 +2565,54 @@
 			"chargedCostFactorDuplicate": "Charged cost factors に重複したモデルとルートグループがあります。"
 		}
 	},
+	"oauthAccessTokensPage": {
+		"title": "OAuth アクセストークン",
+		"subtitle": "OAuth 同意後にサードパーティの MCP クライアント（ChatGPT、Codex など）へ発行されるトークンです。/mcp にのみアクセスでき、モデル API は呼べません。ユーザーの API キーとは別に管理されます。有効期間は 1 時間で、クライアントはリフレッシュトークンで更新します。",
+		"cleanup": "期限切れを削除",
+		"cleanupHint": "失効または期限切れから 30 日を超えた記録を削除します",
+		"cleanupTitle": "古いトークンの整理",
+		"cleanupConfirm": "失効または期限切れから 30 日を超えたトークン記録を削除します。期限が切れたばかりのトークンは更新できるため残ります。続行しますか？",
+		"cleanedUp": "{count} 件を削除しました",
+		"cleanupFailed": "削除に失敗しました",
+		"clientsTitle": "認可済みアプリ",
+		"filterByClient": "このアプリのみ表示",
+		"revokeAll": "すべて失効",
+		"statActive": "有効 {count}",
+		"statTotal": "合計 {count}",
+		"statLastUsed": "最終使用",
+		"emailPlaceholder": "ユーザーのメールで検索",
+		"status": {
+			"active": "有効",
+			"expired": "期限切れ",
+			"revoked": "失効"
+		},
+		"table": {
+			"user": "ユーザー",
+			"client": "アプリ",
+			"token": "トークン",
+			"expires": "期限 / 失効",
+			"lastUsed": "最終使用",
+			"status": "状態",
+			"actions": "操作"
+		},
+		"logs": "ログ",
+		"revoke": "失効",
+		"revokeTitle": "認可の失効",
+		"revokeConfirm": "失効すると「{client}」は {user} に代わって MCP にアクセスできなくなり、再認可が必要です。続行しますか？",
+		"revoked": "失効しました",
+		"revokedMany": "{count} 件の認可を失効しました",
+		"revokeFailed": "失効に失敗しました",
+		"revokeClientTitle": "アプリの全認可を失効",
+		"revokeClientConfirm": "「{client}」のすべての認可（計 {count} 件）を失効します。全ユーザーが再認可する必要があります。続行しますか？",
+		"empty": "アクセストークンはまだありません",
+		"total": "合計 {count} 件",
+		"userSectionTitle": "OAuth アクセストークン",
+		"userSectionHint": "このユーザーがサードパーティの MCP クライアントに許可したトークン。",
+		"userSectionEmpty": "このユーザーはサードパーティアプリを認可していません。",
+		"viewAll": "すべて表示",
+		"logCredential": "OAuth アプリ：{name}",
+		"logCredentialUnknown": "OAuth アクセストークン {id}"
+	},
 	"keysPage": {
 		"title": "API キー",
 		"subtitle": "ユーザーがゲートウェイにアクセスするための API キーを作成・管理し、状態とリクエストのレート制限を設定します。",
@@ -3527,6 +3575,16 @@
 		"followHint": "プレビューと同時に更新します。上にスクロールすると追従を一時停止します。"
 	},
 	"mcp": {
+		"clientEndpoint": "クライアント接続先",
+		"sections": {
+			"label": "MCP 管理",
+			"services": "サービス管理",
+			"clients": "クライアント接続と認可"
+		},
+		"clientAccess": {
+			"title": "クライアント接続",
+			"description": "API Key または OAuth 2.0 で外部 MCP クライアントをゲートウェイに接続します。接続ガイドからクライアント設定をコピーするか、ゲートウェイが公開するカタログをテストできます。"
+		},
 		"title": "MCP サーバー",
 		"subtitle": "リモート MCP サーバーを接続し、ツールを確認・有効化して、共通のエンドポイントからクライアントに提供します。",
 		"add": "サーバーを追加",
@@ -3544,6 +3602,26 @@
 		"pendingBadge": "{count} 件の確認待ち",
 		"edit": "編集",
 		"viewInvocations": "呼び出し履歴を見る",
+		"oauth": {
+			"title": "OAuth 2.0 ログイン（任意）",
+			"hint": "OAuth 2.0 のみ対応のクライアント（ChatGPT コネクタなど）向けで、API Key のコピーは不要です。無効のままでも API Key で接続できます。",
+			"description": "ChatGPT コネクタなどの MCP クライアントにログイン認可を提供するポータルの origin（system_config.MCP_OAUTH_AUTHORIZATION_SERVER）。設定すると、/mcp* は未認証リクエストに 401 + WWW-Authenticate を返し、/.well-known/oauth-protected-resource を公開します。Gateway 自体はトークンを発行しません。https が必須です（http は localhost のみ）。空欄で無効になります。",
+			"label": "認可サーバーの origin",
+			"placeholder": "https://soloent.ai",
+			"howTitle": "有効にした後の流れ",
+			"how1": "クライアントが資格情報なしで /mcp にアクセスすると、ゲートウェイは 401 を返し、認可サーバーの場所を伝えます。",
+			"how2": "クライアントは認可サーバーでログイン・認可し、/mcp のみ利用できるアクセス資格情報を受け取ります。",
+			"how3": "ゲートウェイ自体はログインも資格情報の発行も行いません。従来の API Key 方式はそのまま使えます。",
+			"requirement": "認可サーバーは動的クライアント登録、PKCE（S256）、/.well-known/oauth-authorization-server に対応し、許可するコールバック URL を自身で管理する必要があります。SoloEnt ポータルは対応済みで、https://soloent.ai を入力します。コールバックはポータル管理画面の Integrations → Third-party apps で管理します。",
+			"statusOn": "有効：未認証の /mcp リクエストには 401 が返り、上の認可サーバーへ誘導されます（リソースメタデータ：{path}）。",
+			"openGuide": "接続方法を見る",
+			"metadataLink": "認可サーバーのメタデータ",
+			"save": "OAuth 認可サーバーを保存",
+			"invalid": "認可サーバーが不正です。https の origin を指定してください（http は localhost のみ）。",
+			"enable": "OAuth 2.0 ログインを有効にする",
+			"required": "先に認可サーバーの URL を入力してください。",
+			"learnMore": "仕組みと要件"
+		},
 		"connectGuide": {
 			"button": "接続ガイド",
 			"title": "接続ガイド：外部 Agent から MCP を使う",
@@ -3568,7 +3646,8 @@
 				"vscode": "VS Code",
 				"claude-code": "Claude Code",
 				"codex": "Codex",
-				"curl": "curl で確認"
+				"curl": "curl で確認",
+				"chatgpt": "ChatGPT コネクタ"
 			},
 			"note": {
 				"cursor": "保存後、Cursor の MCP 設定で接続済みになっていることを確認してください。プロジェクト単位は .cursor/mcp.json を使います。",
@@ -3580,7 +3659,26 @@
 			"tipKey": "{placeholder} をゲートウェイのユーザー API Key（sk- で始まる）に置き換えてください。",
 			"tipTools": "ツール名は {pattern} の形式です。プロンプトとリソースも同じエンドポイントから取得できます。",
 			"tipEnable": "MCP サービスで同期・有効化した項目だけがクライアントに表示されます。",
-			"tipTransport": "セッションなしの Streamable HTTP（POST）のみ対応。GET は 405 を返します。"
+			"tipTransport": "セッションなしの Streamable HTTP（POST）のみ対応。GET は 405 を返します。",
+			"authMode": "認証方式",
+			"authKey": "API Key",
+			"authOauth": "OAuth 2.0 ログイン",
+			"oauthSubtitle": "API Key は不要です。クライアントは MCP の URL だけを設定し、初回接続時にブラウザでログイン・認可します。",
+			"oauthOn": "OAuth は有効です。認可サーバー：{server}",
+			"oauthOff": "OAuth 2.0 ログインはまだ有効ではないため、この方式では接続できません。まずこのページの「OAuth 2.0 ログイン」カードで有効にし、認可サーバーを設定してください。",
+			"oauthSafeHint": "例にはシークレットを含みません。認可後の資格情報はクライアントが保管します。",
+			"openInUi": "クライアントの画面に入力：",
+			"oauthNote": {
+				"chatgpt": "ChatGPT の開発者モードでカスタムコネクタを作成します（メニュー名はバージョンにより異なります）。MCP サーバー URL に上の URL を入力し、認証方式は OAuth を選びます。",
+				"cursor": "headers も Key も不要です。接続時に Cursor がブラウザを開いてログインします。",
+				"vscode": "初回起動時に、VS Code がブラウザでのログインを促します。",
+				"claude-code": "追加後、Claude Code で /mcp を実行し、このサーバーを選んでブラウザで認可します。",
+				"codex": "保存後、codex mcp login {name} を実行してブラウザで認可します。設定に環境変数や Key は不要です。",
+				"curl": "資格情報なしでは HTTP 401 が返り、WWW-Authenticate ヘッダーの resource_metadata がディスカバリー URL を指します。OAuth が有効な状態です。"
+			},
+			"oauthTipScope": "OAuth で得た資格情報は /mcp* のみ利用でき、モデル API は呼び出せません。",
+			"oauthTipBoth": "API Key 方式には影響しません。両方を同時に使えます。",
+			"oauthTipPublic": "ChatGPT のようなクラウド側クライアントは公開 HTTPS URL が必要です。ローカルのクライアント（Codex、Cursor など）は localhost も使えます。"
 		},
 		"connection": "接続",
 		"enableAllNew": "新規をすべて有効化",

@@ -12,6 +12,7 @@ import { adminBudgetAuditLogsRoutes } from '@/lib/routes/admin/budget-audit-logs
 import { adminBusinessTimezoneRoutes } from '@/lib/routes/admin/business-timezone';
 import { adminConfigRoutes } from '@/lib/routes/admin/config';
 import { adminKeysRoutes } from '@/lib/routes/admin/keys';
+import { adminOAuthAccessTokensRoutes } from '@/lib/routes/admin/oauth-access-tokens';
 import { adminMaintenanceRoutes } from '@/lib/routes/admin/maintenance';
 import { getAdminWriteFreeze } from '@/lib/services/admin/maintenance-service';
 import { adminUsersRoutes } from '@/lib/routes/admin/users';
@@ -88,6 +89,7 @@ export function createAdminApp(): Hono<AdminEnv> {
 
 	app.route('/admin/users', adminUsersRoutes);
 	app.route('/admin/keys', adminKeysRoutes);
+	app.route('/admin/oauth-access-tokens', adminOAuthAccessTokensRoutes);
 	app.route('/admin/providers', adminProvidersRoutes);
 	app.route('/admin/models', adminModelsRoutes);
 	app.route('/admin/routes', adminModelRoutes);

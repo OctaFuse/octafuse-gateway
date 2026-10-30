@@ -48,6 +48,7 @@ export default function GatewayRequestLogsPage() {
   const tCommon = useTranslations('common');
   const tOptions = useTranslations('options');
   const tKind = useTranslations('providers.kind');
+  const tToken = useTranslations('oauthAccessTokensPage');
   const locale = useLocale();
   const [logs, setLogs] = useState<GatewayRequestLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -988,7 +989,15 @@ export default function GatewayRequestLogsPage() {
                               { label: t('detail.requestId'), value: log.id },
                               {
                                 label: t('detail.identity'),
-                                value: [log.user_email, log.api_key_id].filter(Boolean).join(' · '),
+                                value: [
+                                  log.user_email,
+                                  log.api_key_id ??
+                                    (log.oauth_access_token_id
+                                      ? log.oauth_access_token_name
+                                        ? tToken('logCredential', { name: log.oauth_access_token_name })
+                                        : tToken('logCredentialUnknown', { id: log.oauth_access_token_id })
+                                      : null),
+                                ].filter(Boolean).join(' · '),
                               },
                               { label: t('detail.modelId'), value: log.model_id ?? '' },
                               {

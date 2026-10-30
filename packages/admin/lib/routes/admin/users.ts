@@ -21,6 +21,7 @@ import {
 	previewAdminBudgetTransition,
 	applyAdminBudgetTransition,
 } from '@/lib/services/admin/users-service';
+import { issueOAuthAccessToken, listUserOAuthAccessTokens } from '@/lib/services/admin/oauth-access-tokens-service';
 import {
 	getAdminUserDisplayDiscounts,
 	parseDisplayDiscountRouteGroupsQuery,
@@ -183,6 +184,30 @@ adminUsersRoutes.post('/:id/keys', async (c) => {
 		);
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to create user key');
+	}
+});
+
+adminUsersRoutes.get('/:id/oauth-access-tokens', async (c) => {
+	try {
+		const data = await listUserOAuthAccessTokens(c.get('repositories'), c.req.param('id'));
+		return c.json(normalizeApiTimeFields({ success: true as const, data }));
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to list user access tokens');
+	}
+});
+
+adminUsersRoutes.post('/:id/oauth-access-tokens', async (c) => {
+	let body: Record<string, unknown>;
+	try {
+		body = await c.req.json();
+	} catch {
+		return jsonErr(c, 400, 'Invalid JSON body');
+	}
+	try {
+		const data = await issueOAuthAccessToken(c.get('repositories'), c.req.param('id'), body ?? {});
+		return c.json(normalizeApiTimeFields({ success: true as const, data }));
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to issue access token');
 	}
 });
 

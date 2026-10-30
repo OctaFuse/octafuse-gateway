@@ -187,10 +187,14 @@ export async function insertRequestUsageAndChargeTxD1(
 	const requestLog: InsertRequestLogParams = { ...params.requestLog, chargedWalletCost: fromWallet };
 	const statements: D1PreparedStatement[] = [
 		buildInsertRequestLogStatement(client.raw, requestLog),
-		client.raw
-			.prepare(`UPDATE api_keys SET last_used_at = datetime('now') WHERE id = ?`)
-			.bind(requestLog.apiKeyId),
 	];
+	if (requestLog.apiKeyId) {
+		statements.push(
+			client.raw
+				.prepare(`UPDATE api_keys SET last_used_at = datetime('now') WHERE id = ?`)
+				.bind(requestLog.apiKeyId)
+		);
+	}
 	if (params.shouldChargeBudget) {
 		statements.push(
 			client.raw

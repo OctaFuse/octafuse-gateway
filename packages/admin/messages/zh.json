@@ -2565,6 +2565,54 @@
 			"chargedCostFactorDuplicate": "Charged cost factors 中存在重复的模型与路由组。"
 		}
 	},
+	"oauthAccessTokensPage": {
+		"title": "OAuth 访问令牌",
+		"subtitle": "第三方 MCP 客户端（如 ChatGPT、Codex）经 OAuth 授权后获得的令牌，只能访问 /mcp，不能调用模型接口，也与用户 API Key 分开管理。令牌 1 小时过期，客户端用刷新令牌自动续期。",
+		"cleanup": "清理过期",
+		"cleanupHint": "删除撤销或过期超过 30 天的记录",
+		"cleanupTitle": "清理过期令牌",
+		"cleanupConfirm": "将删除撤销或过期超过 30 天的令牌记录。刚过期的令牌仍可能被刷新，不会被删除。继续吗？",
+		"cleanedUp": "已清理 {count} 条",
+		"cleanupFailed": "清理失败",
+		"clientsTitle": "已授权的应用",
+		"filterByClient": "只看该应用",
+		"revokeAll": "撤销全部",
+		"statActive": "有效 {count}",
+		"statTotal": "共 {count}",
+		"statLastUsed": "最近使用",
+		"emailPlaceholder": "按用户邮箱搜索",
+		"status": {
+			"active": "有效",
+			"expired": "已过期",
+			"revoked": "已撤销"
+		},
+		"table": {
+			"user": "用户",
+			"client": "应用",
+			"token": "令牌",
+			"expires": "到期 / 撤销",
+			"lastUsed": "最近使用",
+			"status": "状态",
+			"actions": "操作"
+		},
+		"logs": "日志",
+		"revoke": "撤销",
+		"revokeTitle": "撤销授权",
+		"revokeConfirm": "撤销后「{client}」将无法再代表 {user} 访问 MCP，需要用户重新授权。继续吗？",
+		"revoked": "已撤销",
+		"revokedMany": "已撤销 {count} 条授权",
+		"revokeFailed": "撤销失败",
+		"revokeClientTitle": "撤销应用的全部授权",
+		"revokeClientConfirm": "将撤销「{client}」下的全部授权（共 {count} 条），所有用户需重新授权。继续吗？",
+		"empty": "暂无访问令牌",
+		"total": "共 {count} 条",
+		"userSectionTitle": "OAuth 访问令牌",
+		"userSectionHint": "该用户授权给第三方 MCP 客户端的令牌。",
+		"userSectionEmpty": "该用户没有授权过第三方应用。",
+		"viewAll": "查看全部",
+		"logCredential": "OAuth 应用：{name}",
+		"logCredentialUnknown": "OAuth 访问令牌 {id}"
+	},
 	"keysPage": {
 		"title": "API 密钥",
 		"subtitle": "创建和管理用户访问网关的 API 密钥，设置密钥状态与请求限流。",
@@ -3527,6 +3575,16 @@
 		"followHint": "与预览同步更新，向上滚动可暂停跟随。"
 	},
 	"mcp": {
+		"clientEndpoint": "客户端接入地址",
+		"sections": {
+			"label": "MCP 管理分区",
+			"services": "服务管理",
+			"clients": "客户端接入与授权"
+		},
+		"clientAccess": {
+			"title": "客户端接入",
+			"description": "让外部 MCP 客户端通过 API Key 或 OAuth 2.0 连接网关。查看接入指南复制客户端配置，或测试网关对外提供的目录。"
+		},
 		"title": "MCP 服务",
 		"subtitle": "接入远程 MCP 服务，审核并启用工具，通过统一入口提供给客户端。",
 		"add": "添加服务",
@@ -3544,6 +3602,26 @@
 		"pendingBadge": "{count} 待审核",
 		"edit": "编辑",
 		"viewInvocations": "查看调用记录",
+		"oauth": {
+			"title": "OAuth 2.0 授权登录（可选）",
+			"hint": "给只支持 OAuth 2.0 的客户端（如 ChatGPT 连接器）用，用户不必复制 API Key。不开启也能用 API Key 接入。",
+			"description": "为 ChatGPT 连接器等 MCP 客户端提供登录授权的门户地址（system_config.MCP_OAUTH_AUTHORIZATION_SERVER）。设置后，/mcp* 对未认证请求返回 401 + WWW-Authenticate，并公开 /.well-known/oauth-protected-resource；Gateway 自身不签发 token。须为 https（仅 localhost 允许 http）。留空即关闭。",
+			"label": "授权服务器地址",
+			"placeholder": "https://soloent.ai",
+			"howTitle": "开启后的流程",
+			"how1": "客户端不带凭据访问 /mcp 时，网关返回 401，并告诉它授权服务器在哪里。",
+			"how2": "客户端到授权服务器完成登录与授权，换得一个只能访问 /mcp 的访问凭证。",
+			"how3": "网关本身不管登录、不签发凭证；原有的 API Key 方式不受影响。",
+			"requirement": "授权服务器需支持动态客户端注册、PKCE（S256）和 /.well-known/oauth-authorization-server，并自行管理允许的回调地址。SoloEnt 门户已内置：填 https://soloent.ai，回调地址在门户后台「集成接入 → 第三方应用」维护。",
+			"statusOn": "已开启：未授权的 /mcp 请求会收到 401，并被引导到上面的授权服务器（资源元数据：{path}）。",
+			"openGuide": "查看使用方法",
+			"metadataLink": "授权服务器元数据",
+			"save": "保存 OAuth 授权服务器",
+			"invalid": "授权服务器地址无效：请填写 https 地址（仅 localhost 允许 http）。",
+			"enable": "启用 OAuth 2.0 授权登录",
+			"required": "请先填写授权服务器地址。",
+			"learnMore": "了解工作原理与要求"
+		},
 		"connectGuide": {
 			"button": "接入指南",
 			"title": "接入指南：在外部 Agent 中使用 MCP",
@@ -3568,7 +3646,8 @@
 				"vscode": "VS Code",
 				"claude-code": "Claude Code",
 				"codex": "Codex",
-				"curl": "curl 验证"
+				"curl": "curl 验证",
+				"chatgpt": "ChatGPT 连接器"
 			},
 			"note": {
 				"cursor": "写入后在 Cursor 设置的 MCP 页确认状态为已连接。项目级配置用 .cursor/mcp.json。",
@@ -3580,7 +3659,26 @@
 			"tipKey": "把 {placeholder} 换成你的网关用户 API Key（sk- 开头）。",
 			"tipTools": "工具名形如 {pattern}；提示词与资源也可从同一入口读取。",
 			"tipEnable": "只有在 MCP 服务中已同步并启用的条目才会出现在客户端。",
-			"tipTransport": "仅支持无会话的 Streamable HTTP（POST）；GET 返回 405。"
+			"tipTransport": "仅支持无会话的 Streamable HTTP（POST）；GET 返回 405。",
+			"authMode": "鉴权方式",
+			"authKey": "API Key",
+			"authOauth": "OAuth 2.0 授权",
+			"oauthSubtitle": "无需 API Key：客户端只填 MCP 地址，首次连接时在浏览器里登录并授权。",
+			"oauthOn": "OAuth 已开启，授权服务器：{server}",
+			"oauthOff": "OAuth 2.0 授权登录尚未启用，客户端暂时无法用这种方式连接。请先在本页「OAuth 2.0 授权登录」卡片里启用并填写授权服务器。",
+			"oauthSafeHint": "示例不含任何密钥；授权后凭证由客户端自行保管。",
+			"openInUi": "在客户端界面里填入：",
+			"oauthNote": {
+				"chatgpt": "在 ChatGPT 开发者模式中创建自定义连接器（具体菜单以当前版本为准）：MCP 服务器 URL 填上面的地址，认证方式选 OAuth。",
+				"cursor": "配置里没有 headers，也不需要 Key。连接时 Cursor 会打开浏览器完成登录授权。",
+				"vscode": "首次启动该服务时，VS Code 会提示在浏览器中登录授权。",
+				"claude-code": "添加后在 Claude Code 里运行 /mcp，选择该服务并完成浏览器授权。",
+				"codex": "保存后执行 codex mcp login {name} 完成浏览器授权；配置里不需要环境变量或 Key。",
+				"curl": "不带凭据请求应返回 HTTP 401，响应头 WWW-Authenticate 的 resource_metadata 指向授权发现地址，说明 OAuth 已启用。"
+			},
+			"oauthTipScope": "OAuth 授权得到的凭证只能访问 /mcp*，不能调用模型接口。",
+			"oauthTipBoth": "API Key 方式不受影响，两种方式可以同时使用。",
+			"oauthTipPublic": "ChatGPT 这类云端客户端需要公网 HTTPS 地址；本机客户端（Codex、Cursor 等）可以用 localhost。"
 		},
 		"connection": "连接",
 		"enableAllNew": "启用全部新增",

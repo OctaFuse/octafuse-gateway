@@ -11,6 +11,7 @@ import type { ApiKeyRateLimit } from '@octafuse/core';
 import { isRealtimeUpgradePath, parseDashScopeRealtimeAuthProtocol } from '@octafuse/core/realtime-protocol';
 import {
 	consumeRateLimitLayers,
+	isOAuthAccessTokenValue,
 	hasPositiveTotalBalance,
 	keyRateLimitSubject,
 	rateLimitRpmOf,
@@ -59,7 +60,7 @@ export function isAnthropicMessagesPath(path: string): boolean {
 }
 
 /** 日志中脱敏展示密钥前缀。 */
-function maskKey(key: string): string {
+export function maskKey(key: string): string {
   if (key.length <= 12) return '***';
   return `${key.slice(0, 8)}...${key.slice(-4)}`;
 }
@@ -68,7 +69,7 @@ function maskKey(key: string): string {
  * 按路径兼容多 SDK：`Authorization: Bearer`、Anthropic `x-api-key`、Gemini 查询参数 `key` 或 `x-goog-api-key`。
  * @returns 明文 sk 或 null
  */
-function extractApiKey(c: { req: { header: (name: string) => string | undefined; path: string; url: string } }): string | null {
+export function extractApiKey(c: { req: { header: (name: string) => string | undefined; path: string; url: string } }): string | null {
   const auth = c.req.header('Authorization');
   // 官方 DashScope SDK 的 WebSocket 握手写小写 `bearer`；HTTP 鉴权方案名本就不区分大小写。
   const bearer = auth && /^bearer\s/i.test(auth) ? auth.slice(7).trim() : '';
@@ -122,18 +123,26 @@ function extractApiKey(c: { req: { header: (name: string) => string | undefined;
   return null;
 }
 
-/** MCP 清单请求不占 RPM。只在 JSON-RPC `tools/call` 时计数。 */
-async function readJsonRpcMethod(c: { req: { method: string; raw: Request } }): Promise<string | null> {
+/**
+ * MCP 清单请求不占 RPM。只在 JSON-RPC `tools/call` 时计数。
+ * `batch=true` 表示请求体是 JSON-RPC 数组：底层 SDK 会逐条执行，而这里只能看到一个对象，
+ * 调用方必须拒绝，否则一个请求可以绕过 RPM 执行多次 `tools/call`。
+ */
+export async function readJsonRpcMethod(c: {
+  req: { method: string; raw: Request };
+}): Promise<{ method: string | null; batch: boolean }> {
   if (c.req.method !== 'POST') {
-    return null;
+    return { method: null, batch: false };
   }
   try {
     const text = await c.req.raw.clone().text();
-    if (!text) return null;
-    const body = JSON.parse(text) as { method?: unknown };
-    return typeof body.method === 'string' ? body.method : null;
+    if (!text) return { method: null, batch: false };
+    const body = JSON.parse(text) as unknown;
+    if (Array.isArray(body)) return { method: null, batch: true };
+    const method = (body as { method?: unknown } | null)?.method;
+    return { method: typeof method === 'string' ? method : null, batch: false };
   } catch {
-    return null;
+    return { method: null, batch: false };
   }
 }
 
@@ -157,6 +166,16 @@ export const requireApiKey = createMiddleware<Env>(async (c, next) => {
     });
   }
 
+  // `oat_` 访问令牌只能访问 /mcp*（由 requireMcpCaller 校验）；其它入口一律拒绝，不当作用户 Key 处理。
+  if (isOAuthAccessTokenValue(key)) {
+    console.warn(`[Gateway Auth] 403 access token on non-MCP path=${c.req.path}`);
+    return gatewayErrorJson(c, {
+      status: 403,
+      code: GatewayErrorCode.scopeDenied,
+      message: 'OAuth access tokens can only be used with MCP endpoints',
+    });
+  }
+
   const repos = c.get('repositories');
   const authResult = await authenticateApiKey(repos, key);
   if (!authResult) {
@@ -175,10 +194,7 @@ export const requireApiKey = createMiddleware<Env>(async (c, next) => {
   const isKeyInfoRoute = c.req.method === 'GET' && c.req.path.endsWith('/me');
   // Allow GET /v1/models even when budget is exceeded or rate-limited (list only; Agent refreshes ~60s)
   const isModelsRoute = c.req.method === 'GET' && c.req.path.endsWith('/models');
-  const isMcpRoute = c.req.path === '/mcp' || c.req.path.startsWith('/mcp/');
-  const mcpMethod = isMcpRoute ? await readJsonRpcMethod(c) : null;
-  const mcpCountsRateLimit = isMcpRoute && mcpMethod === 'tools/call';
-  if (!isKeyInfoRoute && !isModelsRoute && (!isMcpRoute || mcpCountsRateLimit)) {
+  if (!isKeyInfoRoute && !isModelsRoute) {
     const { exceeded, retryAfterSeconds } = await consumeRateLimitLayers([
       { subject: keyRateLimitSubject(authResult.keyId), rpm: rateLimitRpmOf(authResult.rateLimit) },
       { subject: userRateLimitSubject(authResult.userId), rpm: rateLimitRpmOf(authResult.userRateLimit) },
@@ -206,7 +222,6 @@ export const requireApiKey = createMiddleware<Env>(async (c, next) => {
     !isChatRoute &&
     !isImagesRoute &&
     !isAudioRoute &&
-    !isMcpRoute &&
     !isToolPriceCheckedRoute(c.req.method, c.req.path) &&
     !hasPositiveTotalBalance(
       authResult.budgetMax,

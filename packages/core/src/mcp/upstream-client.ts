@@ -196,6 +196,10 @@ async function rpc(
 	if (first.response.status < 200 || first.response.status >= 300) {
 		throw new McpUpstreamError('MCP upstream request failed', first.response.status);
 	}
+	// 响应带了 id 却对不上请求：不是我们要的响应（SSE 取不到匹配项时会回退到最后一条）。
+	if (first.parsed.id !== undefined && first.parsed.id !== id) {
+		throw new McpUpstreamError('MCP upstream returned a mismatched response id', first.response.status);
+	}
 	if (first.parsed.error) {
 		const code = first.parsed.error.code;
 		const message = first.parsed.error.message || 'MCP upstream error';
@@ -373,8 +377,11 @@ export async function callMcpUpstreamTool(
 ): Promise<{ result: Record<string, unknown>; isError: boolean }> {
 	await ensureSession(target, fetchImpl);
 	const result = await rpc(target, 'tools/call', { name, arguments: args ?? {} }, fetchImpl, true);
-	const record = isRecord(result) ? result : {};
-	return { result: record, isError: record.isError === true };
+	// 空 202 / 缺 result 不是成功的工具调用：抛错走零费用路径，不能转成 `{}` 去扣费。
+	if (!isRecord(result)) {
+		throw new McpUpstreamError('MCP upstream returned no tool result');
+	}
+	return { result, isError: result.isError === true };
 }
 
 export async function getMcpUpstreamPrompt(

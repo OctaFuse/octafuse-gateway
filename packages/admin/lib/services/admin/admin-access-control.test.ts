@@ -68,6 +68,18 @@ test('permission matrix protects console-only surfaces and defaults to deny', ()
 	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/analytics/keys'), {
 		kind: 'permission', permission: 'analytics.read',
 	});
+	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/oauth-access-tokens'), {
+		kind: 'permission', permission: 'user_keys.read',
+	});
+	assert.deepEqual(getAdminAuthorizationDecision('POST', '/admin/oauth-access-tokens/t1/revoke'), {
+		kind: 'permission', permission: 'user_keys.write',
+	});
+	assert.deepEqual(getAdminAuthorizationDecision('POST', '/admin/users/u1/oauth-access-tokens'), {
+		kind: 'permission', permission: 'user_keys.write',
+	});
+	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/users/u1/oauth-access-tokens'), {
+		kind: 'permission', permission: 'user_keys.read',
+	});
 	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/not-registered'), { kind: 'deny' });
 	assert.deepEqual(getAdminAuthorizationDecision('GET', '/admin/mcp-servers'), { kind: 'permission', permission: 'mcp.read' });
 	assert.deepEqual(getAdminAuthorizationDecision('POST', '/admin/mcp-servers/server-1/sync'), { kind: 'permission', permission: 'mcp.write' });

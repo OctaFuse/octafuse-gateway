@@ -15,7 +15,7 @@ export const GATEWAY_POSTGRES_SEARCH_PATH = 'octafuse_gateway, public';
  * - `config`：只有管理员（Admin）会写。Proxy 请求路径不写，预热时同步一次，
  *   维护窗口内用 `--check` 校验没有漂移即可（有漂移再 `--kind=config --prune` 补一次）。
  * - `state`：会被请求或维护开关改写，窗口内必须在冻结之后再同步（带 `--prune`）。
- *   `users`（预算/钱包）、`api_keys`（last_used_at）、`route_pool_sticky_bindings`（Proxy 每次请求都写）。
+ *   `users`（预算/钱包）、`api_keys`（last_used_at）、`oauth_access_tokens`（刷新轮换）、`route_pool_sticky_bindings`（Proxy 每次请求都写）。
  *   `system_config` 是特例：只有 Admin 写，但维护模式开关本身就存在这里，
  *   新环境要继承“冻结”状态，所以必须在冻结之后同步。
  * - `log`：只追加的日志，体量大，预热时同步，窗口内只补尾部（`--since`）。
@@ -76,6 +76,8 @@ export interface EtlTableSpec {
 export const ETL_TABLES = [
 	{ name: 'users', kind: 'state', conflictKeys: ['id'] },
 	{ name: 'api_keys', kind: 'state', conflictKeys: ['id'] },
+	// 访问令牌随授权 / 刷新改写；last_used_at 随每次 MCP 调用改写，不参与一致性校验。
+	{ name: 'oauth_access_tokens', kind: 'state', conflictKeys: ['id'], checkIgnoreColumns: ['last_used_at'] },
 	{ name: 'providers', kind: 'config', conflictKeys: ['id'] },
 	{ name: 'models', kind: 'config', conflictKeys: ['id'] },
 	{ name: 'model_tags', kind: 'config', conflictKeys: ['model_id', 'tag'] },

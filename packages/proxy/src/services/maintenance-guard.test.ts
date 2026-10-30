@@ -49,6 +49,8 @@ describe('isMaintenanceExemptRequest', () => {
 			['GET', '/v1/me'],
 			['GET', '/v1/tools/pricing'],
 			['GET', '/catalog'],
+			['GET', '/.well-known/oauth-protected-resource'],
+			['GET', '/.well-known/oauth-protected-resource/mcp/insight'],
 			['GET', '/v1beta/models'],
 			['GET', '/v1beta/models/gemini-2.5-pro'],
 		]) {

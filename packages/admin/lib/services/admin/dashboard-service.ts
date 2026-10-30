@@ -5,6 +5,10 @@ import type { GatewayRepositories, RequestLogSummaryDimension, RequestLogSummary
 import { BILLING_CURRENCY_KEY, tryParseGatewaySupportedBillingCurrencyInput } from '@octafuse/core/lib/billing-currency';
 import { MAINTENANCE_MODE_KEY } from '@octafuse/core/lib/maintenance-mode';
 import {
+	MCP_OAUTH_AUTHORIZATION_SERVER_KEY,
+	normalizeMcpOAuthAuthorizationServer,
+} from '@octafuse/core/lib/mcp-oauth-system-config';
+import {
 	parseWebSearchActiveInput,
 	parseWebSearchCatalogInput,
 	serializeWebSearchCatalog,
@@ -156,7 +160,20 @@ export async function listAdminGlobalRequestLogsService(
 		startDate: input.start_date,
 		endDate: input.end_date,
 	});
-	return { ...result, page, page_size: pageSize };
+	// 走 OAuth 访问令牌的日志没有 api_key_id；补上授权应用名（令牌已被清理时只剩 id）。
+	const tokenIds = result.logs
+		.map((log) => (log as { oauth_access_token_id?: string | null }).oauth_access_token_id)
+		.filter((id): id is string => typeof id === 'string' && id !== '');
+	let logs = result.logs;
+	if (tokenIds.length > 0) {
+		const names = new Map((await repos.oauthAccessTokens.getNamesByIds(tokenIds)).map((row) => [row.id, row]));
+		logs = result.logs.map((log) => {
+			const id = (log as { oauth_access_token_id?: string | null }).oauth_access_token_id;
+			const hit = id ? names.get(id) : undefined;
+			return hit ? { ...log, oauth_access_token_name: hit.client_name, oauth_access_token_client_id: hit.client_id } : log;
+		});
+	}
+	return { ...result, logs, page, page_size: pageSize };
 }
 
 const ISO_INSTANT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;
@@ -408,6 +425,15 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 			throw badRequest('BILLING_CURRENCY must be USD or CNY');
 		}
 		value = parsed;
+	}
+	if (key === MCP_OAUTH_AUTHORIZATION_SERVER_KEY) {
+		const normalized = normalizeMcpOAuthAuthorizationServer(value);
+		if (normalized === null) {
+			throw badRequest(
+				'MCP_OAUTH_AUTHORIZATION_SERVER must be an https origin (http allowed for localhost), or empty to disable'
+			);
+		}
+		value = normalized;
 	}
 	if (key === ROUTE_STRATEGY_KEY) {
 		const normalized = value.trim().toLowerCase();

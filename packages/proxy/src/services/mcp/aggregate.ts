@@ -6,10 +6,12 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import {
 	CallToolRequestSchema,
+	CallToolResultSchema,
 	ErrorCode,
 	GetPromptRequestSchema,
 	ListPromptsRequestSchema,
 	ListResourcesRequestSchema,
+	ListResourceTemplatesRequestSchema,
 	ListToolsRequestSchema,
 	McpError,
 	ReadResourceRequestSchema,
@@ -29,7 +31,7 @@ import {
 	type McpPricingRule,
 } from '@octafuse/core';
 import { proxyAppVersion } from '../../app-version';
-import type { ApiKeyContext } from '../../middleware/auth';
+import type { McpCaller } from '../../middleware/mcp-auth';
 import { GatewayErrorCode } from '../gateway-error-codes';
 import { canAffordToolCost, chargeToolUsage, type ChargeToolUsageParams } from '../tool-usage-charge';
 
@@ -120,7 +122,7 @@ function asContent(result: Record<string, unknown>): Array<{ type: 'text'; text:
 export async function handleMcpAggregateRequest(
 	request: Request,
 	input: {
-		apiKey: ApiKeyContext;
+		caller: McpCaller;
 		slug: string | null;
 		deps: McpAggregateDeps;
 	}
@@ -191,11 +193,11 @@ export async function handleMcpAggregateRequest(
 		const preflight = preflightMcpPricing(pricing.rule, args);
 		if (
 			!canAffordToolCost(
-				input.apiKey.budgetMax,
-				input.apiKey.budgetSpent,
+				input.caller.budgetMax,
+				input.caller.budgetSpent,
 				preflight.totals.charged,
-				input.apiKey.walletGranted,
-				input.apiKey.walletSpent
+				input.caller.walletGranted,
+				input.caller.walletSpent
 			)
 		) {
 			return textResult('Budget exceeded', GatewayErrorCode.budgetExceeded);
@@ -205,10 +207,11 @@ export async function handleMcpAggregateRequest(
 		const requestBody = clip(JSON.stringify({ name: item.upstreamKey, arguments: args }));
 		const chargeBase = {
 			repos: undefined as never,
-			apiKeyId: input.apiKey.keyId,
-			userId: input.apiKey.userId,
-			userEmail: input.apiKey.userEmail,
-			ingressHost: input.apiKey.ingressHost,
+			apiKeyId: input.caller.apiKeyId,
+			oauthAccessTokenId: input.caller.oauthAccessTokenId,
+			userId: input.caller.userId,
+			userEmail: input.caller.userEmail,
+			ingressHost: input.caller.ingressHost,
 			toolId: `mcp:${item.slug}/${item.upstreamKey}`,
 			toolProvider: item.slug,
 			pricingUnit: pricing.rule.unit,
@@ -218,22 +221,46 @@ export async function handleMcpAggregateRequest(
 			ledgerProviderName: 'OctaFuse MCP',
 		};
 
+		const settlementFailure = (error: unknown) => {
+			console.error('[mcp] settlement failed', { tool: item.exposedName, userId: input.caller.userId, error });
+			// A failed commit response does not prove the transaction rolled back. Do not write
+			// a second zero-cost log or tell clients the upstream failed and is safe to retry.
+			return textResult(
+				'The billing outcome could not be confirmed. Do not retry automatically; contact support.',
+				GatewayErrorCode.mcpSettlementFailed,
+				{ retryable: false }
+			);
+		};
+		const recordError = (message: string, responseBody?: string) => input.deps.charge({
+			...chargeBase,
+			billingUnits: 0,
+			meteredCost: 0,
+			standardCost: 0,
+			chargedCost: 0,
+			pricingAuditExtra: pricingAudit(pricing, preflight, null),
+			latencyMs: Date.now() - started,
+			responseBody,
+			errorMessage: clip(message),
+			status: 'error',
+		});
+
+		let upstream: Awaited<ReturnType<typeof callTool>>;
 		try {
-			const upstream = await callTool(targetOf(item), item.upstreamKey, args, fetchImpl);
+			upstream = await callTool(targetOf(item), item.upstreamKey, args, fetchImpl);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'MCP upstream request failed';
+			try {
+				await recordError(message);
+			} catch (accountingError) {
+				return settlementFailure(accountingError);
+			}
+			return textResult(message, GatewayErrorCode.upstreamRequestFailed);
+		}
+
+		try {
 			const responseBody = clip(JSON.stringify(upstream.result));
 			if (upstream.isError) {
-				await input.deps.charge({
-					...chargeBase,
-					billingUnits: 0,
-					meteredCost: 0,
-					standardCost: 0,
-					chargedCost: 0,
-					pricingAuditExtra: pricingAudit(pricing, preflight, null),
-					latencyMs: Date.now() - started,
-					responseBody,
-					errorMessage: 'Upstream tool returned isError',
-					status: 'error',
-				});
+				await recordError('Upstream tool returned isError', responseBody);
 				return {
 					...upstream.result,
 					content: asContent(upstream.result),
@@ -245,6 +272,16 @@ export async function handleMcpAggregateRequest(
 						octafuse: { code: GatewayErrorCode.upstreamRequestFailed, charged: 0 },
 					},
 				};
+			}
+			// 先按 SDK 同一份 schema 校验将要返回的结果：否则会先扣费、随后 SDK 拒绝结果，客户端报错却被收费。
+			const candidate = CallToolResultSchema.safeParse({
+				...upstream.result,
+				content: asContent(upstream.result),
+				isError: false,
+			});
+			if (!candidate.success) {
+				await recordError('Upstream returned an invalid tool result', responseBody);
+				return textResult('MCP upstream returned an invalid tool result', GatewayErrorCode.upstreamRequestFailed);
 			}
 			const settled = settleMcpPricing(pricing.rule, args, upstream.result);
 			const charged = await input.deps.charge({
@@ -275,19 +312,7 @@ export async function handleMcpAggregateRequest(
 				},
 			};
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'MCP upstream request failed';
-			await input.deps.charge({
-				...chargeBase,
-				billingUnits: 0,
-				meteredCost: 0,
-				standardCost: 0,
-				chargedCost: 0,
-				pricingAuditExtra: pricingAudit(pricing, preflight, null),
-				latencyMs: Date.now() - started,
-				errorMessage: clip(message),
-				status: 'error',
-			});
-			return textResult(message, GatewayErrorCode.upstreamRequestFailed);
+			return settlementFailure(error);
 		}
 	});
 
@@ -326,6 +351,10 @@ export async function handleMcpAggregateRequest(
 				};
 			}),
 	}));
+
+	// 声明了 resources 能力后，客户端（如 MCP Inspector）会一并调用 resources/templates/list；
+	// 网关目前不同步上游的资源模板，返回空列表而不是 -32601。
+	server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => ({ resourceTemplates: [] }));
 
 	server.setRequestHandler(ReadResourceRequestSchema, async (rpcRequest) => {
 		const item = byName.get(rpcRequest.params.uri);

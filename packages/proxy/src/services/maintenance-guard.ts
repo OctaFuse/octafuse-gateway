@@ -1,7 +1,7 @@
 /**
  * 维护模式守卫：`system_config.MAINTENANCE_MODE` 开启时，推理类入口一律 503。
  *
- * - 放行：`/`、`/health`、模型列表、`/v1/me`、工具价目、`/catalog`（只读，且探活不能误判下线）。
+ * - 放行：`/`、`/health`、模型列表、`/v1/me`、工具价目、`/catalog`、OAuth 受保护资源元数据（只读，且探活不能误判下线）。
  * - 拒绝发生在鉴权之前，不写请求日志、不扣费、不占 RPM，因此能真正冻结账务写入。
  * - 读配置失败时 fail-open：宁可继续服务，也不因为配置读取故障把全网流量打成 503。
  * - 错误体按入口协议给出各 SDK 能解析的形状，并统一附带顶层 `code` / `message`。
@@ -25,6 +25,10 @@ type ErrorShape = 'openai' | 'anthropic' | 'gemini';
 export function isMaintenanceExemptRequest(method: string, path: string): boolean {
 	if (path === '/' || path === '/health' || path === '/health/') return true;
 	if (path === '/catalog' || path.startsWith('/catalog/')) return method === 'GET' || method === 'HEAD';
+	// MCP OAuth 受保护资源元数据（RFC 9728）：只读发现文档，不属于推理入口。
+	if (path === '/.well-known/oauth-protected-resource' || path.startsWith('/.well-known/oauth-protected-resource/')) {
+		return method === 'GET' || method === 'HEAD';
+	}
 	if (method !== 'GET' && method !== 'HEAD') return false;
 	if (path === '/v1/models' || path.startsWith('/v1/models/')) return true;
 	if (path === '/v1/me' || path === '/v1/me/') return true;

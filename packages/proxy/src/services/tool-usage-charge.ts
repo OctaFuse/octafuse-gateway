@@ -21,7 +21,10 @@ import {
 
 export type ChargeToolUsageParams = {
 	repos: GatewayRepositories;
-	apiKeyId: string;
+	/** `sk-` 用户 Key 调用时为 Key id；`oat_` 访问令牌（MCP）调用时为 null */
+	apiKeyId: string | null;
+	/** `oat_` 访问令牌调用时为令牌 id */
+	oauthAccessTokenId?: string | null;
 	userId: string;
 	userEmail: string | null;
 	/** 记入 model_id，如 tool:web-search */
@@ -131,6 +134,7 @@ export async function chargeToolUsage(params: ChargeToolUsageParams): Promise<{ 
 			id,
 			userId: params.userId,
 			apiKeyId: params.apiKeyId,
+			oauthAccessTokenId: params.oauthAccessTokenId ?? null,
 			userEmail: params.userEmail,
 			modelId: params.toolId,
 			providerId: params.ledgerProviderId ?? 'octafuse-tools',

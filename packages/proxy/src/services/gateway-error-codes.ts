@@ -22,11 +22,14 @@ export const GatewayErrorCode = {
 	budgetExceeded: 'gateway.budget_exceeded',
 	rateLimited: 'gateway.rate_limited',
 	authFailed: 'gateway.auth_failed',
+	/** Key 作用域不允许访问该路径（如仅 MCP 的 Key 调模型）；403。 */
+	scopeDenied: 'gateway.scope_denied',
 	noRoute: 'gateway.no_route',
 	routeResolutionFailed: 'gateway.route_resolution_failed',
 	invalidRequest: 'gateway.invalid_request',
 	mcpItemDisabled: 'gateway.mcp_item_disabled',
 	mcpPricingInvalid: 'gateway.mcp_pricing_invalid',
+	mcpSettlementFailed: 'gateway.mcp_settlement_failed',
 	upstreamRequestFailed: 'gateway.upstream_request_failed',
 	/** 维护模式开启，推理入口被拒绝；503 + `Retry-After`。 */
 	maintenance: 'gateway.maintenance',

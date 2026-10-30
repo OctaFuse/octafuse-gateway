@@ -259,6 +259,8 @@ export interface RequestLogRow {
 	audio_characters: number | null;
 	/** 请求打到的入口 Host（只记录，不做准入） */
 	ingress_host: string | null;
+	/** 走访问令牌时的令牌 id（用户 Key 请求为 null） */
+	oauth_access_token_id: string | null;
   created_at: string;
 }
 

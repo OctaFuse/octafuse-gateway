@@ -30,9 +30,13 @@ export function getAdminAuthorizationDecision(method: string, pathname: string):
 	if (/^\/admin\/keys\/[^/]+\/logs(?:\/|$)/.test(pathname)) {
 		return { kind: 'permission', permission: 'logs.read' };
 	}
-	if (/^\/admin\/users\/[^/]+\/keys(?:\/|$)/.test(pathname)) return readOrWrite(normalizedMethod, 'user_keys');
+	if (/^\/admin\/users\/[^/]+\/(?:keys|oauth-access-tokens)(?:\/|$)/.test(pathname)) {
+		return readOrWrite(normalizedMethod, 'user_keys');
+	}
 	if (pathname.startsWith('/admin/users')) return readOrWrite(normalizedMethod, 'users');
-	if (pathname.startsWith('/admin/keys')) return readOrWrite(normalizedMethod, 'user_keys');
+	if (pathname.startsWith('/admin/keys') || pathname.startsWith('/admin/oauth-access-tokens')) {
+		return readOrWrite(normalizedMethod, 'user_keys');
+	}
 	if (pathname === '/admin/config' || pathname === '/admin/config/') return readOrWrite(normalizedMethod, 'config');
 	if (pathname === '/admin/maintenance' || pathname === '/admin/maintenance/') {
 		return readOrWrite(normalizedMethod, 'maintenance');

@@ -176,6 +176,7 @@ describe('D1 → Postgres ETL 表注册表', () => {
 		const expected: Record<string, string> = {
 			users: 'state', // budget_spent、钱包随请求变化
 			api_keys: 'state', // last_used_at 随请求变化
+			oauth_access_tokens: 'state', // 刷新轮换哈希与过期时间，last_used_at 随 MCP 调用变化
 			route_pool_sticky_bindings: 'state', // Proxy 每次请求写
 			system_config: 'state', // 维护模式开关存在这里，新环境要继承冻结状态
 			providers: 'config',
