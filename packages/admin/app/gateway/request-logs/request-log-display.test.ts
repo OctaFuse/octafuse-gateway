@@ -1,11 +1,70 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { compareLogBodies, flowTimeExtent, readFlowAttempts, readLogObject, requestAccountingHref } from './request-log-flow-data';
 import {
 	isRequestLogStreaming,
 	parseGeminiWireAction,
 	requestLogFeatureKind,
 	requestLogFeatureTags,
 } from './request-log-display';
+
+describe('request flow observations', () => {
+	it('opens usage charge audits for the request date, including historical requests', () => {
+		const url = new URL(requestAccountingHref('request/1', '2026-08-01T03:00:00Z'), 'http://localhost');
+		assert.equal(url.searchParams.get('correlation_id'), 'request/1');
+		assert.equal(url.searchParams.get('event_type'), 'usage_charge');
+		assert.equal(url.searchParams.get('start_date'), '2026-07-31T03:00:00.000Z');
+		assert.equal(url.searchParams.get('end_date'), '2026-08-02T03:00:00.000Z');
+	});
+	it('keeps failed attempts and final selection distinct from request success', () => {
+		const attempts = readFlowAttempts(JSON.stringify({ attempts: [
+			{ index: 1, provider_name: 'A', start_ms: 8, headers_ms: 40, headers_elapsed_ms: 48, status: 429, failure_kind: 'rate_limit', error: 'slow down', selected: false },
+			{ index: 2, provider_name: 'B', start_ms: 60, headers_ms: 90, headers_elapsed_ms: 150, status: 503, selected: true },
+		] }));
+		assert.equal(attempts.length, 2);
+		assert.equal(attempts[0].failed, true);
+		assert.equal(attempts[0].failureKind, 'rate_limit');
+		assert.equal(attempts[1].selected, true);
+		assert.equal(attempts[1].failed, true);
+		assert.equal(flowTimeExtent(200, attempts, 8, 120), 270);
+	});
+
+	it('does not invent headers or duration for transport errors and tolerates legacy data', () => {
+		const attempts = readFlowAttempts(JSON.stringify({ attempts: [null, 'bad', { error: 'fetch failed', start_ms: 0, selected: false }, { start_ms: -1, headers_ms: '12', selected: 'true' }] }));
+		assert.equal(attempts.length, 2);
+		assert.equal(attempts[0].startMs, 0);
+		assert.equal(attempts[0].headersMs, null);
+		assert.equal(attempts[0].status, null);
+		assert.equal(attempts[0].failed, true);
+		assert.equal(attempts[1].startMs, null);
+		assert.equal(attempts[1].headersMs, null);
+		assert.equal(attempts[1].selected, false);
+		for (const raw of [null, '', 'invalid', '[]', '{"attempts":{}}']) assert.deepEqual(readFlowAttempts(raw), []);
+		assert.equal(readLogObject('null'), null);
+	});
+
+	it('compares redacted bodies including additions, removals, nulls and nested parameter changes', () => {
+		const changes = compareLogBodies(
+			JSON.stringify({ model: 'public', thinking: { enabled: true, budget: 1 }, removed: null, 'a/b~c': 1 }),
+			JSON.stringify({ model: 'upstream', thinking: { enabled: true, budget: 2 }, added: null, 'a/b~c': 2 }),
+		);
+		assert.deepEqual(changes, [
+			{ path: '/a~1b~0c', kind: 'changed', before: 1, after: 2 },
+			{ path: '/added', kind: 'added', after: null },
+			{ path: '/model', kind: 'changed', before: 'public', after: 'upstream' },
+			{ path: '/removed', kind: 'removed', before: null },
+			{ path: '/thinking/budget', kind: 'changed', before: 1, after: 2 },
+		]);
+	});
+
+	it('ignores object key ordering but preserves array order and unavailable snapshots', () => {
+		assert.deepEqual(compareLogBodies('{"tools":[{"a":1,"b":2}]}', '{"tools":[{"b":2,"a":1}]}'), []);
+		assert.equal(compareLogBodies('{"tools":[1,2]}', '{"tools":[2,1]}')?.length, 1);
+		assert.deepEqual(compareLogBodies('{}', '{}'), []);
+		assert.equal(compareLogBodies(null, '{}'), null);
+		assert.equal(compareLogBodies('{}', 'invalid'), null);
+	});
+});
 
 describe('parseGeminiWireAction', () => {
 	it('reads generateContent / streamGenerateContent from route_trace', () => {
