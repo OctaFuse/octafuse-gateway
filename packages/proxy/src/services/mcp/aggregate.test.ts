@@ -1,24 +1,19 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { perCallMcpPricingRule, serializeMcpPricingRule, type McpCallableItem } from '@octafuse/core';
-import type { ApiKeyContext } from '../../middleware/auth';
+import type { McpCaller } from '../../middleware/mcp-auth';
 import { handleMcpAggregateRequest, type McpAggregateDeps } from './aggregate';
 import { createMockMcpUpstream } from './mock-upstream';
 
-const apiKey: ApiKeyContext = {
-	keyId: 'key',
+const caller: McpCaller = {
 	userId: 'user',
 	userEmail: null,
 	budgetMax: 10,
 	budgetSpent: 0,
 	walletGranted: 0,
 	walletSpent: 0,
-	budgetPeriod: 'none',
-	budgetResetAt: null,
-	metadata: null,
-	chargedCostFactors: null,
-	rateLimit: null,
-	userRateLimit: null,
+	apiKeyId: 'key',
+	oauthAccessTokenId: null,
 	ingressHost: null,
 };
 
@@ -70,7 +65,7 @@ async function rpc(
 			headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
 			body: methodName === 'GET' ? undefined : JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
 		}),
-		{ apiKey, slug: null, deps }
+		{ caller, slug: null, deps }
 	);
 	const text = await response.text();
 	return { status: response.status, body: text ? (JSON.parse(text) as Record<string, unknown>) : null };
@@ -100,6 +95,17 @@ describe('mcp aggregate server', () => {
 		assert.equal(tools[0]?.description, 'Ask the repo');
 		const get = await rpc(deps, 'ping', {}, 'GET');
 		assert.equal(get.status, 405);
+	});
+
+	it('answers resources/templates/list with an empty list instead of method-not-found', async () => {
+		const deps: McpAggregateDeps = {
+			listCallable: async () => [item()],
+			charge: async () => ({ requestLogId: 'log', chargedCost: 0 }),
+		};
+		const listed = await rpc(deps, 'resources/templates/list', {});
+		assert.equal(listed.status, 200);
+		assert.equal(listed.body?.error, undefined);
+		assert.deepEqual(listed.body?.result, { resourceTemplates: [] });
 	});
 
 	it('bills a successful call and records an error without a charge when the upstream fails', async () => {
@@ -135,6 +141,36 @@ describe('mcp aggregate server', () => {
 		assert.equal(calls, 1);
 	});
 
+	it('attributes an access token call to the token, not to an api key', async () => {
+		const charged: Array<{ apiKeyId: string | null; oauthAccessTokenId?: string | null; userId: string }> = [];
+		const deps: McpAggregateDeps = {
+			listCallable: async () => [item()],
+			charge: async (params) => {
+				charged.push(params);
+				return { requestLogId: 'log', chargedCost: params.chargedCost };
+			},
+			callTool: async () => ({ result: { content: [{ type: 'text', text: 'ok' }] }, isError: false }),
+		};
+		const response = await handleMcpAggregateRequest(
+			new Request('http://localhost/mcp', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+				body: JSON.stringify({
+					jsonrpc: '2.0',
+					id: 1,
+					method: 'tools/call',
+					params: { name: 'deepwiki__ask', arguments: {} },
+				}),
+			}),
+			{ caller: { ...caller, apiKeyId: null, oauthAccessTokenId: 'tok-1' }, slug: null, deps }
+		);
+		assert.equal(response.status, 200);
+		assert.equal(charged.length, 1);
+		assert.equal(charged[0]?.apiKeyId, null);
+		assert.equal(charged[0]?.oauthAccessTokenId, 'tok-1');
+		assert.equal(charged[0]?.userId, 'user');
+	});
+
 	it('does not call upstream when the tool is disabled or the balance is short', async () => {
 		let calls = 0;
 		const deps: McpAggregateDeps = {
@@ -161,7 +197,7 @@ describe('mcp aggregate server', () => {
 				}),
 			}),
 			{
-				apiKey: { ...apiKey, budgetMax: 0, budgetSpent: 0 },
+				caller: { ...caller, budgetMax: 0, budgetSpent: 0 },
 				slug: null,
 				deps: { ...deps, listCallable: async () => [item()] },
 			}
@@ -298,7 +334,7 @@ describe('mcp aggregate server', () => {
 						params: { name: 'deepwiki__ask', arguments: {} },
 					}),
 				}),
-				{ apiKey: { ...apiKey, budgetMax: 0 }, slug: null, deps }
+				{ caller: { ...caller, budgetMax: 0 }, slug: null, deps }
 			);
 		}
 		await call();
@@ -366,5 +402,42 @@ describe('mcp aggregate server', () => {
 			assert.equal(charges[0]?.meteredCost, 0.008);
 			assert.equal(charges[0]?.standardCost, JSON.parse(pricing).v === 1 ? 0 : 0.01);
 		}
+	});
+	it('reports an uncertain settlement without writing a second zero-cost log', async () => {
+		const attempts: string[] = [];
+		let upstreamCalls = 0;
+		const result = await rpc({
+			listCallable: async () => [item()],
+			callTool: async () => {
+				upstreamCalls += 1;
+				return { result: { content: [{ type: 'text', text: 'done' }] }, isError: false };
+			},
+			charge: async (params) => {
+				attempts.push(params.status);
+				if (params.status === 'success') throw new Error('commit response lost');
+				return { requestLogId: 'misleading-error-log', chargedCost: 0 };
+			},
+		}, 'tools/call', { name: 'deepwiki__ask', arguments: {} });
+		assert.equal(upstreamCalls, 1);
+		assert.deepEqual(attempts, ['success']);
+		const body = result.body?.result as { isError: boolean; _meta: { octafuse: { code: string; retryable: boolean } } };
+		assert.equal(body.isError, true);
+		assert.equal(body._meta.octafuse.code, 'gateway.mcp_settlement_failed');
+		assert.equal(body._meta.octafuse.retryable, false);
+	});
+	it('does not retry a failed error-log write or expose its database error', async () => {
+		let attempts = 0;
+		const result = await rpc({
+			listCallable: async () => [item()],
+			callTool: async () => { throw new Error('upstream unavailable'); },
+			charge: async () => {
+				attempts += 1;
+				throw new Error('private database detail');
+			},
+		}, 'tools/call', { name: 'deepwiki__ask', arguments: {} });
+		assert.equal(attempts, 1);
+		const body = result.body?.result as { _meta: { octafuse: { code: string } } };
+		assert.equal(body._meta.octafuse.code, 'gateway.mcp_settlement_failed');
+		assert.ok(!JSON.stringify(body).includes('private database detail'));
 	});
 });

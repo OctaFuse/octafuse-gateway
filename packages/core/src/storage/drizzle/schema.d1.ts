@@ -163,6 +163,8 @@ export const apiKeyRequestLogsTable = sqliteTable('api_key_request_logs', {
 	id: text('id').primaryKey(),
 	userId: text('user_id'),
 	apiKeyId: text('api_key_id'),
+	/** 访问令牌调用（OAuth）：此时 api_key_id 为空 */
+	oauthAccessTokenId: text('oauth_access_token_id'),
 	userEmail: text('user_email'),
 	modelId: text('model_id'),
 	providerId: text('provider_id'),

@@ -4,12 +4,19 @@
 
 ### Proxy
 
+- **MCP 批量请求与空结果**：`/mcp*` 现在拒绝 JSON-RPC 批量数组（400 `gateway.invalid_request`），此前一个数组请求可以绕过 `tools/call` 的 RPM 计数。上游对 `tools/call` 返回空 202、缺少 `result` 或响应 id 与请求不符时，按上游失败处理且不扣费，不再把空结果当成功计费。
+- **MCP OAuth 接入**：Proxy 新增 `GET /.well-known/oauth-protected-resource`（及 `/mcp`、`/mcp/{slug}` 后缀形式，RFC 9728），并在 `/mcp*` 的 401 响应加 `WWW-Authenticate: Bearer resource_metadata="…"`，让 ChatGPT 等 MCP 客户端自动发现授权服务器。授权服务器地址由 `system_config.MCP_OAUTH_AUTHORIZATION_SERVER` 配置；未配置时不暴露元数据，401 行为不变。维护模式下元数据仍可读取。
+- **MCP 资源模板**：`/mcp` 与 `/mcp/{slug}` 现在会响应 `resources/templates/list`（返回空列表）。此前网关声明了 `resources` 能力却对该标准方法返回 -32601，MCP Inspector 等客户端会因此报错。
+- **OAuth 访问令牌**：OAuth 授权服务器签发给第三方 MCP 客户端的凭证从用户 `api_keys` 里独立出来，存入新表 `oauth_access_tokens`：前缀 `oat_`、只存哈希、默认 1 小时过期、只能访问 `/mcp` 与 `/mcp/*`，用于其它入口返回 403 `gateway.scope_denied`。`sk-` Key 在 `/mcp*` 的行为不变，`api_keys` 不再需要作用域。令牌过期或被撤销时 `/mcp*` 返回 401 并带 `error="invalid_token"`，客户端据此刷新。来自访问令牌的调用在请求日志里 `api_key_id` 为空、`oauth_access_token_id` 指向令牌，按令牌所属用户扣费。
 - **流式超时与重试**：修复上游只发 `: keep-alive` 注释心跳、迟迟不出字时，请求被拖到 10 分钟兜底才以 `Stream usage timeout` 收口的问题。首包与空闲计时、首事件预读现在只认带内容的 SSE 事件，注释心跳和空行不再续命。首个事件超时（`STREAM_FIRST_EVENT_TIMEOUT_MS`）改为默认开启：未配置或为空时 60 秒，配成 `0` 关闭；`STREAM_FIRST_EVENT_TIMEOUT_ROUTE_GROUPS` 为空时作用于全部路由组，之前只在 `default` 组灰度的部署范围会随之扩大。首事件超时只在后面还有未熔断候选时才触发 524 换路由，最后一个候选改由首包超时兜底。新增 `STREAM_HEADERS_TIMEOUT_MS`（默认 60 秒）：流式请求等不到上游响应头时，同次请求内换下一个候选；最后一个候选至少等满首包上限，全部失败返回 504。
 - **Gemini 签名兼容**：修复跨上游切换后，历史 `thoughtSignature` 不兼容导致会话持续返回 400 的问题。Gemini 原生入口收到 `Invalid thought signature` 的 400 时，清洗历史签名并对同一上游重试一次；没有可处理签名或遇到其他 400 时保持原有行为。
 - **故障转移排查**：日志补充候选序号、Provider 名称、上游目标、失败类别、熔断状态和错误摘要，明确下一候选或候选已耗尽；鉴权与额度错误合并为单条告警。请求日志 `timing_metadata.attempts` 增加 `target_id`、`failure_kind`，并记录 HTTP 失败摘要，便于关联每次上游尝试。客户端错误响应不变。
 
 ### Admin
 
+- **OAuth 访问令牌管理**：新增 `/api/admin/oauth-access-tokens*`（签发 / 轮换、列表筛选、按应用统计、撤销单条 / 整应用 / 按明文令牌、清理）与「MCP 服务」页里的「OAuth 访问令牌」折叠区（按应用 / 用户 / 状态筛选，撤销与清理；不单独占侧边栏菜单），用户详情的 API Keys 页签下方列出该用户的授权，请求日志的身份栏显示「OAuth 应用：名称」。权限沿用 `user_keys.read` / `user_keys.write`。
+- **MCP OAuth 配置校验**：`PUT /api/admin/config` 校验 `MCP_OAUTH_AUTHORIZATION_SERVER`（空字符串表示关闭，其余必须是 https 源，本机开发允许 http localhost）。
+- **MCP OAuth 授权登录卡片与接入指南**：「MCP 服务」页新增「OAuth 2.0 授权登录（可选）」卡片，默认只显示一个开关；打开后填写授权服务器并保存，关闭并保存即清空 `MCP_OAUTH_AUTHORIZATION_SERVER`。工作原理与授权服务器要求收在折叠区里。「接入指南」增加「API Key / OAuth 2.0 授权」切换：OAuth 模式给出 ChatGPT 连接器、Cursor、VS Code、Claude Code、Codex、curl 的免 Key 配置与登录步骤，并提示授权服务器是否已配置。
 - **模型目录**：新增 GPT-6.1 Terra（`gpt-6.1-terra`）预设。Standard 刊例价为短上下文 $1 / $5（每百万 token），缓存读取 $0.05、30 分钟缓存写入 $1.25；输入超过 272K 时整单按长上下文计价。人民币价为美元刊例 ×7 的换算占位价。导入后需自行配置供应商与路由。
 - **供应商导入模板**：新增百度云模型服务 V2 的四个地域模板。广州只含对话（OpenAI Chat / Responses、Anthropic Messages）。新加坡、加利福尼亚、法兰克福另含图片生成与编辑，以及 Bearer 鉴权的 Gemini 文本和生图。不含向量、音频和视频原厂协议。与百度千帆分开，地域 Key 不能混用。已导入的供应商不会自动改写。
 - **路由列表展示**：增强 Provider 行边界与留白；列表按可用宽度采用上下或左右分区，宽屏延续名称、模型、配置摘要的层级，不再自动拆为多列表格。状态在上下布局中右对齐、左右布局中紧跟名称，权重、粘性和参数独立成组；宽屏将身份状态与模型、配置摘要并排组织，限制价格区宽度，保留时段与倍率对齐。
@@ -20,6 +27,7 @@
 
 ### 升级说明
 
+- **数据库迁移 0035**：D1、Postgres、MySQL 均需新增表 `oauth_access_tokens`，并为 `api_key_request_logs` 增加可空列 `oauth_access_token_id`。先应用对应的 0035 迁移，再滚动更新同版本 Proxy 与 Admin。详见 [0035 迁移说明](docs/operators/migrations/0035-oauth-access-tokens.md)。
 - **数据库迁移 0034**：D1、Postgres、MySQL 均需为 `route_pool_sticky_bindings` 增加可空列 `affinity_key`，用于关联绑定用户。先备份并应用对应的 0034 迁移，再滚动更新同版本 Proxy 与 Admin。未迁移时新版粘性绑定读写会失败，Proxy 会降级放行，但无法正常复用或记录绑定。详见 [0034 迁移说明](docs/operators/migrations/0034-sticky-binding-affinity-key.md)。
 - **旧绑定兼容**：已有有效绑定继续使用；用户信息在后续成功调用续期时补全，补全前显示为「未记录用户」，无需回填。过期或失效后不再列入有效绑定明细，历史记录由系统清理或覆盖。旧版本 Proxy / Admin 兼容已增加该列的数据库。
 

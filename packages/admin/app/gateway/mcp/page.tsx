@@ -17,7 +17,9 @@ import { McpServerFormModal } from './components/mcp-server-form-modal';
 import { McpServerTable } from './components/mcp-server-table';
 import { useMcpServersState } from './use-mcp-servers-state';
 import { McpCatalogTestModal } from './components/mcp-catalog-test-modal';
-import { McpConnectGuideModal } from './components/mcp-connect-guide-modal';
+import { McpConnectGuideModal, type McpConnectAuth } from './components/mcp-connect-guide-modal';
+import { McpOAuthSettings } from './components/mcp-oauth-settings';
+import { OAuthAccessTokensPanel } from './components/oauth-access-tokens-panel';
 
 export default function McpServersPage() {
 	const t = useTranslations('mcp');
@@ -25,6 +27,7 @@ export default function McpServersPage() {
 	const billing = useBillingCurrency();
 	const [catalogScope, setCatalogScope] = useState<string | null>(null);
 	const [guideOpen, setGuideOpen] = useState(false);
+	const [guideAuth, setGuideAuth] = useState<McpConnectAuth>('key');
 	const currency = billing.loading ? '—' : billing.currency;
 	const metrics = [
 		{
@@ -78,7 +81,10 @@ export default function McpServersPage() {
 				<div className="flex flex-wrap items-center gap-3">
 					<button
 						type="button"
-						onClick={() => setGuideOpen(true)}
+						onClick={() => {
+							setGuideAuth('key');
+							setGuideOpen(true);
+						}}
 						className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
 					>
 						<LinkIcon className="h-4 w-4" aria-hidden="true" />
@@ -116,6 +122,13 @@ export default function McpServersPage() {
 					</div>
 				))}
 			</div>
+			<McpOAuthSettings
+				onOpenGuide={() => {
+					setGuideAuth('oauth');
+					setGuideOpen(true);
+				}}
+			/>
+			<OAuthAccessTokensPanel />
 			<McpServerTable
 				currency={currency}
 				servers={state.servers}
@@ -172,6 +185,7 @@ export default function McpServersPage() {
 				<McpConnectGuideModal
 					servers={state.servers}
 					initialSlug=""
+					initialAuth={guideAuth}
 					onClose={() => setGuideOpen(false)}
 				/>
 			) : null}

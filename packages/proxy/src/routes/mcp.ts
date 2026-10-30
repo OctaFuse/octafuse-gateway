@@ -4,17 +4,14 @@
  * Stateless Streamable HTTP: no session id, GET is 405.
  */
 import { Hono } from 'hono';
-import type { Env } from '../app';
-import { requireApiKey, type ApiKeyContext } from '../middleware/auth';
+import { requireMcpCaller, type McpCaller, type McpEnv } from '../middleware/mcp-auth';
 import { handleMcpAggregateRequest, mcpAggregateDeps } from '../services/mcp/aggregate';
-
-type McpEnv = Env & { Variables: { apiKey: ApiKeyContext } };
 
 export const mcpRoutes = new Hono<McpEnv>();
 
-mcpRoutes.use('*', requireApiKey);
+mcpRoutes.use('*', requireMcpCaller);
 
-async function serve(c: { req: { raw: Request; param: (name: string) => string | undefined }; get: (key: 'apiKey' | 'repositories') => unknown }) {
+async function serve(c: { req: { raw: Request; param: (name: string) => string | undefined }; get: (key: 'mcpCaller' | 'repositories') => unknown }) {
 	const slug = c.req.param('slug')?.trim() || null;
 	if (slug === 'builtin') {
 		return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32602, message: 'Unknown MCP server' }, id: null }), {
@@ -22,10 +19,10 @@ async function serve(c: { req: { raw: Request; param: (name: string) => string |
 			headers: { 'Content-Type': 'application/json' },
 		});
 	}
-	const apiKey = c.get('apiKey') as ApiKeyContext;
+	const caller = c.get('mcpCaller') as McpCaller;
 	const repos = c.get('repositories') as Parameters<typeof mcpAggregateDeps>[0];
 	return handleMcpAggregateRequest(c.req.raw, {
-		apiKey,
+		caller,
 		slug,
 		deps: mcpAggregateDeps(repos),
 	});

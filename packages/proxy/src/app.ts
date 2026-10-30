@@ -18,6 +18,7 @@ import { webSearchRoutes } from './routes/v1/tools/web-search';
 import { webFetchRoutes } from './routes/v1/tools/web-fetch';
 import { webDeepSearchRoutes } from './routes/v1/tools/web-deep-search';
 import { aiDetectionRoutes } from './routes/v1/tools/ai-detection';
+import { oauthProtectedResourceRoutes } from './routes/oauth-protected-resource';
 import { toolsPricingRoutes } from './routes/v1/tools/pricing';
 import { mcpRoutes } from './routes/mcp';
 import { imageRoutes } from './routes/v1/images';
@@ -118,7 +119,7 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 			origin: '*',
 			allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 			allowHeaders: ['Content-Type', 'Authorization', 'Accept', 'language', 'X-DashScope-SSE', 'X-DashScope-Async', 'MCP-Protocol-Version', 'Mcp-Session-Id', 'xi-api-key'],
-			exposeHeaders: ['X-OctaFuse-Request-Id', 'X-OctaFuse-Error-Code', 'Mcp-Session-Id'],
+			exposeHeaders: ['X-OctaFuse-Request-Id', 'X-OctaFuse-Error-Code', 'Mcp-Session-Id', 'WWW-Authenticate'],
 		}),
 	);
 
@@ -211,6 +212,7 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 	app.route('/v1/tools/ai-detection', aiDetectionRoutes);
 	app.route('/v1/tools/pricing', toolsPricingRoutes);
 	app.route('/mcp', mcpRoutes);
+	app.route('/.well-known/oauth-protected-resource', oauthProtectedResourceRoutes);
 	app.route('/catalog', catalogRoutes);
 
 	app.get('/', (c) => c.json({ name: 'octafuse-proxy', version: proxyAppVersion }));

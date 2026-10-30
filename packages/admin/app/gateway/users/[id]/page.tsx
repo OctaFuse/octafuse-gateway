@@ -32,6 +32,7 @@ import { compareRouteGroupsForDisplay, normalizeRouteGroup, routeGroupBadgeClass
 import { pickChangedUserFields } from '../user-detail-form';
 import { UserFactorEditor } from '../user-factor-editor';
 import { UserModelsPreviewPanel } from '../user-models-preview';
+import { UserOAuthAccessTokensPanel } from './user-oauth-access-tokens-panel';
 
 /** 用户详情近期审计与全站页默认一致：不含用量扣费 */
 const USER_DETAIL_AUDIT_EVENT_TYPES = API_KEY_BUDGET_AUDIT_EVENT_TYPES.filter((type) => type !== 'usage_charge');
@@ -1537,6 +1538,7 @@ export default function GatewayUserDetailPage() {
             {keys.length === 0 && <p className="text-sm text-gray-500 py-4">{t('keysTable.noKeys')}</p>}
           </div>
         </div>
+        <UserOAuthAccessTokensPanel userId={userId} />
       </section>
       <section
         id="user-panel-activity"

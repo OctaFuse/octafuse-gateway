@@ -119,7 +119,7 @@ export function budgetLazyResetNeedsPersist(
 }
 
 /** 懒周期重置写库时的审计标签（`getUserInfo` / `getKeyInfo` / 代理鉴权）。 */
-export type LazyBudgetResetAuditKind = 'user_info' | 'key_info' | 'api_key_auth';
+export type LazyBudgetResetAuditKind = 'user_info' | 'key_info' | 'api_key_auth' | 'oauth_access_token_auth';
 
 const LAZY_RESET_AUDIT: Record<
 	LazyBudgetResetAuditKind,
@@ -138,6 +138,11 @@ const LAZY_RESET_AUDIT: Record<
 	api_key_auth: {
 		reasonCode: 'api_key_auth_lazy_reset',
 		reasonText: 'Period reset (auth)',
+		source: 'gateway_auth',
+	},
+	oauth_access_token_auth: {
+		reasonCode: 'oauth_access_token_auth_lazy_reset',
+		reasonText: 'Period reset (access token auth)',
 		source: 'gateway_auth',
 	},
 };

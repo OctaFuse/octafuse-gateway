@@ -11,7 +11,7 @@
 | `POST /mcp` | 聚合所有已启用服务的工具、提示词和资源 |
 | `POST /mcp/{slug}` | 只暴露这一个服务 |
 
-认证与模型请求相同：`Authorization: Bearer sk-...`。不签发 `Mcp-Session-Id`。`GET` 与其它非 `POST` 方法返回 `405`。协议版本至少支持 `2025-06-18` 和 `2025-03-26`。
+认证接受 `Authorization: Bearer sk-...`；OAuth 客户端使用独立的 `oat_` 访问令牌，见下文授权发现。不签发 `Mcp-Session-Id`。`GET` 与其它非 `POST` 方法返回 `405`。协议版本至少支持 `2025-06-18` 和 `2025-03-26`。
 
 `initialize` 和 `ping` 由网关直接应答。`tools/list`、`prompts/list`、`resources/list` 只读已发布快照，不访问上游。`tools/call`、`prompts/get`、`resources/read` 按名称或 URI 找到所属服务后再转发。
 
@@ -88,9 +88,23 @@
 
 `/mcp` 跳过额度预检，余额为 0 时仍可列出清单。每分钟请求数只统计 `tools/call`。
 
+## OAuth 授权发现
+
+网关本身是 MCP 的资源服务器（Resource Server），不实现授权服务器。需要让 ChatGPT 这类只支持 OAuth 的客户端接入时，把 `system_config.MCP_OAUTH_AUTHORIZATION_SERVER` 设为授权服务器的 https 源（例如门户 `https://soloent.ai`），空字符串表示关闭。可在 Admin「MCP 服务」页顶部的「OAuth 2.0 授权登录（可选）」卡片（开关 + 授权服务器地址）设置，也可用 `PUT /api/admin/config`。OAuth 与 API Key 并存：客户端能在请求头里带 `sk-` Key 时不需要 OAuth；Admin「接入指南」用「API Key / OAuth 授权」切换展示两种配置。
+
+配置后：
+
+- `GET /.well-known/oauth-protected-resource`、`/.well-known/oauth-protected-resource/mcp`、`/.well-known/oauth-protected-resource/mcp/{slug}` 返回 RFC 9728 元数据（`resource`、`authorization_servers`、`scopes_supported: ["mcp"]`）。维护模式下仍可读取。
+- `/mcp*` 的 401 响应带 `WWW-Authenticate: Bearer resource_metadata="<origin>/.well-known/oauth-protected-resource<path>"`。其它入口的 401 不变。
+- 授权服务器签发的 access token 是 **OAuth 访问令牌**，不是用户的 `sk-` Key。它存在独立的 `oauth_access_tokens` 表：前缀 `oat_`，库里只有 SHA-256 哈希，默认 1 小时过期，只能访问 `/mcp` 与 `/mcp/*`，用在其它入口会返回 403 `gateway.scope_denied`。`sk-` Key 与访问令牌在 `/mcp*` 都能用，Proxy 按前缀区分，不读任何 metadata。
+- 过期或已撤销的访问令牌在 `/mcp*` 返回 401，并带 `WWW-Authenticate: Bearer error="invalid_token", resource_metadata="…"`，客户端据此用刷新令牌换新令牌。刷新令牌与 OAuth 授权状态由授权服务器（门户）保存，网关不解析。
+- 令牌由授权服务器通过 Admin API 签发与轮换（`POST /api/admin/users/:id/oauth-access-tokens`、`POST /api/admin/oauth-access-tokens/:id/rotate`），明文只在响应里出现一次。设计上一行对应一次授权（用户 × 应用），串行重新授权会轮换原记录；当前仓储先查后写、没有用户与应用的唯一约束，并发签发仍可能产生多条。撤销是软删除，保留应用名供日志显示。
+- 访问令牌的调用写请求日志时 `api_key_id` 为空、`oauth_access_token_id` 指向令牌，Admin 请求日志显示「OAuth 应用：名称」。调用按令牌所属用户的预算与钱包扣费，每分钟请求数只受用户级限制。
+- 运维：Admin「MCP 服务」页的「OAuth 访问令牌」折叠区按应用 / 用户 / 状态筛选（旧地址 `/gateway/oauth-access-tokens` 会跳转到这里），支持撤销单条、撤销某应用全部授权和清理过期记录；用户详情的 API Keys 页签下方列出该用户的授权。接口见 `/api/admin/oauth-access-tokens*`，权限沿用 `user_keys.read` / `user_keys.write`。
+
 ## 错误
 
-协议错误（无法解析的 JSON、未知方法、未知名称或 URI）返回 JSON-RPC error。余额不足、条目已停用、上游失败或超时，作为 `tools/call` 的结果返回，`isError` 为 true，正文说明原因，`_meta.octafuse.code` 给出网关错误码。停用条目使用 `gateway.mcp_item_disabled`。计费规则无法解析时使用 `gateway.mcp_pricing_invalid`。
+协议错误（无法解析的 JSON、未知方法、未知名称或 URI）返回 JSON-RPC error。余额不足、条目已停用、上游失败或超时，作为 `tools/call` 的结果返回，`isError` 为 true，正文说明原因，`_meta.octafuse.code` 给出网关错误码。停用条目使用 `gateway.mcp_item_disabled`。计费规则无法解析时使用 `gateway.mcp_pricing_invalid`。结算或错误日志持久化失败时，返回 `gateway.mcp_settlement_failed` 与 `retryable: false`，不再追加零费用错误日志；提交结果可能不确定，需要对账确认，客户端不应自动重试。
 
 ## 安全
 

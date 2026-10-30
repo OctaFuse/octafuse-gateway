@@ -1,15 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
+import { readApiJson } from '@/lib/api-json';
+import type { SystemConfigRow } from '@/lib/types';
+import { MCP_OAUTH_AUTHORIZATION_SERVER_KEY } from '@octafuse/core/lib/mcp-oauth-system-config';
 import type { ServerSummary } from '../mcp-types';
 import { MCP_CATALOG_PROXY_STORAGE, SIMULATOR_PROXY_STORAGE, mcpProxyBaseUrl } from '../mcp-catalog-test-utils';
 import {
 	MCP_CONNECT_CLIENTS,
 	MCP_KEY_PLACEHOLDER,
+	MCP_OAUTH_CONNECT_CLIENTS,
 	buildMcpConnectSnippets,
+	buildMcpOAuthSnippets,
 	mcpConnectEndpoint,
+	mcpConnectServerName,
 	type McpConnectClient,
 } from '../mcp-connect-guide-utils';
 import { McpDialog } from './mcp-dialog';
@@ -38,28 +44,64 @@ function readSavedProxyUrl(): string {
 	return '';
 }
 
+export type McpConnectAuth = 'key' | 'oauth';
+
 export function McpConnectGuideModal({
 	servers,
 	initialSlug,
+	initialAuth = 'key',
 	onClose,
 }: {
 	servers: ServerSummary[];
 	initialSlug: string;
+	initialAuth?: McpConnectAuth;
 	onClose: () => void;
 }) {
 	const t = useTranslations('mcp.connectGuide');
 	const common = useTranslations('common');
 	const [baseUrl, setBaseUrl] = useState(readSavedProxyUrl);
 	const [slug, setSlug] = useState(initialSlug);
-	const [client, setClient] = useState<McpConnectClient>('cursor');
+	const [auth, setAuth] = useState<McpConnectAuth>(initialAuth);
+	const [client, setClient] = useState<McpConnectClient>(initialAuth === 'oauth' ? 'chatgpt' : 'cursor');
 	const [copied, setCopied] = useState<'ok' | 'failed' | null>(null);
+	// undefined = still loading; '' = OAuth discovery off.
+	const [oauthServer, setOauthServer] = useState<string | undefined>(undefined);
+
+	useEffect(() => {
+		let cancelled = false;
+		void (async () => {
+			try {
+				const response = await fetch('/api/admin/config');
+				const data = await readApiJson<SystemConfigRow[]>(response);
+				if (cancelled) return;
+				const rows = data.success && Array.isArray(data.data) ? data.data : [];
+				setOauthServer(rows.find((row) => row.key === MCP_OAUTH_AUTHORIZATION_SERVER_KEY)?.value?.trim() ?? '');
+			} catch {
+				// The status banner is a hint; leave it hidden when the config cannot be read.
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
 	const normalized = mcpProxyBaseUrl(baseUrl);
 	const urlInvalid = baseUrl.trim() !== '' && normalized == null;
 	// Without a valid Proxy address, show a visible placeholder instead of a broken URL.
 	const effectiveBase = normalized ?? 'https://<YOUR_PROXY_URL>';
-	const snippets = buildMcpConnectSnippets({ baseUrl: effectiveBase, slug });
+	const oauthMode = auth === 'oauth';
+	const snippets = oauthMode
+		? buildMcpOAuthSnippets({ baseUrl: effectiveBase, slug })
+		: buildMcpConnectSnippets({ baseUrl: effectiveBase, slug });
+	const clients = oauthMode ? MCP_OAUTH_CONNECT_CLIENTS : MCP_CONNECT_CLIENTS;
 	const active = snippets.find((s) => s.client === client) ?? snippets[0];
+
+	function changeAuth(next: McpConnectAuth) {
+		setAuth(next);
+		setCopied(null);
+		// ChatGPT only exists in the OAuth list; fall back when it is no longer offered.
+		if (next === 'key' && client === 'chatgpt') setClient('cursor');
+	}
 
 	function changeBaseUrl(value: string) {
 		setBaseUrl(value);
@@ -88,12 +130,18 @@ export function McpConnectGuideModal({
 			wide
 			busy={false}
 			title={t('title')}
-			subtitle={t('subtitle')}
+			subtitle={oauthMode ? t('oauthSubtitle') : t('subtitle')}
 			onClose={onClose}
 			footer={
 				<div className="flex items-center justify-between gap-3">
 					<p role="status" className="text-xs text-gray-500">
-						{copied === 'ok' ? t('copied') : copied === 'failed' ? t('copyFailed') : t('safeHint')}
+						{copied === 'ok'
+							? t('copied')
+							: copied === 'failed'
+								? t('copyFailed')
+								: oauthMode
+									? t('oauthSafeHint')
+									: t('safeHint')}
 					</p>
 					<button type="button" onClick={onClose} className={BUTTON}>
 						{common('close')}
@@ -102,6 +150,36 @@ export function McpConnectGuideModal({
 			}
 		>
 			<div className="space-y-5">
+				<div role="radiogroup" aria-label={t('authMode')} className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+					{(['key', 'oauth'] as const).map((id) => (
+						<button
+							key={id}
+							type="button"
+							role="radio"
+							aria-checked={auth === id}
+							onClick={() => changeAuth(id)}
+							className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+								auth === id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+							}`}
+						>
+							{id === 'key' ? t('authKey') : t('authOauth')}
+						</button>
+					))}
+				</div>
+
+				{oauthMode && oauthServer !== undefined ? (
+					<p
+						role="status"
+						className={`rounded-lg border px-4 py-3 text-sm leading-6 ${
+							oauthServer
+								? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+								: 'border-amber-200 bg-amber-50 text-amber-800'
+						}`}
+					>
+						{oauthServer ? t('oauthOn', { server: oauthServer }) : t('oauthOff')}
+					</p>
+				) : null}
+
 				<div className="grid gap-4 sm:grid-cols-2">
 					<label className="block text-sm font-medium text-gray-700">
 						{t('proxyUrl')}
@@ -142,18 +220,18 @@ export function McpConnectGuideModal({
 
 				<div>
 					<div role="tablist" aria-label={t('clients')} className="flex flex-wrap gap-1 border-b border-gray-200">
-						{MCP_CONNECT_CLIENTS.map((id) => (
+						{clients.map((id) => (
 							<button
 								key={id}
 								type="button"
 								role="tab"
-								aria-selected={client === id}
+								aria-selected={active.client === id}
 								onClick={() => {
 									setClient(id);
 									setCopied(null);
 								}}
 								className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${
-									client === id
+									active.client === id
 										? 'border-gray-900 text-gray-900'
 										: 'border-transparent text-gray-500 hover:text-gray-700'
 								}`}
@@ -165,7 +243,11 @@ export function McpConnectGuideModal({
 					<div className="mt-4 space-y-3">
 						<div className="flex flex-wrap items-center justify-between gap-2">
 							<p className="text-sm text-gray-600">
-								{active.target === 'terminal' ? t('runInTerminal') : t('saveTo', { path: active.target })}
+								{active.target === 'terminal'
+									? t('runInTerminal')
+									: active.target === 'ui'
+										? t('openInUi')
+										: t('saveTo', { path: active.target })}
 							</p>
 							<button type="button" onClick={() => void copy()} className={BUTTON}>
 								{copied === 'ok' ? (
@@ -179,12 +261,24 @@ export function McpConnectGuideModal({
 						<pre aria-label={t(`client.${active.client}`)} className={CODE}>
 							{active.code}
 						</pre>
-						<p className="text-xs leading-5 text-gray-500">{t(`note.${active.client}`)}</p>
+						<p className="text-xs leading-5 text-gray-500">
+							{oauthMode
+								? t(`oauthNote.${active.client}`, { name: mcpConnectServerName(slug) })
+								: t(`note.${active.client}`)}
+						</p>
 					</div>
 				</div>
 
 				<ul className="list-disc space-y-1 pl-5 text-xs leading-5 text-gray-500">
-					<li>{t('tipKey', { placeholder: MCP_KEY_PLACEHOLDER })}</li>
+					{oauthMode ? (
+						<>
+							<li>{t('oauthTipScope')}</li>
+							<li>{t('oauthTipBoth')}</li>
+							<li>{t('oauthTipPublic')}</li>
+						</>
+					) : (
+						<li>{t('tipKey', { placeholder: MCP_KEY_PLACEHOLDER })}</li>
+					)}
 					<li>{t('tipTools', { pattern: '{slug}__{name}' })}</li>
 					<li>{t('tipEnable')}</li>
 					<li>{t('tipTransport')}</li>

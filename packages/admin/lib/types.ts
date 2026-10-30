@@ -261,6 +261,11 @@ export interface GatewayRequestLog {
   id: string;
   user_id?: string | null;
   api_key_id: string | null;
+  /** 走 OAuth 访问令牌（MCP）的调用：令牌 id（此时 api_key_id 为空） */
+  oauth_access_token_id?: string | null;
+  /** 授权应用名；令牌记录被清理后缺省 */
+  oauth_access_token_name?: string | null;
+  oauth_access_token_client_id?: string | null;
   user_email: string | null;
   /** 用户所属外部系统；全局日志接口通过 user_id 关联 users。 */
   external_system?: string | null;

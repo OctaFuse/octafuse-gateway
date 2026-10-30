@@ -256,12 +256,15 @@ export async function insertRequestUsageAndChargeTxMy(
 			audioDurationSeconds: params.requestLog.audioDurationSeconds ?? null,
 			audioCharacters: params.requestLog.audioCharacters ?? null,
 			ingressHost: params.requestLog.ingressHost ?? null,
+			oauthAccessTokenId: params.requestLog.oauthAccessTokenId ?? null,
 			createdAt: now,
 		});
-		await tx
-			.update(myApiKeysTable)
-			.set({ lastUsedAt: now })
-			.where(eq(myApiKeysTable.id, params.requestLog.apiKeyId));
+		if (params.requestLog.apiKeyId) {
+			await tx
+				.update(myApiKeysTable)
+				.set({ lastUsedAt: now })
+				.where(eq(myApiKeysTable.id, params.requestLog.apiKeyId));
+		}
 		if (!params.shouldChargeBudget) {
 			return;
 		}
