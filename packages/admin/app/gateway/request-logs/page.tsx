@@ -1,14 +1,14 @@
 'use client';
 
 /**
- * 全站请求日志表：多维筛选、分页；Route 列按入站 / 上游两行展示协议端点、模型 ID、路由组与上游供应商；展开详情按可用宽度重排（耗时、计费审计与三份 JSON）；数据来自 `/api/admin/request-logs`。
+ * 全站请求日志表：多维筛选、分页；Route 列按入站 / 上游两行展示协议端点、模型 ID、路由组与上游供应商；展开详情使用交互式请求流程与尝试时间线；数据来自 `/api/admin/request-logs`。
  */
 import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { FilterDisclosure } from '@/components/FilterDisclosure';
 import { FilterGroup, FilterRow, FilterSelect, FilterTextInput } from '../components/filter-controls';
 import { useLocale, useTranslations } from 'next-intl';
 import { Fragment, useState, useEffect, useMemo, useCallback } from 'react';
-import { ChevronRightIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider, GatewayRequestLog } from '@/lib/types';
 import {
@@ -35,7 +35,7 @@ import {
   type GatewayTimeRangeValue,
 } from '@/lib/analytics-range';
 import { formatGatewayMoneyCode, formatGatewayMoneyCodeSigned, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
-import { summarizePricingAuditJson } from '@/lib/pricing-ui';
+import { RequestLogFlow } from './request-log-flow';
 import { useReplaceListPageQuery } from '@/lib/use-replace-list-query';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
@@ -54,20 +54,9 @@ export default function GatewayRequestLogsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  /** 展开四栏详情：pricing audit / 入口请求体 / 上游请求体 / raw usage */
+  /** 同时展开一个请求流程；环节详情由流程组件按需展示。 */
   const [detailLogId, setDetailLogId] = useState<string | null>(null);
   const [timingHelpLog, setTimingHelpLog] = useState<GatewayRequestLog | null>(null);
-  const [copiedColumn, setCopiedColumn] = useState<
-    | 'audit'
-    | 'entry'
-    | 'upstream'
-    | 'usage'
-    | 'timing'
-    | 'ingress_host'
-    | 'upstream_request_id'
-    | 'upstream_message_id'
-    | null
-  >(null);
   const pageSize = 50;
   const { currency: billingCurrency } = useBillingCurrency();
   const { formatDateTime } = useGatewayDateTime();
@@ -398,15 +387,6 @@ export default function GatewayRequestLogsPage() {
     return { text: '\u00A0' };
   };
 
-  const prettifyLogJson = (raw: string | null | undefined): string => {
-    if (raw == null || raw === '') return '';
-    try {
-      return JSON.stringify(JSON.parse(raw), null, 2);
-    } catch {
-      return raw;
-    }
-  };
-
   const formatCostMultiplier = (cost: number, standardCost: number): string | null => {
     if (!Number.isFinite(cost) || !Number.isFinite(standardCost) || standardCost <= 0) {
       return null;
@@ -502,37 +482,6 @@ export default function GatewayRequestLogsPage() {
   const toggleDetail = (logId: string) => {
     setDetailLogId((prev) => (prev === logId ? null : logId));
     setTimingHelpLog(null);
-    setCopiedColumn(null);
-  };
-
-  const copyPlainText = async (
-    raw: string | null | undefined,
-    col: 'ingress_host' | 'upstream_request_id' | 'upstream_message_id'
-  ) => {
-    const text = raw?.trim();
-    if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedColumn(col);
-      setTimeout(() => setCopiedColumn(null), 1500);
-    } catch (error) {
-      console.error('Copy plain text failed:', error);
-    }
-  };
-
-  const copyColumn = async (
-    raw: string | null | undefined,
-    col: 'audit' | 'entry' | 'upstream' | 'usage' | 'timing'
-  ) => {
-    const text = prettifyLogJson(raw);
-    if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedColumn(col);
-      setTimeout(() => setCopiedColumn(null), 1500);
-    } catch (error) {
-      console.error('Copy column failed:', error);
-    }
   };
 
   /** 将协议 + operation 映射为客户端路径；缺省时回退空串。Gemini 用紧凑端点。 */
@@ -954,269 +903,21 @@ export default function GatewayRequestLogsPage() {
                     <tr className="bg-gray-50">
                       <td colSpan={7} className="px-3 py-2">
                         <div className="admin-log-detail rounded-md border border-gray-200 bg-white">
-                          {(() => {
-                            const auditLine = summarizePricingAuditJson(log.pricing_audit ?? null);
-                            const auditRaw = log.pricing_audit?.trim();
-                            const auditDisplay = auditRaw ? prettifyLogJson(auditRaw) : '';
-                            const auditEmpty = !auditDisplay;
-                            const timingDisplay = prettifyLogJson(log.timing_metadata ?? null);
-                            const timingRows = [
-                              ['Gateway', log.gateway_overhead_ms],
-                              ['Upstream', log.upstream_response_ms],
-                              ['Headers', log.final_upstream_headers_ms],
-                              [t('timing.reasoning'), log.first_reasoning_token_ms],
-                              [t('timing.ttftContent'), log.first_token_ms],
-                              ['Stream', log.stream_duration_ms],
-                            ] as const;
-                            const ingressHost = log.ingress_host?.trim() ?? '';
-                            const upstreamRequestId = log.upstream_request_id?.trim() ?? '';
-                            const upstreamMessageId = log.upstream_message_id?.trim() ?? '';
-                            const providerKey = [
-                              log.provider_key_label?.trim(),
-                              log.provider_key_fingerprint?.trim(),
-                              log.provider_key_id?.trim(),
-                            ].filter(Boolean).join(' · ');
-                            const protocolMapping = [
-                              [log.request_protocol, log.request_operation].filter(Boolean).join('.'),
-                              [log.upstream_protocol, log.upstream_operation].filter(Boolean).join('.'),
-                            ].filter(Boolean).join(' → ');
-                            const routeTarget = [
-                              log.model_surface_id ? `surface ${log.model_surface_id}` : '',
-                              log.route_pool_id ? `pool ${log.route_pool_id}` : '',
-                              log.route_target_id ? `target ${log.route_target_id}` : '',
-                            ].filter(Boolean).join(' · ');
-                            const summaryFields = [
-                              { label: t('detail.requestId'), value: log.id },
-                              {
-                                label: t('detail.identity'),
-                                value: [
-                                  log.user_email,
-                                  log.api_key_id ??
-                                    (log.oauth_access_token_id
-                                      ? log.oauth_access_token_name
-                                        ? tToken('logCredential', { name: log.oauth_access_token_name })
-                                        : tToken('logCredentialUnknown', { id: log.oauth_access_token_id })
-                                      : null),
-                                ].filter(Boolean).join(' · '),
-                              },
-                              { label: t('detail.modelId'), value: log.model_id ?? '' },
-                              {
-                                label: t('detail.routeGroup'),
-                                value: normalizeRouteGroup(log.route_group),
-                              },
-                              {
-                                label: t('detail.providerRoute'),
-                                value: [providerRouteLabel(log), log.provider_model_name]
-                                  .filter(Boolean)
-                                  .join(' · '),
-                              },
-                              { label: t('detail.protocolMapping'), value: protocolMapping },
-                              { label: t('detail.providerKey'), value: providerKey },
-                              { label: t('detail.routeTarget'), value: routeTarget },
-                            ];
-                            return (
-                              <div className="min-w-0">
-                                <div className="border-b border-gray-200 bg-slate-50/70 p-3">
-                                  <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-x-4 gap-y-2">
-                                    {summaryFields.map(({ label, value }) => (
-                                      <div key={label} className="min-w-0">
-                                        <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                                          {label}
-                                        </div>
-                                        <div
-                                          className="mt-0.5 break-all font-mono text-[11px] text-slate-700"
-                                          title={value || undefined}
-                                        >
-                                          {value || '-'}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  {log.error_message?.trim() ? (
-                                    <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2">
-                                      <div className="text-[10px] font-semibold uppercase tracking-wide text-red-500">
-                                        {t('detail.error')}
-                                      </div>
-                                      <div className="mt-0.5 whitespace-pre-wrap break-words text-xs text-red-800">
-                                        {log.error_message.trim()}
-                                      </div>
-                                    </div>
-                                  ) : null}
-                                </div>
-                                {ingressHost || upstreamMessageId || upstreamRequestId ? (
-                                  <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-3 border-b border-gray-200 bg-gray-50/70 p-3">
-                                    {[
-                                      {
-                                        id: 'ingress_host' as const,
-                                        label: t('detail.ingressHost'),
-                                        value: ingressHost,
-                                        tone: 'slate',
-                                      },
-                                      {
-                                        id: 'upstream_message_id' as const,
-                                        label: t('detail.upstreamMessageId'),
-                                        value: upstreamMessageId,
-                                        tone: 'emerald',
-                                      },
-                                      {
-                                        id: 'upstream_request_id' as const,
-                                        label: t('detail.upstreamRequestId'),
-                                        value: upstreamRequestId,
-                                        tone: 'sky',
-                                      },
-                                    ].map(({ id, label, value, tone }) => (
-                                      <div
-                                        key={id}
-                                        className={`min-w-0 rounded border px-3 py-2 ${
-                                          tone === 'emerald'
-                                            ? 'border-emerald-200 bg-emerald-50/70 text-emerald-950'
-                                            : tone === 'sky'
-                                              ? 'border-sky-200 bg-sky-50/70 text-sky-950'
-                                              : 'border-slate-200 bg-slate-50/80 text-slate-950'
-                                        }`}
-                                      >
-                                        <div className="flex items-center justify-between gap-3">
-                                          <div className="min-w-0">
-                                            <div className="text-[11px] font-medium">{label}</div>
-                                            <div
-                                              className="mt-0.5 truncate font-mono text-xs"
-                                              title={value || undefined}
-                                            >
-                                              {value || '-'}
-                                            </div>
-                                          </div>
-                                          <button
-                                            type="button"
-                                            disabled={!value}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              void copyPlainText(value, id);
-                                            }}
-                                            className={`px-2 py-0.5 text-[10px] border rounded hover:bg-white/80 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
-                                              tone === 'emerald'
-                                                ? 'border-emerald-300 text-emerald-950'
-                                                : tone === 'sky'
-                                                  ? 'border-sky-300 text-sky-950'
-                                                  : 'border-slate-300 text-slate-950'
-                                            }`}
-                                          >
-                                            {copiedColumn === id ? tCommon('copied') : tCommon('copy')}
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ) : null}
-                              <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] items-start gap-3 p-3">
-                                <div className="min-w-0 flex h-72 flex-col md:h-[28rem] overflow-hidden rounded-md border border-sky-200 bg-sky-50/50">
-                                  <div className="px-2 py-1.5 border-b border-sky-200 bg-sky-100/50 flex items-center justify-between gap-2 shrink-0">
-                                    <span className="text-xs font-medium text-sky-950">{t('detail.timing')}</span>
-                                    <div className="flex items-center gap-1.5">
-                                      <button
-                                        type="button"
-                                        onClick={() => setTimingHelpLog(log)}
-                                        title={t('timing.explain')}
-                                        className="inline-flex h-5 w-5 items-center justify-center rounded border border-sky-300 text-sky-900 hover:bg-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sky-500"
-                                      >
-                                        <QuestionMarkCircleIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                                        <span className="sr-only">{t('timing.explain')}</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        disabled={!timingDisplay}
-                                        onClick={() => copyColumn(log.timing_metadata, 'timing')}
-                                        className="px-2 py-0.5 text-[10px] border border-sky-300 rounded text-sky-950 hover:bg-white/80 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                                      >
-                                        {copiedColumn === 'timing' ? tCommon('copied') : tCommon('copy')}
-                                      </button>
-                                    </div>
-                                  </div>
-                                  <div className="p-2 text-[11px] text-sky-950 space-y-1 shrink-0">
-                                    {timingRows.map(([label, value]) => (
-                                      <div key={label} className="flex items-center justify-between gap-3">
-                                        <span>{label}</span>
-                                        <span className="font-mono tabular-nums">{formatLatencyMs(value)}</span>
-                                      </div>
-                                    ))}
-                                    <div className="flex items-center justify-between gap-3 border-t border-sky-100 pt-1">
-                                      <span>{t('timing.attempts')}</span>
-                                      <span className="font-mono tabular-nums">
-                                        {log.upstream_attempt_count ?? '-'} / failover {log.upstream_failover_count ?? '-'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <pre className="mx-2 mb-2 flex-1 min-h-0 overflow-auto rounded border border-sky-100 bg-white/90 p-2 font-mono text-[11px] leading-snug text-gray-800 whitespace-pre-wrap break-words">
-                                    {timingDisplay || tCommon('noDataFound')}
-                                  </pre>
-                                </div>
-                                <div className="min-w-0 flex h-72 flex-col md:h-[28rem] overflow-hidden rounded-md border border-violet-200 bg-violet-50/50">
-                                  <div className="px-2 py-1.5 border-b border-violet-200 bg-violet-100/40 flex items-center justify-between gap-2 shrink-0">
-                                    <span className="text-xs font-medium text-violet-950">{t('detail.pricingAudit')}</span>
-                                    <button
-                                      type="button"
-                                      disabled={auditEmpty}
-                                      onClick={() => copyColumn(log.pricing_audit, 'audit')}
-                                      className="px-2 py-0.5 text-[10px] border border-violet-300 rounded text-violet-950 hover:bg-white/80 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                                    >
-                                      {copiedColumn === 'audit' ? tCommon('copied') : tCommon('copy')}
-                                    </button>
-                                  </div>
-                                  <div className="flex flex-col flex-1 min-h-0 p-2 gap-2">
-                                    {auditLine ? (
-                                      <div className="text-[11px] text-violet-950/95 shrink-0">{auditLine}</div>
-                                    ) : null}
-                                    <pre className="flex-1 min-h-0 overflow-auto rounded border border-violet-100 bg-white/90 p-2 font-mono text-[11px] leading-snug text-gray-800 whitespace-pre-wrap break-words">
-                                      {auditEmpty ? tCommon('noDataFound') : auditDisplay}
-                                    </pre>
-                                  </div>
-                                </div>
-                                {(
-                                  [
-                                    {
-                                      col: 'entry' as const,
-                                      title: t('detail.entryRequestBody'),
-                                      raw: log.request_body,
-                                    },
-                                    {
-                                      col: 'upstream' as const,
-                                      title: t('detail.upstreamRequestBody'),
-                                      raw: log.upstream_request_body,
-                                    },
-                                    {
-                                      col: 'usage' as const,
-                                      title: t('detail.upstreamUsageRaw'),
-                                      raw: log.raw_usage,
-                                    },
-                                  ] as const
-                                ).map(({ col, title, raw }) => {
-                                  const display = prettifyLogJson(raw);
-                                  const empty = !display;
-                                  return (
-                                    <div
-                                      key={col}
-                                      className="min-w-0 flex h-72 flex-col md:h-[28rem] overflow-hidden rounded-md border border-gray-200"
-                                    >
-                                      <div className="px-2 py-1.5 border-b border-gray-200 bg-gray-50 flex items-center justify-between gap-2 shrink-0">
-                                        <span className="text-xs font-medium text-gray-700">{title}</span>
-                                        <button
-                                          type="button"
-                                          disabled={empty}
-                                          onClick={() => copyColumn(raw, col)}
-                                          className="px-2 py-0.5 text-[10px] border border-gray-300 rounded text-gray-700 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                                        >
-                                          {copiedColumn === col ? tCommon('copied') : tCommon('copy')}
-                                        </button>
-                                      </div>
-                                      <pre className="p-2 text-xs text-gray-800 whitespace-pre-wrap break-words min-h-0 overflow-auto font-mono flex-1">
-                                        {empty ? tCommon('noDataFound') : display}
-                                      </pre>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                              </div>
-                            );
-                          })()}
+                          <RequestLogFlow
+                            key={log.id}
+                            log={log}
+                            providerLabel={providerRouteLabel(log)}
+                            identityLabel={[
+                              log.user_email,
+                              log.api_key_id ?? (log.oauth_access_token_id
+                                ? log.oauth_access_token_name
+                                  ? tToken('logCredential', { name: log.oauth_access_token_name })
+                                  : tToken('logCredentialUnknown', { id: log.oauth_access_token_id })
+                                : null),
+                            ].filter(Boolean).join(' · ')}
+                            currency={billingCurrency}
+                            onExplainTiming={() => setTimingHelpLog(log)}
+                          />
                         </div>
                       </td>
                     </tr>
