@@ -195,6 +195,7 @@ Docker 自托管及 Postgres / MySQL 数据库方案见 [部署文档索引](./d
 
 | 任务 | 链接 |
 |------|------|
+| coding agent 的仓库约定 | [AGENTS.md](./AGENTS.md) |
 | 功能地图、管理后台配置、客户端接入 | [docs/users/](./docs/users/) |
 | 本地上手与示例请求 | [docs/users/quickstart.md](./docs/users/quickstart.md) |
 | API、集成、本地开发、架构 | [docs/developers/](./docs/developers/) |
