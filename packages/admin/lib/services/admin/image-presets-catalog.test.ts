@@ -9,6 +9,8 @@ const EXPECTED_IMAGE_IDS = [
 	'doubao-seedream-5-0-flash',
 	'doubao-seedream-5-0-pro',
 	'gemini-3.1-flash-image',
+	'gemini-3.1-flash-lite-image',
+	'gemini-3-pro-image',
 	'gemini-3-pro-image-preview',
 	'gemini-nano-banana-2.1',
 	'glm-image',
@@ -176,6 +178,30 @@ describe('static image model presets (*-image.json)', () => {
 		assert.equal(proTier.input_price, 2);
 		assert.equal(proTier.output_price, 12);
 		assert.equal(proTier.image_output_price, 120);
+
+		const proGa = byId.get('gemini-3-pro-image')!;
+		const proGaTier = asPricing(proGa.pricing.usd).tiers?.[0];
+		assert.ok(proGaTier);
+		assert.equal(asPricing(proGa.pricing.usd).image_billing_mode, 'token');
+		assert.equal(proGaTier.input_price, 2);
+		assert.equal(proGaTier.output_price, 12);
+		assert.equal(proGaTier.image_input_price, 2);
+		assert.equal(proGaTier.image_output_price, 120);
+		assert.equal(asPricing(proGa.pricing.cny).tiers?.[0]?.input_price, 14);
+		assert.equal(asPricing(proGa.pricing.cny).tiers?.[0]?.output_price, 84);
+		assert.equal(asPricing(proGa.pricing.cny).tiers?.[0]?.image_output_price, 840);
+
+		const lite = byId.get('gemini-3.1-flash-lite-image')!;
+		const liteTier = asPricing(lite.pricing.usd).tiers?.[0];
+		assert.ok(liteTier);
+		assert.equal(asPricing(lite.pricing.usd).image_billing_mode, 'token');
+		assert.equal(liteTier.input_price, 0.25);
+		assert.equal(liteTier.output_price, 1.5);
+		assert.equal(liteTier.image_input_price, 0.25);
+		assert.equal(liteTier.image_output_price, 30);
+		assert.equal(asPricing(lite.pricing.cny).tiers?.[0]?.input_price, 1.75);
+		assert.equal(asPricing(lite.pricing.cny).tiers?.[0]?.output_price, 10.5);
+		assert.equal(asPricing(lite.pricing.cny).tiers?.[0]?.image_output_price, 210);
 
 		const nanoBanana21 = byId.get('gemini-nano-banana-2.1')!;
 		const nanoBanana21Tier = asPricing(nanoBanana21.pricing.usd).tiers?.[0];

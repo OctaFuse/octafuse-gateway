@@ -37,6 +37,7 @@ const EXPECTED_AUDIO_IDS = [
 	'qwen-audio-3.1-asr-flash-message',
 	'qwen-audio-3.1-asr-flash-streaming',
 	'qwen-audio-3.1-tts-flash',
+	'qwen-audio-3.1-tts-plus',
 	'qwen-audio-3.0-asr-flash-filetrans',
 	'qwen-audio-3.0-asr-flash-streaming',
 	'qwen-audio-3.0-tts-flash',
@@ -154,6 +155,12 @@ describe('static audio model presets (*-audio-asr.json / *-audio-tts.json)', () 
 		assert.equal(asPricing(tts.pricing.cny).audio_billing_mode, 'per_character');
 		assert.equal(asPricing(tts.pricing.cny).audio?.price_per_character, 0.00014);
 		assert.equal(asPricing(tts.pricing.usd).audio?.price_per_character, 0.00002);
+
+		const tts31 = byId.get('qwen-audio-3.1-tts-plus')!;
+		assert.equal(asPricing(tts31.pricing.cny).audio_billing_mode, 'per_character');
+		assert.equal(asPricing(tts31.pricing.cny).audio?.price_per_character, 0.00014);
+		assert.equal(asPricing(tts31.pricing.usd).audio_billing_mode, 'per_character');
+		assert.equal(asPricing(tts31.pricing.usd).audio?.price_per_character, 0.00002);
 
 		const minimaxAsr = byId.get('minimax-asr-1.0')!;
 		assert.equal(asPricing(minimaxAsr.pricing.usd).audio_billing_mode, 'per_second');

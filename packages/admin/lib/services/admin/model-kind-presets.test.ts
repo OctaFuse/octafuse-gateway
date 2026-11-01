@@ -45,7 +45,7 @@ describe('static model presets × model kind rules', () => {
 		for (const id of ['whisper-1', 'gpt-4o-transcribe', 'fun-asr', 'minimax-asr-1.0']) {
 			if (kindById.has(id)) assert.equal(kindById.get(id), 'asr', id);
 		}
-		for (const id of ['cosyvoice-v2', 'minimax-speech-2.8-hd', 'qwen-audio-3.0-tts-flash']) {
+		for (const id of ['cosyvoice-v2', 'minimax-speech-2.8-hd', 'qwen-audio-3.0-tts-flash', 'qwen-audio-3.1-tts-plus']) {
 			if (kindById.has(id)) assert.equal(kindById.get(id), 'tts', id);
 		}
 		const counts = { llm: 0, image: 0, asr: 0, tts: 0, embedding: 0 };

@@ -467,6 +467,7 @@ describe('adapter registry', () => {
 		assert.equal(matchAdapterUpstreamModel(speech, 'qwen-audio-3.1-tts-flash'), 'mismatch');
 		assert.equal(matchAdapterUpstreamModel(qwenAudioTts, 'Qwen-Audio-3.0-TTS-Plus'), 'match');
 		assert.equal(matchAdapterUpstreamModel(qwenAudioTts, 'qwen-audio-3.1-tts-flash'), 'match');
+		assert.equal(matchAdapterUpstreamModel(qwenAudioTts, 'qwen-audio-3.1-tts-plus'), 'match');
 		assert.equal(matchAdapterUpstreamModel(qwenAudioTts, 'qwen-audio-3.1-tts-next'), 'mismatch');
 		assert.equal(matchAdapterUpstreamModel(qwenAudioTts, 'cosyvoice-v3.5-flash'), 'mismatch');
 		assert.equal(matchAdapterUpstreamModel(speech, 'qwen-audio-3.1-tts-next'), 'mismatch');

@@ -18,6 +18,7 @@
 - **MCP OAuth 配置校验**：`PUT /api/admin/config` 校验 `MCP_OAUTH_AUTHORIZATION_SERVER`（空字符串表示关闭，其余必须是 https 源，本机开发允许 http localhost）。
 - **MCP OAuth 授权登录卡片与接入指南**：「MCP 服务」页新增「OAuth 2.0 授权登录（可选）」卡片，默认只显示一个开关；打开后填写授权服务器并保存，关闭并保存即清空 `MCP_OAUTH_AUTHORIZATION_SERVER`。工作原理与授权服务器要求收在折叠区里。「接入指南」增加「API Key / OAuth 2.0 授权」切换：OAuth 模式给出 ChatGPT 连接器、Cursor、VS Code、Claude Code、Codex、curl 的免 Key 配置与登录步骤，并提示授权服务器是否已配置。
 - **模型目录**：新增 GPT-6.1 Terra（`gpt-6.1-terra`）预设。Standard 刊例价为短上下文 $1 / $5（每百万 token），缓存读取 $0.05、30 分钟缓存写入 $1.25；输入超过 272K 时整单按长上下文计价。人民币价为美元刊例 ×7 的换算占位价。导入后需自行配置供应商与路由。
+- **模型目录**：新增 `gemini-3-pro-image`、`gemini-3.1-flash-lite-image`、`qwen-audio-3.1-tts-plus` 预设。两个 Gemini 生图模型按 token 计费，人民币价为美元刊例 ×7 的换算占位价。阿里 Plus 按字符计费，取华北2（北京）官方价。保留已退役的 `gemini-3-pro-image-preview`。既有 Qwen-Audio 语音合成适配器同时认 `qwen-audio-3.1-tts-plus`。导入不会自动上线路由。
 - **供应商导入模板**：新增百度云模型服务 V2 的四个地域模板。广州只含对话（OpenAI Chat / Responses、Anthropic Messages）。新加坡、加利福尼亚、法兰克福另含图片生成与编辑，以及 Bearer 鉴权的 Gemini 文本和生图。不含向量、音频和视频原厂协议。与百度千帆分开，地域 Key 不能混用。已导入的供应商不会自动改写。
 - **路由列表展示**：增强 Provider 行边界与留白；列表按可用宽度采用上下或左右分区，宽屏延续名称、模型、配置摘要的层级，不再自动拆为多列表格。状态在上下布局中右对齐、左右布局中紧跟名称，权重、粘性和参数独立成组；宽屏将身份状态与模型、配置摘要并排组织，限制价格区宽度，保留时段与倍率对齐。
 - **粘性配置**：路由页「Provider 粘性」弹窗重组为「配置 / 分布 / 明细 / 其他」。有效期提供 1 小时（默认）、2 小时、6 小时和自定义选项，设置修改支持撤销。

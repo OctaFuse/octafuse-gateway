@@ -774,6 +774,111 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cnyProfile!.tiers[0]?.image_input_price, 10.5);
 		assert.equal(cnyProfile!.tiers[0]?.image_output_price, 210);
 	});
+
+	it('includes gemini-3-pro-image at the Gemini 3 Pro Image Standard list price (CNY is USD × 7)', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gemini-3-pro-image');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gemini-3-pro-image');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Gemini 3 Pro Image (Nano Banana Pro)');
+		assert.equal(usd!.kind, 'image');
+		assert.equal(usd!.context_window, null);
+		assert.equal(usd!.max_tokens, null);
+		assert.equal(usd!.pricing_label, '$2 / $2 / $120 /M');
+		assert.equal(cny!.pricing_label, '¥14 / ¥14 / ¥840 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'gemini-3-pro-image');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-05-28');
+		assert.equal(preset!.retired, undefined);
+		assert.deepEqual(preset!.modalities?.input, ['text', 'image']);
+		assert.deepEqual(preset!.modalities?.output, ['image']);
+		assert.match(preset!.description ?? '', /×7/);
+		assert.match(preset!.i18n?.zh ?? '', /人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例/);
+		const preview = listStaticModelPresets().find((p) => p.id === 'gemini-3-pro-image-preview');
+		assert.equal(preview?.retired, '2026-06-25');
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.ok(profile);
+		assert.equal(profile!.tiers.length, 1);
+		assert.equal(profile!.tiers[0]?.input_price, 2);
+		assert.equal(profile!.tiers[0]?.output_price, 12);
+		assert.equal(profile!.tiers[0]?.cache_read_price, null);
+		assert.equal(profile!.tiers[0]?.cache_write_price, null);
+		assert.equal(profile!.tiers[0]?.image_input_price, 2);
+		assert.equal(profile!.tiers[0]?.image_output_price, 120);
+		const raw = pickPresetPricingRawForBillingCurrency(preset!, 'USD') as { image_billing_mode?: string };
+		assert.equal(raw.image_billing_mode, 'token');
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.ok(cnyProfile);
+		assert.equal(cnyProfile!.tiers[0]?.input_price, 14);
+		assert.equal(cnyProfile!.tiers[0]?.output_price, 84);
+		assert.equal(cnyProfile!.tiers[0]?.image_input_price, 14);
+		assert.equal(cnyProfile!.tiers[0]?.image_output_price, 840);
+	});
+
+	it('includes gemini-3.1-flash-lite-image at the Flash Lite Image Standard list price (CNY is USD × 7)', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gemini-3.1-flash-lite-image');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gemini-3.1-flash-lite-image');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Gemini 3.1 Flash Lite Image');
+		assert.equal(usd!.kind, 'image');
+		assert.equal(usd!.context_window, null);
+		assert.equal(usd!.max_tokens, null);
+		assert.equal(usd!.pricing_label, '$0.25 / $0.25 / $30 /M');
+		assert.equal(cny!.pricing_label, '¥1.75 / ¥1.75 / ¥210 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'gemini-3.1-flash-lite-image');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-06-30');
+		assert.equal(preset!.retired, undefined);
+		assert.deepEqual(preset!.modalities?.input, ['text', 'image']);
+		assert.deepEqual(preset!.modalities?.output, ['image']);
+		assert.match(preset!.i18n?.zh ?? '', /人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例/);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.ok(profile);
+		assert.equal(profile!.tiers[0]?.input_price, 0.25);
+		assert.equal(profile!.tiers[0]?.output_price, 1.5);
+		assert.equal(profile!.tiers[0]?.image_input_price, 0.25);
+		assert.equal(profile!.tiers[0]?.image_output_price, 30);
+		const raw = pickPresetPricingRawForBillingCurrency(preset!, 'USD') as { image_billing_mode?: string };
+		assert.equal(raw.image_billing_mode, 'token');
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.ok(cnyProfile);
+		assert.equal(cnyProfile!.tiers[0]?.input_price, 1.75);
+		assert.equal(cnyProfile!.tiers[0]?.output_price, 10.5);
+		assert.equal(cnyProfile!.tiers[0]?.image_input_price, 1.75);
+		assert.equal(cnyProfile!.tiers[0]?.image_output_price, 210);
+	});
+
+	it('includes qwen-audio-3.1-tts-plus at Beijing per-character list prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen-audio-3.1-tts-plus');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen-audio-3.1-tts-plus');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Qwen Audio 3.1 TTS Plus');
+		assert.equal(usd!.kind, 'tts');
+		assert.equal(usd!.pricing_label, '$0.00002 $/char');
+		assert.equal(cny!.pricing_label, '¥0.00014 ¥/char');
+		const preset = listStaticModelPresets().find((p) => p.id === 'qwen-audio-3.1-tts-plus');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-10-21');
+		assert.equal(preset!.retired, undefined);
+		assert.deepEqual(preset!.modalities?.input, ['text']);
+		assert.deepEqual(preset!.modalities?.output, ['audio']);
+		assert.doesNotMatch(preset!.description ?? '', /×7/);
+		assert.doesNotMatch(preset!.i18n?.zh ?? '', /换算占位价/);
+		const usdPricing = pickPresetPricingRawForBillingCurrency(preset!, 'USD') as {
+			audio_billing_mode?: string;
+			audio?: { price_per_character?: number };
+		};
+		const cnyPricing = pickPresetPricingRawForBillingCurrency(preset!, 'CNY') as {
+			audio_billing_mode?: string;
+			audio?: { price_per_character?: number };
+		};
+		assert.equal(usdPricing.audio_billing_mode, 'per_character');
+		assert.equal(usdPricing.audio?.price_per_character, 0.00002);
+		assert.equal(cnyPricing.audio_billing_mode, 'per_character');
+		assert.equal(cnyPricing.audio?.price_per_character, 0.00014);
+	});
 });
 
 describe('import catalog localized model metadata', () => {

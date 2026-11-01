@@ -192,7 +192,7 @@ const QWEN_AUDIO_ASR_INFERENCE_MODELS = [
 	'qwen-audio-3.1-asr-flash-message*',
 ] as const;
 const COSYVOICE_TTS_MODELS = ['cosyvoice-*'] as const;
-const QWEN_AUDIO_TTS_MODELS = ['qwen-audio-3.0-tts-*', 'qwen-audio-3.1-tts-flash'] as const;
+const QWEN_AUDIO_TTS_MODELS = ['qwen-audio-3.0-tts-*', 'qwen-audio-3.1-tts-flash', 'qwen-audio-3.1-tts-plus'] as const;
 const QWEN_TTS_HTTP_MODELS = {
 	include: ['qwen3-tts-*', 'qwen-tts*'],
 	exclude: ['*realtime*'],

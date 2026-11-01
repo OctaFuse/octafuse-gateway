@@ -38,6 +38,39 @@
 		}
 	},
 	{
+		"id": "qwen-audio-3.1-tts-plus",
+		"display_name": "Qwen Audio 3.1 TTS Plus",
+		"description": "DashScope high-quality text-to-speech for premium voices and content creation, with streaming synthesis and instruction control. Billed by generated characters.",
+		"i18n": {
+			"en": "DashScope high-quality text-to-speech for premium voices and content creation, with streaming synthesis and instruction control. Billed by generated characters.",
+			"zh": "DashScope 高质量语音合成，面向精品音色与内容创作，支持流式合成与指令控制。按生成字符数计费。",
+			"ja": "DashScope の高品質な音声合成です。上質な声とコンテンツ制作向けで、ストリーミング合成と指示による制御に対応し、生成した文字数で課金します。",
+			"ko": "DashScope 고품질 음성 합성입니다. 프리미엄 음색과 콘텐츠 제작용이며, 스트리밍 합성과 지시 제어를 지원하고, 생성한 글자 수로 과금합니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.00002,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.00014,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		},
+		"released": "2026-10-21"
+	},
+	{
 		"id": "qwen-audio-3.0-tts-plus",
 		"display_name": "Qwen Audio 3.0 TTS Plus",
 		"description": "DashScope high-quality text-to-speech model billed by generated characters.",
