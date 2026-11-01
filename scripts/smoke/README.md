@@ -30,7 +30,7 @@ npx tsx --test scripts/smoke/test-critical-write-paths.ts
 npm run test:gateway:sql-storage-smoke
 ```
 
-直连 **`DATABASE_URL`**（`DATABASE_DRIVER` 默认 `postgres`，MySQL 须显式 `mysql`），在同一 `users` 下并发调用 `insertRequestUsageAndChargeTx`，断言 `budget_spent` 原子累加；结束 **`deleteUserHard`** 清理。**未配置 `DATABASE_URL` 时脚本退出 0（跳过）**。
+直连 **`DATABASE_URL`**（`DATABASE_DRIVER` 默认 `postgres`，MySQL 须显式 `mysql`），在同一 `users` 下并发调用 `insertRequestUsageAndChargeTx`，断言 `budget_spent` 原子累加；结束 **`deleteUserHard`** 清理。**非严格模式下未配置 `DATABASE_URL` 时脚本退出 0（跳过）；配置无效或严格模式下缺少配置均失败**。
 
 **D1**：单 Worker 内 `batch()` 串行；生产语义与 SQL 累加一致；端到端可依赖 **`npm run test:gateway:node-smoke`**（对真实 Admin + Proxy + D1 发 HTTP）。
 
@@ -41,6 +41,15 @@ npm run test:gateway:node-smoke
 npm run test:gateway:sql-storage-smoke   # 无 DATABASE_URL 则跳过
 npx tsx --test scripts/smoke/test-critical-write-paths.ts
 ```
+
+## CI 严格检查
+
+`Docker Compose Smoke (node-pg)` 先启动临时 Postgres，通过迁移镜像应用全部迁移，再构建并启动 Proxy 与 Admin。
+CI 设置 `GATEWAY_SMOKE_STRICT=1` 并显式提供临时库的管理凭证，执行管理读写、审计、多 Key、MCP 接入与并发扣费检查；缺少数据库配置、跳过关键检查或请求失败都会导致任务失败。
+数据库与容器在任务结束时删除，不访问生产环境。
+
+`npm run test:unit` 包含关键写入事务契约与冒烟配置回归；`npm run typecheck` 检查所有包，包含 Core 测试源码。
+CI 还执行生产依赖审计、管理后台静态检查与 Proxy 打包检查。开发依赖审计需另行运行 `npm audit`。
 
 ## 4. 协议与路由的手工回归
 

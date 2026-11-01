@@ -16,7 +16,7 @@ import {
 	serializeApiKeyRateLimit,
 	userRateLimitSubject,
 	type RateLimitLayer,
-} from './api-key-rate-limit.ts';
+} from './api-key-rate-limit';
 
 const T0 = Date.parse('2026-09-05T02:31:42.123Z');
 const MINUTE_BOUNDARY_BEFORE = Date.parse('2026-09-05T02:31:59.500Z');

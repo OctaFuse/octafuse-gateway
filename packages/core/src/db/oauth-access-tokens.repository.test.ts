@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { before, describe, it } from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
+import { URL } from 'node:url';
 import { createOAuthAccessTokensSqlRepository, type SqlExec } from './oauth-access-tokens.repository';
 
 const MIGRATION = new URL('../../migrations-d1/0035_oauth_access_tokens.sql', import.meta.url);

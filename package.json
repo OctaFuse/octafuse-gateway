@@ -48,15 +48,25 @@
 		"docs:image-models": "node scripts/docs/gen-image-models.mjs",
 		"test:docs": "node --test scripts/docs/*.test.mjs",
 		"test:db-scripts": "tsx --test scripts/db/lib/*.test.ts",
-		"test:unit": "npm run test:deploy && npm run test:docs && npm run test:db-scripts && npm run test:unit -w @octafuse/core && npm run test:unit -w @octafuse/proxy && npm run test:unit -w @octafuse/admin"
+		"test:unit": "npm run test:deploy && npm run test:docs && npm run test:db-scripts && npm run test:critical-writes && npm run test:unit -w @octafuse/core && npm run test:unit -w @octafuse/proxy && npm run test:unit -w @octafuse/admin",
+		"typecheck": "npm run typecheck -w @octafuse/core && npm run typecheck -w @octafuse/tool-engines && npm run typecheck -w @octafuse/proxy && npm run typecheck:admin",
+		"test:critical-writes": "tsx --test scripts/smoke/test-critical-write-paths.ts scripts/smoke/*.test.ts"
 	},
 	"devDependencies": {
 		"@changesets/changelog-github": "^0.5.1",
 		"@changesets/cli": "^2.29.8",
 		"@types/node": "^25.5.0",
 		"dotenv-cli": "^11.0.0",
-		"tsx": "^4.21.0",
+		"tsx": "^4.23.15",
 		"typescript": "^5.7.2",
-		"wrangler": "^4.107.0"
+		"wrangler": "^4.156.0"
+	},
+	"overrides": {
+		"@opennextjs/cloudflare": {
+			"glob": "^14.0.2"
+		},
+		"@node-minify/core": {
+			"glob": "^14.0.2"
+		}
 	}
 }

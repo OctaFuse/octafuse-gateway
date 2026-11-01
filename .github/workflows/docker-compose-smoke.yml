@@ -1,5 +1,4 @@
-# 本地 compose 冒烟：构建 proxy + admin，起 Postgres，等 HEALTHCHECK。
-# 拦住 Dockerfile / esbuild 打包契约类启动失败（如 ERR_MODULE_NOT_FOUND）。
+# 构建检查与 Node + Postgres 业务冒烟：迁移、鉴权、管理读写、审计与并发扣费。
 
 name: Docker Compose Smoke (node-pg)
 
@@ -16,6 +15,8 @@ on:
       - "packages/admin/**"
       - "package.json"
       - "package-lock.json"
+      - "tsconfig*.json"
+      - "scripts/**"
       - ".github/workflows/docker-compose-smoke.yml"
   push:
     branches: [main, develop]
@@ -30,6 +31,8 @@ on:
       - "packages/admin/**"
       - "package.json"
       - "package-lock.json"
+      - "tsconfig*.json"
+      - "scripts/**"
       - ".github/workflows/docker-compose-smoke.yml"
   workflow_dispatch:
 
@@ -37,10 +40,13 @@ concurrency:
   group: docker-compose-smoke-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   typecheck-admin:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,26 +57,63 @@ jobs:
           cache: npm
 
       - name: Install
-        run: npm ci --ignore-scripts
+        run: npm ci --ignore-scripts --include=dev
 
-      - name: Typecheck admin (same surface as Docker next build)
-        run: npm run typecheck:admin
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=moderate --registry=https://registry.npmjs.org
+
+      - name: Typecheck all packages (including core tests)
+        run: npm run typecheck
+
+      - name: Unit tests and critical write contracts
+        run: npm run test:unit
+
+      - name: Lint admin
+        run: npm run lint -w @octafuse/admin
+
+      - name: Build core and proxy
+        run: npm run build -w @octafuse/core && npm run build -w @octafuse/proxy && npm run verify:proxy-bundle
 
   smoke-node-pg:
     needs: typecheck-admin
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      DATABASE_DRIVER: postgres
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/octafuse
+      GATEWAY_BASE_URL: http://127.0.0.1:8787
+      GATEWAY_MASTER_URL: http://127.0.0.1:8789
+      # Fresh, disposable compose database: migration 0023 imports this development seed key.
+      GATEWAY_MASTER_KEY: sk-dev-admin-key
+      GATEWAY_SMOKE_STRICT: "1"
+      GATEWAY_SMOKE_SKIP_ADMIN: "0"
+      GATEWAY_SMOKE_SKIP_WRITES: "0"
+      NODE_ENV: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+
+      - name: Install smoke dependencies
+        run: npm ci --ignore-scripts --include=dev
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and start postgres + proxy + admin
+      - name: Start postgres and apply migrations
         run: |
           set -euo pipefail
-          docker compose -f docker/compose/node-pg.yml up -d --build postgres gateway-proxy gateway-admin
+          docker compose -f docker/compose/node-pg.yml up -d --wait postgres
+          docker compose -f docker/compose/node-pg.yml --profile migrate run --build --rm migrate
+
+      - name: Build and start proxy + admin
+        run: |
+          set -euo pipefail
+          docker compose -f docker/compose/node-pg.yml up -d --build gateway-proxy gateway-admin
 
       - name: Wait for proxy health
         run: |
@@ -100,12 +143,17 @@ jobs:
           docker compose -f docker/compose/node-pg.yml logs gateway-admin | tail -80
           exit 1
 
-      - name: Smoke GET endpoints
-        run: |
-          set -euo pipefail
-          curl -fsS "http://127.0.0.1:8787/health" | head -c 400
-          echo
-          curl -fsS -o /dev/null -w "admin_http=%{http_code}\n" "http://127.0.0.1:8789/"
+      - name: Smoke authenticated routes, admin writes and audit logs
+        timeout-minutes: 3
+        run: npm run test:gateway:node-smoke
+
+      - name: Smoke concurrent billing and wallet idempotency
+        timeout-minutes: 3
+        run: npm run test:gateway:sql-storage-smoke
+
+      - name: Container diagnostics
+        if: failure()
+        run: docker compose -f docker/compose/node-pg.yml logs --no-color --tail=150
 
       - name: Teardown
         if: always()

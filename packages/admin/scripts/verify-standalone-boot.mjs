@@ -23,7 +23,6 @@ const entryRel = 'packages/admin/node-server.mjs';
 const RUNNER_PACKAGES = [
 	'postgres',
 	'aws-ssl-profiles',
-	'denque',
 	'generate-function',
 	'iconv-lite',
 	'is-property',

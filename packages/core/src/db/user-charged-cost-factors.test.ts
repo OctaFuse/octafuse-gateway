@@ -167,6 +167,7 @@ describe('applyUserChargedCostToBreakdown', () => {
 		const parsed = JSON.parse(out.pricingAuditJson) as {
 			user_charged_factor: number;
 			user_charged_factor_mode: string;
+			user_charged_factor_route_group: string | null;
 			combined_charged_factor: number;
 			snapshot: { user_charge: { user_charged_factor: number; combined_charged_factor: number } };
 		};
