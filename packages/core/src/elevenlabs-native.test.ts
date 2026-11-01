@@ -120,7 +120,9 @@ describe('elevenlabs stt helpers', () => {
 	});
 
 	it('cuts segments that run longer than 15 seconds', () => {
-		const words = Array.from({ length: 20 }, (_, i) => word(`w${i}`, i, i + 0.9));
+		const words = readElevenLabsSttWords({
+			words: Array.from({ length: 20 }, (_, i) => word(`w${i}`, i, i + 0.9)),
+		});
 		const segments = elevenLabsWordsToSegments(words);
 		assert.ok(segments.length >= 2);
 		assert.ok(segments.every((s) => s.end - s.start <= 15));

@@ -3,7 +3,7 @@
  * 验证 `users.budget_spent` 与 Proxy `recordUsage` 相同的 SQL 原子累加路径。
  *
  * 依赖：已迁移的库（`npm run db:migrate:pg` / `db:migrate:mysql`）、`DATABASE_URL`。
- * 未设置 `DATABASE_URL` 时退出码 **0**（跳过，便于仅 D1 的 CI）。
+ * 未设置 `DATABASE_URL` 时退出码 **0**（跳过，便于仅 D1 的开发）；严格模式下缺失或配置无效均失败。
  *
  * ```bash
  * npm run test:gateway:sql-storage-smoke
@@ -104,16 +104,17 @@ function buildRequestLog(params: {
 
 export async function runStorageConcurrentChargeSmoke(): Promise<void> {
 	const tag = '[gateway-sql-storage-smoke]';
-	let cfg: ReturnType<typeof resolveNodeDatabaseConfig>;
-	try {
-		cfg = resolveNodeDatabaseConfig({
-			DATABASE_URL: process.env.DATABASE_URL,
-			DATABASE_DRIVER: process.env.DATABASE_DRIVER,
-		});
-	} catch {
-		console.log('%s skip: DATABASE_URL unset or invalid for Node SQL', tag);
+	const strict = ['1', 'true', 'yes'].includes(
+		(process.env.GATEWAY_SMOKE_STRICT ?? '').toLowerCase()
+	);
+	if (!process.env.DATABASE_URL?.trim() && !strict) {
+		console.log('%s skip: DATABASE_URL unset', tag);
 		return;
 	}
+	const cfg = resolveNodeDatabaseConfig({
+		DATABASE_URL: process.env.DATABASE_URL,
+		DATABASE_DRIVER: process.env.DATABASE_DRIVER,
+	});
 	const url = cfg.connectionString;
 	const driver = cfg.driver;
 

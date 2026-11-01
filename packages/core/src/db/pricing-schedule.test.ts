@@ -509,6 +509,7 @@ describe('assertRouteScheduleMatchesCatalog', () => {
 	it('allows any route schedule when catalog is empty', () => {
 		const result = assertRouteScheduleMatchesCatalog([], {
 			mode: 'override',
+			provider: [],
 			charged: [{ start: '01:00', end: '02:00', factor: 2 }],
 			metered: [],
 		});
@@ -518,6 +519,7 @@ describe('assertRouteScheduleMatchesCatalog', () => {
 	it('accepts matching charged and metered window sets', () => {
 		const result = assertRouteScheduleMatchesCatalog(catalog, {
 			mode: 'override',
+			provider: [],
 			charged: [
 				{ start: '00:30', end: '08:30', factor: 0.8 },
 				{ start: '09:00', end: '12:00', factor: 1.1, days: [1, 2, 3, 4, 5] },
@@ -539,6 +541,7 @@ describe('assertRouteScheduleMatchesCatalog', () => {
 			[{ start: '00:00', end: '08:00', factor: 0.5, days: [1, 2, 3, 4, 5, 6, 7] }],
 			{
 				mode: 'override',
+				provider: [],
 				charged: [{ start: '00:00', end: '08:00', factor: 1 }],
 				metered: [{ start: '00:00', end: '08:00', factor: 1 }],
 			}
@@ -549,6 +552,7 @@ describe('assertRouteScheduleMatchesCatalog', () => {
 	it('rejects missing or extra windows on either side', () => {
 		const missing = assertRouteScheduleMatchesCatalog(catalog, {
 			mode: 'override',
+			provider: [],
 			charged: [{ start: '00:30', end: '08:30', factor: 1 }],
 			metered: catalog,
 		});
@@ -558,6 +562,7 @@ describe('assertRouteScheduleMatchesCatalog', () => {
 		}
 		const extra = assertRouteScheduleMatchesCatalog(catalog, {
 			mode: 'override',
+			provider: [],
 			charged: catalog,
 			metered: [...catalog, { start: '13:00', end: '14:00', factor: 1 }],
 		});

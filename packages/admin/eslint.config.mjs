@@ -1,5 +1,8 @@
 import next from 'eslint-config-next';
 
+// eslint-config-next stays at the existing 16.2.3 rule baseline in package.json;
+// adopting React Compiler rules is a separate migration from runtime security fixes.
+
 /** @type {import('eslint').Linter.Config[]} */
 const config = [
 	...next,

@@ -103,7 +103,7 @@ test('updateUserBudgetWithAuditTx runs update then audit batch when changes > 0'
 	assert.equal(db.batches[0]?.length, 1);
 });
 
-test('insertRequestUsageAndChargeTx batches log + budget + audit together', async () => {
+test('insertRequestUsageAndChargeTx batches log, key activity, budget and audit together', async () => {
 	const db = createMockD1Database();
 	await insertRequestUsageAndChargeTx(db, {
 		userId: 'user-1',
@@ -154,7 +154,11 @@ test('insertRequestUsageAndChargeTx batches log + budget + audit together', asyn
 		},
 	});
 	assert.equal(db.batches.length, 1);
-	assert.equal(db.batches[0]?.length, 3);
+	assert.equal(db.batches[0]?.length, 4);
+	assert.match(db.preparedSql[0]!, /INSERT INTO api_key_request_logs/);
+	assert.match(db.preparedSql[1]!, /UPDATE api_keys SET last_used_at/);
+	assert.match(db.preparedSql[2]!, /UPDATE users SET budget_spent/);
+	assert.match(db.preparedSql[3]!, /INSERT INTO user_audit_logs/);
 });
 
 test('postgres branch uses transaction callback', async () => {
