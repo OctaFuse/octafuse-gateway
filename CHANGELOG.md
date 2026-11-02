@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Admin
+
+- **品牌标识**：新增蓝青配色、八向汇聚的 Octafuse 矢量标记，统一登录页与桌面、手机导航栏的品牌展示；补齐 SVG 标签页图标、多尺寸 ICO 与 Apple 触控图标，修复浏览器标签页缺少 Logo 的问题。
+
 ## 2.18.0
 
 ### Minor Changes

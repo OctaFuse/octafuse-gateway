@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import BrandExternalLinks from '@/components/layout/BrandExternalLinks';
+import BrandMark from '@/components/brand-mark';
 import LocaleSwitcher from '@/components/layout/LocaleSwitcher';
 import { BusinessTimezoneProvider } from '@/components/BusinessTimezoneProvider';
 import { ADMIN_SESSION_EXPIRED_EVENT_NAME } from '@/lib/admin-session-events';
@@ -108,9 +109,12 @@ export default function AuthWrapper({ children }: Props) {
       <div className="flex h-dvh items-start justify-center overflow-y-auto bg-gray-50 p-4">
         <div className="my-auto w-full max-w-md rounded-lg bg-white p-5 shadow-md sm:p-8">
           <div className="mb-6 flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-gray-800">{tBrand('loginHeading')}</h1>
-              <p className="mt-1 text-xs text-gray-500">{tBrand('operatorConsole')}</p>
+            <div className="flex min-w-0 items-center gap-3">
+              <BrandMark className="h-12 w-12" />
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold text-gray-800 sm:text-2xl">{tBrand('loginHeading')}</h1>
+                <p className="mt-1 text-xs text-gray-500">{tBrand('operatorConsole')}</p>
+              </div>
             </div>
             <LocaleSwitcher variant="login" />
           </div>
