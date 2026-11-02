@@ -160,5 +160,103 @@
 		},
 		"released": "2025-10-18",
 		"retired": "2027-02-26"
+	},
+	{
+		"id": "gpt-realtime-whisper",
+		"display_name": "GPT Realtime Whisper",
+		"description": "OpenAI's streaming speech-to-text model for low-latency realtime transcription sessions. Official rate $0.017 per minute ($0.00028 per second); gateway meters by duration (per second). CNY price is a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+		"i18n": {
+			"en": "OpenAI's streaming speech-to-text model for low-latency realtime transcription sessions. Official rate $0.017 per minute ($0.00028 per second); gateway meters by duration (per second). CNY price is a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+			"zh": "OpenAI 流式语音转写模型，用于低延迟实时转写会话。官方价 $0.017/分钟（$0.00028/秒），网关按时长（每秒）计费。人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"ja": "OpenAI のストリーム音声文字起こしモデルで、低遅延のリアルタイム文字起こしセッション向けです。公式価格は $0.017/分（$0.00028/秒）で、ゲートウェイは時間（毎秒）で課金します。人民元価格はドル建ての定価を ×7 した仮の価格で、公式の人民元定価ではありません。",
+			"ko": "OpenAI의 스트리밍 음성 받아쓰기 모델로, 저지연 실시간 받아쓰기 세션용입니다. 공식 가격은 분당 $0.017(초당 $0.00028)이며, 게이트웨이는 시간(초)으로 과금합니다. 위안화 가격은 달러 정가에 ×7을 한 임시 가격이며, 공식 위안화 정가가 아닙니다."
+		},
+		"vendor": "openai",
+		"context_window": 16000,
+		"max_tokens": 2000,
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00028,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.00196,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio", "text"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "gpt-live-transcribe",
+		"display_name": "GPT Live Transcribe",
+		"description": "OpenAI's low-latency streaming speech-to-text model, a recommended replacement for whisper-1 and gpt-4o-transcribe. Official rate $0.017 per minute ($0.000283 per second); gateway meters by duration (per second). CNY price is a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+		"i18n": {
+			"en": "OpenAI's low-latency streaming speech-to-text model, a recommended replacement for whisper-1 and gpt-4o-transcribe. Official rate $0.017 per minute ($0.000283 per second); gateway meters by duration (per second). CNY price is a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+			"zh": "OpenAI 低延迟流式语音转写模型，为 whisper-1 与 gpt-4o-transcribe 的官方推荐替代。官方价 $0.017/分钟（$0.000283/秒），网关按时长（每秒）计费。人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"ja": "OpenAI の低遅延ストリーム音声文字起こしモデルで、whisper-1 と gpt-4o-transcribe の公式な移行先です。公式価格は $0.017/分（$0.000283/秒）で、ゲートウェイは時間（毎秒）で課金します。人民元価格はドル建ての定価を ×7 した仮の価格で、公式の人民元定価ではありません。",
+			"ko": "OpenAI의 저지연 스트리밍 음성 받아쓰기 모델로, whisper-1과 gpt-4o-transcribe의 공식 대체 모델입니다. 공식 가격은 분당 $0.017(초당 $0.000283)이며, 게이트웨이는 시간(초)으로 과금합니다. 위안화 가격은 달러 정가에 ×7을 한 임시 가격이며, 공식 위안화 정가가 아닙니다."
+		},
+		"vendor": "openai",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000283,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.001981,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio", "text"],
+			"output": ["text"]
+		}
+	},
+	{
+		"id": "gpt-transcribe",
+		"display_name": "GPT Transcribe",
+		"description": "OpenAI's high-accuracy speech-to-text model for file and Realtime transcription, a recommended replacement for whisper-1 and gpt-4o-transcribe. Official rate $0.0045 per minute ($0.000075 per second); gateway meters by duration (per second). CNY price is a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+		"i18n": {
+			"en": "OpenAI's high-accuracy speech-to-text model for file and Realtime transcription, a recommended replacement for whisper-1 and gpt-4o-transcribe. Official rate $0.0045 per minute ($0.000075 per second); gateway meters by duration (per second). CNY price is a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+			"zh": "OpenAI 高精度语音转写模型，支持文件与实时转写，为 whisper-1 与 gpt-4o-transcribe 的官方推荐替代。官方价 $0.0045/分钟（$0.000075/秒），网关按时长（每秒）计费。人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"ja": "OpenAI の高精度音声文字起こしモデルで、ファイルとリアルタイムの文字起こしに対応し、whisper-1 と gpt-4o-transcribe の公式な移行先です。公式価格は $0.0045/分（$0.000075/秒）で、ゲートウェイは時間（毎秒）で課金します。人民元価格はドル建ての定価を ×7 した仮の価格で、公式の人民元定価ではありません。",
+			"ko": "OpenAI의 고정밀 음성 받아쓰기 모델로, 파일과 실시간 받아쓰기를 지원하며 whisper-1과 gpt-4o-transcribe의 공식 대체 모델입니다. 공식 가격은 분당 $0.0045(초당 $0.000075)이며, 게이트웨이는 시간(초)으로 과금합니다. 위안화 가격은 달러 정가에 ×7을 한 임시 가격이며, 공식 위안화 정가가 아닙니다."
+		},
+		"vendor": "openai",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000075,
+					"minimum_seconds": 1
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_second",
+				"audio": {
+					"price_per_second": 0.000525,
+					"minimum_seconds": 1
+				}
+			}
+		},
+		"modalities": {
+			"input": ["audio", "text"],
+			"output": ["text"]
+		}
 	}
 ]
