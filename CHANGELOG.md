@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Qwen-Audio 语音合成**：`dashscope-tts-qwen-audio` 以及 DashScope `audio.speech` / `audio.speech.stream` 透传同时认 `qwen-audio-3.1-tts-next` 与 `qwen-audio-3.1-tts-plus`。预设计费不变。
+
 ## 2.18.0
 
 ### Minor Changes
