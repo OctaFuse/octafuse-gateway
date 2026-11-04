@@ -1243,6 +1243,7 @@ describe('2026-11-03 model catalog巡检 additions', () => {
 		const preset = doubaoPreset('gpt-image-1.5');
 		assert.equal(preset.display_name, 'GPT Image 1.5');
 		assert.equal(preset.released, '2025-12-16');
+		assert.equal(preset.retired, '2026-12-01');
 		assert.deepEqual(preset.modalities?.input, ['text', 'image']);
 		assert.deepEqual(preset.modalities?.output, ['image']);
 		const usd = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset, 'USD'))!)!;
@@ -1265,6 +1266,11 @@ describe('2026-11-03 model catalog巡检 additions', () => {
 		assert.equal(usd.tiers[0]?.image_input_price, 2.5);
 		assert.equal(usd.tiers[0]?.image_input_cache_price, 0.25);
 		assert.equal(usd.tiers[0]?.image_output_price, 8);
+		assert.equal(preset.retired, '2026-12-01');
+	});
+
+	it('marks qwen3.5-plus retired on the official end-of-service date', () => {
+		assert.equal(doubaoPreset('qwen3.5-plus').retired, '2027-01-19');
 	});
 
 	it('adds the GPT transcription replacements metered per second', () => {
