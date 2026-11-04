@@ -62,7 +62,7 @@
 			"ko": "어려운 추론, 코딩, 에이전트용 고성능 Xiaomi MiMo입니다."
 		},
 		"vendor": "xiaomi",
-		"context_window": 1050000,
+		"context_window": 1000000,
 		"max_tokens": 128000,
 		"pricing": {
 			"usd": {
@@ -128,7 +128,7 @@
 			"ko": "소프트웨어 개발과 긴 주기의 에이전트용 Xiaomi MiMo 플래그십입니다. 범용 에이전트 능력, 어려운 소프트웨어 개발, 긴 실행을 특히 강화했습니다."
 		},
 		"vendor": "xiaomi",
-		"context_window": 1050000,
+		"context_window": 1000000,
 		"max_tokens": 128000,
 		"pricing": {
 			"usd": {
@@ -180,7 +180,7 @@
 			"ko": "비용과 능력의 균형을 맞추고, 에이전트와 시각 이해에 쓰는 MiMo 옴니 모델입니다. 처음부터 옴니모달이라, 추론 비용을 낮추면서 Pro에 가까운 에이전트 성능을 내고 시각 이해도 강화했습니다."
 		},
 		"vendor": "xiaomi",
-		"context_window": 1050000,
+		"context_window": 1000000,
 		"max_tokens": 128000,
 		"pricing": {
 			"usd": {
@@ -232,7 +232,7 @@
 			"ko": "전문적이고 기간이 길며 절차가 많은 작업용 Xiaomi MiMo 옴니 플래그십입니다. 과학 연구와 사이버 보안도 다룹니다."
 		},
 		"vendor": "xiaomi",
-		"context_window": 1050000,
+		"context_window": 1000000,
 		"max_tokens": 128000,
 		"pricing": {
 			"usd": {
@@ -282,7 +282,7 @@
 			"ko": "잦은 사무와 규모가 큰 처리용으로, 비용 대비 성능이 좋은 Xiaomi MiMo 옴니 모델입니다."
 		},
 		"vendor": "xiaomi",
-		"context_window": 1050000,
+		"context_window": 1000000,
 		"max_tokens": 128000,
 		"pricing": {
 			"usd": {
@@ -332,7 +332,7 @@
 			"ko": "MiMo V2.6 Pro의 플래그십 능력을 유지한 초고속 서빙입니다. 출력 속도는 최대 약 20배이며, 실시간성과 지연을 강하게 신경 쓰는 처리용입니다."
 		},
 		"vendor": "xiaomi",
-		"context_window": 1050000,
+		"context_window": 1000000,
 		"max_tokens": 128000,
 		"pricing": {
 			"usd": {

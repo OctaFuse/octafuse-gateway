@@ -10,8 +10,8 @@
 			"ko": "실무, 코딩, 현장의 디지털 작업용 MiniMax입니다. 여러 디지털 업무에서의 학습으로, 코딩의 바탕을 처음부터 끝까지 이어지는 실무로 넓혔습니다."
 		},
 		"vendor": "minimax",
-		"context_window": 196000,
-		"max_tokens": 128000,
+		"context_window": 200000,
+		"max_tokens": 200000,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -58,8 +58,8 @@
 			"ko": "스스로 진행하는 실무와 여러 에이전트의 협업용 MiniMax입니다. 현장 업무에서의 자율성, 여러 에이전트 연계, 지속적인 개선을 중시합니다."
 		},
 		"vendor": "minimax",
-		"context_window": 196000,
-		"max_tokens": 128000,
+		"context_window": 200000,
+		"max_tokens": 200000,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -108,7 +108,7 @@
 		"vendor": "minimax",
 		"retired": "2026-11-18",
 		"context_window": 200000,
-		"max_tokens": 128000,
+		"max_tokens": 200000,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -154,7 +154,7 @@
 		},
 		"vendor": "minimax",
 		"context_window": 1000000,
-		"max_tokens": 64000,
+		"max_tokens": 512000,
 		"pricing": {
 			"usd": {
 				"tiers": [

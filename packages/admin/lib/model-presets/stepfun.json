@@ -47,5 +47,147 @@
 			]
 		},
 		"released": "2026-05-29"
+	},
+	{
+		"id": "step-5-preview",
+		"display_name": "Step 5 Preview",
+		"description": "StepFun's flagship multimodal reasoning model for agentic work, software engineering, and finance, with a 1M context and 64K max output.",
+		"i18n": {
+			"en": "StepFun's flagship multimodal reasoning model for agentic work, software engineering, and finance, with a 1M context and 64K max output.",
+			"zh": "阶跃星辰旗舰多模态推理模型，面向智能体工作、软件工程与金融场景，1M 上下文、最大输出 64K。",
+			"ja": "StepFun のフラッグシップマルチモーダル推論モデル。エージェント業務、ソフト開発、金融向けで、1M コンテキスト・最大出力 64K です。",
+			"ko": "StepFun의 플래그십 멀티모달 추론 모델. 에이전트 업무, 소프트웨어 개발, 금융 대상이며 1M 컨텍스트, 최대 출력 64K입니다."
+		},
+		"vendor": "stepfun",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1,
+						"output_price": 2.7,
+						"cache_read_price": 0.1,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 7,
+						"output_price": 20,
+						"cache_read_price": 0.7,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
+		"id": "step-3.5-flash",
+		"display_name": "Step 3.5 Flash",
+		"description": "A cost-efficient text-only reasoning model from StepFun.",
+		"i18n": {
+			"en": "A cost-efficient text-only reasoning model from StepFun.",
+			"zh": "阶跃星辰高性价比纯文本推理模型。",
+			"ja": "StepFun の高コスパなテキスト専用推論モデル。",
+			"ko": "StepFun의 가성비 좋은 텍스트 전용 추론 모델."
+		},
+		"vendor": "stepfun",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.1,
+						"output_price": 0.3,
+						"cache_read_price": 0.02,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.7,
+						"output_price": 2.1,
+						"cache_read_price": 0.14,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
+		"id": "step-1o-turbo-vision",
+		"display_name": "Step 1o Turbo Vision",
+		"description": "A fast StepFun vision model for image and video understanding, with text, image, and video input and text-only output, on a 32K context window.",
+		"i18n": {
+			"en": "A fast StepFun vision model for image and video understanding, with text, image, and video input and text-only output, on a 32K context window.",
+			"zh": "阶跃星辰高速视觉理解模型，支持文本、图像和视频输入、仅文本输出，上下文 32K，擅长图像与视频理解。",
+			"ja": "StepFun の高速ビジョンモデル。テキスト・画像・動画出力入力に対応し、出力はテキストのみ、コンテキストは 32K です。",
+			"ko": "StepFun의 고속 비전 모델. 텍스트·이미지·영상 입력에 대응하고 출력은 텍스트만, 컨텍스트는 32K입니다."
+		},
+		"vendor": "stepfun",
+		"context_window": 32000,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.36,
+						"output_price": 1.15,
+						"cache_read_price": 0.07,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2.5,
+						"output_price": 8,
+						"cache_read_price": 0.5,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		}
 	}
 ]

@@ -784,7 +784,8 @@
 				"text"
 			]
 		},
-		"released": "2026-02-16"
+		"released": "2026-02-16",
+		"retired": "2027-01-19"
 	},
 	{
 		"id": "qwen3.5-flash",

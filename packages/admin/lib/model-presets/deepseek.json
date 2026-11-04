@@ -66,7 +66,8 @@
 		},
 		"modalities": {
 			"input": [
-				"text"
+				"text",
+				"image"
 			],
 			"output": [
 				"text"
@@ -222,7 +223,8 @@
 				"text"
 			]
 		},
-		"released": "2026-07-31"
+		"released": "2026-07-31",
+		"retired": "2026-09-10"
 	},
 	{
 		"id": "deepseek-v3.2",

@@ -10,7 +10,7 @@
 			"ko": "Tencent의 차세대 실무 모델로, 에이전트와 어려운 작업 실행이 크게 올라갔습니다. Hy4 preview는 총 파라미터 770B, 활성 파라미터 49B입니다. 에이전트, 코딩, 실무에 맞춰, 어려운 일에서의 이해, 계획, 도구 호출, 중간에 끊기지 않는 실행을 강화했습니다."
 		},
 		"vendor": "tencent",
-		"context_window": 1024000,
+		"context_window": 1000000,
 		"max_tokens": 64000,
 		"pricing": {
 			"usd": {
