@@ -1,6 +1,7 @@
 'use client';
 
 import { Bars3Icon } from '@heroicons/react/24/outline';
+import BrandMark from '@/components/brand-mark';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -46,6 +47,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
           >
             <Bars3Icon className="h-6 w-6" aria-hidden />
           </button>
+          <BrandMark className="h-8 w-8" />
           <div className="min-w-0 flex-1 leading-tight">
             <span className="block truncate text-lg font-bold">{tBrand('wordmark')}</span>
             <span className="block truncate text-[11px] text-gray-400">{tBrand('sidebarSubtitle')}</span>
