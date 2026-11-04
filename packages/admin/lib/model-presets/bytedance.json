@@ -406,15 +406,15 @@
 	{
 		"id": "doubao-seed-2-1-pro-260915",
 		"display_name": "Doubao Seed 2.1 Pro (260915)",
-		"description": "A Doubao Seed 2.1 Pro model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, and video. Context window is 1024K and maximum answer is 256K. BytePlus ModelArk does not list this model, so there is no USD price.",
+		"description": "A Doubao Seed 2.1 Pro model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, and video. Context window is 1M and maximum answer is 256K. BytePlus ModelArk does not list this model, so there is no USD price.",
 		"i18n": {
-			"en": "A Doubao Seed 2.1 Pro model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, and video. Context window is 1024K and maximum answer is 256K. BytePlus ModelArk does not list this model, so there is no USD price.",
-			"zh": "面向深度思考、工具调用、结构化输出、GUI 任务，以及文本、图像与视频多模态理解的豆包 Seed 2.1 Pro。上下文窗口 1024K，最大回答 256K。BytePlus ModelArk 未上架该模型，因此没有美元刊例价。",
-			"ja": "深い思考、ツール呼び出し、構造化出力、GUI タスク、それにテキスト・画像・動画の理解向けの Doubao Seed 2.1 Pro です。コンテキストは 1024K、回答の上限は 256K です。BytePlus ModelArk には載っていないため、米ドルの定価はありません。",
-			"ko": "깊은 사고, 도구 호출, 구조화 출력, GUI 작업, 그리고 텍스트·이미지·영상 이해용 Doubao Seed 2.1 Pro입니다. 컨텍스트는 1024K, 답변 상한은 256K입니다. BytePlus ModelArk에 올라 있지 않아 미국 달러 정가는 없습니다."
+			"en": "A Doubao Seed 2.1 Pro model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, and video. Context window is 1M and maximum answer is 256K. BytePlus ModelArk does not list this model, so there is no USD price.",
+			"zh": "面向深度思考、工具调用、结构化输出、GUI 任务，以及文本、图像与视频多模态理解的豆包 Seed 2.1 Pro。上下文窗口 1M，最大回答 256K。BytePlus ModelArk 未上架该模型，因此没有美元刊例价。",
+			"ja": "深い思考、ツール呼び出し、構造化出力、GUI タスク、それにテキスト・画像・動画の理解向けの Doubao Seed 2.1 Pro です。コンテキストは 1M、回答の上限は 256K です。BytePlus ModelArk には載っていないため、米ドルの定価はありません。",
+			"ko": "깊은 사고, 도구 호출, 구조화 출력, GUI 작업, 그리고 텍스트·이미지·영상 이해용 Doubao Seed 2.1 Pro입니다. 컨텍스트는 1M, 답변 상한은 256K입니다. BytePlus ModelArk에 올라 있지 않아 미국 달러 정가는 없습니다."
 		},
 		"vendor": "bytedance",
-		"context_window": 1024000,
+		"context_window": 1000000,
 		"max_tokens": 256000,
 		"pricing": {
 			"cny": {
@@ -444,15 +444,15 @@
 	{
 		"id": "doubao-seed-2-1-lite-260915",
 		"display_name": "Doubao Seed 2.1 Lite (260915)",
-		"description": "A Doubao Seed 2.1 Lite model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, video, and audio. Context window is 1024K and maximum answer is 256K. Official audio-input list price is not stored in this preset: CNY 12 per million tokens (cache hit 2.4). BytePlus ModelArk does not list this model, so there is no USD price.",
+		"description": "A Doubao Seed 2.1 Lite model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, video, and audio. Context window is 1M and maximum answer is 256K. Official audio-input list price is not stored in this preset: CNY 12 per million tokens (cache hit 2.4). BytePlus ModelArk does not list this model, so there is no USD price.",
 		"i18n": {
-			"en": "A Doubao Seed 2.1 Lite model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, video, and audio. Context window is 1024K and maximum answer is 256K. Official audio-input list price is not stored in this preset: CNY 12 per million tokens (cache hit 2.4). BytePlus ModelArk does not list this model, so there is no USD price.",
-			"zh": "面向深度思考、工具调用、结构化输出、GUI 任务，以及文本、图像、视频与音频多模态理解的豆包 Seed 2.1 Lite。上下文窗口 1024K，最大回答 256K。音频输入刊例价未写入价格档：人民币 12 元每百万 token（缓存命中 2.4）。BytePlus ModelArk 未上架该模型，因此没有美元刊例价。",
-			"ja": "深い思考、ツール呼び出し、構造化出力、GUI タスク、それにテキスト・画像・動画・音声の理解向けの Doubao Seed 2.1 Lite です。コンテキストは 1024K、回答の上限は 256K です。音声入力の定価は料金ティアに入れていません。人民元は100万トークンあたり 12 元（キャッシュヒット 2.4）です。BytePlus ModelArk には載っていないため、米ドルの定価はありません。",
-			"ko": "깊은 사고, 도구 호출, 구조화 출력, GUI 작업, 그리고 텍스트·이미지·영상·오디오 이해용 Doubao Seed 2.1 Lite입니다. 컨텍스트는 1024K, 답변 상한은 256K입니다. 오디오 입력 정가는 가격 구간에 넣지 않았습니다. 위안화는 100만 토큰당 12위안(캐시 적중 2.4)입니다. BytePlus ModelArk에 올라 있지 않아 미국 달러 정가는 없습니다."
+			"en": "A Doubao Seed 2.1 Lite model for deep thinking, tool calling, structured output, GUI tasks, and multimodal understanding of text, images, video, and audio. Context window is 1M and maximum answer is 256K. Official audio-input list price is not stored in this preset: CNY 12 per million tokens (cache hit 2.4). BytePlus ModelArk does not list this model, so there is no USD price.",
+			"zh": "面向深度思考、工具调用、结构化输出、GUI 任务，以及文本、图像、视频与音频多模态理解的豆包 Seed 2.1 Lite。上下文窗口 1M，最大回答 256K。音频输入刊例价未写入价格档：人民币 12 元每百万 token（缓存命中 2.4）。BytePlus ModelArk 未上架该模型，因此没有美元刊例价。",
+			"ja": "深い思考、ツール呼び出し、構造化出力、GUI タスク、それにテキスト・画像・動画・音声の理解向けの Doubao Seed 2.1 Lite です。コンテキストは 1M、回答の上限は 256K です。音声入力の定価は料金ティアに入れていません。人民元は100万トークンあたり 12 元（キャッシュヒット 2.4）です。BytePlus ModelArk には載っていないため、米ドルの定価はありません。",
+			"ko": "깊은 사고, 도구 호출, 구조화 출력, GUI 작업, 그리고 텍스트·이미지·영상·오디오 이해용 Doubao Seed 2.1 Lite입니다. 컨텍스트는 1M, 답변 상한은 256K입니다. 오디오 입력 정가는 가격 구간에 넣지 않았습니다. 위안화는 100만 토큰당 12위안(캐시 적중 2.4)입니다. BytePlus ModelArk에 올라 있지 않아 미국 달러 정가는 없습니다."
 		},
 		"vendor": "bytedance",
-		"context_window": 1024000,
+		"context_window": 1000000,
 		"max_tokens": 256000,
 		"pricing": {
 			"cny": {

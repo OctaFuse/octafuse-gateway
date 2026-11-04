@@ -5,6 +5,7 @@
 - **Qwen-Audio 语音合成**：`dashscope-tts-qwen-audio` 以及 DashScope `audio.speech` / `audio.speech.stream` 透传同时认 `qwen-audio-3.1-tts-next` 与 `qwen-audio-3.1-tts-plus`。预设计费不变。
 - **模型退役日期**：`gpt-image-1.5` 与 `gpt-image-1-mini` 写上 OpenAI 公布的停服日 2026-12-01。`qwen3.5-plus` 写上千问公布的停服日 2027-01-19。只记官方停服日，不含“不早于”或渠道套餐下线。
 - **MiniMax 上下文**：`minimax-m2.5`、`minimax-m2.7`、`minimax-m2.7-highspeed` 的上下文和最大输出从 204800 改为 200000。官网把该上限标成 200K，目录按 K = 1000 记录。M3 与 M3.1 Flash 的 1M / 512K 仍是 1000000 / 512000。
+- **上下文记法**：`hy4-preview`、`doubao-seed-2-1-pro-260915`、`doubao-seed-2-1-lite-260915` 的上下文从 1024000 改为 1000000。官网标的是 1M 或 1024K，目录按 1M 记录。`mimo-v2-pro`、`mimo-v2.5-pro`、`mimo-v2.5` 的上下文从 1050000 改为 1000000，与官网 1M 一致。
 
 ## 2.18.0
 
