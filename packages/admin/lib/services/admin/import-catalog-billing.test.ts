@@ -560,8 +560,8 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.ok(usd);
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'MiniMax M2.7 Highspeed');
-		assert.equal(usd!.context_window, 204800);
-		assert.equal(usd!.max_tokens, 204800);
+		assert.equal(usd!.context_window, 200000);
+		assert.equal(usd!.max_tokens, 200000);
 		assert.equal(usd!.pricing_label, '$0.6 / $2.4 /M');
 		assert.equal(cny!.pricing_label, '¥4.2 / ¥16.8 /M');
 		const preset = listStaticModelPresets().find((p) => p.id === 'minimax-m2.7-highspeed');
@@ -1410,13 +1410,17 @@ describe('2026-11-03 model catalog巡检 additions', () => {
 		);
 	});
 
-	it('updates the MiniMax M2.5 / M2.7 family to the official 204,800 context and max output, M3 to 512K max', () => {
+	it('records MiniMax context and max output in decimal K, not the 1024-based API integers', () => {
 		for (const id of ['minimax-m2.5', 'minimax-m2.7', 'minimax-m2.7-highspeed']) {
 			const preset = doubaoPreset(id);
-			assert.equal(preset.context_window, 204800, id);
-			assert.equal(preset.max_tokens, 204800, id);
+			assert.equal(preset.context_window, 200000, id);
+			assert.equal(preset.max_tokens, 200000, id);
 		}
-		assert.equal(doubaoPreset('minimax-m3').max_tokens, 512000);
+		for (const id of ['minimax-m3', 'minimax-m3.1-flash']) {
+			const preset = doubaoPreset(id);
+			assert.equal(preset.context_window, 1000000, id);
+			assert.equal(preset.max_tokens, 512000, id);
+		}
 	});
 
 	it('records the MiMo V2.6 family official 1M context', () => {
