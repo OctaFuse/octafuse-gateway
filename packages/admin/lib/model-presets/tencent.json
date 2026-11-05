@@ -1,5 +1,53 @@
 [
 	{
+		"id": "hy4",
+		"display_name": "Hy4",
+		"description": "Tencent's flagship Hy4 general-availability model, a broad upgrade over Hy4 preview with stronger agentic capabilities and better results on long-horizon, real-world productivity tasks. Hy4 adds visual understanding for the first time and offers a 1M context window for agentic, coding, and productivity workloads.",
+		"i18n": {
+			"en": "Tencent's flagship Hy4 general-availability model, a broad upgrade over Hy4 preview with stronger agentic capabilities and better results on long-horizon, real-world productivity tasks. Hy4 adds visual understanding for the first time and offers a 1M context window for agentic, coding, and productivity workloads.",
+			"zh": "腾讯混元 Hy4 正式版，相比 Hy4 preview 全面大幅提升，尤其强化 Agent 能力与长程、真实生产力任务表现，并首次引入图片理解。上下文 1M，面向 Agent、Coding 与生产力场景。",
+			"ja": "Tencent の Hy4 正式版で、Hy4 preview から全体に大きく強化されています。特にエージェントの力と、長く続く実務タスクでの成果が上がり、画像理解も初めて加わりました。コンテキストは 1M で、エージェント、コーディング、実務向けです。",
+			"ko": "Tencent의 Hy4 정식 버전으로, Hy4 preview보다 전반적으로 크게 좋아졌습니다. 특히 에이전트 능력과 길게 이어지는 실무 작업 성과가 올랐고, 이미지 이해가 처음 추가됐습니다. 컨텍스트는 1M이며 에이전트, 코딩, 실무에 맞춰져 있습니다."
+		},
+		"vendor": "tencent",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.834,
+						"output_price": 2.501,
+						"cache_read_price": 0.042,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 6,
+						"output_price": 18,
+						"cache_read_price": 0.3,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-11-04"
+	},
+	{
 		"id": "hy4-preview",
 		"display_name": "Hy4 preview",
 		"description": "Tencent's next-generation productivity model with significantly enhanced Agent and complex task execution capabilities. Hy4 preview features 770B total parameters with 49B active parameters and is optimized for agentic, coding, and productivity scenarios, with stronger capabilities in understanding, planning, tool use, and sustained execution for complex tasks.",

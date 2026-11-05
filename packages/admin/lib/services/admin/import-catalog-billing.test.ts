@@ -58,6 +58,27 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cny!.pricing_label, '¥2 / ¥7 /M');
 	});
 
+	it('includes hy4 at the list price, not the 50% TokenHub promo, with image input', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'hy4');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'hy4');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Hy4');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 64000);
+		assert.equal(usd!.pricing_label, '$0.834 / $2.501 /M');
+		assert.equal(cny!.pricing_label, '¥6 / ¥18 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'hy4');
+		assert.ok(preset);
+		assert.equal(preset!.released, '2026-11-04');
+		assert.deepEqual(preset!.modalities?.input, ['text', 'image']);
+		assert.deepEqual(preset!.modalities?.output, ['text']);
+		const usdProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(usdProfile?.tiers[0]?.cache_read_price, 0.042);
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.equal(cnyProfile?.tiers[0]?.cache_read_price, 0.3);
+	});
+
 	it('includes hy4-preview with official TokenHub list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'hy4-preview');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'hy4-preview');
