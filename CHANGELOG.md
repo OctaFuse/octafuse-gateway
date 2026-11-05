@@ -4,6 +4,7 @@
 
 ### Admin
 
+- **目录**：新增 `gpt-image-2.6-flare` 与 `gpt-image-2.6-sunburst`（2026-11-04）。刊例价与 GPT Image 2.5 相同：文本输入 $5、缓存 $1.25，文本输出不计费；图像输入 $8、缓存 $2、输出 $30。人民币价为美元刊例 ×7 的占位价。已导入的模型不会被覆盖。
 - **品牌标识**：新增蓝青配色、八向汇聚的 Octafuse 矢量标记，统一登录页与桌面、手机导航栏的品牌展示；补齐 SVG 标签页图标、多尺寸 ICO 与 Apple 触控图标，修复浏览器标签页缺少 Logo 的问题。
 
 - **Qwen-Audio 语音合成**：`dashscope-tts-qwen-audio` 以及 DashScope `audio.speech` / `audio.speech.stream` 透传同时认 `qwen-audio-3.1-tts-next` 与 `qwen-audio-3.1-tts-plus`。预设计费不变。

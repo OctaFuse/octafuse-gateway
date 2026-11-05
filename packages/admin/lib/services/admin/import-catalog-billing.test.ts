@@ -1455,3 +1455,36 @@ describe('2026-11-03 model catalog巡检 additions', () => {
 		}
 	});
 });
+
+describe('GPT Image 2.6 catalog list prices', () => {
+	it('adds flare and sunburst at the GPT Image 2.5 token prices with a USD × 7 CNY placeholder', () => {
+		for (const [id, displayName] of [
+			['gpt-image-2.6-flare', 'GPT Image 2.6 Flare'],
+			['gpt-image-2.6-sunburst', 'GPT Image 2.6 Sunburst'],
+		] as const) {
+			const preset = doubaoPreset(id);
+			assert.equal(preset.display_name, displayName);
+			assert.equal(preset.released, '2026-11-04');
+			assert.equal(preset.retired, undefined);
+			assert.deepEqual(preset.modalities?.input, ['text', 'image']);
+			assert.deepEqual(preset.modalities?.output, ['image']);
+			assert.equal(listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === id)!.kind, 'image');
+			const usd = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset, 'USD'))!)!;
+			const cny = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset, 'CNY'))!)!;
+			assert.equal(usd.image_billing_mode, 'token');
+			assert.equal(cny.image_billing_mode, 'token');
+			assert.equal(usd.tiers[0]?.input_price, 5);
+			assert.equal(usd.tiers[0]?.cache_read_price, 1.25);
+			assert.equal(usd.tiers[0]?.output_price, 0);
+			assert.equal(usd.tiers[0]?.image_input_price, 8);
+			assert.equal(usd.tiers[0]?.image_input_cache_price, 2);
+			assert.equal(usd.tiers[0]?.image_output_price, 30);
+			assert.equal(cny.tiers[0]?.input_price, 35);
+			assert.equal(cny.tiers[0]?.cache_read_price, 8.75);
+			assert.equal(cny.tiers[0]?.output_price, 0);
+			assert.equal(cny.tiers[0]?.image_input_price, 56);
+			assert.equal(cny.tiers[0]?.image_input_cache_price, 14);
+			assert.equal(cny.tiers[0]?.image_output_price, 210);
+		}
+	});
+});
