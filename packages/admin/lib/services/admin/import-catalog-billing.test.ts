@@ -1466,6 +1466,8 @@ describe('GPT Image 2.6 catalog list prices', () => {
 			assert.equal(preset.display_name, displayName);
 			assert.equal(preset.released, '2026-11-04');
 			assert.equal(preset.retired, undefined);
+			assert.match(preset.description ?? '', /Images API generations and edits endpoints/);
+			assert.doesNotMatch(preset.description ?? '', /Responses API image generation tool/);
 			assert.deepEqual(preset.modalities?.input, ['text', 'image']);
 			assert.deepEqual(preset.modalities?.output, ['image']);
 			assert.equal(listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === id)!.kind, 'image');
