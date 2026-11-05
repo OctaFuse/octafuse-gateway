@@ -294,5 +294,77 @@
 			"output": ["audio"]
 		},
 		"released": "2026-02-27"
+	},
+	{
+		"id": "qwen-audio-3.1-tts-next",
+		"display_name": "Qwen Audio 3.1 TTS Next",
+		"description": "DashScope unified audio generation (Audiogen) model that synthesizes voice, sound effects, and ambient audio from text, timestamps, and reference audio. Billed by input and output tokens.",
+		"i18n": {
+			"en": "DashScope unified audio generation (Audiogen) model that synthesizes voice, sound effects, and ambient audio from text, timestamps, and reference audio. Billed by input and output tokens.",
+			"zh": "DashScope 统一音频生成（Audiogen）模型，可基于文本、时间戳与参考音频一次生成人声、音效与环境音。按输入和输出 Token 计费。",
+			"ja": "DashScope の統合音声生成（Audiogen）モデルです。テキスト・タイムスタンプ・参照音声から人声、効果音、環境音をまとめて生成し、入力と出力のトークンで課金します。",
+			"ko": "DashScope 통합 오디오 생성(Audiogen) 모델입니다. 텍스트, 타임스탬프, 참고 오디오로부터 목소리, 효과음, 환경음을 한 번에 생성하고 입력과 출력 토큰으로 과금합니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.92,
+						"output_price": 1.87
+					}
+				]
+			},
+			"cny": {
+				"audio_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 6,
+						"output_price": 12
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		},
+		"released": "2026-09-21"
+	},
+	{
+		"id": "qwen-audio-3.1-tts-plus",
+		"display_name": "Qwen Audio 3.1 TTS Plus",
+		"description": "DashScope high-quality professional text-to-speech model with multilingual/dialect, streaming synthesis and voice cloning; billed by generated characters.",
+		"i18n": {
+			"en": "DashScope high-quality professional text-to-speech model with multilingual/dialect, streaming synthesis and voice cloning; billed by generated characters.",
+			"zh": "DashScope 高质量专业语音合成模型，支持多语言/方言、流式合成与声音复刻，按生成字符数计费。",
+			"ja": "DashScope の高品質なプロ向け音声合成です。多言語・方言、ストリーミング合成、ボイスクローンに対応し、生成した文字数で課金します。",
+			"ko": "DashScope 고품질 전문 음성 합성입니다. 다국어·방언, 스트리밍 합성, 보이스 클로닝을 지원하고 생성한 글자 수로 과금합니다."
+		},
+		"vendor": "aliyun",
+		"pricing": {
+			"usd": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.00002,
+					"minimum_characters": 0
+				}
+			},
+			"cny": {
+				"audio_billing_mode": "per_character",
+				"audio": {
+					"price_per_character": 0.00014,
+					"minimum_characters": 0
+				}
+			}
+		},
+		"modalities": {
+			"input": ["text"],
+			"output": ["audio"]
+		},
+		"released": "2026-10-21"
 	}
 ]

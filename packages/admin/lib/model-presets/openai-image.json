@@ -1,5 +1,117 @@
 [
 	{
+		"id": "gpt-image-2.6-flare",
+		"display_name": "GPT Image 2.6 Flare",
+		"description": "OpenAI's fastest model for high-quality, everyday image generation and iteration. It accepts text and image inputs and produces image outputs. Complexity supports low, medium, and high (default high). Quality supports low, medium, high, xhigh, max, and auto. Images API generations can return SVG and animated GIF, and Images API edits accept markup-guided edits. Use the Images API generations and edits endpoints. This model id is not supported on Responses or Chat Completions.",
+		"i18n": {
+			"en": "OpenAI's fastest model for high-quality, everyday image generation and iteration. It accepts text and image inputs and produces image outputs. Complexity supports low, medium, and high (default high). Quality supports low, medium, high, xhigh, max, and auto. Images API generations can return SVG and animated GIF, and Images API edits accept markup-guided edits. Use the Images API generations and edits endpoints. This model id is not supported on Responses or Chat Completions.",
+			"zh": "OpenAI 面向日常高质量出图与迭代的最快模型。接受文本与图片输入，输出图片。complexity 支持 low、medium、high，默认 high。quality 支持 low、medium、high、xhigh、max 和 auto。Images API 的 generations 可输出 SVG 与动态 GIF，edits 支持按标记引导的编辑。请通过 Images API 的 generations 与 edits 调用。该模型 ID 不支持 Responses 或 Chat Completions。",
+			"ja": "日常の高品質な画像生成と反復のための、OpenAI でいちばん速いモデルです。テキストと画像を受け取り、画像を出します。complexity は low、medium、high で、既定は high です。quality は low、medium、high、xhigh、max、auto です。Images API の generations では SVG とアニメーション GIF を出力でき、edits ではマークアップに沿った編集ができます。Images API の generations と edits から呼び出します。このモデル ID は Responses と Chat Completions では使えません。",
+			"ko": "일상적인 고품질 이미지 생성과 반복을 위한, OpenAI에서 가장 빠른 모델입니다. 텍스트와 이미지를 받고 이미지를 냅니다. complexity는 low, medium, high이며 기본값은 high입니다. quality는 low, medium, high, xhigh, max, auto입니다. Images API generations는 SVG와 애니메이션 GIF를 출력할 수 있고, edits는 마크업 안내 편집을 받습니다. Images API의 generations와 edits로 호출합니다. 이 모델 ID는 Responses와 Chat Completions에서 지원되지 않습니다."
+		},
+		"vendor": "openai",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 5,
+						"output_price": 0,
+						"cache_read_price": 1.25,
+						"cache_write_price": null,
+						"image_input_price": 8,
+						"image_input_cache_price": 2,
+						"image_output_price": 30
+					}
+				]
+			},
+			"cny": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 35,
+						"output_price": 0,
+						"cache_read_price": 8.75,
+						"cache_write_price": null,
+						"image_input_price": 56,
+						"image_input_cache_price": 14,
+						"image_output_price": 210
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-11-04"
+	},
+	{
+		"id": "gpt-image-2.6-sunburst",
+		"display_name": "GPT Image 2.6 Sunburst",
+		"description": "OpenAI's GPT Image 2.6 Sunburst generates and edits images from text and image inputs. Use it for workflows where editing precision and detailed visual work matter most. Complexity supports low, medium, and high (default high). Quality supports low, medium, high, xhigh, max, and auto. Images API generations can return SVG and animated GIF, and Images API edits accept markup-guided edits. Use the Images API generations and edits endpoints. This model id is not supported on Responses or Chat Completions.",
+		"i18n": {
+			"en": "OpenAI's GPT Image 2.6 Sunburst generates and edits images from text and image inputs. Use it for workflows where editing precision and detailed visual work matter most. Complexity supports low, medium, and high (default high). Quality supports low, medium, high, xhigh, max, and auto. Images API generations can return SVG and animated GIF, and Images API edits accept markup-guided edits. Use the Images API generations and edits endpoints. This model id is not supported on Responses or Chat Completions.",
+			"zh": "OpenAI 面向精细编辑与细节视觉工作的图片生成与编辑模型。接受文本与图片输入，输出图片，适合对编辑精度要求更高的工作流。complexity 支持 low、medium、high，默认 high。quality 支持 low、medium、high、xhigh、max 和 auto。Images API 的 generations 可输出 SVG 与动态 GIF，edits 支持按标记引导的编辑。请通过 Images API 的 generations 与 edits 调用。该模型 ID 不支持 Responses 或 Chat Completions。",
+			"ja": "編集の精度と細部の視覚作業を重視するときの、OpenAI の画像生成・編集モデルです。テキストと画像を受け取り、画像を出します。complexity は low、medium、high で、既定は high です。quality は low、medium、high、xhigh、max、auto です。Images API の generations では SVG とアニメーション GIF を出力でき、edits ではマークアップに沿った編集ができます。Images API の generations と edits から呼び出します。このモデル ID は Responses と Chat Completions では使えません。",
+			"ko": "편집 정밀도와 세밀한 시각 작업이 중요할 때의 OpenAI 이미지 생성·편집 모델입니다. 텍스트와 이미지를 받고 이미지를 냅니다. complexity는 low, medium, high이며 기본값은 high입니다. quality는 low, medium, high, xhigh, max, auto입니다. Images API generations는 SVG와 애니메이션 GIF를 출력할 수 있고, edits는 마크업 안내 편집을 받습니다. Images API의 generations와 edits로 호출합니다. 이 모델 ID는 Responses와 Chat Completions에서 지원되지 않습니다."
+		},
+		"vendor": "openai",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 5,
+						"output_price": 0,
+						"cache_read_price": 1.25,
+						"cache_write_price": null,
+						"image_input_price": 8,
+						"image_input_cache_price": 2,
+						"image_output_price": 30
+					}
+				]
+			},
+			"cny": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 35,
+						"output_price": 0,
+						"cache_read_price": 8.75,
+						"cache_write_price": null,
+						"image_input_price": 56,
+						"image_input_cache_price": 14,
+						"image_output_price": 210
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2026-11-04"
+	},
+	{
 		"id": "gpt-image-2.5-flare",
 		"display_name": "GPT Image 2.5 Flare",
 		"description": "OpenAI's fastest model for high-quality, everyday image generation. It accepts text and image inputs and produces image outputs. Quality supports low, medium, high, xhigh, max, and auto. Use the Images API or the Responses API image generation tool.",
@@ -166,5 +278,118 @@
 			]
 		},
 		"released": "2026-04-01"
+	},
+	{
+		"id": "gpt-image-1.5",
+		"display_name": "GPT Image 1.5",
+		"description": "OpenAI's image generation model billed per token. Text tokens: $5 input / $1.25 cached / $10 output; image tokens: $8 input / $2 cached / $32 output. CNY prices are a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+		"i18n": {
+			"en": "OpenAI's image generation model billed per token. Text tokens: $5 input / $1.25 cached / $10 output; image tokens: $8 input / $2 cached / $32 output. CNY prices are a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+			"zh": "OpenAI 图片生成模型，按 token 计费。文本 token：输入 $5 / 缓存 $1.25 / 输出 $10；图像 token：输入 $8 / 缓存 $2 / 输出 $32。人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"ja": "OpenAI の画像生成モデルで、トークン単位で課金されます。テキスト token は入力 $5 / キャッシュ $1.25 / 出力 $10、画像 token は入力 $8 / キャッシュ $2 / 出力 $32 です。人民元価格はドル建ての定価を ×7 した仮の価格で、公式の人民元定価ではありません。",
+			"ko": "OpenAI의 이미지 생성 모델로, 토큰 단위로 과금됩니다. 텍스트 토큰은 입력 $5 / 캐시 $1.25 / 출력 $10, 이미지 토큰은 입력 $8 / 캐시 $2 / 출력 $32입니다. 위안화 가격은 달러 정가에 ×7을 한 임시 가격이며, 공식 위안화 정가가 아닙니다."
+		},
+		"vendor": "openai",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 5,
+						"output_price": 10,
+						"cache_read_price": 1.25,
+						"cache_write_price": null,
+						"image_input_price": 8,
+						"image_input_cache_price": 2,
+						"image_output_price": 32
+					}
+				]
+			},
+			"cny": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 35,
+						"output_price": 70,
+						"cache_read_price": 8.75,
+						"cache_write_price": null,
+						"image_input_price": 56,
+						"image_input_cache_price": 14,
+						"image_output_price": 224
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"released": "2025-12-16",
+		"retired": "2026-12-01"
+	},
+	{
+		"id": "gpt-image-1-mini",
+		"display_name": "GPT Image 1 Mini",
+		"description": "OpenAI's cost-efficient image generation model billed per token. Text tokens: $2 input / $0.20 cached (text output is not billed); image tokens: $2.50 input / $0.25 cached / $8 output. CNY prices are a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+		"i18n": {
+			"en": "OpenAI's cost-efficient image generation model billed per token. Text tokens: $2 input / $0.20 cached (text output is not billed); image tokens: $2.50 input / $0.25 cached / $8 output. CNY prices are a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+			"zh": "OpenAI 高性价比图片生成模型，按 token 计费。文本 token：输入 $2 / 缓存 $0.20（文本输出不计费）；图像 token：输入 $2.50 / 缓存 $0.25 / 输出 $8。人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"ja": "OpenAI の低コスト画像生成モデルで、トークン単位で課金されます。テキスト token は入力 $2 / キャッシュ $0.20（テキスト出力は課金なし）、画像 token は入力 $2.50 / キャッシュ $0.25 / 出力 $8 です。人民元価格はドル建ての定価を ×7 した仮の価格で、公式の人民元定価ではありません。",
+			"ko": "OpenAI의 가성비 이미지 생성 모델로, 토큰 단위로 과금됩니다. 텍스트 토큰은 입력 $2 / 캐시 $0.20(텍스트 출력은 과금 없음), 이미지 토큰은 입력 $2.50 / 캐시 $0.25 / 출력 $8입니다. 위안화 가격은 달러 정가에 ×7을 한 임시 가격이며, 공식 위안화 정가가 아닙니다."
+		},
+		"vendor": "openai",
+		"context_window": null,
+		"max_tokens": null,
+		"pricing": {
+			"usd": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2,
+						"output_price": 0,
+						"cache_read_price": 0.2,
+						"cache_write_price": null,
+						"image_input_price": 2.5,
+						"image_input_cache_price": 0.25,
+						"image_output_price": 8
+					}
+				]
+			},
+			"cny": {
+				"image_billing_mode": "token",
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 14,
+						"output_price": 0,
+						"cache_read_price": 1.4,
+						"cache_write_price": null,
+						"image_input_price": 17.5,
+						"image_input_cache_price": 1.75,
+						"image_output_price": 56
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"image"
+			]
+		},
+		"retired": "2026-12-01"
 	}
 ]

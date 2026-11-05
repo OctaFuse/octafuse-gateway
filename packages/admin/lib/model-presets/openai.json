@@ -825,5 +825,177 @@
 			]
 		},
 		"released": "2026-07-09"
+	},
+	{
+		"id": "gpt-5.5-pro",
+		"display_name": "GPT-5.5 Pro",
+		"description": "A higher-compute version of GPT-5.5 that thinks harder for smarter, more precise answers. reasoning.effort supports medium, high (default), and xhigh. Available via the Responses API; some requests may take several minutes. CNY prices are a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+		"i18n": {
+			"en": "A higher-compute version of GPT-5.5 that thinks harder for smarter, more precise answers. reasoning.effort supports medium, high (default), and xhigh. Available via the Responses API; some requests may take several minutes. CNY prices are a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+			"zh": "GPT-5.5 的高算力版本，以更多推理换取更聪明、更精确的回答。reasoning.effort 支持 medium、high（默认）和 xhigh。通过 Responses API 调用，部分请求可能耗时数分钟。人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"ja": "GPT-5.5 の高コンピューティング版で、より深く考えて正確な答えを出します。reasoning.effort は medium、high（初期値）、xhigh です。Responses API で利用でき、数分かかる場合があります。人民元価格はドル建ての定価を ×7 した仮の価格で、公式の人民元定価ではありません。",
+			"ko": "GPT-5.5의 고컴퓨팅 버전으로, 더 많이 생각해 더 정확한 답을 냅니다. reasoning.effort는 medium, high(기본값), xhigh입니다. Responses API로 호출하며 일부 요청은 몇 분 걸릴 수 있습니다. 위안화 가격은 달러 정가에 ×7을 한 임시 가격이며, 공식 위안화 정가가 아닙니다."
+		},
+		"vendor": "openai",
+		"context_window": 1050000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 272000,
+						"input_price": 30,
+						"output_price": 180,
+						"cache_read_price": null,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 60,
+						"output_price": 270,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 272000,
+						"input_price": 210,
+						"output_price": 1260,
+						"cache_read_price": null,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 420,
+						"output_price": 1890,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-04-23"
+	},
+	{
+		"id": "gpt-5.4-pro",
+		"display_name": "GPT-5.4 Pro",
+		"description": "The higher-compute Pro tier of GPT-5.4, with a 1.05M context window and 128K max output. Cached input is not offered. Available via the Responses API. CNY prices are a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+		"i18n": {
+			"en": "The higher-compute Pro tier of GPT-5.4, with a 1.05M context window and 128K max output. Cached input is not offered. Available via the Responses API. CNY prices are a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+			"zh": "GPT-5.4 的高算力 Pro 档位，上下文 1.05M、最大输出 128K，不提供缓存输入折扣。通过 Responses API 调用。人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"ja": "GPT-5.4 の高コンピューティング版 Pro です。コンテキスト 1.05M、最大出力 128K、キャッシュ入力割引はありません。Responses API で利用できます。人民元価格はドル建ての定価を ×7 した仮の価格で、公式の人民元定価ではありません。",
+			"ko": "GPT-5.4의 고컴퓨팅 Pro 등급입니다. 컨텍스트 1.05M, 최대 출력 128K, 캐시 입력 할인은 없습니다. Responses API로 호출합니다. 위안화 가격은 달러 정가에 ×7을 한 임시 가격이며, 공식 위안화 정가가 아닙니다."
+		},
+		"vendor": "openai",
+		"context_window": 1050000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": 272000,
+						"input_price": 30,
+						"output_price": 180,
+						"cache_read_price": null,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 60,
+						"output_price": 270,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 272000,
+						"input_price": 210,
+						"output_price": 1260,
+						"cache_read_price": null,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 420,
+						"output_price": 1890,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-03-05"
+	},
+	{
+		"id": "gpt-5.2-pro",
+		"display_name": "GPT-5.2 Pro",
+		"description": "The Pro tier of GPT-5.2, priced at $21 per million input tokens and $168 per million output tokens, with a 400K context window and 128K max output. Cached input is not offered. CNY prices are a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+		"i18n": {
+			"en": "The Pro tier of GPT-5.2, priced at $21 per million input tokens and $168 per million output tokens, with a 400K context window and 128K max output. Cached input is not offered. CNY prices are a placeholder converted from the USD list price at ×7, not an official CNY list price.",
+			"zh": "GPT-5.2 的 Pro 档位，输入 $21/百万 token、输出 $168/百万 token，上下文 400K、最大输出 128K，不提供缓存输入折扣。人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"ja": "GPT-5.2 の Pro 版です。入力 100 万トークンあたり $21、出力 $168、コンテキスト 400K・最大出力 128K で、キャッシュ入力割引はありません。人民元価格はドル建ての定価を ×7 した仮の価格で、公式の人民元定価ではありません。",
+			"ko": "GPT-5.2의 Pro 등급입니다. 입력 토큰 100만 개당 $21, 출력 $168이며 컨텍스트 400K, 최대 출력 128K, 캐시 입력 할인은 없습니다. 위안화 가격은 달러 정가에 ×7을 한 임시 가격이며, 공식 위안화 정가가 아닙니다."
+		},
+		"vendor": "openai",
+		"context_window": 400000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 21,
+						"output_price": 168,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 147,
+						"output_price": 1176,
+						"cache_read_price": null,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2025-12-11"
 	}
 ]

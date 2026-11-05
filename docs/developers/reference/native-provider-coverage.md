@@ -122,7 +122,7 @@ ElevenLabs 原生路径相对 `providers.endpoints.elevenlabs.base`（默认 `ht
 
 | 类型 | 缺失项 |
 |------|--------|
-| DashScope 模型 | `qwen3-tts-*` / `qwen-tts*`、`qwen-tts-realtime*`、`MiniMax/speech-2.8-hd`、`paraformer-*`、`qwen-audio-3.1-tts-next`、`qwen-audio-3.1-realtime-plus`、`qwen-image-edit*` |
+| DashScope 模型 | `qwen3-tts-*` / `qwen-tts*`、`qwen-tts-realtime*`、`MiniMax/speech-2.8-hd`、`paraformer-*`、`qwen-audio-3.1-realtime-plus`、`qwen-image-edit*` |
 | ElevenLabs 模型 | `scribe_v1`（已弃用，定价页不再列价） |
 | MiniMax 模型 | `MiniMax-M2.5-highspeed`、`MiniMax-M2.1`、`MiniMax-M2.1-highspeed`、`MiniMax-M2`、`speech-2.6-hd` / `speech-2.6-turbo`、`speech-02-hd` / `speech-02-turbo`。`MiniMax-M3.1-Flash` 已有正式刊例预设 `minimax-m3.1-flash`；预览 id 已从静态目录移除 |
 

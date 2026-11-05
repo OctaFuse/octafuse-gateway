@@ -69,14 +69,20 @@
 | `doubao-seedream-5-0` | Doubao Seedream 5.0 | [火山方舟 Seedream](../architecture/volcengine-image.md) | `per_image` | ¥0.22/张 | $0.035/张 | 一口价 | `bytedance-image.json` |
 | `doubao-seedream-5-0-flash` | Doubao Seedream 5.0 Flash | [火山方舟 Seedream](../architecture/volcengine-image.md) | `per_image` | ¥0.12/张 | $0.018/张 | 一口价 | `bytedance-image.json` |
 | `doubao-seedream-5-0-pro` | Doubao Seedream 5.0 Pro | [火山方舟 Seedream](../architecture/volcengine-image.md) | `per_image` | ¥0.6/张 | $0.09/张 | `by_size`、参考图 | `bytedance-image.json` |
+| `gemini-3-pro-image` | Gemini 3 Pro Image | [Google Gemini](../architecture/gemini-image.md) | `token` | 图出 ¥840/1M | 图出 $120/1M | 按 usage | `google-image.json` |
 | `gemini-3-pro-image-preview` | Gemini 3 Pro Image Preview | [Google Gemini](../architecture/gemini-image.md) | `token` | 图出 ¥840/1M | 图出 $120/1M | 按 usage | `google-image.json` |
 | `gemini-3.1-flash-image` | Gemini 3.1 Flash Image | [Google Gemini](../architecture/gemini-image.md) | `token` | 图出 ¥420/1M | 图出 $60/1M | 按 usage | `google-image.json` |
+| `gemini-3.1-flash-lite-image` | Gemini 3.1 Flash Lite Image | [Google Gemini](../architecture/gemini-image.md) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `google-image.json` |
 | `gemini-nano-banana-2.1` | Gemini Nano Banana 2.1 | [Google Gemini](../architecture/gemini-image.md) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `google-image.json` |
 | `minimax-image-01` | MiniMax Image 01 | [MiniMax](../architecture/minimax-image.md) | `per_image` | ¥0.025/张 | $0.0035/张 | 一口价 | `minimax-image.json` |
 | `minimax-image-01-live` | MiniMax Image 01 Live | [MiniMax](../architecture/minimax-image.md) | `per_image` | ¥0.025/张 | $0.0035/张 | 一口价 | `minimax-image.json` |
+| `gpt-image-1-mini` | GPT Image 1 Mini | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥56/1M | 图出 $8/1M | 按 usage | `openai-image.json` |
+| `gpt-image-1.5` | GPT Image 1.5 | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥224/1M | 图出 $32/1M | 按 usage | `openai-image.json` |
 | `gpt-image-2` | GPT Image 2 | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |
 | `gpt-image-2.5-flare` | GPT Image 2.5 Flare | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |
 | `gpt-image-2.5-sunburst` | GPT Image 2.5 Sunburst | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |
+| `gpt-image-2.6-flare` | GPT Image 2.6 Flare | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |
+| `gpt-image-2.6-sunburst` | GPT Image 2.6 Sunburst | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |
 | `grok-imagine-image-2.0` | Grok Imagine Image 2.0 | [xAI Grok Imagine](../architecture/openai-compatible-image.md#xai-grok-imagine) | `per_image` | ¥0.28/张 | $0.04/张 | `by_quality_size`、`by_quality`、`by_size`、参考图 | `xai-image.json` |
 | `grok-imagine-image-quality` | Grok Imagine Image Quality | [xAI Grok Imagine](../architecture/openai-compatible-image.md#xai-grok-imagine) | `per_image` | ¥0.35/张 | $0.05/张 | `by_size`、参考图 | `xai-image.json` |
 | `glm-image` | GLM Image | [智谱 GLM Image](../architecture/openai-compatible-image.md#智谱-glm-image) | `per_image` | ¥0.1/张 | $0.014/张 | 一口价 | `zhipu-image.json` |
@@ -108,6 +114,7 @@
 | `grok-imagine-image-2.0` | `by_size` · `2k` | ¥0.42 | $0.06 |
 | `grok-imagine-image-2.0` | 参考图 `input.default` | ¥0.07 | $0.01 |
 | `grok-imagine-image-quality` | `by_size` · `1k` | ¥0.35 | $0.05 |
+| `grok-imagine-image-quality` | `by_size` · `1.5k` | ¥0.42 | $0.06 |
 | `grok-imagine-image-quality` | `by_size` · `2k` | ¥0.49 | $0.07 |
 | `grok-imagine-image-quality` | 参考图 `input.default` | ¥0.07 | $0.01 |
 
@@ -117,18 +124,30 @@
 
 | 模型 ID | 币种 | 文本输入 | 文本缓存 | 文本输出 | 图片输入 | 图片输入缓存 | 图片输出 |
 |---|---|---|---|---|---|---|---|
+| `gemini-3-pro-image` | CNY | ¥14 | — | ¥84 | ¥14 | — | ¥840 |
+| `gemini-3-pro-image` | USD | $2 | — | $12 | $2 | — | $120 |
 | `gemini-3-pro-image-preview` | CNY | ¥14 | — | ¥84 | ¥14 | — | ¥840 |
 | `gemini-3-pro-image-preview` | USD | $2 | — | $12 | $2 | — | $120 |
 | `gemini-3.1-flash-image` | CNY | ¥3.5 | — | ¥21 | ¥3.5 | — | ¥420 |
 | `gemini-3.1-flash-image` | USD | $0.5 | — | $3 | $0.5 | — | $60 |
+| `gemini-3.1-flash-lite-image` | CNY | ¥1.75 | — | ¥10.5 | ¥1.75 | — | ¥210 |
+| `gemini-3.1-flash-lite-image` | USD | $0.25 | — | $1.5 | $0.25 | — | $30 |
 | `gemini-nano-banana-2.1` | CNY | ¥10.5 | — | ¥52.5 | ¥10.5 | — | ¥210 |
 | `gemini-nano-banana-2.1` | USD | $1.5 | — | $7.5 | $1.5 | — | $30 |
+| `gpt-image-1-mini` | CNY | ¥14 | ¥1.4 | ¥0 | ¥17.5 | ¥1.75 | ¥56 |
+| `gpt-image-1-mini` | USD | $2 | $0.2 | $0 | $2.5 | $0.25 | $8 |
+| `gpt-image-1.5` | CNY | ¥35 | ¥8.75 | ¥70 | ¥56 | ¥14 | ¥224 |
+| `gpt-image-1.5` | USD | $5 | $1.25 | $10 | $8 | $2 | $32 |
 | `gpt-image-2` | CNY | ¥35 | ¥8.75 | ¥0 | ¥56 | ¥14 | ¥210 |
 | `gpt-image-2` | USD | $5 | $1.25 | $0 | $8 | $2 | $30 |
 | `gpt-image-2.5-flare` | CNY | ¥35 | ¥8.75 | ¥0 | ¥56 | ¥14 | ¥210 |
 | `gpt-image-2.5-flare` | USD | $5 | $1.25 | $0 | $8 | $2 | $30 |
 | `gpt-image-2.5-sunburst` | CNY | ¥35 | ¥8.75 | ¥0 | ¥56 | ¥14 | ¥210 |
 | `gpt-image-2.5-sunburst` | USD | $5 | $1.25 | $0 | $8 | $2 | $30 |
+| `gpt-image-2.6-flare` | CNY | ¥35 | ¥8.75 | ¥0 | ¥56 | ¥14 | ¥210 |
+| `gpt-image-2.6-flare` | USD | $5 | $1.25 | $0 | $8 | $2 | $30 |
+| `gpt-image-2.6-sunburst` | CNY | ¥35 | ¥8.75 | ¥0 | ¥56 | ¥14 | ¥210 |
+| `gpt-image-2.6-sunburst` | USD | $5 | $1.25 | $0 | $8 | $2 | $30 |
 
 <!-- END GENERATED: image-models -->
 

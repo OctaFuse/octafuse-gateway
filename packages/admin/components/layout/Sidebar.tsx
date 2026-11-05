@@ -4,6 +4,7 @@
  * 左侧导航：Dashboard、推理与路由、Tools、分析、系统集成、系统（含 Config 与 Logout）；底部外链与版本号。
  */
 import Link from 'next/link';
+import BrandMark from '@/components/brand-mark';
 import BrandExternalLinks from '@/components/layout/BrandExternalLinks';
 import LocaleSwitcher from '@/components/layout/LocaleSwitcher';
 import { usePathname, useRouter } from 'next/navigation';
@@ -86,11 +87,14 @@ export default function Sidebar({ mobile = false, onNavigate }: { mobile?: boole
       <div className="flex h-full flex-col">
       {/* Logo / Brand + locale */}
       <div className="flex h-16 shrink-0 items-center justify-between gap-2 bg-gray-950 px-4 leading-tight">
-        <Link href="/dashboard" onClick={onNavigate} className="min-w-0 block hover:opacity-90">
-          <span className="block truncate text-lg font-bold tracking-tight text-white">{tBrand('wordmark')}</span>
-          <span className="block truncate text-[11px] font-medium uppercase tracking-wider text-gray-400">
-            {tBrand('sidebarSubtitle')}
-          </span>
+        <Link href="/dashboard" onClick={onNavigate} className="flex min-w-0 items-center gap-2 rounded-md hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-500">
+          <BrandMark className="h-8 w-8" />
+          <div className="min-w-0">
+            <span className="block truncate text-lg font-bold tracking-tight text-white">{tBrand('wordmark')}</span>
+            <span className="block truncate text-[10px] font-medium uppercase tracking-wide text-gray-400">
+              {tBrand('sidebarSubtitle')}
+            </span>
+          </div>
         </Link>
         {mobile ? (
           <button type="button" onClick={onNavigate} aria-label={tCommon('close')} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-gray-300 hover:bg-gray-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500">

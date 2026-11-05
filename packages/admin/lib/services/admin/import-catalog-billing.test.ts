@@ -64,7 +64,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.ok(usd);
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'Hy4 preview');
-		assert.equal(usd!.context_window, 1024000);
+		assert.equal(usd!.context_window, 1000000);
 		assert.equal(usd!.max_tokens, 64000);
 		assert.equal(usd!.pricing_label, '$0.834 / $2.501 /M');
 		assert.equal(cny!.pricing_label, '¥6 / ¥18 /M');
@@ -515,7 +515,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 			assert.ok(cny, row.id);
 			assert.equal(usd!.display_name, row.display_name);
 			assert.equal(usd!.kind, 'llm');
-			assert.equal(usd!.context_window, 1050000);
+			assert.equal(usd!.context_window, 1000000);
 			assert.equal(usd!.max_tokens, 128000);
 			assert.equal(usd!.pricing_label, row.usdLabel);
 			assert.equal(cny!.pricing_label, row.cnyLabel);
@@ -561,7 +561,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'MiniMax M2.7 Highspeed');
 		assert.equal(usd!.context_window, 200000);
-		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.max_tokens, 200000);
 		assert.equal(usd!.pricing_label, '$0.6 / $2.4 /M');
 		assert.equal(cny!.pricing_label, '¥4.2 / ¥16.8 /M');
 		const preset = listStaticModelPresets().find((p) => p.id === 'minimax-m2.7-highspeed');
@@ -970,7 +970,7 @@ describe('Doubao Seed catalog list prices', () => {
 	it('adds doubao-seed-2-1-pro-260915 with CNY only', () => {
 		const preset = doubaoPreset('doubao-seed-2-1-pro-260915');
 		assert.equal(preset.display_name, 'Doubao Seed 2.1 Pro (260915)');
-		assert.equal(preset.context_window, 1024000);
+		assert.equal(preset.context_window, 1000000);
 		assert.equal(preset.max_tokens, 256000);
 		assert.equal(preset.released, '2026-09-15');
 		assert.equal(preset.retired, undefined);
@@ -988,12 +988,12 @@ describe('Doubao Seed catalog list prices', () => {
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
 		assert.ok(usd);
 		assert.ok(cny);
-		assert.equal(usd!.context_window, 1024000);
+		assert.equal(usd!.context_window, 1000000);
 		assert.equal(usd!.max_tokens, 256000);
 		assert.equal(usd!.pricing_available, false);
 		assert.equal(usd!.pricing_label, null);
 		assert.equal(cny!.pricing_label, '¥6 / ¥30 /M');
-		assert.equal(cny!.context_window, 1024000);
+		assert.equal(cny!.context_window, 1000000);
 		assert.equal(cny!.max_tokens, 256000);
 
 		const tiers = doubaoTiers(preset.id, 'CNY');
@@ -1008,7 +1008,7 @@ describe('Doubao Seed catalog list prices', () => {
 	it('adds doubao-seed-2-1-lite-260915 with CNY only', () => {
 		const preset = doubaoPreset('doubao-seed-2-1-lite-260915');
 		assert.equal(preset.display_name, 'Doubao Seed 2.1 Lite (260915)');
-		assert.equal(preset.context_window, 1024000);
+		assert.equal(preset.context_window, 1000000);
 		assert.equal(preset.max_tokens, 256000);
 		assert.equal(preset.released, '2026-09-15');
 		assert.equal(preset.retired, undefined);
@@ -1030,12 +1030,12 @@ describe('Doubao Seed catalog list prices', () => {
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
 		assert.ok(usd);
 		assert.ok(cny);
-		assert.equal(usd!.context_window, 1024000);
+		assert.equal(usd!.context_window, 1000000);
 		assert.equal(usd!.max_tokens, 256000);
 		assert.equal(usd!.pricing_available, false);
 		assert.equal(usd!.pricing_label, null);
 		assert.equal(cny!.pricing_label, '¥0.8 / ¥2.7 /M');
-		assert.equal(cny!.context_window, 1024000);
+		assert.equal(cny!.context_window, 1000000);
 		assert.equal(cny!.max_tokens, 256000);
 
 		const tiers = doubaoTiers(preset.id, 'CNY');
@@ -1189,5 +1189,304 @@ describe('Doubao Seed catalog list prices', () => {
 				[null, 0.2, 0.8, 0.04, null],
 			]
 		);
+	});
+});
+
+describe('2026-11-03 model catalog巡检 additions', () => {
+	it('adds gpt-5.5-pro at the official $30/$180 short and $60/$270 long tiers, no cached input', () => {
+		const preset = doubaoPreset('gpt-5.5-pro');
+		assert.equal(preset.display_name, 'GPT-5.5 Pro');
+		assert.equal(preset.context_window, 1050000);
+		assert.equal(preset.max_tokens, 128000);
+		assert.equal(preset.released, '2026-04-23');
+		assert.deepEqual(preset.modalities?.input, ['text', 'image']);
+		assert.deepEqual(preset.modalities?.output, ['text']);
+		assert.equal(listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gpt-5.5-pro')!.pricing_label, '$30 / $180 /M');
+		assert.equal(listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gpt-5.5-pro')!.pricing_label, '¥210 / ¥1260 /M');
+		const usd = doubaoTiers('gpt-5.5-pro', 'USD');
+		assert.deepEqual(
+			usd.map((tier) => [tier.upto, tier.input_price, tier.output_price, tier.cache_read_price]),
+			[
+				[272000, 30, 180, null],
+				[null, 60, 270, null],
+			]
+		);
+	});
+
+	it('adds gpt-5.4-pro at the same Pro tier structure', () => {
+		const preset = doubaoPreset('gpt-5.4-pro');
+		assert.equal(preset.display_name, 'GPT-5.4 Pro');
+		assert.equal(preset.context_window, 1050000);
+		assert.equal(preset.max_tokens, 128000);
+		assert.equal(preset.released, '2026-03-05');
+		const usd = doubaoTiers('gpt-5.4-pro', 'USD');
+		assert.deepEqual(
+			usd.map((tier) => [tier.upto, tier.input_price, tier.output_price]),
+			[
+				[272000, 30, 180],
+				[null, 60, 270],
+			]
+		);
+	});
+
+	it('adds gpt-5.2-pro at the $21 / $168 single-tier list price', () => {
+		const preset = doubaoPreset('gpt-5.2-pro');
+		assert.equal(preset.display_name, 'GPT-5.2 Pro');
+		assert.equal(preset.context_window, 400000);
+		assert.equal(preset.max_tokens, 128000);
+		assert.equal(preset.released, '2025-12-11');
+		assert.equal(listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gpt-5.2-pro')!.pricing_label, '$21 / $168 /M');
+		assert.equal(listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gpt-5.2-pro')!.pricing_label, '¥147 / ¥1176 /M');
+	});
+
+	it('adds gpt-image-1.5 with $10 text output and $32 image output', () => {
+		const preset = doubaoPreset('gpt-image-1.5');
+		assert.equal(preset.display_name, 'GPT Image 1.5');
+		assert.equal(preset.released, '2025-12-16');
+		assert.equal(preset.retired, '2026-12-01');
+		assert.deepEqual(preset.modalities?.input, ['text', 'image']);
+		assert.deepEqual(preset.modalities?.output, ['image']);
+		const usd = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset, 'USD'))!)!;
+		assert.equal(usd.tiers[0]?.input_price, 5);
+		assert.equal(usd.tiers[0]?.output_price, 10);
+		assert.equal(usd.tiers[0]?.cache_read_price, 1.25);
+		assert.equal(usd.tiers[0]?.image_input_price, 8);
+		assert.equal(usd.tiers[0]?.image_input_cache_price, 2);
+		assert.equal(usd.tiers[0]?.image_output_price, 32);
+	});
+
+	it('adds gpt-image-1-mini with unbilled text output and $8 image output', () => {
+		const preset = doubaoPreset('gpt-image-1-mini');
+		assert.equal(preset.display_name, 'GPT Image 1 Mini');
+		assert.deepEqual(preset.modalities?.output, ['image']);
+		const usd = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset, 'USD'))!)!;
+		assert.equal(usd.tiers[0]?.input_price, 2);
+		assert.equal(usd.tiers[0]?.output_price, 0);
+		assert.equal(usd.tiers[0]?.cache_read_price, 0.2);
+		assert.equal(usd.tiers[0]?.image_input_price, 2.5);
+		assert.equal(usd.tiers[0]?.image_input_cache_price, 0.25);
+		assert.equal(usd.tiers[0]?.image_output_price, 8);
+		assert.equal(preset.retired, '2026-12-01');
+	});
+
+	it('marks qwen3.5-plus retired on the official end-of-service date', () => {
+		assert.equal(doubaoPreset('qwen3.5-plus').retired, '2027-01-19');
+	});
+
+	it('adds the GPT transcription replacements metered per second', () => {
+		for (const [id, displayName, perSecond, cnyPerSecond] of [
+			['gpt-transcribe', 'GPT Transcribe', 0.000075, 0.000525],
+			['gpt-live-transcribe', 'GPT Live Transcribe', 0.000283, 0.001981],
+			['gpt-realtime-whisper', 'GPT Realtime Whisper', 0.00028, 0.00196],
+		] as const) {
+			const row = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === id);
+			assert.ok(row, id);
+			assert.equal(row!.kind, 'asr');
+			assert.equal(row!.display_name, displayName);
+			const preset = doubaoPreset(id);
+			assert.deepEqual(preset.modalities?.input, ['audio', 'text']);
+			assert.deepEqual(preset.modalities?.output, ['text']);
+			const usd = pickPresetPricingRawForBillingCurrency(preset, 'USD') as unknown as { audio?: { price_per_second?: number } };
+			const cny = pickPresetPricingRawForBillingCurrency(preset, 'CNY') as unknown as { audio?: { price_per_second?: number } };
+			assert.equal(usd.audio?.price_per_second, perSecond);
+			assert.equal(cny.audio?.price_per_second, cnyPerSecond);
+		}
+		assert.equal(doubaoPreset('gpt-realtime-whisper').context_window, 16000);
+		assert.equal(doubaoPreset('gpt-realtime-whisper').max_tokens, 2000);
+	});
+
+	it('adds the Google Nano Banana Lite / Pro image models', () => {
+		for (const [id, displayName, usdIn, usdOut, usdImg, cnyIn, cnyOut, cnyImg, released] of [
+			['gemini-3.1-flash-lite-image', 'Gemini 3.1 Flash Lite Image', 0.25, 1.5, 30, 1.75, 10.5, 210, '2026-06-30'],
+			['gemini-3-pro-image', 'Gemini 3 Pro Image', 2, 12, 120, 14, 84, 840, '2026-05-28'],
+		] as const) {
+			const preset = doubaoPreset(id);
+			assert.equal(preset.display_name, displayName);
+			assert.equal(preset.released, released);
+			assert.deepEqual(preset.modalities?.output, ['image']);
+			const usd = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset, 'USD'))!)!;
+			const cny = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset, 'CNY'))!)!;
+			assert.equal(usd.tiers[0]?.input_price, usdIn);
+			assert.equal(usd.tiers[0]?.output_price, usdOut);
+			assert.equal(usd.tiers[0]?.image_output_price, usdImg);
+			assert.equal(cny.tiers[0]?.input_price, cnyIn);
+			assert.equal(cny.tiers[0]?.output_price, cnyOut);
+			assert.equal(cny.tiers[0]?.image_output_price, cnyImg);
+		}
+	});
+
+	it('records the official Gemini GA release dates', () => {
+		assert.equal(doubaoPreset('gemini-3.1-flash-lite').released, '2026-05-07');
+		assert.equal(doubaoPreset('gemini-3.1-flash-image').released, '2026-05-28');
+		assert.equal(doubaoPreset('gemini-3-pro-image-preview').released, '2025-11-20');
+	});
+
+	it('adds zhipu GLM-5.3-FlashX-Legal and GLM-OCR at official CNY list prices', () => {
+		const legal = doubaoPreset('glm-5.3-flashx-legal');
+		assert.equal(legal.display_name, 'GLM-5.3-FlashX-Legal');
+		assert.equal(legal.context_window, 1000000);
+		assert.equal(legal.max_tokens, 128000);
+		assert.deepEqual(
+			doubaoTiers('glm-5.3-flashx-legal', 'CNY').map((t) => [t.input_price, t.output_price, t.cache_read_price]),
+			[[2, 7, 0.57]]
+		);
+		assert.deepEqual(
+			doubaoTiers('glm-5.3-flashx-legal', 'USD').map((t) => [t.input_price, t.output_price, t.cache_read_price]),
+			[[0.37, 1.25, 0.075]]
+		);
+		const ocr = doubaoPreset('glm-ocr');
+		assert.equal(ocr.display_name, 'GLM-OCR');
+		assert.equal(ocr.context_window, 32000);
+		assert.equal(ocr.max_tokens, null);
+		assert.deepEqual(ocr.modalities?.input, ['image', 'file']);
+		assert.deepEqual(ocr.modalities?.output, ['text']);
+		assert.deepEqual(
+			doubaoTiers('glm-ocr', 'CNY').map((t) => [t.input_price, t.output_price, t.cache_read_price]),
+			[[0.2, 0.2, null]]
+		);
+	});
+
+	it('records the GLM-5 series 32K dual-tier CNY list prices and text-only Turbo input', () => {
+		for (const [id, low, high] of [
+			['glm-5', [4, 18, 1], [6, 22, 1.5]],
+			['glm-5-turbo', [5, 22, 1.2], [7, 26, 1.8]],
+			['glm-5.1', [6, 24, 1.3], [8, 28, 2]],
+		] as const) {
+			assert.deepEqual(
+				doubaoTiers(id, 'CNY').map((t) => [t.upto, t.input_price, t.output_price, t.cache_read_price]),
+				[
+					[32000, low[0], low[1], low[2]],
+					[null, high[0], high[1], high[2]],
+				],
+				id
+			);
+		}
+		assert.deepEqual(doubaoPreset('glm-5-turbo').modalities?.input, ['text']);
+	});
+
+	it('adds the StepFun Step 5 Preview / 3.5 Flash / 1o Turbo Vision presets', () => {
+		for (const [id, ctx, max, usdIn, usdOut, usdCache, cnyIn, cnyOut, cnyCache, input] of [
+			['step-5-preview', 1000000, 64000, 1, 2.7, 0.1, 7, 20, 0.7, ['text', 'image', 'video']],
+			['step-3.5-flash', null, null, 0.1, 0.3, 0.02, 0.7, 2.1, 0.14, ['text']],
+			['step-1o-turbo-vision', 32000, null, 0.36, 1.15, 0.07, 2.5, 8, 0.5, ['text', 'image', 'video']],
+		] as const) {
+			const preset = doubaoPreset(id);
+			assert.equal(preset.context_window, ctx);
+			assert.equal(preset.max_tokens, max);
+			assert.deepEqual(preset.modalities?.input, input);
+			assert.deepEqual(preset.modalities?.output, ['text']);
+			assert.deepEqual(
+				doubaoTiers(id, 'USD').map((t) => [t.input_price, t.output_price, t.cache_read_price]),
+				[[usdIn, usdOut, usdCache]]
+			);
+			assert.deepEqual(
+				doubaoTiers(id, 'CNY').map((t) => [t.input_price, t.output_price, t.cache_read_price]),
+				[[cnyIn, cnyOut, cnyCache]]
+			);
+		}
+	});
+
+	it('adds the Alibaba Cloud TTS and embedding additions', () => {
+		const ttsNext = doubaoPreset('qwen-audio-3.1-tts-next');
+		assert.equal(ttsNext.display_name, 'Qwen Audio 3.1 TTS Next');
+		assert.equal(ttsNext.released, '2026-09-21');
+		assert.deepEqual(ttsNext.modalities?.output, ['audio']);
+		assert.equal(listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen-audio-3.1-tts-next')!.kind, 'tts');
+
+		const ttsPlus = doubaoPreset('qwen-audio-3.1-tts-plus');
+		assert.equal(ttsPlus.display_name, 'Qwen Audio 3.1 TTS Plus');
+		assert.equal(ttsPlus.released, '2026-10-21');
+		assert.deepEqual(ttsPlus.modalities?.output, ['audio']);
+		assert.equal(listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen-audio-3.1-tts-plus')!.kind, 'tts');
+
+		const flash = doubaoPreset('qwen3.7-text-embedding-flash');
+		assert.equal(flash.display_name, 'Qwen3.7 Text Embedding Flash');
+		assert.equal(flash.released, '2026-09-01');
+		assert.deepEqual(flash.modalities?.output, ['embedding']);
+		assert.equal(listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen3.7-text-embedding-flash')!.kind, 'embedding');
+		assert.deepEqual(
+			doubaoTiers('qwen3.7-text-embedding-flash', 'CNY').map((t) => [t.input_price, t.output_price]),
+			[[0.125, 0]]
+		);
+	});
+
+	it('records MiniMax context and max output in decimal K, not the 1024-based API integers', () => {
+		for (const id of ['minimax-m2.5', 'minimax-m2.7', 'minimax-m2.7-highspeed']) {
+			const preset = doubaoPreset(id);
+			assert.equal(preset.context_window, 200000, id);
+			assert.equal(preset.max_tokens, 200000, id);
+		}
+		for (const id of ['minimax-m3', 'minimax-m3.1-flash']) {
+			const preset = doubaoPreset(id);
+			assert.equal(preset.context_window, 1000000, id);
+			assert.equal(preset.max_tokens, 512000, id);
+		}
+	});
+
+	it('records the MiMo V2 family official 1M context', () => {
+		for (const id of [
+			'mimo-v2-pro',
+			'mimo-v2.5-pro',
+			'mimo-v2.5',
+			'mimo-v2.6-pro',
+			'mimo-v2.6-flash',
+			'mimo-v2.6-pro-ultraspeed',
+		]) {
+			assert.equal(doubaoPreset(id).context_window, 1000000, id);
+		}
+	});
+
+	it('records DeepSeek V4 Flash retirement and V4.1 Flash image input', () => {
+		assert.equal(doubaoPreset('deepseek-v4-flash').retired, '2026-09-10');
+		assert.deepEqual(doubaoPreset('deepseek-v4.1-flash').modalities?.input, ['text', 'image']);
+	});
+
+	it('records the Grok 4.5 release date and the Imagine Quality 1.5K tier', () => {
+		assert.equal(doubaoPreset('grok-4.5').released, '2026-07-16');
+		const usd = doubaoPreset('grok-imagine-image-quality').pricing as unknown as { usd?: { image?: { by_size?: Record<string, number> } } };
+		const cny = doubaoPreset('grok-imagine-image-quality').pricing as unknown as { cny?: { image?: { by_size?: Record<string, number> } } };
+		assert.equal(usd.usd?.image?.by_size?.['1.5k'], 0.06);
+		assert.equal(cny.cny?.image?.by_size?.['1.5k'], 0.42);
+	});
+
+	it('keeps the OpenAI embedding max-input at the official 8191', () => {
+		for (const id of ['text-embedding-3-small', 'text-embedding-3-large', 'text-embedding-ada-002']) {
+			assert.equal(doubaoPreset(id).context_window, 8191, id);
+		}
+	});
+});
+
+describe('GPT Image 2.6 catalog list prices', () => {
+	it('adds flare and sunburst at the GPT Image 2.5 token prices with a USD × 7 CNY placeholder', () => {
+		for (const [id, displayName] of [
+			['gpt-image-2.6-flare', 'GPT Image 2.6 Flare'],
+			['gpt-image-2.6-sunburst', 'GPT Image 2.6 Sunburst'],
+		] as const) {
+			const preset = doubaoPreset(id);
+			assert.equal(preset.display_name, displayName);
+			assert.equal(preset.released, '2026-11-04');
+			assert.equal(preset.retired, undefined);
+			assert.match(preset.description ?? '', /Images API generations and edits endpoints/);
+			assert.doesNotMatch(preset.description ?? '', /Responses API image generation tool/);
+			assert.deepEqual(preset.modalities?.input, ['text', 'image']);
+			assert.deepEqual(preset.modalities?.output, ['image']);
+			assert.equal(listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === id)!.kind, 'image');
+			const usd = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset, 'USD'))!)!;
+			const cny = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset, 'CNY'))!)!;
+			assert.equal(usd.image_billing_mode, 'token');
+			assert.equal(cny.image_billing_mode, 'token');
+			assert.equal(usd.tiers[0]?.input_price, 5);
+			assert.equal(usd.tiers[0]?.cache_read_price, 1.25);
+			assert.equal(usd.tiers[0]?.output_price, 0);
+			assert.equal(usd.tiers[0]?.image_input_price, 8);
+			assert.equal(usd.tiers[0]?.image_input_cache_price, 2);
+			assert.equal(usd.tiers[0]?.image_output_price, 30);
+			assert.equal(cny.tiers[0]?.input_price, 35);
+			assert.equal(cny.tiers[0]?.cache_read_price, 8.75);
+			assert.equal(cny.tiers[0]?.output_price, 0);
+			assert.equal(cny.tiers[0]?.image_input_price, 56);
+			assert.equal(cny.tiers[0]?.image_input_cache_price, 14);
+			assert.equal(cny.tiers[0]?.image_output_price, 210);
+		}
 	});
 });
