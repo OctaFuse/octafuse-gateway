@@ -81,6 +81,8 @@
 | `gpt-image-2` | GPT Image 2 | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |
 | `gpt-image-2.5-flare` | GPT Image 2.5 Flare | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |
 | `gpt-image-2.5-sunburst` | GPT Image 2.5 Sunburst | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |
+| `gpt-image-2.6-flare` | GPT Image 2.6 Flare | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |
+| `gpt-image-2.6-sunburst` | GPT Image 2.6 Sunburst | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `openai-image.json` |
 | `grok-imagine-image-2.0` | Grok Imagine Image 2.0 | [xAI Grok Imagine](../architecture/openai-compatible-image.md#xai-grok-imagine) | `per_image` | ¥0.28/张 | $0.04/张 | `by_quality_size`、`by_quality`、`by_size`、参考图 | `xai-image.json` |
 | `grok-imagine-image-quality` | Grok Imagine Image Quality | [xAI Grok Imagine](../architecture/openai-compatible-image.md#xai-grok-imagine) | `per_image` | ¥0.35/张 | $0.05/张 | `by_size`、参考图 | `xai-image.json` |
 | `glm-image` | GLM Image | [智谱 GLM Image](../architecture/openai-compatible-image.md#智谱-glm-image) | `per_image` | ¥0.1/张 | $0.014/张 | 一口价 | `zhipu-image.json` |
@@ -142,6 +144,10 @@
 | `gpt-image-2.5-flare` | USD | $5 | $1.25 | $0 | $8 | $2 | $30 |
 | `gpt-image-2.5-sunburst` | CNY | ¥35 | ¥8.75 | ¥0 | ¥56 | ¥14 | ¥210 |
 | `gpt-image-2.5-sunburst` | USD | $5 | $1.25 | $0 | $8 | $2 | $30 |
+| `gpt-image-2.6-flare` | CNY | ¥35 | ¥8.75 | ¥0 | ¥56 | ¥14 | ¥210 |
+| `gpt-image-2.6-flare` | USD | $5 | $1.25 | $0 | $8 | $2 | $30 |
+| `gpt-image-2.6-sunburst` | CNY | ¥35 | ¥8.75 | ¥0 | ¥56 | ¥14 | ¥210 |
+| `gpt-image-2.6-sunburst` | USD | $5 | $1.25 | $0 | $8 | $2 | $30 |
 
 <!-- END GENERATED: image-models -->
 

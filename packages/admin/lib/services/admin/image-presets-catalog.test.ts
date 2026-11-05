@@ -19,6 +19,8 @@ const EXPECTED_IMAGE_IDS = [
 	'gpt-image-2',
 	'gpt-image-2.5-flare',
 	'gpt-image-2.5-sunburst',
+	'gpt-image-2.6-flare',
+	'gpt-image-2.6-sunburst',
 	'grok-imagine-image-2.0',
 	'grok-imagine-image-quality',
 	'minimax-image-01',
@@ -152,7 +154,7 @@ describe('static image model presets (*-image.json)', () => {
 		assert.equal(grokUsd.image?.by_size?.['2k'], 0.07);
 		assert.equal(grokUsd.image?.input?.default, 0.01);
 
-		for (const gptId of ['gpt-image-2', 'gpt-image-2.5-flare', 'gpt-image-2.5-sunburst']) {
+		for (const gptId of ['gpt-image-2', 'gpt-image-2.5-flare', 'gpt-image-2.5-sunburst', 'gpt-image-2.6-flare', 'gpt-image-2.6-sunburst']) {
 			const gpt = byId.get(gptId)!;
 			const gptUsd = asPricing(gpt.pricing.usd);
 			const gptTier = gptUsd.tiers?.[0];

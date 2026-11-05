@@ -22,7 +22,7 @@
 
 ## OpenAI GPT Image
 
-型号：`gpt-image-2`、`gpt-image-2.5-flare`、`gpt-image-2.5-sunburst`（`openai-image.json`）。
+型号：`gpt-image-2`、`gpt-image-2.5-flare`、`gpt-image-2.5-sunburst`、`gpt-image-2.6-flare`、`gpt-image-2.6-sunburst`（`openai-image.json`）。2.6 发布于 2026-11-04。Flare 面向快速迭代，Sunburst 面向精细编辑和细节画面。模型页只支持 `POST /v1/images/generations` 与 `POST /v1/images/edits`，不支持把这两个 ID 当作 Chat Completions 或 Responses 的主模型。
 
 **端点**：导入模板 **OpenAI** 的 `openai.base` 为 `https://api.openai.com/v1`，派生 generations 与 edits。
 
@@ -31,12 +31,15 @@
 | 字段 | 官方规则 |
 | ---- | -------- |
 | `size` | `auto`（默认）或 `宽x高`。两边都是 16 的倍数，长短边比不超过 3:1，最长边不超过 3840，总像素 655,360–8,294,400。超过 `2560x1440` 官方标为实验。常用 `1024x1024`、`1536x1024`、`1024x1536`、`2048x2048`、`2048x1152`、`3840x2160` |
-| `quality` | `gpt-image-2`：`low` / `medium` / `high` / `auto`。2.5 系列另有 `xhigh`、`max` |
+| `quality` | `gpt-image-2`：`low` / `medium` / `high` / `auto`。2.5 与 2.6 的 Sunburst、Flare 另有 `xhigh`、`max`，默认 `auto` |
+| `complexity` | 仅 2.6：`low` / `medium` / `high`，省略时为 `high`。不另收费。生成请求里的该字段作为额外字段转发，不要写成路由默认值 |
 | `background` | `transparent` / `opaque` / `auto`；透明背景需 `output_format` 为 `png` 或 `webp` |
-| `output_format` | `png` / `jpeg` / `webp` |
+| `output_format` | `png` / `jpeg` / `webp`。2.6 的 generations 还可为 `svg`、`gif`；edits 不支持这两种。网关原样转发字符串，不校验取值 |
+| `frame_count` / `frame_duration_ms` | 仅 `output_format` 为 `gif` 的 generations。`frame_count` 为 2–64，默认 9；`frame_duration_ms` 为 20–2000，按 10 毫秒取整，默认 200。作为额外字段转发 |
+| `markup` | 2.5 与 2.6 的 edits 官方支持标记引导。网关的 edits 只转发文本表单字段，文件会被跳过，因此 multipart 里的 markup 文件到不了上游 |
 | 参考图 | 走 `/v1/images/edits` multipart |
 
-**计费**：`token` 模式，按响应 `usage` 分项计价。预检按 `quality` × `size` 估算输出 token，见 `packages/core/src/db/image-token-usage.ts`。三个型号单价相同，但 2.5 的 token 消耗量不能套用 GPT Image 2 的计算器估算。
+**计费**：`token` 模式，按响应 `usage` 分项计价。预检按 `quality` × `size` 估算输出 token，见 `packages/core/src/db/image-token-usage.ts`。上表五个型号刊例相同：文本输入 $5、缓存 $1.25，文本输出没有单独刊例（目录记 0）；图像输入 $8、缓存 $2、输出 $30。人民币价为美元刊例 ×7 的占位价。2.5 与 2.6 的 token 消耗量不能套用 GPT Image 2 的计算器估算。SVG 还要为参考图和写出 SVG 的 token 付费，仍按上述单价，没有单独加价。`complexity` 与 markup 不另收费。指南写明 GPT Image 2 与 2.5 的缓存只出现在 Responses 的 image generation 工具，Images API 直连不计缓存；2.6 模型页把 Responses 标为不支持，目录仍记下官方缓存刊例，实际是否命中以响应 `usage` 为准。
 
 ## 智谱 GLM Image
 
@@ -89,9 +92,9 @@ client.images.generate(
 
 ## 官方来源
 
-核对于 2026-10-07：
+智谱与 xAI 核对于 2026-10-07。OpenAI 生图核对于 2026-11-05：
 
-- [OpenAI · Image generation](https://developers.openai.com/api/docs/guides/image-generation)
+- [OpenAI · Image generation](https://developers.openai.com/api/docs/guides/image-generation)、[Changelog（2026-11-04）](https://developers.openai.com/api/docs/changelog)、[gpt-image-2.6-flare](https://developers.openai.com/api/docs/models/gpt-image-2.6-flare)、[gpt-image-2.6-sunburst](https://developers.openai.com/api/docs/models/gpt-image-2.6-sunburst)
 - [智谱 · 图像生成 API](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%9B%BE%E5%83%8F%E7%94%9F%E6%88%90)
 - [xAI · Image Generation](https://docs.x.ai/developers/model-capabilities/images/generation)、[Image Editing](https://docs.x.ai/developers/model-capabilities/images/editing)、[grok-imagine-image-2.0](https://docs.x.ai/developers/models/grok-imagine-image-2.0)、[grok-imagine-image-quality 退役说明](https://docs.x.ai/developers/migration/imagine-image-quality-nov-2)
 - Gemini 官方图片模型见 [Gemini 原生生图](./gemini-image.md)
