@@ -36,6 +36,30 @@ function ctx(fetchImpl: typeof fetch, origin: string): ProviderQuotaFetchContext
 	return { apiKey: 'sk-test', origin, fetchImpl, now: NOW };
 }
 
+function routedFetch(routes: Record<string, unknown | { status: number }>): { fetchImpl: typeof fetch; urls: string[] } {
+	const urls: string[] = [];
+	const fetchImpl: typeof fetch = async (input, init) => {
+		const url = String(input);
+		urls.push(url);
+		assert.equal(init?.redirect, 'error');
+		const headers = new Headers(init?.headers);
+		assert.equal(headers.get('authorization')?.startsWith('Bearer '), true);
+		const route = routes[new URL(url).pathname];
+		if (
+			route &&
+			typeof route === 'object' &&
+			'status' in route &&
+			typeof route.status === 'number' &&
+			Object.keys(route).length === 1
+		) {
+			return new Response('no', { status: route.status });
+		}
+		if (route == null) return new Response('no', { status: 404 });
+		return Response.json(route);
+	};
+	return { fetchImpl, urls };
+}
+
 describe('deriveProviderQuotaState', () => {
 	it('treats a non-positive balance or a full window as exhausted', () => {
 		assert.equal(deriveProviderQuotaState({ balances: [{ currency: 'CNY', total: 0 }], windows: [] }), 'exhausted');
@@ -449,10 +473,101 @@ describe('provider quota adapters', () => {
 	});
 
 	it('reads a Command Code pay-as-you-go balance without windows', async () => {
-		const { fetchImpl } = jsonFetch({ credits: { monthlyCredits: 15 } });
+		const { fetchImpl, urls } = routedFetch({
+			'/alpha/billing/credits': { credits: { monthlyCredits: 15 } },
+			'/alpha/usage/summary': { totalMonthlyCredits: 40, periodBasis: 'billing-period' },
+			'/alpha/billing/subscriptions': {
+				success: true,
+				data: { planId: 'individual-provider', currentPeriodEnd: '2026-12-01T00:00:00.000Z' },
+			},
+		});
 		const snapshot = await commandCodeQuotaAdapter.fetch(ctx(fetchImpl, 'https://api.commandcode.ai'));
 		assert.deepEqual(snapshot.balances, [{ currency: 'USD', total: 15 }]);
 		assert.equal(snapshot.windows.length, 0);
+		assert.equal(snapshot.state, 'ok');
+		assert.equal(urls.includes('https://api.commandcode.ai/alpha/billing/credits'), true);
+	});
+
+	it('reads a Command Code monthly window from the granted amount', async () => {
+		const { fetchImpl, urls } = routedFetch({
+			'/alpha/billing/credits': {
+				credits: {
+					monthlyCredits: 0.0693,
+					purchasedCredits: 0,
+					freeCredits: 0,
+					monthlyCreditsGranted: 70,
+				},
+				windowLimits: {
+					fiveHour: { used: 0, cap: 14, resetAt: 1_780_000_000_000 },
+					weekly: { used: 16.9098, cap: 35, resetAt: 1_780_000_000_000 },
+				},
+			},
+			'/alpha/usage/summary': { totalMonthlyCredits: 10, periodBasis: 'billing-period' },
+			'/alpha/billing/subscriptions': {
+				success: true,
+				data: { planId: 'individual-goat', currentPeriodEnd: '2026-12-05T00:00:00.000Z' },
+			},
+		});
+		const snapshot = await commandCodeQuotaAdapter.fetch(ctx(fetchImpl, 'https://api.commandcode.ai'));
+		assert.equal(urls[0], 'https://api.commandcode.ai/alpha/billing/credits');
+		assert.equal(snapshot.balances[0]?.total, 0.0693);
+		assert.equal(snapshot.windows[2]?.id, 'monthly');
+		assert.equal(snapshot.windows[2]?.limit, 70);
+		assert.equal(snapshot.windows[2]?.remaining, 0.0693);
+		assert.ok((snapshot.windows[2]?.usedPercent ?? 0) >= 90);
+		assert.equal(snapshot.windows[2]?.resetsAt, '2026-12-05T00:00:00.000Z');
+		assert.equal(snapshot.state, 'low');
+	});
+
+	it('derives a Command Code monthly window from billing-period spend', async () => {
+		const { fetchImpl } = routedFetch({
+			'/alpha/billing/credits': {
+				credits: { monthlyCredits: 16.5, purchasedCredits: 0, freeCredits: 0 },
+				windowLimits: {
+					fiveHour: { used: 1, cap: 14, resetAt: 1_780_000_000_000 },
+					weekly: { used: 4, cap: 35, resetAt: 1_780_000_000_000 },
+				},
+			},
+			'/alpha/usage/summary': { totalMonthlyCredits: 53.5, periodBasis: 'billing-period' },
+			'/alpha/billing/subscriptions': {
+				data: { currentPeriodEnd: '2026-12-05T00:00:00.000Z' },
+			},
+		});
+		const snapshot = await commandCodeQuotaAdapter.fetch(ctx(fetchImpl, 'https://api.commandcode.ai'));
+		const monthly = snapshot.windows.find((window) => window.id === 'monthly');
+		assert.equal(monthly?.used, 53.5);
+		assert.equal(monthly?.limit, 70);
+		assert.equal(monthly?.remaining, 16.5);
+		assert.equal(monthly?.resetsAt, '2026-12-05T00:00:00.000Z');
+		assert.equal(snapshot.state, 'ok');
+	});
+
+	it('ignores Command Code spend that is not for the billing period', async () => {
+		const { fetchImpl } = routedFetch({
+			'/alpha/billing/credits': {
+				credits: { monthlyCredits: 16.5 },
+				windowLimits: { fiveHour: { used: 1, cap: 14, resetAt: 1_780_000_000_000 } },
+			},
+			'/alpha/usage/summary': { totalMonthlyCredits: 53.5, periodBasis: 'today' },
+		});
+		const snapshot = await commandCodeQuotaAdapter.fetch(ctx(fetchImpl, 'https://api.commandcode.ai'));
+		assert.equal(snapshot.windows.some((window) => window.id === 'monthly'), false);
+		assert.equal(snapshot.windows[0]?.id, '5h');
+	});
+
+	it('keeps Command Code rolling windows when monthly enrichment fails', async () => {
+		const { fetchImpl } = routedFetch({
+			'/alpha/billing/credits': {
+				credits: { monthlyCredits: 12.5, monthlyCreditsGranted: 70 },
+				windowLimits: { fiveHour: { used: 1, cap: 14, resetAt: 1_780_000_000_000 } },
+			},
+			'/alpha/billing/subscriptions': { status: 503 },
+		});
+		const snapshot = await commandCodeQuotaAdapter.fetch(ctx(fetchImpl, 'https://api.commandcode.ai'));
+		assert.equal(snapshot.windows[0]?.id, '5h');
+		assert.equal(snapshot.windows[1]?.id, 'monthly');
+		assert.equal(snapshot.windows[1]?.limit, 70);
+		assert.equal(snapshot.windows[1]?.resetsAt, null);
 		assert.equal(snapshot.state, 'ok');
 	});
 
