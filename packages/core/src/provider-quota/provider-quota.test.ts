@@ -45,7 +45,13 @@ function routedFetch(routes: Record<string, unknown | { status: number }>): { fe
 		const headers = new Headers(init?.headers);
 		assert.equal(headers.get('authorization')?.startsWith('Bearer '), true);
 		const route = routes[new URL(url).pathname];
-		if (route && typeof route === 'object' && 'status' in route && Object.keys(route).length === 1) {
+		if (
+			route &&
+			typeof route === 'object' &&
+			'status' in route &&
+			typeof route.status === 'number' &&
+			Object.keys(route).length === 1
+		) {
 			return new Response('no', { status: route.status });
 		}
 		if (route == null) return new Response('no', { status: 404 });
