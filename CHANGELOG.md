@@ -4,6 +4,7 @@
 
 ### Admin
 
+- **供应商预设**：腾讯云 TokenHub 按量模板改到广州 `tokenhub.tencentmaas.com`，包含 Chat、Responses、Embeddings 和 Anthropic Messages。个人版 Token Plan 改到同一主机的 `/plan/v3` 与 `/plan/anthropic`，并补上 Responses。通用套餐与 Hy 套餐共用这组地址和 `sk-tp-` Key。模板的英文类型名不变，已导入的供应商不会自动改写。新加坡站 `tokenhub-intl.tencentmaas.com` 需单独配置。
 - **目录**：新增腾讯混元 `hy4` 正式版（2026-11-04）。上下文 1M、最大输出 64K，输入支持文本与图片（首次支持图片理解）。刊例价与 `hy4-preview` 相同：输入 ¥6、输出 ¥18、缓存命中 ¥0.3 / 百万 tokens（美元 $0.834 / $2.501 / $0.042）。腾讯云 TokenHub 在 2026-12-31 前按刊例价五折结算，属限时活动，目录只记刊例价。已导入的模型不会被覆盖；TokenHub 对 `hy4` 原生提供 Chat、Responses、Anthropic Messages 三种协议。
 - **Command Code 额度**：供应商额度补上每月包含额度。上限优先用接口返回的 `monthlyCreditsGranted`；没有该字段时，用本账期已消耗的月度额度加上剩余额推算。重置时间来自订阅周期结束。订阅或用量查询失败时，余额、5 小时和每周窗口仍照常显示。
 - **目录**：新增 `gpt-image-2.6-flare` 与 `gpt-image-2.6-sunburst`（2026-11-04）。刊例价与 GPT Image 2.5 相同：文本输入 $5、缓存 $1.25，文本输出不计费；图像输入 $8、缓存 $2、输出 $30。人民币价为美元刊例 ×7 的占位价。已导入的模型不会被覆盖。官方入口是 Images API；模型页不支持把这两个 ID 用作 Responses 或 Chat Completions 的主模型。

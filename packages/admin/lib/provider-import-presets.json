@@ -513,36 +513,38 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.hunyuan.cloud.tencent.com/v1/chat/completions",
-					"embeddings": "https://api.hunyuan.cloud.tencent.com/v1/embeddings"
+					"chat": "https://tokenhub.tencentmaas.com/v1/chat/completions",
+					"responses": "https://tokenhub.tencentmaas.com/v1/responses",
+					"embeddings": "https://tokenhub.tencentmaas.com/v1/embeddings"
 				}
 			},
 			"anthropic": {
-				"base": "https://api.hunyuan.cloud.tencent.com/anthropic"
+				"base": "https://tokenhub.tencentmaas.com"
 			}
 		},
-		"description": "Legacy Hunyuan pay-as-you-go: OpenAI chat and Anthropic Messages on api.hunyuan.cloud.tencent.com. TokenHub pay-as-you-go (tokenhub.tencentmaas.com) and Hy Token Plan (api.lkeap.cloud.tencent.com/plan) are separate presets or hosts.",
+		"description": "TokenHub Guangzhou pay-as-you-go on tokenhub.tencentmaas.com: OpenAI chat, responses, and embeddings, plus Anthropic Messages at /v1/messages. No openai.base, so images and audio are not derived. Do not mix with Token Plan sk-tp-* keys on /plan, the Singapore host tokenhub-intl.tencentmaas.com, or legacy api.hunyuan.cloud.tencent.com.",
 		"catalog": {
 			"i18n": {
 				"zh": {
-					"name": "腾讯混元",
-					"description": "腾讯混元按量端点，支持 OpenAI Chat 与 Anthropic Messages。"
+					"name": "腾讯云 TokenHub",
+					"description": "腾讯云 TokenHub 广州按量入口，支持 OpenAI Chat、Responses、Embeddings 与 Anthropic Messages。不要和 Token Plan 的 sk-tp- Key 或 /plan 地址混用。"
 				},
 				"en": {
-					"name": "Tencent Hunyuan",
-					"description": "Hunyuan pay-as-you-go endpoints for OpenAI Chat and Anthropic Messages."
+					"name": "Tencent Cloud TokenHub",
+					"description": "TokenHub Guangzhou pay-as-you-go endpoints for OpenAI Chat, Responses, Embeddings, and Anthropic Messages."
 				},
 				"ja": {
-					"name": "テンセント Hunyuan",
-					"description": "テンセント Hunyuan の従量課金エンドポイント。OpenAI Chat と Anthropic Messages に対応しています。"
+					"name": "Tencent Cloud TokenHub",
+					"description": "Tencent Cloud TokenHub の広州リージョン従量課金エンドポイント。OpenAI Chat、Responses、Embeddings、Anthropic Messages に対応しています。"
 				},
 				"ko": {
-					"name": "텐센트 Hunyuan",
-					"description": "텐센트 Hunyuan 종량제 엔드포인트. OpenAI Chat과 Anthropic Messages를 지원합니다."
+					"name": "Tencent Cloud TokenHub",
+					"description": "Tencent Cloud TokenHub 광저우 종량제 엔드포인트. OpenAI Chat, Responses, Embeddings, Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
-				"platform": "https://console.cloud.tencent.com/hunyuan"
+				"platform": "https://console.cloud.tencent.com/tokenhub",
+				"api_keys": "https://console.cloud.tencent.com/tokenhub/apikey"
 			}
 		}
 	},
@@ -553,35 +555,36 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://api.lkeap.cloud.tencent.com/plan/v3/chat/completions"
+					"chat": "https://tokenhub.tencentmaas.com/plan/v3/chat/completions",
+					"responses": "https://tokenhub.tencentmaas.com/plan/v3/responses"
 				}
 			},
 			"anthropic": {
-				"base": "https://api.lkeap.cloud.tencent.com/plan/anthropic"
+				"base": "https://tokenhub.tencentmaas.com/plan/anthropic"
 			}
 		},
-		"description": "Hy Token Plan personal subscription endpoints (/plan/v3, /plan/anthropic). Shares the same API key (sk-tp-*) as the general Token Plan; usage is deducted from the Hy plan bundle by model ID (hy3, hy3-preview). Do not mix with pay-as-you-go tokenhub.tencentmaas.com/v1 or legacy api.hunyuan.cloud.tencent.com. See TokenHub \"Token Plan personal edition\" docs.",
+		"description": "Token Plan personal endpoints on tokenhub.tencentmaas.com. The general plan and Hy Token Plan share /plan/v3 (chat, responses), /plan/anthropic, and one sk-tp-* key. Hy plan models are hy4, hy4-preview, and hy3. Do not mix with pay-as-you-go /v1 keys, the Singapore host tokenhub-intl.tencentmaas.com, or legacy api.lkeap.cloud.tencent.com.",
 		"catalog": {
 			"i18n": {
 				"zh": {
-					"name": "腾讯 TokenHub（混元 Token Plan）",
-					"description": "腾讯 TokenHub 混元套餐专用端点，使用 sk-tp-* 套餐 Key。"
+					"name": "腾讯云 TokenHub（Token Plan）",
+					"description": "腾讯云 TokenHub 个人版 Token Plan。通用套餐与 Hy 套餐共用 /plan 地址和一把 sk-tp- Key，支持 OpenAI Chat、Responses 与 Anthropic Messages。"
 				},
 				"en": {
-					"name": "Tencent TokenHub (Hunyuan Token Plan)",
-					"description": "Hunyuan Token Plan endpoints that use the shared sk-tp-* plan key."
+					"name": "Tencent Cloud TokenHub (Token Plan)",
+					"description": "TokenHub personal Token Plan. The general plan and Hy plan share the /plan endpoints and one sk-tp-* key."
 				},
 				"ja": {
-					"name": "テンセント TokenHub（Hunyuan Token Plan）",
-					"description": "テンセント TokenHub の Hunyuan プラン専用エンドポイント。共通の sk-tp-* プランキーを使います。"
+					"name": "Tencent Cloud TokenHub（Token Plan）",
+					"description": "Tencent Cloud TokenHub の個人版 Token Plan。一般プランと Hy プランは /plan のアドレスと一つの sk-tp- キーを共有し、OpenAI Chat、Responses、Anthropic Messages に対応しています。"
 				},
 				"ko": {
-					"name": "텐센트 TokenHub (Hunyuan Token Plan)",
-					"description": "텐센트 TokenHub Hunyuan 플랜 전용 엔드포인트. 공통 sk-tp-* 플랜 키를 사용합니다."
+					"name": "Tencent Cloud TokenHub (Token Plan)",
+					"description": "Tencent Cloud TokenHub 개인 Token Plan. 일반 플랜과 Hy 플랜이 /plan 주소와 sk-tp- 키 하나를 공유하며 OpenAI Chat, Responses, Anthropic Messages를 지원합니다."
 				}
 			},
 			"links": {
-				"platform": "https://console.cloud.tencent.com/lkeap"
+				"platform": "https://console.cloud.tencent.com/tokenhub"
 			}
 		}
 	},

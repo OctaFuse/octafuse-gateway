@@ -274,7 +274,9 @@ function endpointIdentity(url: URL): ProviderCatalogIdentity | null {
 	}
 	if (
 		hostnameMatches(hostname, 'hunyuan.cloud.tencent.com') ||
-		hostnameMatches(hostname, 'lkeap.cloud.tencent.com')
+		hostnameMatches(hostname, 'lkeap.cloud.tencent.com') ||
+		hostnameMatches(hostname, 'tencentmaas.com') ||
+		hostnameMatches(hostname, 'tencentmaas.cn')
 	) {
 		return identity('tencent', 'hunyuan');
 	}
