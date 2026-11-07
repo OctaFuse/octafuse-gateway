@@ -4,6 +4,8 @@
 
 ### Admin
 
+- **目录**：新增智谱 `glm-5v-turbo`。上下文 200K、最大输出 128K，输入为文本、图片、视频和文件，输出为文本。人民币刊例与 `glm-5-turbo` 同档：输入长度不足 32K 时输入 ¥5、输出 ¥22、缓存命中 ¥1.2 / 百万 tokens，达到 32K 时为 ¥7 / ¥26 / ¥1.8；缓存存储限时免费。美元与库内 `glm-5-turbo` 同档：输入 $1.2、输出 $4、缓存命中 $0.24。思考用请求体 `thinking.type` 的 `enabled` / `disabled` 开关，默认 `enabled`。已导入的模型不会被覆盖。
+- **目录**：`gemini-4-argon` 与 `gemini-3.8-flash` 的最大输出从 64000 改为官网的 65536。`gemini-2.5-pro` 与 `gemini-2.5-flash` 写上官网停服日 2026-12-01。`gemini-2.5-flash-lite` 官网未公布停服日，不写退役日期。
 - **供应商预设**：腾讯云 TokenHub 按量模板改到广州 `tokenhub.tencentmaas.com`，包含 Chat、Responses、Embeddings 和 Anthropic Messages。个人版 Token Plan 改到同一主机的 `/plan/v3` 与 `/plan/anthropic`，并补上 Responses。通用套餐与 Hy 套餐共用这组地址和 `sk-tp-` Key。模板的英文类型名不变，已导入的供应商不会自动改写。新加坡站 `tokenhub-intl.tencentmaas.com` 需单独配置。
 - **目录**：新增腾讯混元 `hy4` 正式版（2026-11-04）。上下文 1M、最大输出 64K，输入支持文本与图片（首次支持图片理解）。刊例价与 `hy4-preview` 相同：输入 ¥6、输出 ¥18、缓存命中 ¥0.3 / 百万 tokens（美元 $0.834 / $2.501 / $0.042）。腾讯云 TokenHub 在 2026-12-31 前按刊例价五折结算，属限时活动，目录只记刊例价。已导入的模型不会被覆盖；TokenHub 对 `hy4` 原生提供 Chat、Responses、Anthropic Messages 三种协议。
 - **Command Code 额度**：供应商额度补上每月包含额度。上限优先用接口返回的 `monthlyCreditsGranted`；没有该字段时，用本账期已消耗的月度额度加上剩余额推算。重置时间来自订阅周期结束。订阅或用量查询失败时，余额、5 小时和每周窗口仍照常显示。

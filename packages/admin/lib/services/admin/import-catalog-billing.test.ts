@@ -98,7 +98,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'Gemini 4 Argon');
 		assert.equal(usd!.context_window, 1000000);
-		assert.equal(usd!.max_tokens, 64000);
+		assert.equal(usd!.max_tokens, 65536);
 		assert.equal(usd!.pricing_label, '$4 / $20 /M');
 		assert.equal(cny!.pricing_label, '¥28 / ¥140 /M');
 		const preset = listStaticModelPresets().find((p) => p.id === 'gemini-4-argon');
@@ -127,7 +127,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.ok(cny);
 		assert.equal(usd!.display_name, 'Gemini 3.8 Flash');
 		assert.equal(usd!.context_window, 1000000);
-		assert.equal(usd!.max_tokens, 64000);
+		assert.equal(usd!.max_tokens, 65536);
 		assert.equal(usd!.pricing_label, '$1.5 / $7.5 /M');
 		assert.equal(cny!.pricing_label, '¥10.5 / ¥52.5 /M');
 	});
@@ -1383,6 +1383,41 @@ describe('2026-11-03 model catalog巡检 additions', () => {
 			);
 		}
 		assert.deepEqual(doubaoPreset('glm-5-turbo').modalities?.input, ['text']);
+	});
+
+	it('adds glm-5v-turbo at the GLM-5-Turbo list prices with multimodal input', () => {
+		const preset = doubaoPreset('glm-5v-turbo');
+		assert.equal(preset.display_name, 'GLM-5V-Turbo');
+		assert.equal(preset.vendor, 'zhipu');
+		assert.equal(preset.context_window, 200000);
+		assert.equal(preset.max_tokens, 128000);
+		assert.equal(preset.released, undefined);
+		assert.equal(preset.retired, undefined);
+		assert.deepEqual(preset.modalities?.input, ['text', 'image', 'video', 'file']);
+		assert.deepEqual(preset.modalities?.output, ['text']);
+		assert.equal(listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'glm-5v-turbo')!.kind, 'llm');
+		assert.deepEqual(
+			doubaoTiers('glm-5v-turbo', 'CNY').map((t) => [t.upto, t.input_price, t.output_price, t.cache_read_price, t.cache_write_price]),
+			[
+				[32000, 5, 22, 1.2, null],
+				[null, 7, 26, 1.8, null],
+			]
+		);
+		assert.deepEqual(
+			doubaoTiers('glm-5v-turbo', 'USD').map((t) => [t.upto, t.input_price, t.output_price, t.cache_read_price, t.cache_write_price]),
+			[[null, 1.2, 4, 0.24, null]]
+		);
+		for (const text of [preset.description, preset.i18n?.en, preset.i18n?.zh, preset.i18n?.ja, preset.i18n?.ko]) {
+			assert.doesNotMatch(text ?? '', /×7|x7/i);
+		}
+	});
+
+	it('records Gemini 2.5 Pro and Flash shutdown dates and leaves Flash Lite open', () => {
+		assert.equal(doubaoPreset('gemini-2.5-pro').retired, '2026-12-01');
+		assert.equal(doubaoPreset('gemini-2.5-flash').retired, '2026-12-01');
+		assert.equal(doubaoPreset('gemini-2.5-flash-lite').retired, undefined);
+		assert.equal(doubaoPreset('gemini-4-argon').max_tokens, 65536);
+		assert.equal(doubaoPreset('gemini-3.8-flash').max_tokens, 65536);
 	});
 
 	it('adds the StepFun Step 5 Preview / 3.5 Flash / 1o Turbo Vision presets', () => {

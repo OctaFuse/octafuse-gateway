@@ -11,7 +11,7 @@
 		},
 		"vendor": "google",
 		"context_window": 1000000,
-		"max_tokens": 64000,
+		"max_tokens": 65536,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -62,7 +62,7 @@
 		},
 		"vendor": "google",
 		"context_window": 1000000,
-		"max_tokens": 64000,
+		"max_tokens": 65536,
 		"pricing": {
 			"usd": {
 				"tiers": [
@@ -536,7 +536,8 @@
 				"text"
 			]
 		},
-		"released": "2025-06-17"
+		"released": "2025-06-17",
+		"retired": "2026-12-01"
 	},
 	{
 		"id": "gemini-2.5-flash",
@@ -587,7 +588,8 @@
 				"text"
 			]
 		},
-		"released": "2025-06-17"
+		"released": "2025-06-17",
+		"retired": "2026-12-01"
 	},
 	{
 		"id": "gemini-2.5-flash-lite",

@@ -108,6 +108,62 @@
 		"released": "2026-03-15"
 	},
 	{
+		"id": "glm-5v-turbo",
+		"display_name": "GLM-5V-Turbo",
+		"description": "Z.AI's first multimodal coding foundation model, built for vision-based coding and agent workflows. It natively reads image, video, text, and file input, with a 200K context and 128K maximum output.",
+		"i18n": {
+			"en": "Z.AI's first multimodal coding foundation model, built for vision-based coding and agent workflows. It natively reads image, video, text, and file input, with a 200K context and 128K maximum output.",
+			"zh": "智谱首个多模态 Coding 基座模型，面向视觉编程与 Agent 工作流。原生读取图片、视频、文本与文件，上下文 200K，最大输出 128K。",
+			"ja": "視覚的なコーディングとエージェント向けの、Z.AI 初のマルチモーダル Coding 基盤モデルです。画像、動画、テキスト、ファイルをネイティブに読み、コンテキストは 200K、最大出力は 128K です。",
+			"ko": "시각적 코딩과 에이전트용 Z.AI의 첫 멀티모달 Coding 기반 모델입니다. 이미지, 영상, 텍스트, 파일을 네이티브로 읽고, 컨텍스트는 200K, 최대 출력은 128K입니다."
+		},
+		"vendor": "zhipu",
+		"context_window": 200000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.2,
+						"output_price": 4,
+						"cache_read_price": 0.24,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": 32000,
+						"input_price": 5,
+						"output_price": 22,
+						"cache_read_price": 1.2,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 7,
+						"output_price": 26,
+						"cache_read_price": 1.8,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
 		"id": "glm-5.1",
 		"display_name": "GLM-5.1",
 		"description": "A GLM model with stronger coding and sustained performance on long-horizon tasks. Its coding improvements focus on sustained, independent execution over tasks that extend far beyond short interactions.",
