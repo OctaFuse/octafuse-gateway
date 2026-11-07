@@ -17,7 +17,8 @@
  * 导入时按当前 `BILLING_CURRENCY` 选用 `usd` / `cny` **整段**写入 `pricing_profile`（含可选 `schedule` 官方时段，不只 `tiers`）。
  * DeepSeek V4 / V4.1 目录价为空闲价；`schedule` 为北京时间工作日高峰 09:00–12:00、14:00–18:00、`factor` 2。命中按 `BUSINESS_TIMEZONE` 墙钟，中国区请设 `Asia/Shanghai`。
  * Google Gemini 目录价为 Standard 标准价，不含限时导入价、Batch、Flex。Flash 3.7 / 3.8 写入 $1.50 / $7.50，而不是 2026-12-31 前的 $0.75 / $3.75。
- * Gemini 4 Argon 目录价为 2026-12-01 起的 Standard 刊例 $4 / $20，缓存读取 $0.20；不含 2026-11-30 前的入门价 $2 / $10。只支持隐式缓存，`cache_write_price` 留空。上下文与长解码上限为 1M（1000000），同步默认输出 64K（64000）记在 `max_tokens` 与介绍里。输入含文本、图像、音频、视频与 PDF。`gemini-4-barium` 无官方刊例，不入库。
+ * Gemini 4 Argon 目录价为 2026-12-01 起的 Standard 刊例 $4 / $20，缓存读取 $0.20；不含 2026-11-30 前的入门价 $2 / $10。只支持隐式缓存，`cache_write_price` 留空。上下文与长解码上限为 1M（1000000）。同步默认最大输出官网为 65,536，记在 `max_tokens`；介绍仍写 64K。`gemini-3.8-flash` 的最大输出同样记 65536。输入含文本、图像、音频、视频与 PDF。`gemini-4-barium` 无官方刊例，不入库。`gemini-2.5-pro` 与 `gemini-2.5-flash` 的 `retired` 为官网停服日 2026-12-01；`gemini-2.5-flash-lite` 未公布停服日，不写 `retired`。
+ * GLM-5V-Turbo 人民币刊例与 GLM-5-Turbo 同档：输入长度 [0, 32K) 为 ¥5 / ¥22、缓存命中 ¥1.2，≥32K 为 ¥7 / ¥26、缓存命中 ¥1.8；缓存存储限时免费，`cache_write_price` 留空。美元与库内 GLM-5-Turbo 同档（$1.2 / $4、缓存命中 $0.24），不是人民币 ×7。上下文 200K（200000），最大输出 128K（128000）。输入含文本、图像、视频与文件。
  * Claude Sonnet 5 目录价为官方标准价 $2 / $10（2026-08-10 起入门价转正，不再使用原定 9 月 1 日的 $3 / $15）。
  * GPT-5.6 Terra / Luna 目录价为 2026-07-30 起的标准价 $2 / $12 与 $0.20 / $1.20；GPT-5.6 Sol 与 `gpt-5.6` 别名仍写刊例 $5 / $30，不含至少到 2026-11-21 的促销价。
  * GPT-6 Sol / Luna 目录价为 2026-09-22 起的 Standard 刊例：短上下文 $2 / $10 与 $0.10 / $0.50；输入超过 272K 时整单按 2 倍输入与缓存、1.5 倍输出。不含 Batch、Flex 半价与 Fast 双倍。
