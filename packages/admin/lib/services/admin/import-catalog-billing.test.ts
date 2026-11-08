@@ -132,6 +132,15 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cny!.pricing_label, '¥10.5 / ¥52.5 /M');
 	});
 
+	it('keeps gemini-4-argon and gemini-3.8-flash max output at 64000', () => {
+		for (const id of ['gemini-4-argon', 'gemini-3.8-flash'] as const) {
+			const preset = listStaticModelPresets().find((p) => p.id === id);
+			assert.ok(preset, id);
+			assert.equal(preset!.max_tokens, 64000, id);
+			assert.equal(preset!.context_window, 1000000, id);
+		}
+	});
+
 	it('includes Qwen-Audio 3.1 ASR and TTS at official token list prices', () => {
 		const asrUsd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen-audio-3.1-asr-flash');
 		const asrCny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen-audio-3.1-asr-flash');
@@ -1383,6 +1392,75 @@ describe('2026-11-03 model catalog巡检 additions', () => {
 			);
 		}
 		assert.deepEqual(doubaoPreset('glm-5-turbo').modalities?.input, ['text']);
+	});
+
+	it('adds glm-5v-turbo with official BigModel CNY tiers and no USD list price', () => {
+		const preset = doubaoPreset('glm-5v-turbo');
+		assert.equal(preset.display_name, 'GLM-5V-Turbo');
+		assert.equal(preset.vendor, 'zhipu');
+		assert.equal(preset.context_window, 200000);
+		assert.equal(preset.max_tokens, 128000);
+		assert.equal(preset.released, undefined);
+		assert.equal(preset.retired, undefined);
+		assert.deepEqual(preset.modalities?.input, ['text', 'image', 'video', 'file']);
+		assert.deepEqual(preset.modalities?.output, ['text']);
+		assert.match(preset.description ?? '', /200K/);
+		assert.match(preset.description ?? '', /128K/);
+		assert.match(preset.description ?? '', /does not understand files, video, and images at the same time/);
+		assert.match(preset.description ?? '', /no USD price/);
+		assert.doesNotMatch(preset.description ?? '', /200000|128000/);
+		assert.match(preset.i18n?.zh ?? '', /200K/);
+		assert.match(preset.i18n?.zh ?? '', /128K/);
+		assert.match(preset.i18n?.zh ?? '', /不支持同时理解文件、视频和图像/);
+		assert.match(preset.i18n?.zh ?? '', /没有美元刊例价/);
+		assert.doesNotMatch(preset.i18n?.zh ?? '', /200000|128000/);
+		assert.match(preset.i18n?.ja ?? '', /200K/);
+		assert.match(preset.i18n?.ko ?? '', /200K/);
+		const pricing = preset.pricing as { usd?: unknown; cny?: { tiers: Array<Record<string, unknown>> } };
+		assert.equal(pricing.usd, undefined);
+		assert.equal(Object.keys(pricing).includes('usd'), false);
+		assert.deepEqual(Object.keys(pricing.cny!.tiers[0]!).sort(), TOKEN_TIER_KEYS);
+		assert.deepEqual(
+			doubaoTiers(preset.id, 'CNY').map((t) => [
+				t.upto,
+				t.input_price,
+				t.output_price,
+				t.cache_read_price,
+				t.cache_write_price,
+			]),
+			[
+				[32000, 5, 22, 1.2, null],
+				[null, 7, 26, 1.8, null],
+			]
+		);
+
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === preset.id);
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === preset.id);
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.kind, 'llm');
+		assert.equal(cny!.kind, 'llm');
+		assert.equal(usd!.context_window, 200000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_available, false);
+		assert.equal(usd!.pricing_label, null);
+		assert.equal(cny!.pricing_label, '¥5 / ¥22 /M');
+		assert.equal(cny!.context_window, 200000);
+		assert.equal(cny!.max_tokens, 128000);
+	});
+
+	it('marks gemini-2.5-pro and gemini-2.5-flash retired on 2026-12-01 and leaves flash-lite undated', () => {
+		assert.equal(doubaoPreset('gemini-2.5-pro').retired, '2026-12-01');
+		assert.equal(doubaoPreset('gemini-2.5-flash').retired, '2026-12-01');
+		assert.equal(doubaoPreset('gemini-2.5-flash-lite').retired, undefined);
+		assert.equal(doubaoPreset('gemini-4-argon').max_tokens, 64000);
+		assert.equal(doubaoPreset('gemini-3.8-flash').max_tokens, 64000);
+		assert.equal(doubaoPreset('gemini-4-argon').context_window, 1000000);
+		assert.equal(doubaoPreset('gemini-3.8-flash').context_window, 1000000);
+		assert.equal(doubaoTiers('gemini-4-argon', 'USD')[0]?.input_price, 4);
+		assert.equal(doubaoTiers('gemini-4-argon', 'USD')[0]?.output_price, 20);
+		assert.equal(doubaoTiers('gemini-3.8-flash', 'USD')[0]?.input_price, 1.5);
+		assert.equal(doubaoTiers('gemini-3.8-flash', 'USD')[0]?.output_price, 7.5);
 	});
 
 	it('adds the StepFun Step 5 Preview / 3.5 Flash / 1o Turbo Vision presets', () => {
