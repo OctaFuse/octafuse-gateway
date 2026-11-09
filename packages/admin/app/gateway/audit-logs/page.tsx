@@ -369,7 +369,7 @@ export default function GatewayAuditLogsPage() {
   return (
     <div className="min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <h1 className="text-2xl font-medium text-gray-900">{t('title')}</h1>
         <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
 
@@ -410,7 +410,7 @@ export default function GatewayAuditLogsPage() {
                     setFilterEventTypes([...API_KEY_BUDGET_AUDIT_EVENT_TYPES]);
                     setPage(1);
                   }}
-                  className="text-blue-600 hover:underline"
+                  className="text-gray-800 hover:underline"
                 >
                   {tCommon('selectAll')}
                 </button>
@@ -421,7 +421,7 @@ export default function GatewayAuditLogsPage() {
                     setFilterEventTypes([...DEFAULT_AUDIT_LOG_EVENT_TYPES]);
                     setPage(1);
                   }}
-                  className="text-blue-600 hover:underline"
+                  className="text-gray-800 hover:underline"
                 >
                   {t('filters.defaultEventTypes')}
                 </button>
@@ -444,7 +444,7 @@ export default function GatewayAuditLogsPage() {
                   setFilterSources([...DEFAULT_AUDIT_LOG_SOURCE_CHANNELS]);
                   setPage(1);
                 }}
-                className="text-blue-600 hover:underline"
+                className="text-gray-800 hover:underline"
               >
                 {tCommon('selectAll')}
               </button>
@@ -467,7 +467,7 @@ export default function GatewayAuditLogsPage() {
                   setFilterReasonCodes([...reasonCodeOptions]);
                   setPage(1);
                 }}
-                className="text-blue-600 hover:underline disabled:text-gray-400 disabled:no-underline"
+                className="text-gray-800 hover:underline disabled:text-gray-400 disabled:no-underline"
                 disabled={reasonCodeOptions.length === 0}
               >
                 {tCommon('selectAll')}
@@ -491,7 +491,7 @@ export default function GatewayAuditLogsPage() {
                   setFilterActorTypes([...DEFAULT_AUDIT_LOG_ACTOR_TYPES]);
                   setPage(1);
                 }}
-                className="text-blue-600 hover:underline"
+                className="text-gray-800 hover:underline"
               >
                 {tCommon('selectAll')}
               </button>
@@ -514,7 +514,7 @@ export default function GatewayAuditLogsPage() {
                   setFilterActorKinds([...AUDIT_LOG_ACTOR_KIND_FILTERS]);
                   setPage(1);
                 }}
-                className="text-blue-600 hover:underline"
+                className="text-gray-800 hover:underline"
               >
                 {tCommon('selectAll')}
               </button>
@@ -542,7 +542,7 @@ export default function GatewayAuditLogsPage() {
               setRangeValue({ preset: 'custom', start_date: '', end_date: '' });
               setPage(1);
             }}
-            className="whitespace-nowrap text-xs font-medium text-slate-500 hover:text-blue-700"
+            className="whitespace-nowrap text-xs font-medium text-slate-500 hover:text-gray-800"
           >
             {tCommon('clearFiltersLower')}
           </button>
@@ -556,19 +556,19 @@ export default function GatewayAuditLogsPage() {
       {isLoading ? (
         <div className="flex items-center justify-center py-16 text-gray-600">{tCommon('loading')}</div>
       ) : (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white rounded-lg shadow-panel overflow-hidden">
           <div className="overflow-x-auto max-h-[calc(100vh-16rem)] overflow-y-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{t('table.time')}</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[11rem] max-w-[15rem]">{t('table.event')}</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[8.5rem] max-w-[12rem]">{t('table.actor')}</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap min-w-[14rem]">{t('table.identity')}</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[14rem]">{t('table.budget')}</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[12rem]">{t('table.periodPlan')}</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[14rem]">{t('table.wallet')}</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase min-w-[16rem]">
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 normal-case whitespace-nowrap">{t('table.time')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 normal-case whitespace-nowrap min-w-[11rem] max-w-[15rem]">{t('table.event')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 normal-case whitespace-nowrap min-w-[8.5rem] max-w-[12rem]">{t('table.actor')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 normal-case whitespace-nowrap min-w-[14rem]">{t('table.identity')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 normal-case min-w-[14rem]">{t('table.budget')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 normal-case min-w-[12rem]">{t('table.periodPlan')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 normal-case min-w-[14rem]">{t('table.wallet')}</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 normal-case min-w-[16rem]">
                     {t('table.userChangeDetail')}
                   </th>
                 </tr>

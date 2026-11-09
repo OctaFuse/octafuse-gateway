@@ -20,7 +20,7 @@ export function ModelMetadataPreviewModal(props: Props) {
 			onClick={onClose}
 		>
 			<div
-				className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+				className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-panel"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="metadata-preview-title"
@@ -28,7 +28,7 @@ export function ModelMetadataPreviewModal(props: Props) {
 			>
 				<div className="flex shrink-0 items-start justify-between gap-4 border-b px-6 py-4">
 					<div className="min-w-0">
-						<h2 id="metadata-preview-title" className="text-lg font-bold text-gray-900">
+						<h2 id="metadata-preview-title" className="text-lg font-semibold text-gray-900">
 							{t('title')}
 						</h2>
 						<p className="mt-1 truncate text-sm text-gray-700" title={displayName}>

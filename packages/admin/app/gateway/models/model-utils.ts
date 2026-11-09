@@ -86,11 +86,8 @@ export function getMetadataButtonLabel(summary: Exclude<MetadataSummary, { kind:
 }
 
 export function tagBadgeClass(tag: string): string {
-	if (tag === 'free') return 'bg-green-100 text-green-800';
-	if (tag === 'lite') return 'bg-cyan-100 text-cyan-800';
-	if (tag === 'pro') return 'bg-blue-100 text-blue-800';
-	if (tag === 'max') return 'bg-purple-100 text-purple-800';
-	return 'bg-gray-100 text-gray-700';
+  if (tag === 'free') return 'bg-green-50 text-green-800';
+  return 'bg-gray-100 text-gray-600';
 }
 
 function getTierConditionLabel(

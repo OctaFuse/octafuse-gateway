@@ -39,16 +39,16 @@ export function GlobalRouteStrategySection({ value, saving, onSave }: Props) {
   return (
     <>
       <div className="flex flex-1 flex-col">
-        <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-3.5">
+        <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-3.5">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-semibold text-gray-900">{title}</span>
-                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                <span className="text-sm font-medium text-gray-900">{title}</span>
+                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-700">
                   {tStrategy('effective')}
                 </span>
               </div>
-              {meta ? <p className="mt-0.5 font-mono text-[10px] text-gray-400">{meta.machineId}</p> : null}
+              {meta ? <p className="mt-0.5 font-mono text-xs text-gray-400">{meta.machineId}</p> : null}
               <p className="mt-2 text-xs leading-relaxed text-gray-600">
                 {isRouteStrategyName(value) ? tStrategy(`description.${value}.summary`) : null}
               </p>
@@ -86,14 +86,14 @@ export function GlobalRouteStrategySection({ value, saving, onSave }: Props) {
           }}
         >
           <div
-            className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5"
+            className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-panel ring-1 ring-black/5"
             role="dialog"
             aria-modal="true"
             aria-labelledby="global-route-strategy-dialog-title"
           >
             <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-4">
               <div>
-                <h2 id="global-route-strategy-dialog-title" className="text-base font-semibold text-gray-900">
+                <h2 id="global-route-strategy-dialog-title" className="text-base font-medium text-gray-900">
                   {t('title')}
                 </h2>
                 <p className="mt-1 text-xs text-gray-500">{t('dialogHint')}</p>
@@ -102,7 +102,7 @@ export function GlobalRouteStrategySection({ value, saving, onSave }: Props) {
                 type="button"
                 onClick={() => setOpen(false)}
                 disabled={saving}
-                className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label={tCommon('close')}
               >
                 <span className="block text-xl leading-none" aria-hidden>

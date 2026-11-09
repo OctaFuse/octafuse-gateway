@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * GitHub / docs links for admin chrome (sidebar + login).
+ * GitHub / docs links for admin chrome (top bar, mobile navigation and login).
  */
 import { BookOpenIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
@@ -12,7 +12,7 @@ import {
 	OCTAFUSE_GITHUB_REPO_WEB,
 } from '@/lib/brand';
 
-/** GitHub mark: use currentColor so it follows link text on dark sidebar (brand hex is near-black). */
+/** GitHub mark: use currentColor so it follows link text in every surface (brand hex is near-black). */
 function GithubGlyph({ icon, className }: { icon: SimpleIcon; className?: string }) {
 	const tBrand = useTranslations('brand');
 	return (
@@ -29,10 +29,11 @@ function GithubGlyph({ icon, className }: { icon: SimpleIcon; className?: string
 	);
 }
 
-type Variant = 'sidebar' | 'login';
+type Variant = 'sidebar' | 'header' | 'login';
 
 const linkClass: Record<Variant, string> = {
-	sidebar: 'inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors',
+	header: 'inline-flex h-8 items-center gap-2 rounded-lg px-2 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-950',
+	sidebar: 'inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-950 transition-colors',
 	login: 'inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors',
 };
 
@@ -40,16 +41,7 @@ export default function BrandExternalLinks({ variant }: { variant: Variant }) {
 	const tBrand = useTranslations('brand');
 	const cls = linkClass[variant];
 	return (
-		<div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-			<a
-				href={OCTAFUSE_GITHUB_REPO_WEB}
-				target="_blank"
-				rel="noopener noreferrer"
-				className={cls}
-			>
-				<GithubGlyph icon={siGithub} className="h-3.5 w-3.5 shrink-0" />
-				{tBrand('github')}
-			</a>
+		<div className={`flex flex-wrap items-center gap-x-4 gap-y-2 ${variant === 'login' ? 'justify-center' : 'justify-start'}`}>
 			<a
 				href={OCTAFUSE_GITHUB_DOCS_INDEX}
 				target="_blank"
@@ -58,6 +50,15 @@ export default function BrandExternalLinks({ variant }: { variant: Variant }) {
 			>
 				<BookOpenIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
 				{tBrand('docs')}
+			</a>
+			<a
+				href={OCTAFUSE_GITHUB_REPO_WEB}
+				target="_blank"
+				rel="noopener noreferrer"
+				className={cls}
+			>
+				<GithubGlyph icon={siGithub} className="h-3.5 w-3.5 shrink-0" />
+				{tBrand('github')}
 			</a>
 		</div>
 	);

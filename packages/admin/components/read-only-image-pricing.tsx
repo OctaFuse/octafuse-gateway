@@ -54,10 +54,10 @@ export function ReadOnlyImagePricing(props: Props) {
 		return (
 			<div className="space-y-2">
 				{!compact && resolveHint ? (
-					<p className="text-[11px] text-gray-500 leading-relaxed">{resolveHint}</p>
+					<p className="text-xs text-gray-500 leading-relaxed">{resolveHint}</p>
 				) : null}
 				<div className="overflow-hidden rounded-md border border-gray-200 bg-white">
-					<p className="border-b border-gray-100 bg-gray-50 px-3 py-1.5 text-[11px] font-medium text-gray-600">
+					<p className="border-b border-gray-100 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600">
 						{tBilling('modePerImage')}
 					</p>
 					<ul className="divide-y divide-gray-100 text-sm tabular-nums">
@@ -65,7 +65,7 @@ export function ReadOnlyImagePricing(props: Props) {
 							<span className="text-xs text-gray-500">{tBilling('outputDefault')}</span>
 							<span className="font-medium text-gray-900">
 								{display.perImageDefault ?? display.defaultLine}
-								<span className="ml-1 text-[10px] font-normal text-gray-400">
+								<span className="ml-1 text-xs font-normal text-gray-400">
 									{display.unit}
 								</span>
 							</span>
@@ -75,7 +75,7 @@ export function ReadOnlyImagePricing(props: Props) {
 								<span className="text-xs text-gray-500">{tBilling('inputDefault')}</span>
 								<span className="font-medium text-gray-900">
 									{inputDefault}
-									<span className="ml-1 text-[10px] font-normal text-gray-400">
+									<span className="ml-1 text-xs font-normal text-gray-400">
 										{display.unit}
 									</span>
 								</span>
@@ -103,12 +103,12 @@ export function ReadOnlyImagePricing(props: Props) {
 	return (
 		<div className="space-y-2">
 			{!compact && resolveHint ? (
-				<p className="text-[11px] text-gray-500 leading-relaxed">{resolveHint}</p>
+				<p className="text-xs text-gray-500 leading-relaxed">{resolveHint}</p>
 			) : null}
 
 			{tokenRatesLayout === 'grid' ? (
 				<div>
-					<p className="mb-1.5 text-[11px] font-medium text-gray-600">
+					<p className="mb-1.5 text-xs font-medium text-gray-600">
 						{ratesTitle}
 						<span className="ml-1 font-normal text-gray-400">({rates.unit})</span>
 					</p>
@@ -119,8 +119,8 @@ export function ReadOnlyImagePricing(props: Props) {
 								className="rounded-md border border-gray-100 bg-gray-50/70 px-2.5 py-2"
 								title={`${t(key)} (${rates.unit})`}
 							>
-								<p className="truncate text-[11px] font-medium text-gray-500">{t(key)}</p>
-								<p className="mt-1 text-sm font-semibold tabular-nums text-gray-900">
+								<p className="truncate text-xs font-medium text-gray-500">{t(key)}</p>
+								<p className="mt-1 text-sm font-medium tabular-nums text-gray-900">
 									{rates[key as TokenRateKey]}
 								</p>
 							</div>
@@ -129,7 +129,7 @@ export function ReadOnlyImagePricing(props: Props) {
 				</div>
 			) : (
 				<div className="overflow-hidden rounded-md border border-gray-200 bg-white">
-					<p className="border-b border-gray-100 bg-gray-50 px-3 py-1.5 text-[11px] font-medium text-gray-600">
+					<p className="border-b border-gray-100 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600">
 						{ratesTitle}
 						<span className="ml-1 font-normal text-gray-400">({rates.unit})</span>
 					</p>

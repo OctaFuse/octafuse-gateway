@@ -51,7 +51,7 @@ export function RouteProtocolSections(props: Props) {
 				return (
 					<div key={section.key} className={sectionIdx > 0 ? 'border-t border-gray-200/80' : ''}>
 						<div
-							className="flex items-center gap-2 border-b border-gray-100 bg-gray-50/60 px-4 py-1.5 transition-colors group-hover:bg-blue-50/40 group-focus-within:bg-blue-50/40"
+							className="flex items-center gap-2 border-b border-gray-100 bg-gray-50/60 px-4 py-1.5 transition-colors group-hover:bg-gray-50/40 group-focus-within:bg-gray-50/40"
 							role="presentation"
 						>
 							<div
@@ -59,13 +59,13 @@ export function RouteProtocolSections(props: Props) {
 								title={t('sectionTitle', { protocol: section.protocol, group: section.group })}
 							>
 								<span
-									className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-semibold leading-4 ring-1 ring-inset ${protocolBadgeClass(section.protocol)}`}
+									className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs font-medium leading-4 ring-1 ring-inset ${protocolBadgeClass(section.protocol)}`}
 								>
 									<UpstreamProtocolBrandIcon protocol={section.protocol} />
 									{section.protocolLabel}
 								</span>
 								<span
-									className={`inline-flex min-w-0 items-center rounded-md px-2 py-0.5 text-[11px] font-semibold leading-4 ${ROUTE_GROUP_CARD_BADGE_CLASS}`}
+									className={`inline-flex min-w-0 items-center rounded-md px-2 py-0.5 text-xs font-medium leading-4 ${ROUTE_GROUP_CARD_BADGE_CLASS}`}
 								>
 									<span className="truncate">{section.group}</span>
 								</span>
@@ -81,9 +81,9 @@ export function RouteProtocolSections(props: Props) {
 										section.group
 									)
 								}
-								className={`inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold leading-4 ring-1 ring-inset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
+								className={`inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium leading-4 ring-1 ring-inset transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-1 ${
 									protocolStrategy
-										? 'bg-blue-50 text-blue-700 ring-blue-200 hover:bg-blue-100'
+										? 'bg-gray-50 text-gray-800 ring-gray-200 hover:bg-gray-100'
 										: 'bg-white text-gray-400 ring-gray-200 hover:bg-gray-100 hover:text-gray-600'
 								}`}
 								title={

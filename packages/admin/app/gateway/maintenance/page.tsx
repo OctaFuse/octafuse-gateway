@@ -150,7 +150,7 @@ export default function MaintenancePage() {
 
 	const header = (
 		<div className="mb-6">
-			<h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+			<h1 className="text-2xl font-medium text-gray-900">{t('title')}</h1>
 			<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
 		</div>
 	);
@@ -166,7 +166,7 @@ export default function MaintenancePage() {
 	if (!status) {
 		return (
 			<div className="p-4 sm:p-6 lg:p-8">
-				<h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+				<h1 className="text-2xl font-medium text-gray-900">{t('title')}</h1>
 				<div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-5" role="alert">
 					<p className="font-medium text-red-800">{t('loadFailed')}</p>
 					<p className="mt-1 text-sm text-red-700">{loadError}</p>

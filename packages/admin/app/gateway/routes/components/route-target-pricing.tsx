@@ -81,7 +81,7 @@ export function RouteTargetPricing({
 	return (
 		<div className={`${compact ? 'route-provider-list-pricing min-w-0 py-0.5 pr-0.5' : 'overflow-x-auto border-t border-slate-100 px-2.5 py-1.5'} ${muted ? 'grayscale' : ''}`}>
 			<div className={compact ? `route-provider-pricing-columns min-w-0 ${configuredView ? 'route-provider-pricing-configured' : ''}` : `grid min-w-0 gap-x-1 ${configuredView ? 'grid-cols-[minmax(0,1fr)_repeat(3,3.25rem)]' : 'grid-cols-[minmax(0,1fr)_repeat(2,4.5rem)]'}`}>
-				<div className={`${compact ? 'route-provider-price-heading' : ''} ${columns} pb-1.5 text-[10px] leading-4 text-slate-500`}>
+				<div className={`${compact ? 'route-provider-price-heading' : ''} ${columns} pb-1.5 text-xs leading-4 text-slate-500`}>
 					<span className="inline-flex items-center gap-1">
 						<ClockIcon className="h-3 w-3" aria-hidden />{t('pricingPeriod')}
 					</span>
@@ -125,18 +125,18 @@ export function RouteTargetPricing({
 						return { side, effective, configured, tooltip: `${period} · ${providerStatus} · ${formula}` };
 					});
 					return (
-						<div key={position} className={`${columns} w-full ${compact ? 'min-h-6' : 'min-h-8'} py-1 text-left text-[11px] transition hover:bg-slate-50 ${compact ? '' : 'border-t border-dashed border-slate-100'}`}>
+						<div key={position} className={`${columns} w-full ${compact ? 'min-h-6' : 'min-h-8'} py-1 text-left text-xs transition hover:bg-slate-50 ${compact ? '' : 'border-t border-dashed border-slate-100'}`}>
 							<div className="flex min-w-0 items-center gap-1">
 								<button
 									type="button"
 									onClick={onEdit}
-									className={`flex min-w-0 items-center gap-1 rounded text-left text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 flex-wrap ${compact ? 'text-[10px]' : ''}`}
+									className={`flex min-w-0 items-center gap-1 rounded text-left text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 flex-wrap ${compact ? 'text-xs' : ''}`}
 									title={t('editRoute')}
 									aria-label={`${t('editRoute')} · ${period}`}
 								>
 									<span className={`min-w-0 tabular-nums ${compact ? '[overflow-wrap:anywhere]' : 'whitespace-nowrap'}`}>{window ? formatScheduleRange(window.start, window.end) : period}</span>
-									{window && <span className="text-[10px] text-slate-500">{formatDays(window.days)}</span>}
-									{isCurrent && <span className="rounded bg-blue-50 px-1 text-[9px] font-medium leading-4 text-blue-600">{modal('catalogScheduleNow')}</span>}
+									{window && <span className="text-xs text-slate-500">{formatDays(window.days)}</span>}
+									{isCurrent && <span className="rounded bg-gray-50 px-1 text-xs font-medium leading-4 text-gray-800">{modal('catalogScheduleNow')}</span>}
 								</button>
 							</div>
 							{configuredView ? (
@@ -154,12 +154,12 @@ export function RouteTargetPricing({
 											)}
 										</span>
 									}>
-										<p className="font-semibold text-slate-900">{modal('providerFactor')}</p>
-										<p className="mt-1 text-[11px] text-slate-500">{period}</p>
-										<p className={`mt-2 text-[11px] ${invalidOrInactive ? 'text-amber-700' : 'text-slate-600'}`}>
+										<p className="font-medium text-slate-900">{modal('providerFactor')}</p>
+										<p className="mt-1 text-xs text-slate-500">{period}</p>
+										<p className={`mt-2 text-xs ${invalidOrInactive ? 'text-amber-700' : 'text-slate-600'}`}>
 											{formatFactorMultiplier(provider)} · {timing}
 										</p>
-										<div className="mt-3 border-t border-slate-100 pt-2 text-[11px] leading-5 text-slate-500">
+										<div className="mt-3 border-t border-slate-100 pt-2 text-xs leading-5 text-slate-500">
 											<p className="font-medium text-slate-700">{t('effectivePricing.breakdown.validity')}</p>
 											{validity.providerWindowInvalid ? <p>{t('effectivePricing.invalidValidity')}</p> : validityInfo.length ? validityInfo.map(line => <p key={line}>{line}</p>) : <p>{t('effectivePricing.breakdown.unlimited')}</p>}
 											{validityInfo.length > 0 && <p className="mt-1">{t('providerFactorTimezone', { timezone })}</p>}
@@ -170,7 +170,7 @@ export function RouteTargetPricing({
 							{factors.map(({ side, effective, configured, tooltip }) => (
 								<span key={side} className="inline-flex justify-self-end">
 									{configuredView ? (
-										<button type="button" onClick={onEdit} className={`${factorChipClassForValue(configured, side)} focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`} title={tooltip} aria-label={`${t('editRoute')} · ${modal(side === 'charged' ? 'editor.chargedFactorLabel' : 'editor.meteredFactorLabel')} · ${period}`}>{formatFactorMultiplierForChip(configured)}</button>
+										<button type="button" onClick={onEdit} className={`${factorChipClassForValue(configured, side)} focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500`} title={tooltip} aria-label={`${t('editRoute')} · ${modal(side === 'charged' ? 'editor.chargedFactorLabel' : 'editor.meteredFactorLabel')} · ${period}`}>{formatFactorMultiplierForChip(configured)}</button>
 									) : <InfoHintPopover label={tooltip} openOnHover portal onActivate={onEdit} icon={
 										<span className="inline-flex items-center gap-1">
 											{!active && <ClockIcon className="h-3 w-3 text-amber-500" aria-hidden />}
@@ -180,9 +180,9 @@ export function RouteTargetPricing({
 											</span>
 										</span>
 									}>
-										<p className="font-semibold text-slate-900">{t(`effectivePricing.${side}`)}</p>
-										<p className="mt-1 text-[11px] text-slate-500">{period}</p>
-										<p className={`mt-2 flex items-center gap-1.5 text-[11px] ${!active ? 'text-amber-700' : providerApplied ? 'text-violet-700' : 'text-slate-500'}`}>
+										<p className="font-medium text-slate-900">{t(`effectivePricing.${side}`)}</p>
+										<p className="mt-1 text-xs text-slate-500">{period}</p>
+										<p className={`mt-2 flex items-center gap-1.5 text-xs ${!active ? 'text-amber-700' : providerApplied ? 'text-violet-700' : 'text-slate-500'}`}>
 											{providerApplied && <span className="h-1.5 w-1.5 rounded-full bg-violet-500" aria-hidden />}
 											{providerStatus}
 										</p>
@@ -190,9 +190,9 @@ export function RouteTargetPricing({
 											<div className="flex justify-between gap-3"><dt>{modal('providerFactor')}</dt><dd className="text-right tabular-nums">{formatFactorMultiplier(provider)} · {timing}</dd></div>
 											<div className="flex justify-between gap-3"><dt>{modal(side === 'charged' ? 'editor.chargedFactorLabel' : 'editor.meteredFactorLabel')}</dt><dd className="font-mono tabular-nums">{formatFactorMultiplier(configured)}</dd></div>
 										</dl>
-										{!active && <p className="mt-2 text-[11px] leading-5 text-amber-700">{t('effectivePricing.inactiveProvider')}</p>}
-										<p className="mt-3 rounded bg-slate-50 px-2 py-2 font-mono text-sm font-semibold tabular-nums text-slate-900">{effectiveProvider} × {configured} = {effective}</p>
-										<div className="mt-3 border-t border-slate-100 pt-2 text-[11px] leading-5 text-slate-500">
+										{!active && <p className="mt-2 text-xs leading-5 text-amber-700">{t('effectivePricing.inactiveProvider')}</p>}
+										<p className="mt-3 rounded bg-slate-50 px-2 py-2 font-mono text-sm font-medium tabular-nums text-slate-900">{effectiveProvider} × {configured} = {effective}</p>
+										<div className="mt-3 border-t border-slate-100 pt-2 text-xs leading-5 text-slate-500">
 											<p className="font-medium text-slate-700">{t('effectivePricing.breakdown.validity')}</p>
 											{validity.providerWindowInvalid ? <p>{t('effectivePricing.invalidValidity')}</p> : validityInfo.length ? validityInfo.map(line => <p key={line}>{line}</p>) : <p>{t('effectivePricing.breakdown.unlimited')}</p>}
 											{validityInfo.length > 0 && <p>{t('providerFactorTimezone', { timezone })}</p>}
@@ -205,7 +205,7 @@ export function RouteTargetPricing({
 					);
 				})}
 				{baseInversion && (
-					<span className="col-span-full mt-1 flex items-center gap-1.5 rounded bg-amber-50 px-2 py-1 text-[10px] text-amber-800" title={list('baseInversionTooltip')}>
+					<span className="col-span-full mt-1 flex items-center gap-1.5 rounded bg-amber-50 px-2 py-1 text-xs text-amber-800" title={list('baseInversionTooltip')}>
 						<ExclamationTriangleIcon className="h-3 w-3 shrink-0" aria-hidden />
 						{list('baseInversionBadge')}
 					</span>

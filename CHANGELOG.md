@@ -4,6 +4,7 @@
 
 ### Admin
 
+- **管理后台界面**：统一为浅灰侧栏、白色内容区和黑色主操作；调整全部页面及弹窗的文字、筛选、表格与状态展示，保留路由拓扑和请求流程中的运行语义。功能区随可用宽度铺开，路由供应商列表同步扩展。桌面顶栏集中展示文档和 GitHub，侧栏底部收为版本与语言单行。手机导航、四种语言、键盘焦点与减少动态效果同步适配。
 - **目录**：新增智谱 `glm-5v-turbo`。上下文 200K、最大输出 128K，输入为文本、图像、视频与文件，输出文本。官方注明不支持同时理解文件、视频和图像。人民币刊例来自 BigModel「视觉理解」表的独立行：输入长度 [0, 32K) 为输入 ¥5、输出 ¥22、缓存命中 ¥1.2 / 百万 tokens；≥32K 为输入 ¥7、输出 ¥26、缓存命中 ¥1.8。缓存存储限时免费，不写入刊例。Z.AI 定价页没有该模型的美元刊例，目录不写 `pricing.usd`，也不借用 `glm-5-turbo` 的美元价。已导入的模型不会被覆盖。客户端入口与上游都是 Chat Completions。
 - **模型退役日期**：`gemini-2.5-pro` 与 `gemini-2.5-flash` 写上 Gemini API 公布的停服日 2026-12-01。该日起请求分别自动改路由到 `gemini-3.8-flash` 与 `gemini-3.5-flash-lite`。`gemini-2.5-flash-lite` 官网未公布停服日，不写 `retired`。`gemini-4-argon` 与 `gemini-3.8-flash` 的最大输出仍是 64000。只记官方停服日，不影响路由与计费。
 - **供应商预设**：腾讯云 TokenHub 按量模板改到广州 `tokenhub.tencentmaas.com`，包含 Chat、Responses、Embeddings 和 Anthropic Messages。个人版 Token Plan 改到同一主机的 `/plan/v3` 与 `/plan/anthropic`，并补上 Responses。通用套餐与 Hy 套餐共用这组地址和 `sk-tp-` Key。模板的英文类型名不变，已导入的供应商不会自动改写。新加坡站 `tokenhub-intl.tencentmaas.com` 需单独配置。

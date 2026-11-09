@@ -203,7 +203,7 @@ export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
 							<button
 								type="button"
 								onClick={onOpenGuide}
-								className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
+								className="font-medium text-gray-800 hover:text-gray-800 hover:underline"
 							>
 								{t('openGuide')}
 							</button>

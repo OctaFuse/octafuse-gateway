@@ -20,7 +20,7 @@ const SECTIONS = ['connection', 'pricing', 'advanced'] as const;
 type Section = (typeof SECTIONS)[number];
 
 const INPUT =
-	'mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 read-only:bg-gray-50 read-only:text-gray-500';
+	'mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100 read-only:bg-gray-50 read-only:text-gray-500';
 
 export function McpServerFormModal({
 	currency,
@@ -210,7 +210,7 @@ export function McpServerFormModal({
 								document.getElementById(`${formId}-${SECTIONS[target]}-tab`)?.focus();
 								setSection(SECTIONS[target]);
 							}}
-							className={`border-b-2 px-2 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
+							className={`border-b-2 px-2 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-500 ${
 								section === key
 									? 'border-gray-900 text-gray-900'
 									: 'border-transparent text-gray-500 hover:text-gray-800'
@@ -282,7 +282,7 @@ export function McpServerFormModal({
 				{entry === 'import' ? (
 					<div className="space-y-4">
 						<div>
-							<h3 className="font-semibold text-gray-900">{t('importTitle')}</h3>
+							<h3 className="font-medium text-gray-900">{t('importTitle')}</h3>
 							<p className="mt-1 text-sm leading-6 text-gray-500">{t('importHint')}</p>
 						</div>
 						<label className="block text-sm font-medium text-gray-700">
@@ -369,7 +369,7 @@ export function McpServerFormModal({
 						hidden={section !== 'pricing'}
 					>
 						<div className="mb-4">
-							<h3 className="text-sm font-semibold text-gray-900">{t('pricing.title')}</h3>
+							<h3 className="text-sm font-medium text-gray-900">{t('pricing.title')}</h3>
 							<p className="mt-1 text-xs leading-5 text-gray-500">{t('pricing.simpleDefaultHint')}</p>
 						</div>
 						<McpPricingEditor

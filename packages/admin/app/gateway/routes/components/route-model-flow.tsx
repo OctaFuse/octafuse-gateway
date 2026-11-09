@@ -137,13 +137,13 @@ function RouteTarget({
 	const params = summarizeRouteCustomParams(route.custom_params);
 	const paramsBadges = (
 		<div className={`flex min-w-0 flex-wrap items-center gap-1 ${listView ? 'route-provider-list-params' : 'ml-auto justify-end'}`}>
-			{listView ? <span className="route-provider-mobile-label text-[10px] text-slate-500">{t('listParams')}</span> : null}
+			{listView ? <span className="route-provider-mobile-label text-xs text-slate-500">{t('listParams')}</span> : null}
 			{(['headers', 'body'] as const).filter((side) => params[side]).map((side) => (
 				<button
 					key={side}
 					type="button"
 					onClick={() => onEdit(route, 'request')}
-					className={`rounded border px-1.5 py-0.5 text-[10px] leading-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${!available ? 'border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200' : side === 'headers' ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100' : 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100'}`}
+					className={`rounded border px-1.5 py-0.5 text-xs leading-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${!available ? 'border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200' : side === 'headers' ? 'border-gray-200 bg-gray-50 text-gray-800 hover:bg-gray-100' : 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100'}`}
 					title={side === 'headers'
 						? t(params.forceOverrideHeaders ? 'paramsHeadersForceTooltip' : 'paramsHeadersTooltip')
 						: t(params.forceOverrideBody ? 'paramsBodyForceTooltip' : 'paramsBodyTooltip')}
@@ -158,13 +158,13 @@ function RouteTarget({
 
 
 	const statusBadges = (
-		<div className={listView ? 'route-provider-list-status flex min-w-0 flex-wrap items-center gap-1 text-[10px]' : 'flex flex-wrap items-center gap-1.5'}>
+		<div className={listView ? 'route-provider-list-status flex min-w-0 flex-wrap items-center gap-1 text-xs' : 'flex flex-wrap items-center gap-1.5'}>
 			<button
 				type="button"
 				onClick={() => onToggleStatus(route)}
 				disabled={togglingId === route.id}
 				aria-pressed={enabled}
-				className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-wait disabled:opacity-50 ${available ? 'bg-emerald-600 text-white hover:bg-emerald-700' : enabled ? 'bg-white text-slate-600 ring-1 ring-inset ring-slate-300 hover:bg-slate-200' : 'bg-slate-600 text-white hover:bg-slate-700'}`}
+				className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-wait disabled:opacity-50 ${available ? 'bg-emerald-600 text-white hover:bg-emerald-700' : enabled ? 'bg-white text-slate-600 ring-1 ring-inset ring-slate-300 hover:bg-slate-200' : 'bg-slate-600 text-white hover:bg-slate-700'}`}
 				title={`${availabilityHint} · ${enabled ? tList('routeEnabled') : tList('routeDisabled')}`}
 				aria-label={enabled ? tList('routeEnabled') : tList('routeDisabled')}
 			>
@@ -172,7 +172,7 @@ function RouteTarget({
 				{available ? t('availableShort') : enabled ? t('enabledShort') : t('disabledShort')}
 			</button>
 			{providerDisabled ? (
-				<span className="rounded border border-amber-300 bg-amber-50 px-1 py-0.5 text-center text-[9px] font-semibold leading-3 text-amber-800" title={t('availabilityProviderDisabledTooltip')}>
+				<span className="rounded border border-amber-300 bg-amber-50 px-1 py-0.5 text-center text-xs font-medium leading-3 text-amber-800" title={t('availabilityProviderDisabledTooltip')}>
 					{t('providerDisabled')}
 				</span>
 			) : null}
@@ -183,7 +183,7 @@ function RouteTarget({
 		<button
 			type="button"
 			onClick={() => onEdit(route)}
-			className={`block w-full min-w-0 rounded-md text-left font-mono text-[10px] leading-4 text-slate-500 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${listView ? '[overflow-wrap:anywhere]' : 'mt-3 bg-slate-50 px-2 py-1.5 [overflow-wrap:anywhere] hover:bg-slate-100'}`}
+			className={`block w-full min-w-0 rounded-md text-left font-mono text-xs leading-4 text-slate-500 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${listView ? '[overflow-wrap:anywhere]' : 'mt-3 bg-slate-50 px-2 py-1.5 [overflow-wrap:anywhere] hover:bg-slate-100'}`}
 			title={route.provider_model_name}
 			aria-label={`${t('editRoute')}: ${route.provider_model_name}`}
 		>
@@ -209,7 +209,7 @@ function RouteTarget({
 			data-available={available}
 			className={`relative ${listView ? 'route-provider-list-grid w-full min-w-0 border-y border-slate-200 first:border-t-0 last:border-b-0 gap-x-3 gap-y-2 px-3 py-2.5' : 'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border transition'} ${
 				available
-					? listView ? 'bg-white hover:bg-emerald-50/40' : 'border-emerald-200 bg-white shadow-[0_2px_6px_-2px_rgba(15,23,42,0.14)] hover:border-emerald-300 hover:shadow-md'
+					? listView ? 'bg-white hover:bg-emerald-50/40' : 'border-emerald-200 bg-white shadow-[0_2px_6px_-2px_rgba(15,23,42,0.14)] hover:border-emerald-300 hover:shadow-panel'
 					: listView ? 'bg-slate-100 hover:bg-slate-200/60' : 'border-dashed border-slate-300 bg-slate-100 hover:border-slate-400'
 			}`}
 		>
@@ -223,14 +223,14 @@ function RouteTarget({
 							<button
 								type="button"
 								onClick={() => onEdit(route)}
-								className="group min-w-0 flex-1 rounded text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+								className="group min-w-0 flex-1 rounded text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 								title={t('editRoute')}
 							>
 								<span className="flex items-center gap-1.5">
-									<span className={`${listView ? 'route-provider-list-name ' : ''}min-w-0 truncate text-xs font-semibold group-hover:text-blue-700 ${available ? 'text-slate-900' : 'text-slate-600'}`} title={providerName}>{providerName}</span>
+									<span className={`${listView ? 'route-provider-list-name ' : ''}min-w-0 truncate text-xs font-medium group-hover:text-gray-800 ${available ? 'text-slate-900' : 'text-slate-600'}`} title={providerName}>{providerName}</span>
 								</span>
 								{showKind ? (
-									<span className="mt-0.5 block truncate text-[10px] leading-4 text-slate-500" title={kindLabel ?? undefined}>
+									<span className="mt-0.5 block truncate text-xs leading-4 text-slate-500" title={kindLabel ?? undefined}>
 										{showKind ? kindLabel : null}
 									</span>
 								) : null}
@@ -238,7 +238,7 @@ function RouteTarget({
 							{!listView ? (
 								<div className="flex shrink-0 items-center gap-1.5">
 									<span
-										className={`inline-flex h-7 min-w-8 items-center justify-center gap-1 rounded-md border px-2 text-xs font-semibold tabular-nums ${available ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-300 bg-slate-100 text-slate-600'}`}
+										className={`inline-flex h-7 min-w-8 items-center justify-center gap-1 rounded-md border px-2 text-xs font-medium tabular-nums ${available ? 'border-gray-200 bg-gray-50 text-gray-800' : 'border-slate-300 bg-slate-100 text-slate-600'}`}
 										title={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
 										aria-label={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
 									>
@@ -254,18 +254,18 @@ function RouteTarget({
 				</div>
 				{!listView ? upstreamModel : null}
 				{listView ? <div className="route-provider-list-model min-w-0">{upstreamModel}</div> : null}
-				<div className={listView ? 'route-provider-list-meta' : 'mt-3 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] leading-4'}>
+				<div className={listView ? 'route-provider-list-meta' : 'mt-3 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-4'}>
 					{!listView ? statusBadges : null}
 					{listView ? (
 						<span className="route-provider-list-weight inline-flex min-w-0 items-center justify-center gap-1 tabular-nums" title={t('badgeWeightTooltip', { value: route.weight ?? 1 })} aria-label={t('badgeWeightTooltip', { value: route.weight ?? 1 })}>
-							<span className="route-provider-mobile-label mr-1 text-[10px] text-slate-500">{t('listWeight')}</span>
-							<span className={`text-sm font-bold ${available ? 'text-slate-900' : 'text-slate-600'}`}>{route.weight ?? 1}</span>
+							<span className="route-provider-mobile-label mr-1 text-xs text-slate-500">{t('listWeight')}</span>
+							<span className={`text-sm font-semibold ${available ? 'text-slate-900' : 'text-slate-600'}`}>{route.weight ?? 1}</span>
 						</span>
 					) : null}
 					{!listView && (params.headers || params.body) ? paramsBadges : null}
 					{listView ? (
 						<div className="route-provider-list-sticky flex min-w-0 items-center justify-center gap-1">
-							<span className="route-provider-mobile-label text-[10px] text-slate-500">{t('listStickyUsers')}</span>
+							<span className="route-provider-mobile-label text-xs text-slate-500">{t('listStickyUsers')}</span>
 							{stickyUsage}
 						</div>
 					) : null}
@@ -278,7 +278,7 @@ function RouteTarget({
 }
 
 const CONNECTOR_PLUS_BUTTON_CLASS =
-	'inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-blue-50 hover:text-blue-600 hover:ring-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500';
+	'inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-gray-50 hover:text-gray-800 hover:ring-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500';
 
 export function FlowConnectorAdd({
 	alignTop = false,
@@ -400,19 +400,19 @@ export function RouteGroupInfo({
 	return (
 		<div className={`route-group-info relative w-full min-w-0 ${centered ? 'grid grid-rows-2' : ''}`} aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}>
 			<div className={`route-group-label flex min-w-0 gap-1.5 ${centered ? 'items-end pb-2' : 'h-8 items-start pt-1'}`}>
-				<span className={`shrink-0 text-[10px] font-medium ${isDefaultGroup ? 'text-sky-700' : 'text-violet-700'}`}>{t('routeGroup')}</span>
-				<span className={`min-w-0 truncate text-[11px] font-semibold ${isDefaultGroup ? 'text-sky-900' : 'text-violet-900'}`} title={routeGroup}>{routeGroup}</span>
+				<span className={`shrink-0 text-xs font-medium ${isDefaultGroup ? 'text-sky-700' : 'text-violet-700'}`}>{t('routeGroup')}</span>
+				<span className={`min-w-0 truncate text-xs font-medium ${isDefaultGroup ? 'text-sky-900' : 'text-violet-900'}`} title={routeGroup}>{routeGroup}</span>
 			</div>
 			<span className={`route-group-rail absolute inset-x-0 h-px ${centered ? 'top-1/2' : 'top-8'} ${isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300'}`} aria-hidden />
 			<div className="route-group-details">
 				<div className="flex min-w-0 items-start gap-1 pt-2">
-					<span className="min-w-0 flex-1 font-mono text-[10px] leading-[14px] text-slate-600 [overflow-wrap:anywhere]" title={requestedModelId}>
+					<span className="min-w-0 flex-1 font-mono text-xs leading-[14px] text-slate-600 [overflow-wrap:anywhere]" title={requestedModelId}>
 						{requestedModelId}
 					</span>
 					<button
 						type="button"
 						onClick={() => void onCopyModelId(requestedModelId)}
-						className={`shrink-0 rounded p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${copied ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400 hover:bg-slate-100 hover:text-blue-600'}`}
+						className={`shrink-0 rounded p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${copied ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400 hover:bg-slate-100 hover:text-gray-800'}`}
 						title={copied ? tCard('copiedModelId') : tCard('copyModelId', { id: requestedModelId })}
 						aria-label={copied ? tCard('copiedModelId') : tCard('copyModelId', { id: requestedModelId })}
 					>
@@ -467,9 +467,9 @@ export function RequestSurfaceNode({
 	}
 
 	return (
-		<div className="w-full min-w-0 rounded-lg border border-blue-200 bg-blue-50/75 px-3 py-2.5 shadow-sm">
+		<div className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-50/75 px-3 py-2.5 shadow-sm">
 			<div className="flex items-center justify-between gap-2">
-				<span className="text-[10px] font-semibold uppercase tracking-wider text-blue-600">
+				<span className="text-xs font-medium normal-case tracking-normal text-gray-800">
 					{t('requestNode')}
 				</span>
 				<div className="ml-auto flex shrink-0 items-center gap-1.5">
@@ -478,7 +478,7 @@ export function RequestSurfaceNode({
 						onClick={() => void copyPath()}
 						aria-label={copyStatus === 'copied' ? tCommon('copied') : tGuide('copyPath')}
 						title={copyStatus === 'copied' ? tCommon('copied') : tGuide('copyPath')}
-						className="rounded p-0.5 text-blue-500 hover:bg-blue-100 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+						className="rounded p-0.5 text-gray-700 hover:bg-gray-100 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 					>
 						{copyStatus === 'copied' ? <CheckIcon className="h-3.5 w-3.5" aria-hidden /> : <ClipboardDocumentIcon className="h-3.5 w-3.5" aria-hidden />}
 					</button>
@@ -493,7 +493,7 @@ export function RequestSurfaceNode({
 			</div>
 			<div className="mt-1.5 min-w-0">
 				<code
-					className={`block w-full min-w-0 select-text font-mono text-[11px] font-semibold leading-4 text-gray-800 ${pathDisplay === 'full' ? 'whitespace-normal [overflow-wrap:anywhere]' : 'truncate'}`}
+					className={`block w-full min-w-0 select-text font-mono text-xs font-medium leading-4 text-gray-800 ${pathDisplay === 'full' ? 'whitespace-normal [overflow-wrap:anywhere]' : 'truncate'}`}
 					title={surfacePath}
 				>
 					{pathDisplay === 'full' ? surfacePath.split(/(?=\/)/).map((segment, index) => (
@@ -501,7 +501,7 @@ export function RequestSurfaceNode({
 					)) : surfacePath}
 				</code>
 			</div>
-			<span role="status" className={copyStatus === 'failed' ? 'mt-1 block text-[10px] text-red-600' : 'sr-only'}>
+			<span role="status" className={copyStatus === 'failed' ? 'mt-1 block text-xs text-red-600' : 'sr-only'}>
 				{copyStatus === 'failed' ? tGuide('copyFailed') : copyStatus === 'copied' ? tCommon('copied') : ''}
 			</span>
 		</div>
@@ -586,21 +586,21 @@ function PriorityTierPanel({
 		<div className="w-full min-w-0">
 			<div className={isList ? `flex min-w-0 flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2 ${layerIndex > 0 ? 'border-t border-t-slate-200' : ''}` : 'mb-3 flex min-w-0 flex-wrap items-center gap-2 px-0.5 py-1'}>
 				<span
-					className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50 px-2 text-indigo-800"
+					className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 text-gray-900"
 					title={t('badgePriorityTooltip', { value: priority })}
 					aria-label={t('badgePriorityTooltip', { value: priority })}
 				>
 					<ArrowsUpDownIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-					<span className="text-sm font-bold tabular-nums">{priority}</span>
+					<span className="text-sm font-semibold tabular-nums">{priority}</span>
 				</span>
 				{layerIndex > 0 ? (
-					<button type="button" onClick={onOpenFailover} title={t('failoverRules')} aria-label={t('failoverRules')} className="inline-flex items-center gap-1 rounded text-[11px] font-medium text-slate-600 hover:text-blue-700 focus-visible:outline-blue-500">
+					<button type="button" onClick={onOpenFailover} title={t('failoverRules')} aria-label={t('failoverRules')} className="inline-flex items-center gap-1 rounded text-xs font-medium text-slate-600 hover:text-gray-800 focus-visible:outline-gray-500">
 						<ArrowDownIcon className="h-3 w-3" aria-hidden />
 						{layerLabel}
 					</button>
-				) : <span className="text-[11px] font-semibold text-slate-700">{layerLabel}</span>}
+				) : <span className="text-xs font-medium text-slate-700">{layerLabel}</span>}
 				<span
-					className={`text-[10px] tabular-nums ${availableCount > 0 ? 'text-slate-500' : 'font-medium text-amber-700'}`}
+					className={`text-xs tabular-nums ${availableCount > 0 ? 'text-slate-500' : 'font-medium text-amber-700'}`}
 					title={t('tierAvailableTooltip', {
 						active: availableCount,
 						total: routes.length,
@@ -633,14 +633,14 @@ function PriorityTierPanel({
 								}
 							)
 						}
-						className={`inline-flex max-w-full items-center gap-1 rounded px-1 py-0.5 text-[10px] font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${isList ? 'text-slate-500 hover:bg-white hover:text-blue-700' : 'text-indigo-600 hover:bg-indigo-50 hover:text-indigo-800'}`}
+						className={`inline-flex max-w-full items-center gap-1 rounded px-1 py-0.5 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${isList ? 'text-slate-500 hover:bg-white hover:text-gray-800' : 'text-gray-800 hover:bg-gray-50 hover:text-gray-900'}`}
 						title={t('tierStrategyEdit', {
 							strategy: displayName,
 							source: sourceLabel,
 						})}
 					>
 						<span className="truncate">{displayName}</span>
-						<PencilSquareIcon className="h-3 w-3 shrink-0 text-indigo-400" />
+						<PencilSquareIcon className="h-3 w-3 shrink-0 text-gray-500" />
 					</button>
 				</div>
 			</div>
@@ -662,7 +662,7 @@ function PriorityTierPanel({
 					/>
 				))}
 				{routes.length === 0 ? (
-					<span className="text-[11px] text-gray-400">{t('noProviders')}</span>
+					<span className="text-xs text-gray-400">{t('noProviders')}</span>
 				) : null}
 			</div>
 		</div>
@@ -805,9 +805,9 @@ function FlowBranch({
 
 	return (
 		<div className="route-flow-branch relative py-3 xl:pl-4">
-			{!singleGroup ? <span className={`absolute left-0 hidden w-px bg-blue-300 xl:block ${railClass}`} aria-hidden /> : null}
+			{!singleGroup ? <span className={`absolute left-0 hidden w-px bg-gray-300 xl:block ${railClass}`} aria-hidden /> : null}
 			<span
-				className={`absolute left-0 hidden h-px w-4 bg-blue-300 xl:block ${singleGroup ? 'top-1/2' : 'top-14'}`}
+				className={`absolute left-0 hidden h-px w-4 bg-gray-300 xl:block ${singleGroup ? 'top-1/2' : 'top-14'}`}
 				aria-hidden
 			/>
 			<div className={`route-flow-branch-layout grid min-w-0 gap-y-3 xl:grid-cols-[minmax(180px,240px)_minmax(0,1fr)] ${singleGroup ? 'xl:items-center' : 'xl:items-start'}`}>
@@ -903,7 +903,7 @@ function FlowSection({
 				<div className="route-flow-entry relative flex min-w-0 flex-col justify-center py-3 xl:pr-8">
 					<RequestSurfaceNode surface={surface} modelId={card.model_id} />
 					<FlowConnectorAdd
-						railClass="bg-blue-300"
+						railClass="bg-gray-300"
 						label={t('addRouteGroup')}
 						onClick={() =>
 							onCreate(card.model_id, {
@@ -988,7 +988,7 @@ export function RouteModelFlow(props: Props) {
 						<button
 							type="button"
 							onClick={() => onEditModel(card.model_id)}
-							className="truncate text-left text-sm font-semibold text-gray-900 underline-offset-2 hover:text-blue-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							className="truncate text-left text-sm font-medium text-gray-900 underline-offset-2 hover:text-gray-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 						>
 							{card.title}
 						</button>
@@ -996,7 +996,7 @@ export function RouteModelFlow(props: Props) {
 							<button
 								type="button"
 								onClick={() => void onCopyModelId(card.model_id)}
-								className={`rounded-md p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${copiedModelId === card.model_id ? 'bg-emerald-50 text-emerald-600' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'}`}
+								className={`rounded-md p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${copiedModelId === card.model_id ? 'bg-emerald-50 text-emerald-600' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'}`}
 								title={copiedModelId === card.model_id ? t('copiedModelId') : t('copyModelId', { id: card.model_id })}
 							>
 								<ClipboardDocumentIcon className="h-4 w-4" />
@@ -1004,7 +1004,7 @@ export function RouteModelFlow(props: Props) {
 							<button
 								type="button"
 								onClick={() => onEditModel(card.model_id)}
-								className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+								className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 								title={t('editModel', { title: card.title })}
 							>
 								<PencilSquareIcon className="h-4 w-4" />
@@ -1012,26 +1012,26 @@ export function RouteModelFlow(props: Props) {
 						</div>
 					</div>
 					<div className="mt-1 flex min-w-0 flex-wrap items-center gap-2">
-						<span className="min-w-0 font-mono text-[11px] text-gray-500 [overflow-wrap:anywhere]">{card.model_id}</span>
+						<span className="min-w-0 font-mono text-xs text-gray-500 [overflow-wrap:anywhere]">{card.model_id}</span>
 						<span className="text-gray-300">·</span>
-						<span className="text-[11px] text-gray-500">{stats}</span>
+						<span className="text-xs text-gray-500">{stats}</span>
 						{tags.length ? tags.slice(0, 4).map((tag) => (
-							<span key={tag} className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${tagBadgeClass(tag)}`}>
+							<span key={tag} className={`rounded px-1.5 py-0.5 text-xs font-medium ${tagBadgeClass(tag)}`}>
 								{tag}
 							</span>
-						)) : <span className="text-[10px] text-gray-400">{tModelsCard('noTags')}</span>}
+						)) : <span className="text-xs text-gray-400">{tModelsCard('noTags')}</span>}
 					</div>
 				</div>
 				<div className="flex shrink-0 flex-col items-end gap-1">
 					<button
 						type="button"
 						onClick={() => onCreate(card.model_id)}
-						className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-inset ring-blue-200 hover:bg-blue-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+						className="inline-flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-800 ring-1 ring-inset ring-gray-200 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 					>
 						<PlusIcon className="h-3.5 w-3.5" />
 						{tFlow('addRoute')}
 					</button>
-					<span className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${card.activeCount > 0 ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-red-50 text-red-700 ring-red-200'}`}>
+					<span className={`rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${card.activeCount > 0 ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-red-50 text-red-700 ring-red-200'}`}>
 						{t('activeTotalRoutes', { active: card.activeCount, total: card.groupRoutes.length })}
 					</span>
 				</div>

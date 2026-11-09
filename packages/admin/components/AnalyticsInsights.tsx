@@ -23,7 +23,7 @@ export function AnalyticsInsights({ rows, currency, scope }: {
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-6">
       {cards.map(([label, value]) => <div key={label} className="min-w-0 rounded-xl border border-gray-200 bg-white p-4">
         <p className="text-xs text-gray-500">{label}</p>
-        <p className="mt-2 break-words text-xl font-semibold tabular-nums text-gray-900">{value}</p>
+        <p className="mt-2 break-words text-xl font-medium tabular-nums text-gray-900">{value}</p>
       </div>)}
     </div>
     <div className="space-y-2 text-xs text-gray-500">
@@ -57,7 +57,7 @@ export function AnalyticsControls({ search, onSearch, view, onView, users = fals
       className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm sm:max-w-sm" />
     <div className="flex flex-wrap gap-1" role="group" aria-label={t('view')}>
       {views.map(v => <button key={v} type="button" aria-pressed={v === view} onClick={() => onView(v)}
-        className={`rounded-lg px-3 py-2 text-sm ${v === view ? 'bg-indigo-600 text-white' : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>{t('views.' + v)}</button>)}
+        className={`rounded-lg px-3 py-2 text-sm ${v === view ? 'admin-primary' : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>{t('views.' + v)}</button>)}
     </div>
     <span className="text-xs text-gray-500">{t('matching', { count })}</span>
   </div>;

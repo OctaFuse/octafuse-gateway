@@ -88,7 +88,7 @@ export type ModelModalProps = {
 };
 
 const inputClass =
-	'h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 disabled:bg-gray-50 disabled:text-gray-500';
+	'h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-500/10 disabled:bg-gray-50 disabled:text-gray-500';
 type Tab = 'basic' | 'pricing' | 'metadata' | 'routes';
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -335,13 +335,13 @@ export function ModelModal(props: ModelModalProps) {
 				aria-labelledby={`${id}-title`}
 				tabIndex={-1}
 				onKeyDown={handleKeys}
-				className="flex h-[min(760px,90dvh)] max-h-[calc(100dvh-1rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl outline-none"
+				className="flex h-[min(760px,90dvh)] max-h-[calc(100dvh-1rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 			>
 				<header className="flex shrink-0 items-start justify-between gap-4 px-5 pb-5 pt-6 sm:px-7">
 					<div className="min-w-0">
 						<h2
 							id={`${id}-title`}
-							className="text-lg font-semibold text-gray-900"
+							className="text-lg font-medium text-gray-900"
 						>
 							{editingModel ? t('editTitle') : t('newTitle')}
 						</h2>
@@ -379,16 +379,16 @@ export function ModelModal(props: ModelModalProps) {
 								tabIndex={activeTab === key ? 0 : -1}
 								onClick={() => selectTab(key)}
 								onKeyDown={(event) => navigateTabs(event, key)}
-								className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 pb-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${
+								className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 pb-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-gray-300 ${
 									activeTab === key
-										? 'border-blue-600 font-medium text-blue-600'
+										? 'border-gray-600 font-medium text-gray-800'
 										: 'border-transparent text-gray-500 hover:text-gray-800'
 								}`}
 							>
 								<Icon className="h-4 w-4" aria-hidden />
 								{label}
 								{key === 'routes' ? (
-									<span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] tabular-nums text-gray-500">
+									<span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs tabular-nums text-gray-500">
 										{routesState.ready ? routesState.routes.length : '…'}
 									</span>
 								) : null}
@@ -407,7 +407,7 @@ export function ModelModal(props: ModelModalProps) {
 							aria-pressed={showPricingJson}
 							className={`mb-2 inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium ${
 								showPricingJson
-									? 'bg-blue-50 text-blue-600'
+									? 'bg-gray-50 text-gray-800'
 									: 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
 							}`}
 						>
@@ -482,7 +482,7 @@ export function ModelModal(props: ModelModalProps) {
 																}}
 																className={`rounded-md border px-2.5 py-1.5 text-xs font-medium ${
 																	formKind === kind.id
-																		? 'border-blue-200 bg-blue-50 text-blue-700'
+																		? 'border-gray-200 bg-gray-50 text-gray-800'
 																		: 'border-gray-200 text-gray-600 hover:bg-gray-50'
 																}`}
 															>
@@ -657,7 +657,7 @@ export function ModelModal(props: ModelModalProps) {
 																	key={modality}
 																	className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${
 																		formData[direction].includes(modality)
-																			? 'border-blue-200 bg-blue-50/70 text-blue-700'
+																			? 'border-gray-200 bg-gray-50/70 text-gray-800'
 																			: 'border-gray-200 text-gray-500'
 																	} ${
 																		isAudioModel
@@ -674,7 +674,7 @@ export function ModelModal(props: ModelModalProps) {
 																			onToggleModality(direction, modality)
 																		}
 																		disabled={isAudioModel}
-																		className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+																		className="h-3.5 w-3.5 rounded border-gray-300 text-gray-800 focus:ring-gray-500"
 																	/>
 																	{t(`modalityLabels.${modality}`)}
 																</label>
@@ -752,7 +752,7 @@ export function ModelModal(props: ModelModalProps) {
 												</h3>
 												<p
 													tabIndex={0}
-													className="mt-2 max-h-40 md:min-h-0 md:max-h-none md:flex-1 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words text-sm leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+													className="mt-2 max-h-40 md:min-h-0 md:max-h-none md:flex-1 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words text-sm leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-gray-200"
 												>
 													{intro}
 												</p>
@@ -775,7 +775,7 @@ export function ModelModal(props: ModelModalProps) {
 													})
 												}
 												rows={4}
-												className="block h-32 max-h-32 w-full resize-none overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+												className="block h-32 max-h-32 w-full resize-none overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-500/10"
 												placeholder={t('notePlaceholder')}
 											/>
 										</div>
@@ -799,7 +799,7 @@ export function ModelModal(props: ModelModalProps) {
 									<div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50/70 px-4 py-3">
 										<label
 											htmlFor={`${id}-metadata`}
-											className="text-sm font-semibold text-gray-800"
+											className="text-sm font-medium text-gray-800"
 										>
 											{t('metadataJson')}
 										</label>
@@ -822,7 +822,7 @@ export function ModelModal(props: ModelModalProps) {
 												metadata: event.target.value,
 											})
 										}
-										className="min-h-64 w-full flex-1 resize-none bg-gray-50/30 p-4 font-mono text-xs leading-6 text-gray-800 outline-none focus:ring-2 focus:ring-inset focus:ring-blue-200"
+										className="min-h-64 w-full flex-1 resize-none bg-gray-50/30 p-4 font-mono text-xs leading-6 text-gray-800 outline-none focus:ring-2 focus:ring-inset focus:ring-gray-200"
 										placeholder={t('metadataPlaceholder')}
 										spellCheck={false}
 									/>
@@ -874,7 +874,7 @@ export function ModelModal(props: ModelModalProps) {
 							type="button"
 							onClick={onSave}
 							disabled={busy}
-							className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+							className="rounded-md admin-primary px-4 py-2 text-sm text-white hover:bg-gray-800 disabled:opacity-50"
 						>
 							{isSaving ? tCommon('savingDots') : tCommon('save')}
 						</button>

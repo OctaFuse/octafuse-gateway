@@ -65,7 +65,7 @@ export function StickyRefreshControl(props: Props) {
 					if (!STICKY_REFRESH_INTERVAL_OPTIONS.includes(next)) return;
 					writeStickyRefreshInterval(next);
 				}}
-				className="max-w-[9.5rem] rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-600 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+				className="max-w-[9.5rem] rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-600 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-not-allowed disabled:opacity-60"
 			>
 				<option value="off">{t('stickyRefreshOff')}</option>
 				<option value="60000">{t('stickyRefresh1m')}</option>
@@ -78,7 +78,7 @@ export function StickyRefreshControl(props: Props) {
 				disabled={disabled || isRefreshing}
 				title={agoLabel ? `${t('stickyRefreshNow')} · ${agoLabel}` : t('stickyRefreshNow')}
 				aria-label={t('stickyRefreshNow')}
-				className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+				className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-not-allowed disabled:opacity-60"
 			>
 				<ArrowPathIcon className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
 			</button>

@@ -31,7 +31,7 @@ export function RouteStickyUsage({
 	}).format(share);
 	const tone = hasBindings
 		? routeAvailable
-			? 'bg-indigo-50 text-indigo-700 ring-indigo-100'
+			? 'bg-gray-50 text-gray-800 ring-gray-100'
 			: 'bg-amber-50 text-amber-800 ring-amber-200'
 		: 'bg-slate-50 text-slate-500 ring-slate-200/70';
 	const exactCount = count == null ? '—' : new Intl.NumberFormat(locale).format(count);
@@ -61,7 +61,7 @@ export function RouteStickyUsage({
 		compact
 			? hasBindings
 				? routeAvailable
-					? 'text-indigo-700'
+					? 'text-gray-800'
 					: 'text-amber-800'
 				: routeAvailable
 				? 'text-slate-800'
@@ -69,7 +69,7 @@ export function RouteStickyUsage({
 			: `h-7 min-w-12 rounded-md px-2 ring-1 ring-inset ${tone}`
 	} ${
 		clickable
-			? 'min-h-7 min-w-8 cursor-pointer rounded-md underline decoration-indigo-300 underline-offset-2 transition hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+			? 'min-h-7 min-w-8 cursor-pointer rounded-md underline decoration-gray-300 underline-offset-2 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500'
 			: ''
 	}`;
 	const content = (
@@ -79,9 +79,9 @@ export function RouteStickyUsage({
 				className={`${
 					compact
 						? enabled && count != null
-							? 'text-sm font-bold'
+							? 'text-sm font-semibold'
 							: 'text-xs font-medium text-slate-400'
-						: 'text-sm font-semibold'
+						: 'text-sm font-medium'
 				} tabular-nums`}
 			>
 				{enabled ? displayCount : '—'}

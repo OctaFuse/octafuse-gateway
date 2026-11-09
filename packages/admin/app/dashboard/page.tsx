@@ -8,14 +8,10 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import {
 	ArrowPathIcon,
-	BanknotesIcon,
 	BoltIcon,
-	CheckCircleIcon,
 	ChevronRightIcon,
-	ClockIcon,
 	ExclamationTriangleIcon,
 	KeyIcon,
-	QueueListIcon,
 	UserGroupIcon,
 } from '@heroicons/react/24/outline';
 import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
@@ -61,40 +57,14 @@ function dashboardLogProviderTitle(log: GatewayRequestLog): string | undefined {
 	return name || id || undefined;
 }
 
-function MetricCard({
-	icon,
-	label,
-	value,
-	footer,
-	tone = 'blue',
-}: {
-	icon: ReactNode;
-	label: string;
-	value: string;
-	footer: ReactNode;
-	tone?: 'blue' | 'emerald' | 'amber' | 'violet';
-}) {
-	const toneClasses = {
-		blue: 'bg-blue-50 text-blue-700 ring-blue-100',
-		emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
-		amber: 'bg-amber-50 text-amber-700 ring-amber-100',
-		violet: 'bg-violet-50 text-violet-700 ring-violet-100',
-	};
-
-	return (
-		<div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm">
-			<div className="flex items-start justify-between gap-4">
-				<div className="min-w-0">
-					<p className="text-sm font-medium text-gray-500">{label}</p>
-					<p className="mt-2 truncate text-3xl font-semibold tracking-tight text-gray-950 tabular-nums">{value}</p>
-				</div>
-				<div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${toneClasses[tone]}`}>
-					{icon}
-				</div>
-			</div>
-			<div className="mt-4 min-h-5 text-xs leading-5 text-gray-500">{footer}</div>
-		</div>
-	);
+function MetricCard({ label, value, footer }: { label: string; value: string; footer: ReactNode }) {
+  return (
+    <div className="min-w-0 rounded-xl border border-gray-200 bg-white p-5">
+      <p className="text-sm text-gray-500">{label}</p>
+      <p className="mt-3 truncate font-mono text-3xl font-medium tabular-nums tracking-tight text-gray-950">{value}</p>
+      <div className="mt-4 min-h-5 text-xs leading-5 text-gray-500">{footer}</div>
+    </div>
+  );
 }
 
 function RequestRow({ log, formatDateTime, unknown }: {
@@ -111,7 +81,7 @@ function RequestRow({ log, formatDateTime, unknown }: {
 					<span className="truncate text-sm font-medium text-gray-900" title={dashboardLogModelTitle(log)}>
 						{dashboardLogModelLabel(log, unknown)}
 					</span>
-					<span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${success ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+					<span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${success ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
 						{log.status}
 					</span>
 				</div>
@@ -202,11 +172,11 @@ export default function DashboardPage() {
 	};
 
 	return (
-		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
+		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-50 p-4 pb-6 sm:p-6 lg:p-8">
 			<header className="flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<div className="flex flex-wrap items-center gap-3">
-						<h1 className="text-2xl font-semibold tracking-tight text-gray-950 sm:text-3xl">{t('title')}</h1>
+						<h1 className="text-2xl font-medium tracking-tight text-gray-950 sm:text-[28px]">{t('title')}</h1>
 						<span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${statusClasses[statusTone]}`}>
 							<span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
 							{t(`status.${statusTone}`)}
@@ -220,8 +190,8 @@ export default function DashboardPage() {
 							<BoltIcon className="h-4 w-4 text-amber-500" />
 							{t('live')}
 						</span>
-						<span><strong className="font-semibold text-gray-900 tabular-nums">{kpi?.rpm?.toLocaleString() ?? 0}</strong> RPM</span>
-						<span><strong className="font-semibold text-gray-900 tabular-nums">{formatCompactTokens(kpi?.tpm ?? 0)}</strong> TPM</span>
+						<span><strong className="font-medium text-gray-900 tabular-nums">{kpi?.rpm?.toLocaleString() ?? 0}</strong> RPM</span>
+						<span><strong className="font-medium text-gray-900 tabular-nums">{formatCompactTokens(kpi?.tpm ?? 0)}</strong> TPM</span>
 					</div>
 					<button
 						type="button"
@@ -235,7 +205,7 @@ export default function DashboardPage() {
 				</div>
 			</header>
 
-			<div className="mt-6 rounded-2xl border border-gray-200/80 bg-white p-4 shadow-sm">
+			<div className="mt-6 rounded-xl border border-gray-200 bg-white p-4">
 				<GatewayTimeRangePicker value={rangeValue} onChange={setRangeValue} label={t('analysisWindow')} />
 			</div>
 
@@ -249,7 +219,7 @@ export default function DashboardPage() {
 			<section className="mt-6" aria-labelledby="overview-heading">
 				<div className="mb-3 flex items-end justify-between gap-4">
 					<div>
-						<h2 id="overview-heading" className="text-sm font-semibold text-gray-900">{t('overview')}</h2>
+						<h2 id="overview-heading" className="text-sm font-medium text-gray-900">{t('overview')}</h2>
 						<p className="mt-0.5 text-xs text-gray-500">{rangeLabel}</p>
 					</div>
 					<div className="flex items-center gap-3 text-xs text-gray-500 sm:hidden">
@@ -259,36 +229,29 @@ export default function DashboardPage() {
 				</div>
 				<div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-4">
 					<MetricCard
-						icon={<QueueListIcon className="h-5 w-5" />}
 						label={t('requests')}
 						value={totalRequests.toLocaleString()}
 						footer={<span>{t('requestContext', { users: kpi?.activeUsers ?? 0, tokens: formatCompactTokens(kpi?.totalTokens ?? 0) })}</span>}
 					/>
 					<MetricCard
-						icon={<CheckCircleIcon className="h-5 w-5" />}
 						label={t('successRate')}
 						value={`${successRate.toFixed(1)}%`}
 						footer={(
-							<Link href="/gateway/request-logs?status=error" className="inline-flex items-center gap-1 text-gray-500 transition hover:text-blue-700">
+							<Link href="/gateway/request-logs?status=error" className="inline-flex items-center gap-1 text-gray-500 transition hover:text-gray-800">
 								{t('errorContext', { count: estimatedErrors, rate: errorRate.toFixed(2) })}
 								<ChevronRightIcon className="h-3 w-3" />
 							</Link>
 						)}
-						tone="emerald"
 					/>
 					<MetricCard
-						icon={<ClockIcon className="h-5 w-5" />}
 						label={t('avgLatency')}
 						value={formatLatency(kpi?.avgLatencyMs)}
-						footer={<Link href="/gateway/analytics/reliability" className="inline-flex items-center gap-1 transition hover:text-blue-700">{t('inspectReliability')}<ChevronRightIcon className="h-3 w-3" /></Link>}
-						tone="amber"
+						footer={<Link href="/gateway/analytics/reliability" className="inline-flex items-center gap-1 transition hover:text-gray-800">{t('inspectReliability')}<ChevronRightIcon className="h-3 w-3" /></Link>}
 					/>
 					<MetricCard
-						icon={<BanknotesIcon className="h-5 w-5" />}
 						label={t('chargedCost')}
 						value={formatGatewayMoneyCode(totalCost, billingCurrency, 4)}
 						footer={<span>{t('avgRequestCost', { amount: formatGatewayMoneyCode(totalRequests > 0 ? totalCost / totalRequests : 0, billingCurrency, 6) })}</span>}
-						tone="violet"
 					/>
 				</div>
 			</section>
@@ -302,7 +265,7 @@ export default function DashboardPage() {
 				/>
 			</section>
 
-			<div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.8fr)]">
+			<div className="mt-6 grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.8fr)]">
 				<DashboardModelDistributionChart
 					modelDistribution={stats?.modelDistribution ?? []}
 					topUsers={stats?.topUsers ?? []}
@@ -310,32 +273,32 @@ export default function DashboardPage() {
 				/>
 
 				<div className="grid content-start gap-6">
-					<section className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm">
+					<section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
 						<div>
-							<h2 className="text-base font-semibold text-gray-950">{t('gatewayAccess')}</h2>
+							<h2 className="text-base font-medium text-gray-950">{t('gatewayAccess')}</h2>
 							<p className="mt-1 text-xs text-gray-500">{t('gatewayAccessHint')}</p>
 						</div>
 						<div className="mt-4 grid grid-cols-2 gap-3">
-							<Link href="/gateway/keys" className="group rounded-xl bg-gray-50 p-4 ring-1 ring-inset ring-gray-100 transition hover:bg-blue-50 hover:ring-blue-100">
-								<KeyIcon className="h-5 w-5 text-gray-400 transition group-hover:text-blue-600" />
-								<p className="mt-3 text-2xl font-semibold text-gray-950 tabular-nums">{gateway?.keysActive ?? 0}<span className="text-sm font-normal text-gray-400"> / {gateway?.keysTotal ?? 0}</span></p>
+							<Link href="/gateway/keys" className="group rounded-xl bg-gray-50 p-4 ring-1 ring-inset ring-gray-100 transition hover:bg-gray-50 hover:ring-gray-100">
+								<KeyIcon className="h-5 w-5 text-gray-400 transition group-hover:text-gray-800" />
+								<p className="mt-3 text-2xl font-medium text-gray-950 tabular-nums">{gateway?.keysActive ?? 0}<span className="text-sm font-normal text-gray-400"> / {gateway?.keysTotal ?? 0}</span></p>
 								<p className="mt-1 text-xs text-gray-500">{t('activeKeys')}</p>
 							</Link>
-							<Link href="/gateway/users" className="group rounded-xl bg-gray-50 p-4 ring-1 ring-inset ring-gray-100 transition hover:bg-blue-50 hover:ring-blue-100">
-								<UserGroupIcon className="h-5 w-5 text-gray-400 transition group-hover:text-blue-600" />
-								<p className="mt-3 text-2xl font-semibold text-gray-950 tabular-nums">{gateway?.accountsActive ?? 0}<span className="text-sm font-normal text-gray-400"> / {gateway?.accountsTotal ?? 0}</span></p>
+							<Link href="/gateway/users" className="group rounded-xl bg-gray-50 p-4 ring-1 ring-inset ring-gray-100 transition hover:bg-gray-50 hover:ring-gray-100">
+								<UserGroupIcon className="h-5 w-5 text-gray-400 transition group-hover:text-gray-800" />
+								<p className="mt-3 text-2xl font-medium text-gray-950 tabular-nums">{gateway?.accountsActive ?? 0}<span className="text-sm font-normal text-gray-400"> / {gateway?.accountsTotal ?? 0}</span></p>
 								<p className="mt-1 text-xs text-gray-500">{t('activeAccounts')}</p>
 							</Link>
 						</div>
 					</section>
 
-					<section className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm">
+					<section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
 						<div className="flex items-center justify-between gap-4">
 							<div className="flex items-center gap-2">
 								<ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />
-								<h2 className="text-base font-semibold text-gray-950">{t('needsAttention')}</h2>
+								<h2 className="text-base font-medium text-gray-950">{t('needsAttention')}</h2>
 							</div>
-							<Link href="/gateway/request-logs?status=error" className="text-xs font-medium text-blue-700 hover:underline">{tCommon('viewAll')}</Link>
+							<Link href="/gateway/request-logs?status=error" className="text-xs font-medium text-gray-800 hover:underline">{tCommon('viewAll')}</Link>
 						</div>
 						{stats?.recentErrors && stats.recentErrors.length > 0 ? (
 							<div className="mt-3">
@@ -347,11 +310,11 @@ export default function DashboardPage() {
 											<p className="truncate text-sm font-medium text-gray-900" title={dashboardLogModelTitle(log)}>
 												{dashboardLogModelLabel(log, tCommon('unknown'))}
 											</p>
-											<time className="shrink-0 text-[11px] text-gray-400">{formatDateTime(log.created_at)}</time>
+											<time className="shrink-0 text-xs text-gray-400">{formatDateTime(log.created_at)}</time>
 										</div>
 										<p className="mt-1 line-clamp-2 text-xs leading-5 text-red-600">{log.error_message || tCommon('unknownError')}</p>
 										{providerLabel ? (
-											<p className="mt-1 text-[11px] text-gray-400" title={dashboardLogProviderTitle(log)}>
+											<p className="mt-1 text-xs text-gray-400" title={dashboardLogProviderTitle(log)}>
 												{providerLabel}
 											</p>
 										) : null}
@@ -366,13 +329,13 @@ export default function DashboardPage() {
 				</div>
 			</div>
 
-			<section className="mt-6 rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm sm:p-6">
+			<section className="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
 				<div className="flex items-center justify-between gap-4">
 					<div>
-						<h2 className="text-base font-semibold text-gray-950">{t('recentRequests')}</h2>
+						<h2 className="text-base font-medium text-gray-950">{t('recentRequests')}</h2>
 						<p className="mt-1 text-xs text-gray-500">{t('recentRequestsHint')}</p>
 					</div>
-					<Link href="/gateway/request-logs" className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline">
+					<Link href="/gateway/request-logs" className="inline-flex items-center gap-1 text-sm font-medium text-gray-800 hover:underline">
 						{tCommon('viewAll')}<ChevronRightIcon className="h-4 w-4" />
 					</Link>
 				</div>

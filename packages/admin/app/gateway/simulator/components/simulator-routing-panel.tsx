@@ -68,8 +68,8 @@ export function SimulatorRoutingPanel({
 	return (
 		<section className={`${panelClass} flex min-h-0 flex-1 flex-col`}>
 			<div className="flex items-center justify-between gap-2">
-				<h2 className="text-sm font-semibold text-gray-900">{t('routingTarget')}</h2>
-				<span className="truncate font-mono text-[11px] text-gray-500" title={modelRoutingString}>
+				<h2 className="text-sm font-medium text-gray-900">{t('routingTarget')}</h2>
+				<span className="truncate font-mono text-xs text-gray-500" title={modelRoutingString}>
 					{isToolKind ? (selectedToolId ? `/v1/tools/${selectedToolId}` : '') : modelRoutingString || ''}
 				</span>
 			</div>
@@ -105,12 +105,12 @@ export function SimulatorRoutingPanel({
 									onClick={() => onSelectTool(tool.id)}
 									className={
 										active
-											? 'flex w-full flex-col items-start gap-0.5 border-b border-blue-100 bg-blue-50 px-3 py-2 text-left last:border-b-0'
+											? 'flex w-full flex-col items-start gap-0.5 border-b border-gray-100 bg-gray-50 px-3 py-2 text-left last:border-b-0'
 											: 'flex w-full flex-col items-start gap-0.5 border-b border-gray-100 px-3 py-2 text-left last:border-b-0 hover:bg-gray-50'
 									}
 								>
 									<span className="text-sm font-medium text-gray-900">{tTools(tool.nameKey)}</span>
-									<span className="font-mono text-[11px] text-gray-500">/v1/tools/{tool.id}</span>
+									<span className="font-mono text-xs text-gray-500">/v1/tools/{tool.id}</span>
 								</button>
 							);
 						})}
@@ -151,14 +151,14 @@ export function SimulatorRoutingPanel({
 											onClick={() => onSelectModel(m.id)}
 											className={
 												active
-													? 'flex w-full items-center gap-2.5 border-b border-blue-100 bg-blue-50 px-3 py-2 text-left last:border-b-0'
+													? 'flex w-full items-center gap-2.5 border-b border-gray-100 bg-gray-50 px-3 py-2 text-left last:border-b-0'
 													: 'flex w-full items-center gap-2.5 border-b border-gray-100 px-3 py-2 text-left last:border-b-0 hover:bg-gray-50'
 											}
 										>
 											<ModelVendorIcon vendor={m.vendor} size="compact" />
 											<span className="min-w-0 flex-1">
 												<span className="block truncate text-sm font-medium text-gray-900">{name}</span>
-												<span className="block truncate font-mono text-[11px] text-gray-500">
+												<span className="block truncate font-mono text-xs text-gray-500">
 													{m.id} · {m.vendor}
 												</span>
 											</span>
@@ -167,7 +167,7 @@ export function SimulatorRoutingPanel({
 								})
 							)}
 						</div>
-						<p className="mt-1 text-[11px] text-gray-500">
+						<p className="mt-1 text-xs text-gray-500">
 							{t('modelCount', { total: modelsInKindTotal, filtered: filteredModels.length })}
 						</p>
 					</div>
@@ -220,7 +220,7 @@ export function SimulatorRoutingPanel({
 									<ul className="max-h-32 divide-y divide-gray-100 overflow-y-auto rounded-md border border-gray-200 bg-gray-50/80 text-xs">
 										{matchingRoutes.map((r) => (
 											<li key={r.id} className="px-2.5 py-1.5 font-mono text-gray-800">
-												<span className="font-semibold text-gray-900">
+												<span className="font-medium text-gray-900">
 													{providerLabelFor(r) || '—'}
 												</span>
 												<span className="text-gray-500">

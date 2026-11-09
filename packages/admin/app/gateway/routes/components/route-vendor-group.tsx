@@ -85,7 +85,7 @@ export function RouteVendorGroup(props: Props) {
 					<div className="flex min-w-0 items-center gap-2.5">
 						<ModelVendorIcon vendor={vendor} size="default" />
 						<div className="min-w-0">
-							<h3 className="truncate text-sm font-semibold text-gray-900">
+							<h3 className="truncate text-sm font-medium text-gray-900">
 								{getModelVendorLabel(vendor)}
 							</h3>
 							<p className="text-xs text-gray-500">{t('label')}</p>

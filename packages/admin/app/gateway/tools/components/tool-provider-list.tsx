@@ -108,7 +108,7 @@ export function ToolProviderList({
 						onChange={(e) => setQuery(e.target.value)}
 						aria-label={t('search')}
 						placeholder={t('search')}
-						className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+						className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100"
 					/>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
@@ -116,7 +116,7 @@ export function ToolProviderList({
 						value={tool}
 						onChange={(e) => setTool(e.target.value)}
 						aria-label={t('toolType')}
-						className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 lg:flex-none"
+						className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100 lg:flex-none"
 					>
 						<option value="all">{t('allTools')}</option>
 						{groups.map((group) => (
@@ -129,7 +129,7 @@ export function ToolProviderList({
 						value={status}
 						onChange={(e) => setStatus(e.target.value)}
 						aria-label={t('status')}
-						className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 lg:flex-none"
+						className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100 lg:flex-none"
 					>
 						<option value="all">{t('allStatuses')}</option>
 						<option value="active">{badges('active')}</option>
@@ -143,7 +143,7 @@ export function ToolProviderList({
 						<button
 							type="button"
 							onClick={clearFilters}
-							className="rounded-lg px-2 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
+							className="rounded-lg px-2 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
 						>
 							{t('clearFilters')}
 						</button>
@@ -156,7 +156,7 @@ export function ToolProviderList({
 					<button
 						type="button"
 						onClick={clearFilters}
-						className="mt-3 text-sm font-medium text-blue-600 hover:underline"
+						className="mt-3 text-sm font-medium text-gray-800 hover:underline"
 					>
 						{t('clearFilters')}
 					</button>
@@ -196,7 +196,7 @@ export function ToolProviderList({
 										key={`${group.id}:${item.id}`}
 										data-tool={group.id}
 										data-provider={item.id}
-										className="group cursor-pointer transition hover:bg-gray-50/80 focus-within:bg-blue-50/50"
+										className="group cursor-pointer transition hover:bg-gray-50/80 focus-within:bg-gray-50/50"
 										onClick={(e) => {
 											e.currentTarget.querySelector('button')?.focus();
 											group.onSelect(item.id);
@@ -217,7 +217,7 @@ export function ToolProviderList({
 															e.currentTarget.focus();
 															group.onSelect(item.id);
 														}}
-														className="rounded text-left font-semibold text-gray-900 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+														className="rounded text-left font-medium text-gray-900 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2"
 													>
 														{item.label}
 													</button>
@@ -234,7 +234,7 @@ export function ToolProviderList({
 										<td className="px-4 py-4">
 											<div className="flex max-w-[240px] flex-wrap gap-1.5">
 												{showConfiguredDot(item.status) ? (
-													<span className="inline-flex whitespace-nowrap rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-100">
+													<span className="inline-flex whitespace-nowrap rounded-full bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-800 ring-1 ring-inset ring-gray-100">
 														{badges('configured')}
 													</span>
 												) : null}
@@ -262,7 +262,7 @@ export function ToolProviderList({
 											<div className="flex items-center justify-end gap-4">
 												<span className="font-mono tabular-nums text-gray-600">{money(parts.metered)}</span>
 												<ChevronRightIcon
-													className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:text-gray-600 group-focus-within:text-blue-500"
+													className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:text-gray-600 group-focus-within:text-gray-700"
 													aria-hidden="true"
 												/>
 											</div>

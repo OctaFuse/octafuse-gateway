@@ -34,9 +34,9 @@ type ProviderCardProps = {
 };
 
 const CARD_SHELL: Record<ProviderKeyStatusKind, string> = {
-	key_set: 'border-slate-200 bg-white hover:border-blue-300',
+	key_set: 'border-slate-200 bg-white hover:border-gray-300',
 	no_key: 'border-rose-200 bg-white hover:border-rose-300',
-	pending: 'border-slate-200 bg-white hover:border-blue-300',
+	pending: 'border-slate-200 bg-white hover:border-gray-300',
 	disabled: 'border-slate-300 bg-slate-200/80 hover:border-slate-400',
 };
 
@@ -139,13 +139,13 @@ export function ProviderCard(props: ProviderCardProps) {
 	return (
 		<article
 			role={isList ? 'listitem' : undefined}
-			className={`group relative min-w-0 gap-3 p-4 transition-[border-color,box-shadow] ${CARD_SHELL[shellStatus]} ${isList ? `grid sm:grid-cols-2 xl:items-center xl:gap-4 hover:ring-1 hover:ring-inset hover:ring-blue-200 ${PROVIDER_LIST_COLUMNS}` : 'flex flex-col rounded-xl border shadow-sm hover:shadow-md'}`}
+			className={`group relative min-w-0 gap-3 p-4 transition-[border-color,box-shadow] ${CARD_SHELL[shellStatus]} ${isList ? `grid sm:grid-cols-2 xl:items-center xl:gap-4 hover:ring-1 hover:ring-inset hover:ring-gray-200 ${PROVIDER_LIST_COLUMNS}` : 'flex flex-col rounded-xl border shadow-sm hover:shadow-panel'}`}
 			data-provider-status={isActive ? 'active' : 'disabled'}
 		>
 			<button
 				type="button"
 				onClick={() => onEdit(provider)}
-				className={`absolute inset-0 z-0 cursor-pointer bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${isList ? '' : 'rounded-xl'}`}
+				className={`absolute inset-0 z-0 cursor-pointer bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-500 ${isList ? '' : 'rounded-xl'}`}
 				title={t('editProvider', { name: accountTitle })}
 				aria-label={t('editProvider', { name: accountTitle })}
 			/>
@@ -159,7 +159,7 @@ export function ProviderCard(props: ProviderCardProps) {
 				/>
 				<div className="min-w-0 flex-1">
 					<h2
-						className={`truncate text-sm font-semibold leading-5 ${isActive ? 'text-gray-900' : 'text-slate-600'}`}
+						className={`truncate text-sm font-medium leading-5 ${isActive ? 'text-gray-900' : 'text-slate-600'}`}
 						title={accountTitle}
 					>
 						{provider.name}
@@ -181,7 +181,7 @@ export function ProviderCard(props: ProviderCardProps) {
 							event.stopPropagation();
 							void onToggleStatus(provider);
 						}}
-						className={`pointer-events-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-50 ${
+						className={`pointer-events-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-50 ${
 							isActive
 								? 'bg-emerald-50 text-emerald-700 ring-emerald-200 hover:bg-emerald-100'
 								: 'bg-rose-50 text-rose-700 ring-rose-300 hover:bg-rose-100'
@@ -229,7 +229,7 @@ export function ProviderCard(props: ProviderCardProps) {
 			<div className={`pointer-events-none relative z-10 flex flex-wrap items-center gap-x-2 gap-y-1 ${isList ? 'order-3' : `-mx-4 -mb-4 mt-1 justify-between rounded-b-xl border-t px-4 py-2 ${CARD_FOOTER[shellStatus]}`}`}>
 				<div className="flex min-w-0 items-center gap-1">
 					<span
-						className={`inline-flex min-w-0 items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium ring-1 ring-inset ${STATUS_BADGE[keyStatus]}`}
+						className={`inline-flex min-w-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${STATUS_BADGE[keyStatus]}`}
 					>
 						<span
 							className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS_DOT[keyStatus]}`}
@@ -244,7 +244,7 @@ export function ProviderCard(props: ProviderCardProps) {
 								event.stopPropagation();
 								void onCopyApiKey(provider);
 							}}
-							className="pointer-events-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+							className="pointer-events-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
 							title={copiedId === apiKeyFeedbackId ? tCommon('copied') : t('copyApiKey')}
 							aria-label={copiedId === apiKeyFeedbackId ? tCommon('copied') : t('copyApiKey')}
 						>
@@ -271,7 +271,7 @@ export function ProviderCard(props: ProviderCardProps) {
 							event.stopPropagation();
 							void onToggleStatus(provider);
 						}}
-						className={`pointer-events-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-50 ${
+						className={`pointer-events-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-50 ${
 							isActive
 								? 'bg-emerald-50 text-emerald-700 ring-emerald-200 hover:bg-emerald-100'
 								: 'bg-rose-50 text-rose-700 ring-rose-300 hover:bg-rose-100'

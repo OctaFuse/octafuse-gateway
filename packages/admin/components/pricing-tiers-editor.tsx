@@ -67,7 +67,7 @@ function PriceCell(props: {
 				inputMode="decimal"
 				value={props.value}
 				onChange={(e) => props.onChange(e.target.value)}
-				className="w-full min-w-[4rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+				className="w-full min-w-[4rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-xs tabular-nums focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500/30"
 				placeholder={props.placeholder}
 				aria-label={props.ariaLabel}
 			/>
@@ -202,7 +202,7 @@ export function PricingTiersEditor({
 			</div>
 			{isImage && onImageBillingModeChange ? (
 				<div className="space-y-1.5">
-					<p className="text-[11px] font-medium text-gray-600">{tBilling('modeLabel')}</p>
+					<p className="text-xs font-medium text-gray-600">{tBilling('modeLabel')}</p>
 					<div
 						className="inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5"
 						role="group"
@@ -238,13 +238,13 @@ export function PricingTiersEditor({
 				</div>
 			) : null}
 			{isImage && !isPerImage && hintDisplay === 'inline' ? (
-				<p className="text-[11px] text-gray-500 leading-relaxed">{t('imageHint')}</p>
+				<p className="text-xs text-gray-500 leading-relaxed">{t('imageHint')}</p>
 			) : null}
 			{isPerImage && onPerImageDraftChange ? (
 				<div className="overflow-hidden rounded-md border border-gray-200 bg-white">
 					<div className="grid gap-3 p-3 sm:grid-cols-2">
 						<div>
-							<label className="mb-1 block text-[11px] font-medium text-gray-600">
+							<label className="mb-1 block text-xs font-medium text-gray-600">
 								{tBilling('outputDefault')}
 							</label>
 							<input
@@ -254,12 +254,12 @@ export function PricingTiersEditor({
 								onChange={(e) =>
 									onPerImageDraftChange({ ...perImage, default: e.target.value })
 								}
-								className="w-full rounded border border-gray-200 px-2 py-1.5 font-mono text-sm tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+								className="w-full rounded border border-gray-200 px-2 py-1.5 font-mono text-sm tabular-nums focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500/30"
 								placeholder={perImagePlaceholder}
 							/>
 						</div>
 						<div>
-							<label className="mb-1 block text-[11px] font-medium text-gray-600">
+							<label className="mb-1 block text-xs font-medium text-gray-600">
 								{tBilling('inputDefaultOptional')}
 							</label>
 							<input
@@ -269,12 +269,12 @@ export function PricingTiersEditor({
 								onChange={(e) =>
 									onPerImageDraftChange({ ...perImage, inputDefault: e.target.value })
 								}
-								className="w-full rounded border border-gray-200 px-2 py-1.5 font-mono text-sm tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+								className="w-full rounded border border-gray-200 px-2 py-1.5 font-mono text-sm tabular-nums focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500/30"
 								placeholder={tBilling('inputDefaultEmpty')}
 							/>
 						</div>
 						<div className="sm:col-span-2">
-							<label className="mb-1 block text-[11px] font-medium text-gray-600">
+							<label className="mb-1 block text-xs font-medium text-gray-600">
 								{tBilling('uncertainPolicy')}
 							</label>
 							<select
@@ -285,7 +285,7 @@ export function PricingTiersEditor({
 										uncertainResultPolicy: e.target.value as 'requested' | 'zero',
 									})
 								}
-								className="w-full rounded border border-gray-200 bg-white px-2 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+								className="w-full rounded border border-gray-200 bg-white px-2 py-1.5 text-sm focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500/30"
 							>
 								<option value="requested">{tBilling('policyRequested')}</option>
 								<option value="zero">{tBilling('policyZero')}</option>
@@ -300,8 +300,8 @@ export function PricingTiersEditor({
 							<thead
 								className={
 									isImage
-										? 'bg-gray-50 text-[11px] font-medium text-gray-500'
-										: 'bg-gray-50 text-[10px] font-semibold uppercase tracking-wide text-gray-500'
+										? 'bg-gray-50 text-xs font-medium text-gray-500'
+										: 'bg-gray-50 text-xs font-medium normal-case tracking-normal text-gray-500'
 								}
 							>
 								<tr>
@@ -342,7 +342,7 @@ export function PricingTiersEditor({
 												<td className="px-1 py-1.5">
 													{isLast ? (
 														<div
-															className="flex min-h-[1.75rem] min-w-[4.5rem] items-center rounded border border-dashed border-gray-200 bg-gray-50 px-1.5 font-mono text-[11px] text-gray-600 tabular-nums"
+															className="flex min-h-[1.75rem] min-w-[4.5rem] items-center rounded border border-dashed border-gray-200 bg-gray-50 px-1.5 font-mono text-xs text-gray-600 tabular-nums"
 															title={t('lastTierOpenEnded')}
 															aria-label={`upto open bound for tier ${r.id}`}
 														>
@@ -356,7 +356,7 @@ export function PricingTiersEditor({
 															onChange={(e) =>
 																onChange(updateRow(rows, r.id, { upto: e.target.value }))
 															}
-															className="w-full min-w-[4.5rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-[11px] tabular-nums focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+															className="w-full min-w-[4.5rem] rounded border border-gray-200 px-1.5 py-1 font-mono text-xs tabular-nums focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500/30"
 															placeholder="0"
 															aria-label={`upto for tier ${r.id}`}
 														/>

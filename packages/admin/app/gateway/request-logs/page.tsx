@@ -25,7 +25,6 @@ import { requestLogProtocolPath, requestSurfacePath } from '../routes/route-util
 import {
   parseGeminiWireAction,
   requestLogFeatureTags,
-  type RequestLogFeatureKind,
   type RequestLogFeatureTag,
 } from './request-log-display';
 import {
@@ -402,7 +401,7 @@ export default function GatewayRequestLogsPage() {
     <div className="leading-tight" title={title}>
       <div className="inline-flex items-baseline gap-1 text-gray-900">
         <span className="tabular-nums">{value}</span>
-        <span className="text-[10px] font-medium text-gray-400">{unit}</span>
+        <span className="text-xs font-medium text-gray-400">{unit}</span>
       </div>
     </div>
   );
@@ -438,7 +437,7 @@ export default function GatewayRequestLogsPage() {
           <span className="tabular-nums">
             {log.input_tokens} / {log.output_tokens}
           </span>
-          <span className="text-[10px] font-medium text-gray-400">{t('usage.tokens')}</span>
+          <span className="text-xs font-medium text-gray-400">{t('usage.tokens')}</span>
         </div>
         {hasCache ? (
           <div className="text-gray-400 tabular-nums" title={t('titles.cacheTokens')}>
@@ -459,9 +458,9 @@ export default function GatewayRequestLogsPage() {
     const meteredMultiplier = formatCostMultiplier(meteredCost, standardCost);
     const costLine = (label: 'C' | 'M', amount: number, multiplier: string | null) => (
       <div className="inline-flex items-baseline gap-1 tabular-nums">
-        <span className="text-[10px] font-medium text-gray-500">{t(label === 'C' ? 'titles.chargedUserBudget' : 'titles.meteredSupplierCost')}</span>
+        <span className="text-xs font-medium text-gray-500">{t(label === 'C' ? 'titles.chargedUserBudget' : 'titles.meteredSupplierCost')}</span>
         <span>{formatGatewayMoneyCode(amount, billingCurrency, 6)}</span>
-        {multiplier ? <span className="text-[10px] text-gray-400">{multiplier}</span> : null}
+        {multiplier ? <span className="text-xs text-gray-400">{multiplier}</span> : null}
       </div>
     );
     return (
@@ -508,11 +507,11 @@ export default function GatewayRequestLogsPage() {
     group?: string;
   }) => (
     <>
-      <span className={`self-center text-[10px] font-semibold leading-4 ${opts.labelClass}`}>
+      <span className={`self-center text-xs font-medium leading-4 ${opts.labelClass}`}>
         {opts.label}
       </span>
       <span
-        className="max-w-[11rem] justify-self-start truncate rounded bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] leading-4 text-gray-500 ring-1 ring-inset ring-gray-200/80"
+        className="max-w-[11rem] justify-self-start truncate rounded bg-gray-50 px-1.5 py-0.5 font-mono text-xs leading-4 text-gray-500 ring-1 ring-inset ring-gray-200/80"
         title={opts.pathTitle || opts.path || undefined}
       >
         {opts.path || '—'}
@@ -520,17 +519,17 @@ export default function GatewayRequestLogsPage() {
       <div className="flex min-w-0 items-center gap-1.5">
         {opts.modelId ? (
           <span
-            className="min-w-0 truncate font-mono text-[11px] font-medium text-gray-900"
+            className="min-w-0 truncate font-mono text-xs font-medium text-gray-900"
             title={opts.modelTitle || opts.modelId}
           >
             {opts.modelId}
           </span>
         ) : (
-          <span className="text-[11px] text-gray-300">—</span>
+          <span className="text-xs text-gray-300">—</span>
         )}
         {opts.provider ? (
           <span
-            className="inline-flex shrink-0 items-center rounded-md bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-sky-800 ring-1 ring-inset ring-sky-200/90"
+            className="inline-flex shrink-0 items-center rounded-md bg-sky-50 px-1.5 py-0.5 text-xs font-medium leading-4 text-sky-800 ring-1 ring-inset ring-sky-200/90"
             title={opts.providerTitle || opts.provider}
           >
             {opts.provider}
@@ -538,7 +537,7 @@ export default function GatewayRequestLogsPage() {
         ) : null}
         {opts.group ? (
           <span
-            className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 font-mono text-[10px] font-semibold leading-4 ${routeGroupBadgeClass(opts.group)}`}
+            className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 font-mono text-xs font-medium leading-4 ${routeGroupBadgeClass(opts.group)}`}
             title={`route_group: ${opts.group}`}
           >
             @{opts.group}
@@ -593,7 +592,7 @@ export default function GatewayRequestLogsPage() {
       <div className="grid w-max max-w-[40rem] grid-cols-[auto_auto_minmax(0,max-content)] items-center gap-x-1.5 gap-y-1 leading-tight">
         {renderRouteLeg({
           label: t('route.inbound'),
-          labelClass: 'text-blue-600',
+          labelClass: 'text-gray-800',
           path: inboundPath,
           pathTitle: inboundPathTitle,
           modelId: inboundModelId,
@@ -614,23 +613,7 @@ export default function GatewayRequestLogsPage() {
     );
   };
 
-  const featureKindClass = (kind: RequestLogFeatureKind): string => {
-    if (kind === 'image') return 'bg-violet-50 text-violet-700 ring-violet-200';
-    if (kind === 'tts') return 'bg-amber-50 text-amber-800 ring-amber-200';
-    if (kind === 'asr') return 'bg-orange-50 text-orange-800 ring-orange-200';
-    if (kind === 'embedding') return 'bg-emerald-50 text-emerald-700 ring-emerald-200';
-    if (kind === 'tool') return 'bg-indigo-50 text-indigo-700 ring-indigo-200';
-    if (kind === 'mcp') return 'bg-teal-50 text-teal-800 ring-teal-200';
-    return 'bg-slate-50 text-slate-600 ring-slate-200';
-  };
-
-  const featureTagClass = (tag: RequestLogFeatureTag): string => {
-    if (tag.key === 'kind') return featureKindClass(tag.kind);
-    if (tag.key === 'stream') return 'bg-sky-50 text-sky-700 ring-sky-200';
-    if (tag.key === 'realtime') return 'bg-cyan-50 text-cyan-800 ring-cyan-200';
-    if (tag.key === 'reasoning') return 'bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-200';
-    return 'bg-rose-50 text-rose-700 ring-rose-200';
-  };
+  const featureTagClass = 'bg-gray-100 text-gray-600 ring-gray-200';
 
   const featureTagLabel = (tag: RequestLogFeatureTag): string => {
     if (tag.key === 'kind') return t(`tags.kind.${tag.kind}`);
@@ -648,7 +631,7 @@ export default function GatewayRequestLogsPage() {
           return (
             <span
               key={key}
-              className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${featureTagClass(tag)}`}
+              className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset ${featureTagClass}`}
               title={t(`titles.tag.${tag.key === 'kind' ? tag.kind : tag.key}`)}
             >
               {featureTagLabel(tag)}
@@ -671,7 +654,7 @@ export default function GatewayRequestLogsPage() {
   return (
     <div className="min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <h1 className="text-2xl font-medium text-gray-900">{t('title')}</h1>
         <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
 
@@ -729,7 +712,7 @@ export default function GatewayRequestLogsPage() {
           <button
             type="button"
             onClick={() => { setFilterStatus(''); setFilterModel(''); setFilterProviderId(''); setFilterUserEmail(''); setFilterApiKeyId(''); setFilterLogId(''); setRangeValue({ preset: 'custom', start_date: '', end_date: '' }); setFilterRouteGroup(''); setFilterProtocol(''); setPage(1); }}
-            className="text-xs font-medium text-slate-500 hover:text-blue-700"
+            className="text-xs font-medium text-slate-500 hover:text-gray-800"
           >
             {tCommon('clearFilters')}
           </button>
@@ -765,40 +748,40 @@ export default function GatewayRequestLogsPage() {
       </div>
 
       {/* Logs Table */}
-      <div className="admin-log-table bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="admin-log-table bg-white rounded-lg shadow-panel overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="w-56 max-w-56 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('headers.statusTime')}</th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">{t('headers.userSystem')}</th>
+                <th className="w-56 max-w-56 px-3 py-2 text-left text-xs font-medium text-gray-500 normal-case tracking-normal whitespace-nowrap">{t('headers.statusTime')}</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 normal-case tracking-normal whitespace-nowrap">{t('headers.userSystem')}</th>
                 <th
                   scope="col"
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[40rem]"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 normal-case tracking-normal max-w-[40rem]"
                   title={t('titles.route')}
                 >
                   {t('headers.route')}
                 </th>
                 <th
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap min-w-[9.5rem]"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 normal-case tracking-normal whitespace-nowrap min-w-[9.5rem]"
                   title={t('titles.tags')}
                 >
                   {t('headers.tags')}
                 </th>
                 <th
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 normal-case tracking-normal whitespace-nowrap"
                   title={t('titles.usage')}
                 >
                   {t('headers.usage')}
                 </th>
                 <th
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-normal whitespace-nowrap"
                   title={t('titles.cost')}
                 >
                   <span className="inline-flex items-center gap-1">{t('headers.cost', { currency: billingCurrencySym })}<PricingInfoHint kind="amounts" /></span>
                 </th>
                 <th
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-wider whitespace-nowrap"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 tracking-normal whitespace-nowrap"
                   title={t('titles.profit')}
                 >
                   <span className="inline-flex items-center gap-1">{t('headers.profit', { currency: billingCurrencySym })}<PricingInfoHint kind="profit" /></span>
@@ -816,7 +799,7 @@ export default function GatewayRequestLogsPage() {
                 return (
                   <Fragment key={log.id}>
                   <tr
-                    className={`align-middle cursor-pointer transition-colors hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-500 ${
+                    className={`align-middle cursor-pointer transition-colors hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-gray-500 ${
                       detailLogId === log.id ? 'bg-slate-50' : ''
                     }`}
                     onClick={() => toggleDetail(log.id)}
@@ -843,7 +826,7 @@ export default function GatewayRequestLogsPage() {
                             {formatDate(log.created_at)}
                           </div>
                           <div
-                            className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-gray-400 tabular-nums"
+                            className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-gray-400 tabular-nums"
                             title={formatTtftListLine(log).title ?? (log.first_token_ms != null ? `TTFT ${formatLatencyMs(log.first_token_ms)}` : undefined)}
                           >
                             <span className="shrink-0">{formatLatencyMs(log.latency_ms)}</span>
@@ -853,14 +836,14 @@ export default function GatewayRequestLogsPage() {
                         </div>
                         <ChevronRightIcon
                           className={`h-3.5 w-3.5 shrink-0 text-gray-300 transition-transform ${
-                            detailLogId === log.id ? 'rotate-90 text-blue-500' : ''
+                            detailLogId === log.id ? 'rotate-90 text-gray-700' : ''
                           }`}
                           aria-hidden
                         />
                       </div>
                       {log.status === 'error' && log.error_message?.trim() ? (
                         <div
-                          className="mt-1 truncate text-[11px] leading-snug text-red-600"
+                          className="mt-1 truncate text-xs leading-snug text-red-600"
                           title={log.error_message}
                         >
                           {log.error_message.trim()}
@@ -873,7 +856,7 @@ export default function GatewayRequestLogsPage() {
                           {log.user_email || '-'}
                         </div>
                         <div
-                          className="truncate font-mono text-[11px] text-gray-500"
+                          className="truncate font-mono text-xs text-gray-500"
                           title={log.external_system?.trim() || undefined}
                         >
                           {log.external_system?.trim() || '-'}
@@ -947,11 +930,11 @@ export default function GatewayRequestLogsPage() {
           onClick={() => setTimingHelpLog(null)}
         >
           <div
-            className="w-full max-w-3xl overflow-hidden rounded-lg border border-sky-200 bg-white shadow-xl"
+            className="w-full max-w-3xl overflow-hidden rounded-lg border border-sky-200 bg-white shadow-panel"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-3 border-b border-sky-100 bg-sky-50 px-4 py-3">
-              <h2 id="timing-help-title" className="text-sm font-semibold text-sky-950">
+              <h2 id="timing-help-title" className="text-sm font-medium text-sky-950">
                 {t('timing.helpTitle')}
               </h2>
               <button

@@ -277,14 +277,14 @@ export default function AdminApiKeysPage() {
 		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+					<h1 className="text-2xl font-medium text-gray-900">{t('title')}</h1>
 					<p className="mt-1 max-w-3xl text-sm text-gray-500">{t('subtitle')}</p>
 					<p className="mt-2 max-w-3xl text-xs text-gray-500">{t('rotateHint')}</p>
 				</div>
 				<button
 					type="button"
 					onClick={openCreate}
-					className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+					className="inline-flex items-center gap-2 rounded-md admin-primary px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
 				>
 					<PlusIcon className="h-5 w-5" />
 					{t('create')}
@@ -299,7 +299,7 @@ export default function AdminApiKeysPage() {
 
 			<div className="overflow-x-auto rounded-lg border bg-white shadow-sm">
 				<table className="admin-data-table min-w-full divide-y">
-					<thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+					<thead className="bg-gray-50 text-left text-xs normal-case text-gray-500">
 						<tr>
 							<th className="px-4 py-3">{t('name')}</th>
 							<th className="px-4 py-3">{t('key')}</th>
@@ -361,8 +361,8 @@ export default function AdminApiKeysPage() {
 											type="button"
 											disabled={statusBusyId === key.id}
 											onClick={(event) => void toggleStatus(key, event)}
-											className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-												key.status === 'active' ? 'bg-blue-600' : 'bg-gray-200'
+											className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+												key.status === 'active' ? 'bg-gray-950' : 'bg-gray-200'
 											}`}
 											role="switch"
 											aria-checked={key.status === 'active'}
@@ -399,14 +399,14 @@ export default function AdminApiKeysPage() {
 					role="presentation"
 				>
 					<div
-						className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-xl"
+						className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-panel"
 						onClick={(event) => event.stopPropagation()}
 						role="dialog"
 						aria-modal="true"
 						aria-labelledby="integration-key-editor-title"
 					>
 						<div className="flex items-center justify-between border-b px-6 py-4">
-							<h2 id="integration-key-editor-title" className="text-xl font-bold text-gray-900">
+							<h2 id="integration-key-editor-title" className="text-xl font-semibold text-gray-900">
 								{editor.kind === 'create' ? t('createTitle') : t('editTitle')}
 							</h2>
 							<button
@@ -520,7 +520,7 @@ export default function AdminApiKeysPage() {
 								type="button"
 								disabled={busy || !name.trim() || permissions.length === 0}
 								onClick={() => void saveEditor()}
-								className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+								className="rounded admin-primary px-4 py-2 text-sm text-white disabled:opacity-50"
 							>
 								{busy
 									? editor.kind === 'create'

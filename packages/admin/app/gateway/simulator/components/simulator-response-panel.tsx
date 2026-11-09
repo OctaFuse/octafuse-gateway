@@ -77,7 +77,7 @@ export function SimulatorResponsePanel({
 	return (
 		<section className="flex h-full min-h-0 flex-col space-y-2 overflow-hidden rounded-xl border border-gray-200/80 bg-white p-3 shadow-sm">
 			<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-				<h2 className="text-sm font-semibold text-gray-900 shrink-0">{t('response')}</h2>
+				<h2 className="text-sm font-medium text-gray-900 shrink-0">{t('response')}</h2>
 				{responseMeta ? (
 					<div className="flex flex-wrap items-center justify-end gap-2 text-xs min-w-0">
 						<span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-800">
@@ -124,7 +124,7 @@ export function SimulatorResponsePanel({
 						))}
 						<Link
 							href={logsHref}
-							className="ml-auto text-xs font-medium text-blue-700 hover:text-blue-900 hover:underline"
+							className="ml-auto text-xs font-medium text-gray-800 hover:text-gray-950 hover:underline"
 						>
 							{logsLinkLabel}
 						</Link>
@@ -132,7 +132,7 @@ export function SimulatorResponsePanel({
 
 					{usageHint ? (
 						<div className="shrink-0 text-xs leading-5 text-green-800">
-							<span className="font-semibold">{t('usagePreview')}</span>
+							<span className="font-medium">{t('usagePreview')}</span>
 							{usageHint}
 						</div>
 					) : null}
@@ -155,7 +155,7 @@ export function SimulatorResponsePanel({
 								<a
 									href={audioPreviewUrl ?? undefined}
 									download="speech-output"
-									className="inline-flex text-xs font-medium text-blue-700 hover:text-blue-900 hover:underline"
+									className="inline-flex text-xs font-medium text-gray-800 hover:text-gray-950 hover:underline"
 								>
 									{t('downloadAudio')}
 								</a>
@@ -163,7 +163,7 @@ export function SimulatorResponsePanel({
 						) : (
 							<div className="rounded-md border border-slate-200 overflow-hidden divide-y divide-slate-200">
 								<div>
-									<div className="text-[11px] font-semibold text-amber-900/85 uppercase tracking-wide px-3 py-1.5 bg-amber-50 border-b border-amber-100">
+									<div className="text-xs font-medium text-amber-900/85 normal-case tracking-normal px-3 py-1.5 bg-amber-50 border-b border-amber-100">
 										{t('thinkingReasoning')}
 									</div>
 									<pre className="max-h-[min(200px,28vh)] overflow-auto p-3 bg-amber-50/60 text-sm text-gray-900 font-mono whitespace-pre-wrap break-words">
@@ -171,7 +171,7 @@ export function SimulatorResponsePanel({
 									</pre>
 								</div>
 								<div>
-									<div className="text-[11px] font-semibold text-slate-600 uppercase tracking-wide px-3 py-1.5 bg-slate-50 border-b border-slate-100">
+									<div className="text-xs font-medium text-slate-600 normal-case tracking-normal px-3 py-1.5 bg-slate-50 border-b border-slate-100">
 										{t('body')}
 									</div>
 									<pre className="max-h-[min(320px,42vh)] overflow-auto p-3 bg-slate-50 text-sm text-gray-900 font-mono whitespace-pre-wrap break-words">

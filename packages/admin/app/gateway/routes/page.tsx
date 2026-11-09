@@ -100,17 +100,17 @@ function RoutesContent() {
 
 	if (state.isLoading) {
 		return (
-			<div className="flex min-h-full items-center justify-center bg-gray-100/90">
+			<div className="flex min-h-full items-center justify-center bg-gray-50">
 				<div className="text-gray-600">{tCommon('loading')}</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
+		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-50 p-4 pb-6 sm:p-6 lg:p-8">
 			<div className="mb-5 flex flex-wrap items-center justify-between gap-4">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
+					<h1 className="text-2xl font-medium text-gray-900 sm:text-[28px]">{t('title')}</h1>
 					<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
 					<div className="mt-3 flex flex-wrap items-center gap-3 text-xs tabular-nums text-slate-500">
 						<span>{tf('modelsAndRoutes', {models: state.models.length, routes: state.routes.length})}</span>
@@ -118,7 +118,7 @@ function RoutesContent() {
 						<span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-slate-400" />{tCommon('inactive')} {state.statusCounts.inactive}</span>
 					</div>
 				</div>
-				<button type="button" onClick={() => state.handleCreate()} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline-blue-500"><PlusIcon className="h-4 w-4" aria-hidden />{t('flow.addRoute')}</button>
+				<button type="button" onClick={() => state.handleCreate()} className="inline-flex items-center gap-2 rounded-lg admin-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus-visible:outline-gray-500"><PlusIcon className="h-4 w-4" aria-hidden />{t('flow.addRoute')}</button>
 			</div>
 
 			<RouteFilterSidebar
@@ -173,7 +173,7 @@ function RoutesContent() {
 									<button
 										type="button"
 										onClick={state.clearAllFilters}
-										className="font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus-visible:underline"
+										className="font-medium text-gray-800 hover:text-gray-900 focus:outline-none focus-visible:underline"
 									>
 										{tCommon('clearAllFilters')}
 									</button>
@@ -343,7 +343,7 @@ export default function GatewayRoutesPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="flex min-h-full items-center justify-center bg-gray-100/90">
+				<div className="flex min-h-full items-center justify-center bg-gray-50">
 					<div className="text-gray-600">{tCommon('loading')}</div>
 				</div>
 			}

@@ -67,10 +67,10 @@ export function RouteFilterSidebar(props: Props) {
 		<section className="mb-5 rounded-xl border border-slate-200 bg-white" aria-label={t('title')}>
 			<div className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-4 py-3">
 				<AdjustmentsHorizontalIcon className="h-4 w-4 text-slate-400" aria-hidden />
-				<h2 className="text-sm font-semibold text-slate-800">{t('title')}</h2>
+				<h2 className="text-sm font-medium text-slate-800">{t('title')}</h2>
 				<div className="relative ml-auto w-full sm:w-80">
 					<MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" aria-hidden />
-					<input type="search" value={props.searchQuery} onChange={e => props.onSearchChange(e.target.value)} placeholder={tw('searchPlaceholder')} aria-label={tw('searchPlaceholder')} className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+					<input type="search" value={props.searchQuery} onChange={e => props.onSearchChange(e.target.value)} placeholder={tw('searchPlaceholder')} aria-label={tw('searchPlaceholder')} className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs text-slate-800 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100" />
 				</div>
 			</div>
 			<FilterDisclosure className="px-4 py-3" activeCount={active.length - Number(Boolean(props.searchQuery))}>
@@ -86,8 +86,8 @@ export function RouteFilterSidebar(props: Props) {
 				</FilterRow>
 			</FilterDisclosure>
 			{active.length > 0 ? <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/50 px-4 py-2">
-				{active.map(item => <button key={item.key} type="button" onClick={item.clear} aria-label={tw('removeFilter', {filter: item.label})} className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-blue-50 px-2 py-1 text-[11px] text-blue-700 hover:bg-blue-100 focus-visible:outline-blue-500"><span className="truncate">{item.label}</span><XMarkIcon className="h-3 w-3 shrink-0" aria-hidden /></button>)}
-				<button type="button" onClick={props.onClearAllFilters} className="ml-auto text-xs font-medium text-slate-500 hover:text-blue-700">{tc('clearAllFilters')}</button>
+				{active.map(item => <button key={item.key} type="button" onClick={item.clear} aria-label={tw('removeFilter', {filter: item.label})} className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-gray-50 px-2 py-1 text-xs text-gray-800 hover:bg-gray-100 focus-visible:outline-gray-500"><span className="truncate">{item.label}</span><XMarkIcon className="h-3 w-3 shrink-0" aria-hidden /></button>)}
+				<button type="button" onClick={props.onClearAllFilters} className="ml-auto text-xs font-medium text-slate-500 hover:text-gray-800">{tc('clearAllFilters')}</button>
 			</div> : null}
 		</section>
 	);

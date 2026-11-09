@@ -87,7 +87,7 @@ export function ModelFilterSidebar(props: Props) {
 						{modelsByVendor.map(([key, items]) => <option key={key} value={key}>{getModelVendorLabel(key)} ({items.length})</option>)}
 					</select>
 				</label>
-				{hasActiveFilter && <button type="button" onClick={onClearFilter} className="col-span-2 min-h-9 text-left text-xs font-medium text-blue-600">{tFilter('clear')}</button>}
+				{hasActiveFilter && <button type="button" onClick={onClearFilter} className="col-span-2 min-h-9 text-left text-xs font-medium text-gray-800">{tFilter('clear')}</button>}
 			</div>
 			<div className="hidden items-center gap-4 md:flex">
 				<FilterRow className="min-w-0 flex-1">
@@ -123,7 +123,7 @@ export function ModelFilterSidebar(props: Props) {
 					<button
 						type="button"
 						onClick={onClearFilter}
-						className="shrink-0 rounded text-xs font-medium text-slate-500 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+						className="shrink-0 rounded text-xs font-medium text-slate-500 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-1"
 					>
 						{tFilter('clear')}
 					</button>

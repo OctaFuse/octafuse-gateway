@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { CheckIcon, ChevronDownIcon, LanguageIcon } from '@heroicons/react/24/outline';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
@@ -8,47 +8,26 @@ import { locales, type Locale } from '@/lib/locale';
 
 type Variant = 'header' | 'login';
 
-const LOCALE_FLAG: Record<Locale, string> = {
-	en: '🇺🇸',
-	zh: '🇨🇳',
-	ja: '🇯🇵',
-	ko: '🇰🇷',
-};
-
 const triggerClass: Record<Variant, string> = {
-	header:
-		'inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-gray-300 outline-none transition-colors hover:bg-gray-800 hover:text-white focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950 disabled:cursor-not-allowed',
-	login:
-		'inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-gray-500 outline-none transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+  header: 'inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-gray-500 transition-colors hover:bg-gray-200/60 hover:text-gray-950 disabled:cursor-not-allowed',
+  login: 'inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-950 disabled:cursor-not-allowed',
 };
-
 const codeClass: Record<Variant, string> = {
-	header: 'text-xs font-semibold uppercase tracking-wide text-white',
-	login: 'text-xs font-semibold uppercase tracking-wide text-gray-800',
+  header: 'font-mono text-xs text-gray-700',
+  login: 'font-mono text-xs text-gray-700',
 };
-
-const chevronClass: Record<Variant, string> = {
-	header: 'text-gray-500',
-	login: 'text-gray-400',
-};
-
+const chevronClass: Record<Variant, string> = { header: 'text-gray-500', login: 'text-gray-500' };
 const menuClass: Record<Variant, string> = {
-	header:
-		'absolute right-0 top-full z-50 mt-1.5 min-w-[9.5rem] overflow-hidden rounded-lg border border-gray-700 bg-gray-900 p-1 shadow-xl shadow-black/30 ring-1 ring-black/20',
-	login:
-		'absolute right-0 top-full z-50 mt-1.5 min-w-[9.5rem] overflow-hidden rounded-lg border border-gray-200 bg-white p-1 shadow-xl ring-1 ring-black/5',
+  header: 'absolute bottom-full right-0 z-50 mb-2 min-w-[10rem] overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-panel',
+  login: 'absolute right-0 top-full z-50 mt-2 min-w-[10rem] overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-panel',
 };
-
 const optionClass: Record<Variant, string> = {
-	header:
-		'flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left text-sm text-gray-300 outline-none transition hover:bg-gray-800 hover:text-white focus-visible:bg-gray-800 focus-visible:text-white',
-	login:
-		'flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left text-sm text-gray-700 outline-none transition hover:bg-gray-100 hover:text-gray-900 focus-visible:bg-gray-100 focus-visible:text-gray-900',
+  header: 'flex min-h-9 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm text-gray-600 transition-colors hover:bg-gray-100 focus-visible:bg-gray-100',
+  login: 'flex min-h-9 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm text-gray-600 transition-colors hover:bg-gray-100 focus-visible:bg-gray-100',
 };
-
 const selectedOptionClass: Record<Variant, string> = {
-	header: 'bg-blue-500/15 font-semibold text-blue-200',
-	login: 'bg-blue-50 font-semibold text-blue-700',
+  header: 'bg-gray-100 font-medium text-gray-950',
+  login: 'bg-gray-100 font-medium text-gray-950',
 };
 
 export default function LocaleSwitcher({ variant }: { variant: Variant }) {
@@ -120,10 +99,8 @@ export default function LocaleSwitcher({ variant }: { variant: Variant }) {
 				}}
 				className={triggerClass[variant]}
 			>
-				<span className="text-sm leading-none" aria-hidden>
-					{LOCALE_FLAG[locale]}
-				</span>
-				<span className={codeClass[variant]}>{locale}</span>
+				<LanguageIcon className="h-4 w-4" aria-hidden />
+				<span className={codeClass[variant]}>{variant === 'header' ? t(locale) : locale}</span>
 				<ChevronDownIcon
 					className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''} ${chevronClass[variant]}`}
 					aria-hidden
@@ -165,9 +142,7 @@ export default function LocaleSwitcher({ variant }: { variant: Variant }) {
 								className={`${optionClass[variant]} ${selected ? selectedOptionClass[variant] : ''}`}
 							>
 								<span className="inline-flex items-center gap-2">
-									<span className="text-sm leading-none" aria-hidden>
-										{LOCALE_FLAG[code]}
-									</span>
+
 									<span>{t(code)}</span>
 								</span>
 								{selected ? <CheckIcon className="h-4 w-4 shrink-0" aria-hidden /> : null}

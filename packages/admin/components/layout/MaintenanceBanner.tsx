@@ -54,7 +54,7 @@ export default function MaintenanceBanner() {
 		>
 			<ExclamationTriangleIcon className="h-5 w-5 shrink-0" aria-hidden />
 			<span className="min-w-0 flex-1">{t('text')}</span>
-			<Link href="/gateway/maintenance" className="shrink-0 font-semibold underline underline-offset-2 hover:text-red-100">
+			<Link href="/gateway/maintenance" className="shrink-0 font-medium underline underline-offset-2 hover:text-red-100">
 				{t('manage')}
 			</Link>
 		</div>

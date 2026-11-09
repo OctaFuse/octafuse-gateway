@@ -78,7 +78,7 @@ type ProviderModalProps = {
 };
 
 const inputClass =
-	"w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500";
+	"w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-500";
 
 const PROTOCOL_TABS: Array<{
 	key: UpstreamProtocol;
@@ -174,8 +174,8 @@ function EndpointUrlField({
 				</InfoHintPopover>
 				<code
 					id={`${id}-path`}
-					className={`ml-auto break-all rounded px-1.5 py-0.5 text-[11px] font-medium leading-5 ${
-						filled ? "bg-blue-50 text-blue-700" : "bg-gray-100 text-gray-600"
+					className={`ml-auto break-all rounded px-1.5 py-0.5 text-xs font-medium leading-5 ${
+						filled ? "bg-gray-50 text-gray-800" : "bg-gray-100 text-gray-600"
 					}`}
 				>
 					{websocket ? "WSS " : ""}
@@ -188,9 +188,9 @@ function EndpointUrlField({
 				type="url"
 				value={value}
 				onChange={(event) => onChange(event.target.value)}
-				className={`w-full rounded-lg border px-3 py-2.5 font-mono text-[13px] leading-5 text-gray-900 transition-colors placeholder:text-gray-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 ${
+				className={`w-full rounded-lg border px-3 py-2.5 font-mono text-[13px] leading-5 text-gray-900 transition-colors placeholder:text-gray-400 focus:border-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gray-100 ${
 					filled
-						? "border-blue-200 bg-blue-50/30"
+						? "border-gray-200 bg-gray-50/30"
 						: "border-gray-200 bg-white hover:border-gray-300"
 				}`}
 				autoComplete="off"
@@ -202,7 +202,7 @@ function EndpointUrlField({
 					type="button"
 					onClick={() => onChange(suggestedUrl)}
 					title={suggestedUrl}
-					className="mt-2 rounded text-xs font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+					className="mt-2 rounded text-xs font-medium text-gray-800 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 				>
 					{t("useBaseUrlEndpoint")}
 				</button>
@@ -254,7 +254,7 @@ function ProtocolFields({
 								key={value}
 								className={`relative cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
 									mode === value
-										? "bg-white text-blue-700 shadow-sm ring-1 ring-gray-200/80"
+										? "bg-white text-gray-800 shadow-sm ring-1 ring-gray-200/80"
 										: "text-gray-500 hover:text-gray-800"
 								}`}
 							>
@@ -270,7 +270,7 @@ function ProtocolFields({
 									aria-describedby={`${panelId}-mode-hint`}
 								/>
 								<span
-									className="absolute inset-0 rounded-md peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500"
+									className="absolute inset-0 rounded-md peer-focus-visible:ring-2 peer-focus-visible:ring-gray-500"
 									aria-hidden
 								/>
 								{t(value === "all" ? "allCapabilities" : "partialCapabilities")}
@@ -294,7 +294,7 @@ function ProtocolFields({
 				<div className="px-4 py-5">
 					<label
 						htmlFor={`${panelId}-base`}
-						className="mb-2.5 block text-sm font-semibold text-gray-800"
+						className="mb-2.5 block text-sm font-medium text-gray-800"
 					>
 						{t("baseUrl")}
 					</label>
@@ -305,7 +305,7 @@ function ProtocolFields({
 						onChange={(event) =>
 							onChange({ ...form, base: event.target.value })
 						}
-						className="w-full rounded-lg border border-blue-200 bg-blue-50/30 px-3 py-2.5 font-mono text-[13px] leading-5 text-gray-900 placeholder:text-gray-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+						className="w-full rounded-lg border border-gray-200 bg-gray-50/30 px-3 py-2.5 font-mono text-[13px] leading-5 text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gray-100"
 						placeholder={t(`${protocol}Placeholder`)}
 						autoComplete="off"
 						spellCheck={false}
@@ -328,7 +328,7 @@ function ProtocolFields({
 											title={t(`endpointCapabilities.${description}`)}
 											className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
 												checked
-													? "border-blue-200 bg-blue-50 text-blue-700"
+													? "border-gray-200 bg-gray-50 text-gray-800"
 													: "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
 											}`}
 										>
@@ -345,7 +345,7 @@ function ProtocolFields({
 														)
 													)
 												}
-												className="h-3.5 w-3.5 rounded border-gray-300 accent-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+												className="h-3.5 w-3.5 rounded border-gray-300 accent-gray-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
 											/>
 											{t(`endpointCapabilityLabels.${description}`)}
 										</label>
@@ -464,7 +464,7 @@ function ProtocolFields({
 											: "auto",
 								})
 							}
-							className="min-w-0 flex-1 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-100"
+							className="min-w-0 flex-1 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-100"
 						>
 							<option value="auto">{t("geminiAuthAuto")}</option>
 							<option value="query-key">{t("geminiAuthQueryKey")}</option>
@@ -679,14 +679,14 @@ export function ProviderModal(props: ProviderModalProps) {
 						first?.focus();
 					}
 				}}
-				className="flex h-[min(760px,90dvh)] max-h-[calc(100dvh-1rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl outline-none"
+				className="flex h-[min(760px,90dvh)] max-h-[calc(100dvh-1rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby={titleId}
 			>
 				<div className="flex shrink-0 items-start justify-between gap-4 px-5 pb-5 pt-6 sm:px-7">
 					<div>
-						<h2 id={titleId} className="text-lg font-semibold text-gray-900">
+						<h2 id={titleId} className="text-lg font-medium text-gray-900">
 							{editingProvider ? t("editTitle") : t("newTitle")}
 						</h2>
 						<p className="mt-1.5 text-sm text-gray-500">
@@ -731,9 +731,9 @@ export function ProviderModal(props: ProviderModalProps) {
 								}}
 								onKeyDown={navigateTabs}
 								tabIndex={activeTab === key ? 0 : -1}
-								className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 pb-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+								className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 pb-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${
 									activeTab === key
-										? "border-blue-600 text-blue-700"
+										? "border-gray-600 text-gray-800"
 										: "border-transparent text-gray-500 hover:text-gray-900"
 								}`}
 							>
@@ -743,7 +743,7 @@ export function ProviderModal(props: ProviderModalProps) {
 									<span
 										className={`rounded-full px-2 py-0.5 text-xs ${
 											activeTab === key
-												? "bg-blue-50 text-blue-700"
+												? "bg-gray-50 text-gray-800"
 												: "bg-gray-100 text-gray-600"
 										}`}
 									>
@@ -758,7 +758,7 @@ export function ProviderModal(props: ProviderModalProps) {
 							type="button"
 							onClick={() => setShowEndpointsJson((value) => !value)}
 							aria-pressed={showEndpointsJson}
-							className="mb-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							className="mb-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 						>
 							<CodeBracketIcon className="h-4 w-4" aria-hidden />
 							{t(
@@ -798,7 +798,7 @@ export function ProviderModal(props: ProviderModalProps) {
 												onChange={(e) =>
 													onFormChange({ ...formData, kind: e.target.value })
 												}
-												className="h-10 min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+												className="h-10 min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
 												required={!editingProvider}
 											>
 												<option value="" disabled={!showUnclassified}>
@@ -849,7 +849,7 @@ export function ProviderModal(props: ProviderModalProps) {
 											onChange={(e) =>
 												onFormChange({ ...formData, name: e.target.value })
 											}
-											className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+											className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
 											placeholder={t("namePlaceholder")}
 											autoComplete="off"
 											required
@@ -873,7 +873,7 @@ export function ProviderModal(props: ProviderModalProps) {
 														endpoints: editingProvider?.endpoints,
 													}).catalogLinks
 												}
-												className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800"
+												className="inline-flex items-center gap-1 text-xs font-medium text-gray-800 hover:text-gray-900"
 											/>
 										</div>
 										<div className="relative">
@@ -982,7 +982,7 @@ export function ProviderModal(props: ProviderModalProps) {
 											</h3>
 											<p
 												tabIndex={0}
-												className="mt-2 max-h-40 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words text-sm leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-blue-200 md:min-h-0 md:max-h-none md:flex-1"
+												className="mt-2 max-h-40 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words text-sm leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-gray-200 md:min-h-0 md:max-h-none md:flex-1"
 											>
 												{catalogIntro}
 											</p>
@@ -1002,7 +1002,7 @@ export function ProviderModal(props: ProviderModalProps) {
 											onChange={(e) =>
 												onFormChange({ ...formData, note: e.target.value })
 											}
-											className="block h-32 max-h-32 w-full resize-none overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+											className="block h-32 max-h-32 w-full resize-none overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-500/10"
 											placeholder={t("notePlaceholder")}
 											autoComplete="off"
 										/>
@@ -1043,7 +1043,7 @@ export function ProviderModal(props: ProviderModalProps) {
 													onClick={() => setEndpointTab(key)}
 													onKeyDown={navigateTabs}
 													tabIndex={selected ? 0 : -1}
-													className={`inline-flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+													className={`inline-flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${
 														selected
 															? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
 															: "text-gray-600 hover:bg-white/70 hover:text-gray-900"
@@ -1143,7 +1143,7 @@ export function ProviderModal(props: ProviderModalProps) {
 							type="button"
 							onClick={() => void onSave()}
 							disabled={busy}
-							className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+							className="rounded-md admin-primary px-4 py-2 text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{isSaving
 								? tCommon("saving")

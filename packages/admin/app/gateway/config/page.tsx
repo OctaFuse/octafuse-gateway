@@ -114,7 +114,7 @@ function WebhookUrlField({
     <div>
       <div className="mb-1 flex items-center justify-between gap-2">
         <label htmlFor={id} className="block text-xs font-medium text-gray-600">
-          {label} <span className="ml-1 text-[11px] font-normal text-gray-400">{optionalHint}</span>
+          {label} <span className="ml-1 text-xs font-normal text-gray-400">{optionalHint}</span>
         </label>
         <button
           type="button"
@@ -599,7 +599,7 @@ export default function GatewayConfigPage() {
   if (loadError) {
     return (
       <div className="p-4 sm:p-6 lg:p-8">
-        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <h1 className="text-2xl font-medium text-gray-900">{t('title')}</h1>
         <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-5" role="alert">
           <p className="font-medium text-red-800">{t('ux.loadFailed')}</p>
           <p className="mt-1 text-sm text-red-700">{loadError}</p>
@@ -618,7 +618,7 @@ export default function GatewayConfigPage() {
   return (
     <div className="min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <h1 className="text-2xl font-medium text-gray-900">{t('title')}</h1>
         <p className="mt-1 text-sm text-gray-500">{t('ux.subtitle')}</p>
       </div>
       {saveError && (
@@ -759,7 +759,7 @@ export default function GatewayConfigPage() {
               <div
                 key={mode}
                 className={`rounded-lg border p-3 ${
-                  userChargedModeValue === mode ? 'border-indigo-300 bg-indigo-50/50' : 'border-gray-200 bg-white'
+                  userChargedModeValue === mode ? 'border-gray-300 bg-gray-50/50' : 'border-gray-200 bg-white'
                 }`}
               >
                 <div className="flex items-center gap-2">

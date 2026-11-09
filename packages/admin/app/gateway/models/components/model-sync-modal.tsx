@@ -27,7 +27,7 @@ function Value({ value, tone }: { value: string | null; tone: 'old' | 'new' | 'n
 	const toneClass =
 		tone === 'old' ? 'bg-red-50 text-red-900' : tone === 'new' ? 'bg-emerald-50 text-emerald-900' : '';
 	return (
-		<span className={`break-all rounded px-1 py-0.5 font-mono text-[11px] leading-5 ${toneClass}`}>{value}</span>
+		<span className={`break-all rounded px-1 py-0.5 font-mono text-xs leading-5 ${toneClass}`}>{value}</span>
 	);
 }
 
@@ -71,11 +71,11 @@ function PricingDiff({ field, currency }: { field: ModelSyncPricingField; curren
 					<tbody className="divide-y divide-gray-100 align-top">
 						{field.rows.map((row) => (
 							<tr key={row.path}>
-								<td className="py-1.5 pr-2 font-mono text-[11px] text-gray-600">
+								<td className="py-1.5 pr-2 font-mono text-xs text-gray-600">
 									<span className="break-all">{row.path}</span>
 									{row.status === 'removed' ? (
 										<span
-											className={`ml-1 inline-flex rounded-full px-1.5 py-0.5 text-[10px] ring-1 ring-inset ${STATUS_STYLE.removed}`}
+											className={`ml-1 inline-flex rounded-full px-1.5 py-0.5 text-xs ring-1 ring-inset ${STATUS_STYLE.removed}`}
 										>
 											{t('status.removed')}
 										</span>
@@ -112,22 +112,22 @@ function FieldBlock(props: {
 		if (wantApply !== apply) onToggle();
 	};
 	const segment = (active: boolean, tone: 'official' | 'keep') =>
-		`px-2.5 py-1 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50 ${
+		`px-2.5 py-1 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:opacity-50 ${
 			active
 				? tone === 'official'
-					? 'bg-blue-600 text-white'
+					? 'admin-primary'
 					: 'bg-slate-700 text-white'
 				: 'bg-white text-gray-600 hover:bg-gray-50'
 		}`;
 
 	return (
 		<div
-			className={`rounded-lg border p-3 ${apply ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200 bg-white'}`}
+			className={`rounded-lg border p-3 ${apply ? 'border-gray-200 bg-gray-50/30' : 'border-gray-200 bg-white'}`}
 		>
 			<div className="mb-2 flex flex-wrap items-center gap-2">
-				<h4 className="text-sm font-semibold text-gray-900">{title}</h4>
+				<h4 className="text-sm font-medium text-gray-900">{title}</h4>
 				<span
-					className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${STATUS_STYLE[field.status]}`}
+					className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_STYLE[field.status]}`}
 				>
 					{t(`status.${field.status}`)}
 				</span>
@@ -177,10 +177,10 @@ function ModelBlock(props: { sync: ModelSyncState; model: ModelSyncModelEntry; c
 		<section className="rounded-xl border border-gray-200 bg-white shadow-sm">
 			<header className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-3">
 				<div className="min-w-0">
-					<h3 className="truncate text-sm font-semibold text-gray-900">
+					<h3 className="truncate text-sm font-medium text-gray-900">
 						{model.display_name || model.model_id}
 					</h3>
-					<p className="truncate font-mono text-[11px] text-gray-500">{model.model_id}</p>
+					<p className="truncate font-mono text-xs text-gray-500">{model.model_id}</p>
 				</div>
 				<span className="text-xs text-gray-500">
 					{model.routes_count <= 0
@@ -191,7 +191,7 @@ function ModelBlock(props: { sync: ModelSyncState; model: ModelSyncModelEntry; c
 					type="button"
 					onClick={() => void sync.runApply([model.model_id])}
 					disabled={sync.submitting || selectedCount === 0}
-					className="ml-auto rounded-md border border-blue-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+					className="ml-auto rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-800 hover:bg-gray-50 disabled:opacity-50"
 				>
 					{t('applyModel', { count: selectedCount })}
 				</button>
@@ -221,7 +221,7 @@ function GroupPanel(props: { sync: ModelSyncState; group: ModelSyncVendorGroup; 
 			<div className="flex flex-wrap items-center gap-3">
 				<ModelVendorIcon vendor={group.vendor} size="compact" />
 				<div className="min-w-0">
-					<h3 className="truncate text-base font-semibold text-gray-900">{group.vendor_label}</h3>
+					<h3 className="truncate text-base font-medium text-gray-900">{group.vendor_label}</h3>
 					<p className="text-xs text-gray-500">{t('groupHint')}</p>
 				</div>
 				<div className="ml-auto flex flex-wrap gap-2">
@@ -269,14 +269,14 @@ export function ModelSyncModal({ sync }: ModelSyncModalProps) {
 			}}
 		>
 			<div
-				className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+				className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg bg-white shadow-panel"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="model-sync-title"
 			>
 				<div className="flex shrink-0 items-start justify-between gap-3 border-b px-6 py-4">
 					<div>
-						<h2 id="model-sync-title" className="text-xl font-bold text-gray-900">
+						<h2 id="model-sync-title" className="text-xl font-semibold text-gray-900">
 							{t('title')}
 						</h2>
 						<p className="mt-1 text-xs text-gray-500">{t('subtitle')}</p>
@@ -320,14 +320,14 @@ export function ModelSyncModal({ sync }: ModelSyncModalProps) {
 												type="button"
 												onClick={() => sync.setActiveVendor(group.vendor)}
 												aria-current={active ? 'true' : undefined}
-												className={`flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-													active ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+												className={`flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${
+													active ? 'bg-gray-100 text-gray-950' : 'text-gray-700 hover:bg-gray-100'
 												}`}
 											>
 												<ModelVendorIcon vendor={group.vendor} size="compact" />
 												<span className="min-w-0 flex-1">
 													<span className="block truncate font-medium">{group.vendor_label}</span>
-													<span className="block text-[11px] text-gray-500">
+													<span className="block text-xs text-gray-500">
 														{t('groupSummary', { models: group.models.length, fields: fieldCount })}
 													</span>
 												</span>
@@ -395,7 +395,7 @@ export function ModelSyncModal({ sync }: ModelSyncModalProps) {
 						type="button"
 						onClick={() => void sync.runApply()}
 						disabled={sync.submitting || sync.loading || sync.totals.fields === 0}
-						className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+						className="rounded-md admin-primary px-4 py-2 text-white hover:bg-gray-800 disabled:opacity-50"
 					>
 						{sync.submitting ? t('applying') : t('applyAll', { count: sync.totals.models })}
 					</button>

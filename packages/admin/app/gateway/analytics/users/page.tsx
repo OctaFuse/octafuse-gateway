@@ -128,7 +128,7 @@ export default function UserUsagePage() {
   };
 
   const Th = ({ label, columnKey }: { label: string; columnKey: SortKey }) => (
-    <th hidden={!analyticsColumnVisible(columnKey, view)} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+    <th hidden={!analyticsColumnVisible(columnKey, view)} className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal whitespace-nowrap">
       <button type="button" onClick={() => toggleSort(columnKey)} className="hover:text-gray-700">
         {label} {sortKey === columnKey && (sortDir === 'asc' ? '↑' : '↓')}
       </button>
@@ -186,7 +186,7 @@ export default function UserUsagePage() {
   return (
     <div className="min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <h1 className="text-2xl font-medium text-gray-900">{t('title')}</h1>
         <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
       <div className="mb-4 grid min-w-0 gap-4 rounded-xl border border-gray-200 bg-white p-3 sm:p-4 2xl:grid-cols-[minmax(0,1fr)_auto] 2xl:items-end">
@@ -198,7 +198,7 @@ export default function UserUsagePage() {
       {detailError && <p role="alert" className="mb-3 text-sm text-red-600">{tA('insights.detailError')}</p>}
       {!isLoading && !loadError && <AnalyticsInsights rows={filteredRows} currency={billingCurrency} scope="users" />}
       <AnalyticsControls search={search} onSearch={setSearch} view={view} onView={setView} count={filteredRows.length} users={true} />
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white rounded-lg shadow-panel overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 flex flex-wrap justify-between items-center gap-x-4 gap-y-2 text-sm">
           <button
             type="button"
@@ -242,13 +242,13 @@ export default function UserUsagePage() {
                 return (
                   <Fragment key={r.user_email}>
                     <tr
-                      className={`cursor-pointer hover:bg-gray-50 ${isExpanded ? 'bg-blue-50/40' : budgetCritical ? 'bg-red-50' : budgetHigh ? 'bg-yellow-50' : ''}`}
+                      className={`cursor-pointer hover:bg-gray-50 ${isExpanded ? 'bg-gray-50/40' : budgetCritical ? 'bg-red-50' : budgetHigh ? 'bg-yellow-50' : ''}`}
                       onClick={() => void toggleUserModels(r.user_email)}
                     >
                       <td hidden={!analyticsColumnVisible("user_email", view)} className="px-4 py-3 text-sm">
                         <button
                           type="button"
-                          className="text-left font-medium text-blue-600 hover:text-blue-800"
+                          className="text-left font-medium text-gray-800 hover:text-gray-900"
                           aria-expanded={isExpanded}
                         >
                           <Link
@@ -293,30 +293,30 @@ export default function UserUsagePage() {
                       </td>
                     </tr>
                     {isExpanded ? (
-                      <tr key={`${r.user_email}:models`} className="bg-blue-50/60">
-                        <td colSpan={["user_email", "request_count", "input_tokens", "output_tokens", "standard_cost", "charged_cost", "metered_cost", "distinct_models", "last_active_at", "budget_usage_rate", "wallet_granted", "success_rate"].filter(key => analyticsColumnVisible(key, view)).length} className="border-l-4 border-blue-300 px-5 py-4">
+                      <tr key={`${r.user_email}:models`} className="bg-gray-50/60">
+                        <td colSpan={["user_email", "request_count", "input_tokens", "output_tokens", "standard_cost", "charged_cost", "metered_cost", "distinct_models", "last_active_at", "budget_usage_rate", "wallet_granted", "success_rate"].filter(key => analyticsColumnVisible(key, view)).length} className="border-l-4 border-gray-300 px-5 py-4">
                           {isModelRowsLoading ? (
                             <div className="py-4 text-sm text-gray-500">{tA('loadingModelUsage')}</div>
                           ) : modelRows.length === 0 ? (
                             <div className="py-4 text-sm text-gray-500">{tA('noModelUsageForUser')}</div>
                           ) : (
-                            <div className="overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm ring-1 ring-blue-100">
+                            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm ring-1 ring-gray-100">
                               <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                   <tr>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.model')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.routeGroup')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.requests')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.inputTokens')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.outputTokens')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.cacheHitRate')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.standard')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.charged')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.metered')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.successRate')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgLatencyMs')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.ttft')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgUpstreamMs')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.model')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.routeGroup')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.requests')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.inputTokens')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.outputTokens')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.cacheHitRate')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.standard')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.charged')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.metered')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.successRate')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.avgLatencyMs')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.ttft')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.avgUpstreamMs')}</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -329,7 +329,7 @@ export default function UserUsagePage() {
                                         <td className="px-3 py-2 text-sm">
                                           <Link
                                             href={`/gateway/request-logs?${modelLogQuery.toString()}`}
-                                            className="text-blue-600 hover:underline"
+                                            className="text-gray-800 hover:underline"
                                             onClick={(event) => event.stopPropagation()}
                                           >
                                             {modelRow.model_id}

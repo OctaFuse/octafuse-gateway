@@ -32,7 +32,7 @@ export function ModelPricingJsonPreview({
 		<div className="flex min-h-80 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200">
 			<div className="flex items-start justify-between gap-4 border-b border-gray-200 bg-gray-50/70 px-4 py-3">
 				<div>
-					<h3 className="text-sm font-semibold text-gray-800">
+					<h3 className="text-sm font-medium text-gray-800">
 						{t('viewPricingProfileJson')}
 					</h3>
 					<p className="mt-1 text-xs leading-5 text-gray-500">
@@ -64,7 +64,7 @@ export function ModelPricingJsonPreview({
 				spellCheck={false}
 				aria-label={t('viewPricingProfileJson')}
 				value={preview.text}
-				className={`min-h-64 w-full flex-1 resize-none bg-gray-50/30 p-4 font-mono text-xs leading-6 outline-none focus:ring-2 focus:ring-inset focus:ring-blue-200 ${
+				className={`min-h-64 w-full flex-1 resize-none bg-gray-50/30 p-4 font-mono text-xs leading-6 outline-none focus:ring-2 focus:ring-inset focus:ring-gray-200 ${
 					preview.ok ? 'text-gray-800' : 'text-red-600'
 				}`}
 			/>

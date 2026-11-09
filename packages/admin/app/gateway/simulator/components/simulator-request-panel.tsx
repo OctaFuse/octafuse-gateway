@@ -194,8 +194,8 @@ export function SimulatorRequestPanel({
 								onClick={() => onGeminiActionChange(action)}
 								className={
 									active
-										? 'rounded px-2.5 py-1 font-mono text-[11px] font-medium bg-white text-gray-900 shadow-sm'
-										: 'rounded px-2.5 py-1 font-mono text-[11px] font-medium text-gray-600 hover:text-gray-900'
+										? 'rounded px-2.5 py-1 font-mono text-xs font-medium bg-white text-gray-900 shadow-sm'
+										: 'rounded px-2.5 py-1 font-mono text-xs font-medium text-gray-600 hover:text-gray-900'
 								}
 							>
 								{action}
@@ -244,7 +244,7 @@ export function SimulatorRequestPanel({
 	return (
 		<section className="flex h-full min-h-0 flex-col space-y-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm">
 			<div className="flex flex-wrap items-center justify-between gap-2">
-				<h2 className="text-sm font-semibold text-gray-900">{t('requestBody')}</h2>
+				<h2 className="text-sm font-medium text-gray-900">{t('requestBody')}</h2>
 				<div className="flex flex-wrap items-center gap-2">
 					<button
 						type="button"
@@ -269,7 +269,7 @@ export function SimulatorRequestPanel({
 							onClick={onSend}
 							disabled={!canSend}
 							title={sendBlockedHint ?? undefined}
-							className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+							className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 admin-primary text-sm font-medium rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							<PaperAirplaneIcon className="h-4 w-4" />
 							{tCommon('send')}
@@ -279,7 +279,7 @@ export function SimulatorRequestPanel({
 			</div>
 			{sendBlockedHint && !sending ? <p className="text-xs text-gray-500 -mt-1">{sendBlockedHint}</p> : null}
 			{infoHint ? (
-				<div className="p-2.5 bg-blue-50 border border-blue-200 rounded-md text-blue-900 text-sm">
+				<div className="p-2.5 bg-gray-50 border border-gray-200 rounded-md text-gray-950 text-sm">
 					{infoHint}
 				</div>
 			) : null}
@@ -303,7 +303,7 @@ export function SimulatorRequestPanel({
 								<input
 									type="radio"
 									name="simulatorAudioInput"
-									className="text-blue-600 focus:ring-blue-500"
+									className="text-gray-800 focus:ring-gray-500"
 									checked={audioInputMode === 'file'}
 									onChange={() => onAudioInputModeChange?.('file')}
 									disabled={sending}
@@ -314,7 +314,7 @@ export function SimulatorRequestPanel({
 								<input
 									type="radio"
 									name="simulatorAudioInput"
-									className="text-blue-600 focus:ring-blue-500"
+									className="text-gray-800 focus:ring-gray-500"
 									checked={audioInputMode === 'microphone'}
 									onChange={() => onAudioInputModeChange?.('microphone')}
 									disabled={sending}
@@ -330,12 +330,12 @@ export function SimulatorRequestPanel({
 								type="file"
 								accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.flac,.pcm"
 								disabled={sending}
-								className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700`}
+								className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-gray-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-gray-800`}
 								onChange={(e) => {
 									onAudioFileChange?.(e.target.files?.[0] ?? null);
 								}}
 							/>
-							<p className="mt-1 text-[11px] text-gray-400">
+							<p className="mt-1 text-xs text-gray-400">
 								{showAudioRealtimeMicrophone
 									? protocol === 'elevenlabs'
 										? t('audioRealtimeFileElevenLabsHint')
@@ -385,7 +385,7 @@ export function SimulatorRequestPanel({
 									<input
 										type="radio"
 										name="simulatorImageOperation"
-										className="text-blue-600 focus:ring-blue-500"
+										className="text-gray-800 focus:ring-gray-500"
 										checked={imageOperation === op}
 										onChange={() => onImageOperationChange?.(op)}
 										disabled={sending}
@@ -418,13 +418,13 @@ export function SimulatorRequestPanel({
 								accept="image/png,image/jpeg,image/webp,image/*"
 								multiple
 								disabled={sending}
-								className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700`}
+								className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-gray-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-gray-800`}
 								onChange={(e) => {
 									const list = e.target.files ? Array.from(e.target.files) : [];
 									onEditFilesChange?.(list.slice(0, IMAGE_MAX_REFERENCE_COUNT));
 								}}
 							/>
-							<p className="mt-1 text-[11px] text-gray-400">
+							<p className="mt-1 text-xs text-gray-400">
 								{t('referenceImagesHint', { max: IMAGE_MAX_REFERENCE_COUNT })}
 								{editFiles.length > 0
 									? ` · ${t('referenceImagesSelected', {
@@ -500,7 +500,7 @@ export function SimulatorRequestPanel({
 				{wireOpen ? (
 					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-md border border-gray-200 bg-slate-50/80 xl:max-w-[50%]">
 						<div className="flex shrink-0 items-center justify-between gap-2 border-b border-gray-200 px-3 py-2">
-							<h3 className="text-xs font-semibold text-gray-800">{t('wirePreview')}</h3>
+							<h3 className="text-xs font-medium text-gray-800">{t('wirePreview')}</h3>
 							<button
 								type="button"
 								onClick={() => onWireOpenChange(false)}
@@ -514,16 +514,16 @@ export function SimulatorRequestPanel({
 							{displayWire ? (
 								<>
 									<div>
-										<div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+										<div className="mb-1 text-xs font-medium normal-case tracking-normal text-gray-500">
 											{t('requestTargetUrl')}
 										</div>
 										<p className="break-all font-mono text-xs text-gray-800">
-											<span className="font-semibold text-gray-700">{displayWire.method}</span>{' '}
+											<span className="font-medium text-gray-700">{displayWire.method}</span>{' '}
 											{displayWire.url}
 										</p>
 									</div>
 									<div>
-										<div className="mb-1 text-[11px] font-medium text-gray-500">{t('wireHeaders')}</div>
+										<div className="mb-1 text-xs font-medium text-gray-500">{t('wireHeaders')}</div>
 										<pre className={codeBlockClass}>
 											{Object.entries(displayWire.headers)
 												.map(([k, v]) => `${k}: ${v}`)
@@ -531,7 +531,7 @@ export function SimulatorRequestPanel({
 										</pre>
 									</div>
 									<div>
-										<div className="mb-1 text-[11px] font-medium text-gray-500">{t('wireBody')}</div>
+										<div className="mb-1 text-xs font-medium text-gray-500">{t('wireBody')}</div>
 										<pre className={codeBlockClass}>
 											{displayWire.isMultipart ? displayWire.bodyText : prettyJsonBody(displayWire.bodyText)}
 										</pre>

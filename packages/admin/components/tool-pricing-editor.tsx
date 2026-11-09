@@ -48,7 +48,7 @@ export function ToolPricingEditor({
 							onClick={() => choose(option === 'perCall')}
 							className={`${
 								compact ? 'rounded-md px-4 py-1.5' : 'rounded-xl border p-4 text-left'
-							} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+							} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${
 								free === (option === 'free')
 									? compact
 										? 'bg-white shadow-sm'
@@ -58,7 +58,7 @@ export function ToolPricingEditor({
 									: 'border-gray-200 bg-white hover:border-gray-400'
 							}`}
 						>
-							<span className="block text-sm font-semibold text-gray-900">
+							<span className="block text-sm font-medium text-gray-900">
 								{t(option === 'free' ? 'freeMode' : unitLabel === 'request' ? 'perCallMode' : 'perUnitMode')}
 							</span>
 							{!compact ? (
@@ -105,7 +105,7 @@ export function ToolPricingEditor({
 							}
 							className={`mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 ${
 								compact ? 'py-2' : 'py-2.5'
-							} font-mono text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 read-only:bg-gray-100 read-only:text-gray-500`}
+							} font-mono text-sm shadow-sm focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100 read-only:bg-gray-100 read-only:text-gray-500`}
 						/>
 						{!compact ? (
 							<span className="mt-1.5 block text-xs font-normal leading-5 text-gray-500">{t(`${key}Hint`)}</span>
@@ -129,7 +129,7 @@ export function ToolPricingEditor({
 							<dt className="text-xs text-gray-500" title={compact ? t(`${key}Formula`) : undefined}>
 								{t(`${key}Result`)}
 							</dt>
-							<dd className="mt-1 font-mono text-base font-semibold text-gray-900">
+							<dd className="mt-1 font-mono text-base font-medium text-gray-900">
 								{prices ? `${formatGatewayMoneyCompact(prices[key], currency)} / ${displayUnit}` : '—'}
 							</dd>
 							{!compact ? <p className="mt-1 text-xs text-gray-500">{t(`${key}Formula`)}</p> : null}

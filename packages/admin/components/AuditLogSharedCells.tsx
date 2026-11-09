@@ -75,13 +75,13 @@ export function AuditLogSharedCells({
 							{auditEnumLabel(t, 'eventTypes', item.event_type)}
 						</span>
 					</div>
-					<div className="min-w-0 truncate text-[11px]" title={ex.source || undefined}>
+					<div className="min-w-0 truncate text-xs" title={ex.source || undefined}>
 						<span className="text-gray-500">{t('labels.from')}</span>
 						<span className="text-violet-800">{auditEnumLabel(t, 'sourceChannels', ex.source)}</span>
 					</div>
 					<div className="min-w-0 line-clamp-3 text-gray-800" title={reasonDisplay.title || undefined}>
 						<span className="text-gray-500">{t('labels.reason')}</span>
-						<span className={reasonDisplay.isMono ? 'font-mono text-[11px] text-gray-900' : 'text-[11px]'}>
+						<span className={reasonDisplay.isMono ? 'font-mono text-xs text-gray-900' : 'text-xs'}>
 							{reasonDisplay.line}
 						</span>
 					</div>
@@ -103,11 +103,11 @@ export function AuditLogSharedCells({
 								return (
 									<span className="inline-flex min-w-0 flex-wrap items-baseline gap-1" title={ex.actor_id}>
 										{kind ? (
-											<span className="rounded bg-gray-100 px-1 text-[10px] text-gray-700" title={kind}>
+											<span className="rounded bg-gray-100 px-1 text-xs text-gray-700" title={kind}>
 												{auditEnumLabel(t, 'actorKinds', kind)}
 											</span>
 										) : null}
-										<span className="break-all font-mono text-[11px] text-gray-700">{shortAuditId(identifier)}</span>
+										<span className="break-all font-mono text-xs text-gray-700">{shortAuditId(identifier)}</span>
 									</span>
 								);
 							})()
@@ -127,7 +127,7 @@ export function AuditLogSharedCells({
 							<span className="shrink-0 text-gray-600">{t('labels.user')}</span>
 							<Link
 								href={`/gateway/users/${encodeURIComponent(item.user_id)}`}
-								className="min-w-0 truncate text-blue-600 hover:underline"
+								className="min-w-0 truncate text-gray-800 hover:underline"
 								title={item.user_id}
 							>
 								{shortAuditId(item.user_id)}
@@ -241,7 +241,7 @@ export function AuditLogSharedCells({
 							<button
 								type="button"
 								onClick={() => onViewDetail(item)}
-								className="mt-1 text-xs text-blue-600 hover:underline"
+								className="mt-1 text-xs text-gray-800 hover:underline"
 							>
 								{t('labels.viewChangeDetail')}
 								{summaryDiffRows.length > 3 ? ` · ${t('labels.more', { count: summaryDiffRows.length - 3 })}` : ''}
@@ -254,7 +254,7 @@ export function AuditLogSharedCells({
 								<button
 									type="button"
 									onClick={() => onViewDetail(item)}
-									className="ml-2 text-xs text-blue-600 hover:underline"
+									className="ml-2 text-xs text-gray-800 hover:underline"
 								>
 									{t('labels.viewChangeDetail')}
 								</button>
@@ -286,10 +286,10 @@ export function AuditChangeDetailModal({
 			aria-modal="true"
 			aria-labelledby="audit-change-detail-title"
 		>
-			<div className="flex max-h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-xl">
+			<div className="flex max-h-[85vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-panel">
 				<div className="flex items-start justify-between gap-4 border-b border-gray-200 px-5 py-4">
 					<div className="min-w-0">
-						<h2 id="audit-change-detail-title" className="text-lg font-semibold text-gray-900">
+						<h2 id="audit-change-detail-title" className="text-lg font-medium text-gray-900">
 							{t('labels.changeDetailTitle')}
 						</h2>
 						<div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
@@ -319,13 +319,13 @@ export function AuditChangeDetailModal({
 									</div>
 									<div className="grid gap-3 md:grid-cols-2">
 										<div className="min-w-0">
-											<div className="mb-1 text-xs font-medium uppercase text-gray-500">{t('labels.originalValue')}</div>
+											<div className="mb-1 text-xs font-medium normal-case text-gray-500">{t('labels.originalValue')}</div>
 											<pre className="max-w-full whitespace-pre-wrap break-all rounded bg-amber-50 px-3 py-2 font-mono text-xs leading-relaxed text-amber-900">
 												{row.before}
 											</pre>
 										</div>
 										<div className="min-w-0">
-											<div className="mb-1 text-xs font-medium uppercase text-gray-500">{t('labels.changedValue')}</div>
+											<div className="mb-1 text-xs font-medium normal-case text-gray-500">{t('labels.changedValue')}</div>
 											<pre className="max-w-full whitespace-pre-wrap break-all rounded bg-sky-50 px-3 py-2 font-mono text-xs leading-relaxed text-sky-900">
 												{row.after}
 											</pre>

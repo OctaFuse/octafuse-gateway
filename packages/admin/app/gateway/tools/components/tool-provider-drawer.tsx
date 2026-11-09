@@ -141,13 +141,13 @@ export function ToolProviderDrawer({
 				aria-labelledby={titleId}
 				aria-busy={busy}
 				onKeyDown={onPanelKeyDown}
-				className={`relative flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-lg bg-white shadow-xl ${
+				className={`relative flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-lg bg-white shadow-panel ${
 					wide ? 'max-w-5xl' : 'max-w-[760px]'
 				}`}
 			>
 				<div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-5 py-3 sm:px-6">
 					<div className="min-w-0 flex-1">
-						<h2 id={titleId} className="break-words text-xl font-bold text-gray-900">
+						<h2 id={titleId} className="break-words text-xl font-semibold text-gray-900">
 							{title}
 						</h2>
 						{subtitle ? <p className="mt-1 text-sm text-gray-500">{subtitle}</p> : null}
@@ -157,7 +157,7 @@ export function ToolProviderDrawer({
 									href={docsHref}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="text-xs font-medium text-blue-600 hover:underline"
+									className="text-xs font-medium text-gray-800 hover:underline"
 								>
 									{docsLabel}
 								</a>
@@ -174,7 +174,7 @@ export function ToolProviderDrawer({
 						type="button"
 						onClick={onClose}
 						disabled={busy}
-						className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50"
+						className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:opacity-50"
 						aria-label={tCommon('close')}
 					>
 						<XMarkIcon className="h-5 w-5" aria-hidden />

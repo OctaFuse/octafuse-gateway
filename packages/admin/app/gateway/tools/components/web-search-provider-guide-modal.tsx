@@ -13,7 +13,7 @@ export function WebSearchProviderGuideContent({ activeProvider }: { activeProvid
 	const tProviders = useTranslations('tools.webSearch.providers');
 	return (
 		<div>
-			<h3 className="text-base font-semibold text-gray-900">{t('title')}</h3>
+			<h3 className="text-base font-medium text-gray-900">{t('title')}</h3>
 			<p className="mb-4 mt-1 text-sm text-gray-500">{t('subtitle')}</p>
 			<div className="space-y-4">
 				<p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
@@ -27,18 +27,18 @@ export function WebSearchProviderGuideContent({ activeProvider }: { activeProvid
 						<section
 							key={id}
 							className={`rounded-lg border px-4 py-3 ${
-								isActive ? 'border-blue-300 bg-blue-50/60' : 'border-gray-200 bg-white'
+								isActive ? 'border-gray-300 bg-gray-50/60' : 'border-gray-200 bg-white'
 							}`}
 						>
 							<div className="flex flex-wrap items-center gap-2">
-								<h3 className="text-sm font-semibold text-gray-900">{tProviders(id)}</h3>
+								<h3 className="text-sm font-medium text-gray-900">{tProviders(id)}</h3>
 								{badge ? (
-									<span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
+									<span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
 										{badge}
 									</span>
 								) : null}
 								{isActive ? (
-									<span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-800">
+									<span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-900">
 										{t('selected')}
 									</span>
 								) : null}
@@ -58,7 +58,7 @@ export function WebSearchProviderGuideContent({ activeProvider }: { activeProvid
 								href={WEB_SEARCH_PROVIDER_DOCS_URL[id]}
 								target="_blank"
 								rel="noopener noreferrer"
-								className="mt-2 inline-block text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
+								className="mt-2 inline-block text-xs font-medium text-gray-800 hover:text-gray-900 hover:underline"
 							>
 								{t('docsLink')}
 							</a>

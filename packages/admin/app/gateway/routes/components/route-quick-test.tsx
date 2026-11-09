@@ -326,7 +326,7 @@ function QuickTestContent({
 						type="button"
 						onClick={send}
 						disabled={Boolean(configError) || realtime}
-						className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+						className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg admin-primary px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						<PlayIcon className="h-4 w-4" />
 						{t('send')}
@@ -346,7 +346,7 @@ function QuickTestContent({
 						aria-pressed={mobilePane === pane}
 						onClick={() => setMobilePane(pane)}
 						className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium ${
-							mobilePane === pane ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500'
+							mobilePane === pane ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'
 						}`}
 					>
 						{t(pane)}
@@ -372,7 +372,7 @@ function QuickTestContent({
 										else setBodyText(sample);
 										setError('');
 									}}
-									className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50"
+									className="shrink-0 text-xs font-medium text-gray-800 hover:text-gray-900 disabled:opacity-50"
 								>
 									{t('reset')}
 								</button>
@@ -388,7 +388,7 @@ function QuickTestContent({
 											value={activeSample}
 											disabled={sending}
 											onChange={(e) => applySample(e.target.value as PlaygroundLlmSampleId)}
-											className="min-w-0 rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800 outline-none focus:border-blue-500"
+											className="min-w-0 rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800 outline-none focus:border-gray-500"
 										>
 											<option value="custom" disabled>
 												{t('templateCustom')}
@@ -409,7 +409,7 @@ function QuickTestContent({
 												if (family === 'gemini') setGeminiStream(e.target.checked);
 												else setBodyText(setQuickTestStreaming(bodyText, family, e.target.checked));
 											}}
-											className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+											className="rounded border-gray-300 text-gray-800 focus:ring-gray-500"
 										/>
 										{t('streaming')}
 									</label>
@@ -417,7 +417,7 @@ function QuickTestContent({
 							) : null}
 
 							<div
-								className="mb-2 shrink-0 truncate font-mono text-[11px] text-gray-500"
+								className="mb-2 shrink-0 truncate font-mono text-xs text-gray-500"
 								title={`${form.upstream_protocol} / ${form.upstream_operation} · ${form.provider_model_name}`}
 							>
 								{form.upstream_protocol} / {form.upstream_operation} <span className="text-gray-300">·</span>{' '}
@@ -432,7 +432,7 @@ function QuickTestContent({
 								}}
 								disabled={sending}
 								spellCheck={false}
-								className="block min-h-0 w-full flex-1 resize-none overflow-auto overscroll-contain rounded-lg border border-gray-200 bg-slate-50/60 p-3 font-mono text-xs leading-6 text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 disabled:opacity-60"
+								className="block min-h-0 w-full flex-1 resize-none overflow-auto overscroll-contain rounded-lg border border-gray-200 bg-slate-50/60 p-3 font-mono text-xs leading-6 text-gray-800 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-500/10 disabled:opacity-60"
 							/>
 							{needsAudioFile || needsImageFiles ? (
 								<label className="mt-2 block shrink-0 text-xs text-gray-600">
@@ -479,16 +479,16 @@ function QuickTestContent({
 						<div
 							tabIndex={0}
 							aria-label={t('actualRequest')}
-							className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-3 text-xs text-gray-500 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+							className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-3 text-xs text-gray-500 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-500"
 						>
 							{wireBody && stale ? <p className="mb-2 text-amber-700">{t('lastRequestHint')}</p> : null}
 							{(wireBody ? meta?.upstreamUrl : targetUrl) ? (
-								<p className="mb-3 break-all font-mono text-[11px]">
-									<span className="mr-2 font-semibold">POST</span>
+								<p className="mb-3 break-all font-mono text-xs">
+									<span className="mr-2 font-medium">POST</span>
 									{wireBody ? meta?.upstreamUrl : targetUrl}
 								</p>
 							) : !wireBody && upstreamPreview.target ? (
-								<p className="mb-3 text-[11px] text-amber-700">
+								<p className="mb-3 text-xs text-amber-700">
 									{t('upstreamUrlMissing', { target: upstreamPreview.target })}
 								</p>
 							) : null}

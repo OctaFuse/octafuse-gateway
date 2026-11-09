@@ -28,7 +28,7 @@ export function ConfigCardShell({
     >
       <div className="mb-5">
         <div className="flex items-center gap-2">
-          <h2 id={titleId} className="text-base font-semibold text-gray-900">
+          <h2 id={titleId} className="text-base font-medium text-gray-900">
             {title}
           </h2>
           {hint && (

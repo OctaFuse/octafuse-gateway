@@ -67,7 +67,7 @@ export function PlaygroundSetupPanel({
 	return (
 		<div className="flex h-full min-h-0 flex-col gap-4">
 			<section className={`${panelClass} flex min-h-0 flex-1 flex-col`}>
-				<h2 className="text-sm font-semibold text-gray-900">{t('routeSection')}</h2>
+				<h2 className="text-sm font-medium text-gray-900">{t('routeSection')}</h2>
 				<FilterTileGroup
 					label={t('kind')}
 					value={filterKind}
@@ -157,7 +157,7 @@ export function PlaygroundSetupPanel({
 										onClick={() => onSelectRoute(r.id)}
 										className={
 											active
-												? 'flex w-full flex-col items-start gap-0.5 border-b border-blue-100 bg-blue-50 px-3 py-2 text-left last:border-b-0'
+												? 'flex w-full flex-col items-start gap-0.5 border-b border-gray-100 bg-gray-50 px-3 py-2 text-left last:border-b-0'
 												: 'flex w-full flex-col items-start gap-0.5 border-b border-gray-100 px-3 py-2 text-left last:border-b-0 hover:bg-gray-50'
 										}
 									>
@@ -165,18 +165,18 @@ export function PlaygroundSetupPanel({
 											<span
 												className={
 													isRouteActive(r.status)
-														? 'inline-flex shrink-0 rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-800'
-														: 'inline-flex shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800'
+														? 'inline-flex shrink-0 rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800'
+														: 'inline-flex shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800'
 												}
 											>
 												{isRouteActive(r.status) ? t('routeStatusActive') : t('routeStatusInactive')}
 											</span>
 											<span className="truncate text-sm font-medium text-gray-900">{modelLabel}</span>
 										</div>
-										<div className="w-full truncate text-[11px] leading-4 text-gray-600" title={providerLabel}>
+										<div className="w-full truncate text-xs leading-4 text-gray-600" title={providerLabel}>
 											{providerLabel}
 										</div>
-										<div className="w-full truncate text-[11px] leading-4 text-gray-400" title={routeMeta}>
+										<div className="w-full truncate text-xs leading-4 text-gray-400" title={routeMeta}>
 											{routeMeta}
 										</div>
 									</button>
@@ -194,7 +194,7 @@ export function PlaygroundSetupPanel({
 			</section>
 
 			<details className={`${panelClass} shrink-0 xl:max-h-[40%] xl:overflow-y-auto`}>
-				<summary className="cursor-pointer text-sm font-semibold text-gray-900">
+				<summary className="cursor-pointer text-sm font-medium text-gray-900">
 					{t('selectedRoute')}
 					{selected ? <span className="mt-1 block truncate text-xs font-normal text-gray-500">{selected.model_name ?? selected.model_id}</span> : null}
 				</summary>

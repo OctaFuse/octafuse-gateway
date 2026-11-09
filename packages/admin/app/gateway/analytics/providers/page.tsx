@@ -186,7 +186,7 @@ export default function ProviderUsagePage() {
   };
 
   const Th = ({ label, columnKey }: { label: string; columnKey: SortKey }) => (
-    <th hidden={!analyticsColumnVisible(columnKey, view)} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+    <th hidden={!analyticsColumnVisible(columnKey, view)} className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal whitespace-nowrap">
       <button
         type="button"
         onClick={() => toggleSort(columnKey)}
@@ -280,7 +280,7 @@ export default function ProviderUsagePage() {
   return (
     <div className="min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <h1 className="text-2xl font-medium text-gray-900">{t('title')}</h1>
         <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
       <div className="mb-4 grid min-w-0 gap-4 rounded-xl border border-gray-200 bg-white p-3 sm:p-4 2xl:grid-cols-[minmax(0,1fr)_auto] 2xl:items-end">
@@ -294,7 +294,7 @@ export default function ProviderUsagePage() {
       <AnalyticsControls search={search} onSearch={setSearch} view={view} onView={setView} count={filteredRows.length} users={false}>
         <AnalyticsProviderKindFilter value={kindFilter} onChange={setKindFilter} kinds={rows.map(r => providerKind(r.provider_id))} />
       </AnalyticsControls>
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white rounded-lg shadow-panel overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 flex flex-wrap justify-between items-center gap-x-4 gap-y-2 text-sm">
           <button
             type="button"
@@ -342,7 +342,7 @@ export default function ProviderUsagePage() {
                 return (
                   <Fragment key={r.provider_id}>
                     <tr
-                      className={`cursor-pointer hover:bg-gray-50 ${isExpanded ? 'admin-data-row-open bg-blue-50/40' : ''}`}
+                      className={`cursor-pointer hover:bg-gray-50 ${isExpanded ? 'admin-data-row-open bg-gray-50/40' : ''}`}
                       onClick={() => void toggleProviderModels(r.provider_id)}
                     >
                       <td className="px-4 py-3 text-sm whitespace-nowrap text-gray-600">{providerKind(r.provider_id).label}</td>
@@ -355,7 +355,7 @@ export default function ProviderUsagePage() {
                         >
                           <ProviderAccountLines
                             identity={{ ...identity, kind: null }}
-                            nameClassName="font-medium text-blue-600"
+                            nameClassName="font-medium text-gray-800"
                             badge={deletedProviderBadge(r.provider_id)}
                           />
                         </button>
@@ -393,32 +393,32 @@ export default function ProviderUsagePage() {
                       <td hidden={!analyticsColumnVisible("avg_attempts", view)} className="px-4 py-3 text-sm text-gray-600">{r.avg_attempts != null ? r.avg_attempts.toFixed(2) : tCommon('noData')}</td>
                     </tr>
                     {isExpanded ? (
-                      <tr key={`${r.provider_id}:models`} className="bg-blue-50/60">
-                        <td colSpan={["provider_kind", "provider_name", "request_count", "input_tokens", "output_tokens", "cache_hit_rate", "standard_cost", "charged_cost", "metered_cost", "avg_charged_per_request", "success_rate", "avg_latency_ms", "avg_effective_ttft_ms", "avg_upstream_response_ms", "stream_tokens_per_second", "failover_request_rate", "avg_attempts"].filter(key => analyticsColumnVisible(key, view)).length} className="border-l-4 border-blue-300 px-5 py-4">
+                      <tr key={`${r.provider_id}:models`} className="bg-gray-50/60">
+                        <td colSpan={["provider_kind", "provider_name", "request_count", "input_tokens", "output_tokens", "cache_hit_rate", "standard_cost", "charged_cost", "metered_cost", "avg_charged_per_request", "success_rate", "avg_latency_ms", "avg_effective_ttft_ms", "avg_upstream_response_ms", "stream_tokens_per_second", "failover_request_rate", "avg_attempts"].filter(key => analyticsColumnVisible(key, view)).length} className="border-l-4 border-gray-300 px-5 py-4">
                           {isModelRowsLoading ? (
                             <div className="py-4 text-sm text-gray-500">{tA('loadingModelUsage')}</div>
                           ) : modelRows.length === 0 ? (
                             <div className="py-4 text-sm text-gray-500">{tA('noModelUsageForProvider')}</div>
                           ) : (
-                            <div className="overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm ring-1 ring-blue-100">
+                            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm ring-1 ring-gray-100">
                               <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                   <tr>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.model')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.routeGroup')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.requests')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.inputTokens')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.outputTokens')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.cacheHitRate')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.standard')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.charged')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.metered')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgChargedPerReq')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.successRate')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgLatencyMs')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.ttft')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('insights.streamSpeed')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('insights.failoverShare')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.model')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.routeGroup')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.requests')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.inputTokens')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.outputTokens')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.cacheHitRate')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.standard')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.charged')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.metered')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.avgChargedPerReq')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.successRate')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.avgLatencyMs')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('columns.ttft')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('insights.streamSpeed')}</th>
+                                    <th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">{tA('insights.failoverShare')}</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -431,7 +431,7 @@ export default function ProviderUsagePage() {
                                         <td className="px-3 py-2 text-sm">
                                           <Link
                                             href={`/gateway/request-logs?${modelLogQuery.toString()}`}
-                                            className="text-blue-600 hover:underline"
+                                            className="text-gray-800 hover:underline"
                                             onClick={(event) => event.stopPropagation()}
                                           >
                                             {modelRow.model_id}

@@ -276,7 +276,7 @@ export function ProviderStickyDialog(props: Props) {
 			}}
 		>
 			<div
-				className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5"
+				className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-panel ring-1 ring-black/5"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="provider-sticky-dialog-title"
@@ -286,7 +286,7 @@ export function ProviderStickyDialog(props: Props) {
 						<div className="flex flex-wrap items-center gap-2">
 							<h2
 								id="provider-sticky-dialog-title"
-								className="text-base font-semibold text-gray-900"
+								className="text-base font-medium text-gray-900"
 							>
 								{t('title')}
 							</h2>
@@ -309,7 +309,7 @@ export function ProviderStickyDialog(props: Props) {
 						type="button"
 						onClick={onClose}
 						disabled={busy}
-						className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50"
+						className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus-visible:ring-2 focus-visible:ring-gray-500 disabled:opacity-50"
 						aria-label={tCommon('close')}
 					>
 						<span className="block text-xl leading-none" aria-hidden>
@@ -352,9 +352,9 @@ export function ProviderStickyDialog(props: Props) {
 								setActiveTab(TABS[next].id);
 								document.getElementById(`sticky-tab-${TABS[next].id}`)?.focus();
 							}}
-							className={`shrink-0 whitespace-nowrap border-b-2 py-3 text-sm font-medium focus-visible:outline-blue-500 disabled:opacity-50 ${
+							className={`shrink-0 whitespace-nowrap border-b-2 py-3 text-sm font-medium focus-visible:outline-gray-500 disabled:opacity-50 ${
 								activeTab === tab
-									? 'border-blue-600 text-blue-600'
+									? 'border-gray-600 text-gray-800'
 									: 'border-transparent text-gray-500 hover:text-gray-800'
 							}`}
 						>
@@ -387,7 +387,7 @@ export function ProviderStickyDialog(props: Props) {
 								checked={form.enabled}
 								disabled={busy || !canSave}
 								onChange={(event) => onFormChange({ ...form, enabled: event.target.checked })}
-								className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+								className="mt-0.5 h-4 w-4 rounded border-gray-300 text-gray-800 focus:ring-gray-500"
 							/>
 							<span>
 								<span className="block text-sm font-medium text-gray-900">{t('enable')}</span>
@@ -420,7 +420,7 @@ export function ProviderStickyDialog(props: Props) {
 										}}
 										className={`h-8 shrink-0 rounded-md border px-3 text-xs disabled:cursor-not-allowed ${
 											!customTtl && form.idleTtlSeconds === seconds
-												? 'border-blue-200 bg-blue-50 font-medium text-blue-700'
+												? 'border-gray-200 bg-gray-50 font-medium text-gray-800'
 												: 'border-gray-200 text-gray-600 hover:bg-gray-50'
 										}`}
 									>
@@ -435,7 +435,7 @@ export function ProviderStickyDialog(props: Props) {
 										onClick={() => setCustomTtl(true)}
 										className={`h-8 shrink-0 rounded-md border px-3 text-xs disabled:cursor-not-allowed ${
 											customTtl
-												? 'border-blue-200 bg-blue-50 font-medium text-blue-700'
+												? 'border-gray-200 bg-gray-50 font-medium text-gray-800'
 												: 'border-gray-200 text-gray-600 hover:bg-gray-50'
 										}`}
 									>
@@ -457,7 +457,7 @@ export function ProviderStickyDialog(props: Props) {
 												onChange={(event) =>
 													onFormChange({ ...form, idleTtlSeconds: Number(event.target.value) })
 												}
-												className="h-8 w-24 rounded-md border border-gray-300 px-2 font-mono text-xs focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:bg-gray-50"
+												className="h-8 w-24 rounded-md border border-gray-300 px-2 font-mono text-xs focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500/30 disabled:bg-gray-50"
 											/>
 											<span className="text-xs text-gray-500">{t('seconds')}</span>
 										</>
@@ -476,8 +476,8 @@ export function ProviderStickyDialog(props: Props) {
 								</p>
 							) : null}
 						</div>
-						<div className="rounded-lg bg-blue-50/60 p-4 text-xs leading-relaxed text-gray-600">
-							<h3 className="font-semibold text-gray-900">{t('effectTitle')}</h3>
+						<div className="rounded-lg bg-gray-50/60 p-4 text-xs leading-relaxed text-gray-600">
+							<h3 className="font-medium text-gray-900">{t('effectTitle')}</h3>
 							<p className="mt-2">{t('behaviorHint')}</p>
 							<p className="mt-2">{t('poolSharedHint')}</p>
 						</div>
@@ -501,7 +501,7 @@ export function ProviderStickyDialog(props: Props) {
 						<div>
 							<div className="flex items-center justify-between gap-3">
 								<div className="flex items-baseline gap-2">
-									<span className="text-2xl font-semibold tabular-nums text-gray-900">
+									<span className="text-2xl font-medium tabular-nums text-gray-900">
 										{summary ? summary.total_active : '—'}
 									</span>
 									<h3 className="text-sm text-gray-600">{t('activeBindings')}</h3>
@@ -522,7 +522,7 @@ export function ProviderStickyDialog(props: Props) {
 								</p>
 							) : null}
 						</div>
-						<div className="rounded-lg bg-blue-50/60 p-3 text-xs leading-relaxed text-gray-600">
+						<div className="rounded-lg bg-gray-50/60 p-3 text-xs leading-relaxed text-gray-600">
 							<p>{t('priorityHint')}</p>
 							<p className="mt-1">{t('weightHint')}</p>
 						</div>
@@ -532,7 +532,7 @@ export function ProviderStickyDialog(props: Props) {
 									key={group.priority ?? 'unknown'}
 									className="overflow-hidden rounded-lg border border-gray-200"
 								>
-									<h3 className="border-b border-gray-200 bg-gray-50 px-4 py-2.5 text-xs font-semibold text-gray-800">
+									<h3 className="border-b border-gray-200 bg-gray-50 px-4 py-2.5 text-xs font-medium text-gray-800">
 										{group.priority !== null
 											? t('priorityGroup', { priority: group.priority })
 											: t('unknownTargets')}
@@ -597,7 +597,7 @@ export function ProviderStickyDialog(props: Props) {
 																	setActiveTab('bindings');
 																	document.getElementById('sticky-tab-bindings')?.focus();
 																}}
-																className="min-w-8 rounded-md px-2 py-1 font-medium text-blue-600 underline decoration-blue-300 underline-offset-2 hover:bg-blue-50 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50"
+																className="min-w-8 rounded-md px-2 py-1 font-medium text-gray-800 underline decoration-gray-300 underline-offset-2 hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:opacity-50"
 															>
 																{row.activeCount}
 															</button>
@@ -672,7 +672,7 @@ export function ProviderStickyDialog(props: Props) {
 												aria-label={t('lookupPlaceholder')}
 												placeholder={t('lookupPlaceholder')}
 												disabled={lookupLoading || busy}
-												className="min-w-0 flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:bg-gray-50"
+												className="min-w-0 flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500/30 disabled:bg-gray-50"
 											/>
 											<button
 												type="submit"
@@ -686,7 +686,7 @@ export function ProviderStickyDialog(props: Props) {
 													type="button"
 													onClick={resetLookup}
 													disabled={lookupLoading || busy}
-													className="rounded-md px-2 text-xs text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+													className="rounded-md px-2 text-xs text-gray-800 hover:bg-gray-50 disabled:opacity-50"
 												>
 													{t('backToList')}
 												</button>
@@ -759,13 +759,13 @@ export function ProviderStickyDialog(props: Props) {
 								<dl className="flex flex-wrap gap-6 sm:gap-10">
 									<div>
 										<dt className="text-xs text-gray-500">{t('maintenanceActive')}</dt>
-										<dd className="mt-1.5 text-2xl font-semibold tabular-nums text-gray-900">
+										<dd className="mt-1.5 text-2xl font-medium tabular-nums text-gray-900">
 											{summary?.total_active ?? '—'}
 										</dd>
 									</div>
 									<div className="border-l border-gray-200 pl-6 sm:pl-10">
 										<dt className="text-xs text-gray-500">{t('maintenanceHistory')}</dt>
-										<dd className="mt-1.5 text-2xl font-semibold tabular-nums text-gray-500">
+										<dd className="mt-1.5 text-2xl font-medium tabular-nums text-gray-500">
 											{summary?.stale_count ?? '—'}
 										</dd>
 									</div>
@@ -787,7 +787,7 @@ export function ProviderStickyDialog(props: Props) {
 							) : null}
 						</div>
 						<section className="rounded-lg border border-red-200 bg-red-50/30 p-4">
-							<h3 className="text-sm font-semibold text-gray-900">{t('resetTitle')}</h3>
+							<h3 className="text-sm font-medium text-gray-900">{t('resetTitle')}</h3>
 							<p className="mt-2 text-sm leading-relaxed text-gray-700">
 								{summary?.total_active === 0
 									? t('nothingToReset')
@@ -811,7 +811,7 @@ export function ProviderStickyDialog(props: Props) {
 										setActiveTab('bindings');
 										document.getElementById('sticky-tab-bindings')?.focus();
 									}}
-									className="rounded-md px-1 py-2 text-xs font-medium text-blue-600 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50"
+									className="rounded-md px-1 py-2 text-xs font-medium text-gray-800 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:opacity-50"
 								>
 									{t('viewBindings')}
 								</button>
@@ -876,7 +876,7 @@ export function ProviderStickyDialog(props: Props) {
 							type="button"
 							onClick={onSave}
 							disabled={busy || !canSave || !hasChanges || ttlOutOfRange}
-							className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+							className="rounded-md admin-primary px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{saving ? tCommon('savingDots') : t('saveSettings')}
 						</button>

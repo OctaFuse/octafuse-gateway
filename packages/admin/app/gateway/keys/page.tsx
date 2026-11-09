@@ -74,7 +74,7 @@ function budgetUsageRatio(spent: number, max: number | null | undefined): number
 function budgetBarClass(ratio: number): string {
   if (ratio >= 1) return 'bg-red-500';
   if (ratio >= 0.8) return 'bg-amber-500';
-  return 'bg-blue-500';
+  return 'bg-gray-700';
 }
 
 function displayMetadataSummary(summary: string): string {
@@ -189,7 +189,7 @@ export default function GatewayKeysPage() {
   };
 
   const SortableTh = ({ label, columnKey }: { label: string; columnKey: ApiKeyListSortKey }) => (
-    <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">
+    <th className="px-4 py-2.5 text-left text-xs font-medium tracking-normal text-gray-500 whitespace-nowrap">
       <button
         type="button"
         onClick={(e) => {
@@ -202,7 +202,7 @@ export default function GatewayKeysPage() {
         aria-label={`Sort by ${label}`}
       >
         {label}
-        <span className={`text-[10px] leading-none ${sortKey === columnKey ? 'text-blue-600' : 'text-gray-300'}`}>
+        <span className={`text-xs leading-none ${sortKey === columnKey ? 'text-gray-800' : 'text-gray-300'}`}>
           {sortKey === columnKey ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
         </span>
       </button>
@@ -450,19 +450,19 @@ export default function GatewayKeysPage() {
   const totalPages = Math.ceil(total / pageSize);
   const showSkeleton = isLoading && keys.length === 0;
   const inputClass =
-    'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
+    'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500';
 
   return (
     <div className="min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">{t('title')}</h1>
+          <h1 className="text-2xl font-medium tracking-tight text-gray-900">{t('title')}</h1>
           <p className="mt-1 max-w-2xl text-sm text-gray-500">{t('subtitle')}</p>
         </div>
         <button
           type="button"
           onClick={handleCreate}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="inline-flex items-center gap-2 rounded-lg admin-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
         >
           <PlusIcon className="h-4 w-4" />
           {t('newKey')}
@@ -548,13 +548,13 @@ export default function GatewayKeysPage() {
           </colgroup>
           <thead className="border-b border-gray-200 bg-gray-50/80">
             <tr>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.user')}</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.key')}</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap" title={t('help.rateLimitRpm')}>{t('table.rateLimit')}</th>
-              <th className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.userBudget')}</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.apiKeyMetadata')}</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium tracking-normal text-gray-500 whitespace-nowrap">{t('table.user')}</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium tracking-normal text-gray-500 whitespace-nowrap">{t('table.key')}</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium tracking-normal text-gray-500 whitespace-nowrap" title={t('help.rateLimitRpm')}>{t('table.rateLimit')}</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium tracking-normal text-gray-500 whitespace-nowrap">{t('table.userBudget')}</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium tracking-normal text-gray-500 whitespace-nowrap">{t('table.apiKeyMetadata')}</th>
               <SortableTh label={t('table.created')} columnKey="created_at" />
-              <th className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">{t('table.links')}</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium tracking-normal text-gray-500 whitespace-nowrap">{t('table.links')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -594,7 +594,7 @@ export default function GatewayKeysPage() {
                   }
                 }}
                 tabIndex={0}
-                className={`cursor-pointer transition-colors hover:bg-blue-50/40 focus:bg-blue-50/60 focus:outline-none ${
+                className={`cursor-pointer transition-colors hover:bg-gray-50/40 focus:bg-gray-50/60 focus:outline-none ${
                   revoked ? 'bg-gray-50/60' : ''
                 }`}
               >
@@ -612,19 +612,19 @@ export default function GatewayKeysPage() {
                           href={userHref}
                           onClick={(event) => event.stopPropagation()}
                           className={`truncate text-sm font-medium hover:underline ${
-                            revoked ? 'text-gray-500' : 'text-blue-700'
+                            revoked ? 'text-gray-500' : 'text-gray-800'
                           }`}
                           title={t('links.openUserTitle')}
                         >
                           {key.user_email || tCommon('noData')}
                         </Link>
                         {revoked && (
-                          <span className="inline-flex shrink-0 items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-600 ring-1 ring-inset ring-gray-200">
+                          <span className="inline-flex shrink-0 items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium normal-case tracking-normal text-gray-600 ring-1 ring-inset ring-gray-200">
                             {tOptions('keyStatus.revoked')}
                           </span>
                         )}
                       </div>
-                      <div className="mt-0.5 truncate font-mono text-[11px] text-gray-400" title={key.user_id}>
+                      <div className="mt-0.5 truncate font-mono text-xs text-gray-400" title={key.user_id}>
                         {key.user_id}
                       </div>
                     </div>
@@ -643,7 +643,7 @@ export default function GatewayKeysPage() {
                       <span className="text-sm text-gray-300">{tCommon('noData')}</span>
                     )}
                     <div className="mt-0.5 flex min-w-0 items-center gap-1">
-                      <span className="min-w-0 truncate font-mono text-[11px] text-gray-400" title={key.key}>
+                      <span className="min-w-0 truncate font-mono text-xs text-gray-400" title={key.key}>
                         {maskKey(key.key)}
                       </span>
                       <button
@@ -686,7 +686,7 @@ export default function GatewayKeysPage() {
                       <span className="text-gray-400"> / </span>
                       <span className={key.budget_max == null ? 'text-gray-400' : 'text-gray-700'}>{maxLabel}</span>
                     </div>
-                    <div className="mt-0.5 truncate text-[11px] tabular-nums text-gray-400">
+                    <div className="mt-0.5 truncate text-xs tabular-nums text-gray-400">
                       {t('table.wallet')}{' '}
                       {formatGatewayMoneyCode(Number(key.wallet_granted ?? 0) - Number(key.wallet_spent ?? 0), billingCurrency, 2)}
                     </div>
@@ -701,7 +701,7 @@ export default function GatewayKeysPage() {
                       <div className="mt-1.5 h-1.5 rounded-full bg-gray-50" />
                     )}
                     {periodActive ? (
-                      <div className="mt-1 truncate text-[11px] capitalize text-gray-400">
+                      <div className="mt-1 truncate text-xs capitalize text-gray-400">
                         {key.budget_period}
                         {key.budget_reset_at ? ` · ${formatDate(key.budget_reset_at)}` : ''}
                       </div>
@@ -724,7 +724,7 @@ export default function GatewayKeysPage() {
                 </td>
                 <td className="px-4 py-3.5 overflow-hidden whitespace-nowrap">
                   <div className="truncate text-sm text-gray-700">{formatDate(key.created_at)}</div>
-                  <div className="truncate text-[11px] tabular-nums text-gray-400">{formatTime(key.created_at)}</div>
+                  <div className="truncate text-xs tabular-nums text-gray-400">{formatTime(key.created_at)}</div>
                 </td>
                 <td
                   className="px-4 py-3.5 overflow-hidden text-right"
@@ -734,14 +734,14 @@ export default function GatewayKeysPage() {
                   <div className="inline-flex items-center justify-end gap-1">
                     <Link
                       href={logsHref}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-blue-700"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-800"
                       title={t('links.requestLogsTitle')}
                     >
                       <DocumentTextIcon className="h-4 w-4" />
                     </Link>
                     <Link
                       href={auditHref}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-blue-700"
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-800"
                       title={t('links.auditLogsTitle')}
                     >
                       <ClipboardDocumentListIcon className="h-4 w-4" />
@@ -790,9 +790,9 @@ export default function GatewayKeysPage() {
       {/* Create Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-panel max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">{t('createTitle')}</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('createTitle')}</h2>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">x</button>
             </div>
 
@@ -808,7 +808,7 @@ export default function GatewayKeysPage() {
                     <input
                       type="radio"
                       name="keyCreationMode"
-                      className="text-blue-600 focus:ring-blue-500"
+                      className="text-gray-800 focus:ring-gray-500"
                       checked={creationMode === 'existingUser'}
                       onChange={() => handleCreationModeChange('existingUser')}
                     />
@@ -818,7 +818,7 @@ export default function GatewayKeysPage() {
                     <input
                       type="radio"
                       name="keyCreationMode"
-                      className="text-blue-600 focus:ring-blue-500"
+                      className="text-gray-800 focus:ring-gray-500"
                       checked={creationMode === 'externalIdentity'}
                       onChange={() => handleCreationModeChange('externalIdentity')}
                     />
@@ -833,13 +833,13 @@ export default function GatewayKeysPage() {
                   <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600">
                     <li>
                       {t('create.existingHelp1')}{' '}
-                      <Link href="/gateway/users" className="text-blue-700 underline">
+                      <Link href="/gateway/users" className="text-gray-800 underline">
                         Users
                       </Link>{' '}
                     </li>
                     <li>
                       {t('create.existingHelp2')}{' '}
-                      <Link href="/gateway/users" className="text-blue-700 underline">
+                      <Link href="/gateway/users" className="text-gray-800 underline">
                         Users
                       </Link>
                     </li>
@@ -857,7 +857,7 @@ export default function GatewayKeysPage() {
                     </li>
                     <li>
                       {t('create.externalHelp2')}{' '}
-                      <Link href="/gateway/users" className="text-blue-700 underline">
+                      <Link href="/gateway/users" className="text-gray-800 underline">
                         Users
                       </Link>
                     </li>
@@ -881,7 +881,7 @@ export default function GatewayKeysPage() {
                       type="text"
                       value={formData.user_id}
                       onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
                       placeholder={t('placeholders.userId')}
                     />
                   </div>
@@ -896,7 +896,7 @@ export default function GatewayKeysPage() {
                           type="text"
                           value={formData.external_system}
                           onChange={(e) => setFormData({ ...formData, external_system: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                           placeholder={t('placeholders.externalSystem')}
                         />
                       </div>
@@ -908,7 +908,7 @@ export default function GatewayKeysPage() {
                           type="text"
                           value={formData.external_user_id}
                           onChange={(e) => setFormData({ ...formData, external_user_id: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                           placeholder={t('placeholders.externalUserId')}
                         />
                       </div>
@@ -921,7 +921,7 @@ export default function GatewayKeysPage() {
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                         placeholder={t('placeholders.userEmail')}
                       />
                       <p className="mt-1 text-xs text-gray-500">
@@ -938,7 +938,7 @@ export default function GatewayKeysPage() {
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                     placeholder={t('placeholders.keyName')}
                   />
                 </div>
@@ -948,7 +948,7 @@ export default function GatewayKeysPage() {
                     value={formData.metadata}
                     onChange={(e) => setFormData({ ...formData, metadata: e.target.value })}
                     rows={6}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
                     placeholder={t('placeholders.metadataJson')}
                   />
                   <p className="mt-1 text-xs text-gray-500">{t('help.metadata')}</p>
@@ -958,7 +958,7 @@ export default function GatewayKeysPage() {
 
             <div className="px-6 py-4 border-t flex justify-end gap-3">
               <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50" disabled={isSaving}>{tCommon('cancel')}</button>
-              <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">{isSaving ? tCommon('creating') : tCommon('create')}</button>
+              <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 admin-primary rounded-md hover:bg-gray-800 disabled:opacity-50">{isSaving ? tCommon('creating') : tCommon('create')}</button>
             </div>
           </div>
         </div>
@@ -967,10 +967,10 @@ export default function GatewayKeysPage() {
       {/* Edit Modal */}
       {showEditModal && selectedKey && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-panel max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex justify-between items-start gap-4">
               <div className="min-w-0">
-                <h2 className="text-xl font-bold text-gray-900">{t('editTitle')}</h2>
+                <h2 className="text-xl font-semibold text-gray-900">{t('editTitle')}</h2>
                 <div className="mt-1 flex items-center gap-2">
                   <span className="font-mono text-xs text-gray-500 break-all">{selectedKey.id}</span>
                   <button
@@ -1014,8 +1014,8 @@ export default function GatewayKeysPage() {
                         aria-checked={selectedKey.status === 'active'}
                         disabled={statusTogglingId === selectedKey.id}
                         onClick={() => handleStatusToggle(selectedKey)}
-                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                          selectedKey.status === 'active' ? 'bg-blue-600' : 'bg-gray-200'
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                          selectedKey.status === 'active' ? 'bg-gray-950' : 'bg-gray-200'
                         }`}
                       >
                         <span
@@ -1028,12 +1028,12 @@ export default function GatewayKeysPage() {
                     </div>
                   </ReadonlyRow>
                   <ReadonlyRow label={t('fields.userIdAuth')}>
-                    <Link href={`/gateway/users/${encodeURIComponent(selectedKey.user_id)}`} className="font-mono text-xs text-blue-600 hover:underline break-all">
+                    <Link href={`/gateway/users/${encodeURIComponent(selectedKey.user_id)}`} className="font-mono text-xs text-gray-800 hover:underline break-all">
                       {selectedKey.user_id}
                     </Link>
                   </ReadonlyRow>
                   <ReadonlyRow label={t('fields.userEmail')}>
-                    <Link href={`/gateway/users/${encodeURIComponent(selectedKey.user_id)}`} className="text-sm text-blue-600 hover:underline break-all">
+                    <Link href={`/gateway/users/${encodeURIComponent(selectedKey.user_id)}`} className="text-sm text-gray-800 hover:underline break-all">
                       {selectedKey.user_email || selectedKey.user_id}
                     </Link>
                   </ReadonlyRow>
@@ -1081,13 +1081,13 @@ export default function GatewayKeysPage() {
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                   <a
                     href={`/gateway/request-logs?api_key_id=${selectedKey.id}`}
-                    className="font-medium text-blue-600 hover:text-blue-800"
+                    className="font-medium text-gray-800 hover:text-gray-900"
                   >
                     {t('links.requestLogsForKey')}
                   </a>
                   <a
                     href={`/gateway/audit-logs?api_key_id=${selectedKey.id}`}
-                    className="font-medium text-blue-600 hover:text-blue-800"
+                    className="font-medium text-gray-800 hover:text-gray-900"
                   >
                     {t('links.auditLogsForKey')}
                   </a>
@@ -1101,7 +1101,7 @@ export default function GatewayKeysPage() {
                     type="text"
                     value={editFormData.name}
                     onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                     placeholder={t('placeholders.optionalLabel')}
                   />
                 </div>
@@ -1113,7 +1113,7 @@ export default function GatewayKeysPage() {
                     step={1}
                     value={editFormData.rateLimitRpm}
                     onChange={(e) => setEditFormData({ ...editFormData, rateLimitRpm: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                     placeholder={t('placeholders.rateLimitRpm')}
                   />
                   <p className="mt-1 text-xs text-gray-500">{t('help.rateLimitRpm')}</p>
@@ -1124,7 +1124,7 @@ export default function GatewayKeysPage() {
                     value={editFormData.metadata}
                     onChange={(e) => setEditFormData({ ...editFormData, metadata: e.target.value })}
                     rows={8}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
                     placeholder="{}"
                   />
                   <p className="mt-1 text-xs text-gray-500">{t('help.editMetadata')}</p>
@@ -1153,7 +1153,7 @@ export default function GatewayKeysPage() {
                 <button
                   onClick={handleEditSave}
                   disabled={isSaving || isDeleting}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 admin-primary rounded-md hover:bg-gray-800 disabled:opacity-50"
                 >
                   {isSaving ? tCommon('savingDots') : tCommon('save')}
                 </button>

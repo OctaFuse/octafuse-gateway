@@ -187,11 +187,11 @@ export default function GatewayToolInvocationsPage() {
 		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<h1 className="text-3xl font-bold text-gray-900">{t('invocations.title')}</h1>
+					<h1 className="text-2xl font-medium text-gray-900">{t('invocations.title')}</h1>
 					<p className="mt-1 max-w-3xl text-sm text-gray-500">{t('invocations.subtitle')}</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-3">
-					<Link href="/gateway/tools" className="text-sm font-medium text-blue-600 hover:underline">
+					<Link href="/gateway/tools" className="text-sm font-medium text-gray-800 hover:underline">
 						{t('invocations.configureTools')}
 					</Link>
 					<Link
@@ -368,7 +368,7 @@ export default function GatewayToolInvocationsPage() {
 											</td>
 											<td className="px-4 py-3 text-xs text-gray-900">
 												<span
-													className={`mr-2 inline-flex rounded-full px-1.5 py-px align-middle font-sans text-[10px] font-medium ring-1 ring-inset ${
+													className={`mr-2 inline-flex rounded-full px-1.5 py-px align-middle font-sans text-xs font-medium ring-1 ring-inset ${
 														rowSource === 'mcp'
 															? 'bg-teal-50 text-teal-800 ring-teal-200'
 															: 'bg-gray-50 text-gray-700 ring-gray-200'
@@ -378,7 +378,7 @@ export default function GatewayToolInvocationsPage() {
 												</span>
 												<span className="font-mono">{mcp ? mcp.label : toolLabel(log.model_id)}</span>
 											</td>
-											<td className="px-4 py-3 font-mono text-xs text-indigo-700" title={engine ?? undefined}>
+											<td className="px-4 py-3 font-mono text-xs text-gray-800" title={engine ?? undefined}>
 												{engine || '—'}
 											</td>
 											<td className="max-w-[18rem] truncate px-4 py-3 text-gray-800" title={queryText ?? ''}>
@@ -436,7 +436,7 @@ export default function GatewayToolInvocationsPage() {
 												<td colSpan={12} className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
 													<div className="grid items-stretch gap-4 lg:grid-cols-2">
 														<div className="flex min-h-[18rem] flex-col">
-															<h3 className="mb-2 shrink-0 text-xs font-semibold uppercase tracking-wide text-gray-500">
+															<h3 className="mb-2 shrink-0 text-xs font-medium normal-case tracking-normal text-gray-500">
 																{t('invocations.detail.request')}
 															</h3>
 															<pre className="min-h-0 flex-1 overflow-auto rounded-md border border-gray-200 bg-white p-3 font-mono text-xs text-gray-800 whitespace-pre-wrap break-all">
@@ -447,7 +447,7 @@ export default function GatewayToolInvocationsPage() {
 														</div>
 														<div className="flex min-h-[18rem] flex-col">
 															<div className="mb-2 flex shrink-0 items-center justify-between gap-2">
-																<h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+																<h3 className="text-xs font-medium normal-case tracking-normal text-gray-500">
 																	{t('invocations.detail.response')}
 																</h3>
 																<div
@@ -499,7 +499,7 @@ export default function GatewayToolInvocationsPage() {
 																							href={item.url}
 																							target="_blank"
 																							rel="noreferrer"
-																							className="font-medium text-blue-700 hover:underline"
+																							className="font-medium text-gray-800 hover:underline"
 																						>
 																							{item.title || item.url}
 																						</a>

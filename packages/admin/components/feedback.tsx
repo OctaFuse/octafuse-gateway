@@ -176,14 +176,14 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 					}}
 				>
 					<div
-						className="w-full max-w-md rounded-xl bg-white shadow-xl ring-1 ring-black/5"
+						className="w-full max-w-md rounded-xl bg-white shadow-panel ring-1 ring-black/5"
 						role="alertdialog"
 						aria-modal="true"
 						aria-labelledby={titleId}
 						aria-describedby={dialog.message ? messageId : undefined}
 					>
 						<div className="px-5 py-4">
-							<h2 id={titleId} className="text-base font-semibold text-gray-900">
+							<h2 id={titleId} className="text-base font-medium text-gray-900">
 								{dialog.title}
 							</h2>
 							{dialog.message ? (
@@ -197,7 +197,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 								type="button"
 								autoFocus={dialog.danger === true}
 								onClick={() => closeDialog(false)}
-								className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+								className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 							>
 								{dialog.cancelLabel ?? tCommon('cancel')}
 							</button>
@@ -208,7 +208,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 								className={
 									dialog.danger
 										? 'rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500'
-										: 'rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+										: 'rounded-md admin-primary px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500'
 								}
 							>
 								{dialog.confirmLabel ?? tCommon('confirm')}
@@ -263,7 +263,7 @@ function ToastCard(props: {
 				<button
 					type="button"
 					onClick={onDismiss}
-					className="shrink-0 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+					className="shrink-0 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 					aria-label={dismissLabel}
 				>
 					<XMarkIcon className="h-4 w-4" aria-hidden />

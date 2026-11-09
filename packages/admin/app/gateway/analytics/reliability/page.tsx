@@ -126,7 +126,7 @@ export default function ReliabilityPage() {
   return (
     <div className="min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+        <h1 className="text-2xl font-medium text-gray-900">{t('title')}</h1>
         <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
       </div>
       <div className="mb-4 w-full min-w-0 rounded-xl border border-gray-200 bg-white p-3 sm:p-4">
@@ -137,22 +137,22 @@ export default function ReliabilityPage() {
       {!isLoading && !loadError && <AnalyticsInsights rows={providers} currency={billingCurrency} scope="reliability" />}
       {/* Provider table */}
       <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('providerQuality')}</h2>
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">{t('providerQuality')}</h2>
+        <div className="bg-white rounded-lg shadow-panel overflow-hidden">
           <div className="overflow-x-auto">
             <table className="admin-data-table min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.providerKind')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.providerAccount')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.requests')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.successRate')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.errors')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgLatencyMs')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.ttft')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgUpstreamMs')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('insights.failoverShare')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgAttempts')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.providerKind')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.providerAccount')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.requests')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.successRate')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.errors')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.avgLatencyMs')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.ttft')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.avgUpstreamMs')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('insights.failoverShare')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.avgAttempts')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -188,22 +188,22 @@ export default function ReliabilityPage() {
 
       {/* Model–provider breakdown */}
       <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('perModelComparison')}</h2>
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">{t('perModelComparison')}</h2>
+        <div className="bg-white rounded-lg shadow-panel overflow-hidden">
           <div className="overflow-x-auto">
             <table className="admin-data-table min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.model')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.providerKind')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.providerAccount')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.requests')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.successRate')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgLatencyMs')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.ttft')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgUpstreamMs')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('insights.failoverShare')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.avgAttempts')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.model')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.providerKind')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.providerAccount')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.requests')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.successRate')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.avgLatencyMs')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.ttft')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.avgUpstreamMs')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('insights.failoverShare')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.avgAttempts')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -242,20 +242,20 @@ export default function ReliabilityPage() {
 
       {/* {tA('insights.rangeErrors')} */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-medium text-gray-900 mb-4 flex flex-wrap items-center justify-between gap-2">
           {tA('insights.rangeErrors')}
-          <Link href={errorLogHref()} className="text-sm text-blue-600 hover:underline">{t('viewAllErrors')}</Link>
+          <Link href={errorLogHref()} className="text-sm text-gray-800 hover:underline">{t('viewAllErrors')}</Link>
         </h2>
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white rounded-lg shadow-panel overflow-hidden">
           <div className="overflow-x-auto">
             <table className="admin-data-table min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tCommon('time')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.model')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.providerKind')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.providerAccount')}</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{tA('columns.errors')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tCommon('time')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.model')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.providerKind')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.providerAccount')}</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">{tA('columns.errors')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">

@@ -28,7 +28,7 @@ export function ProviderSyncCheckButton(props: ProviderSyncCheckButtonProps) {
 				type="button"
 				onClick={onCheck}
 				disabled={checking}
-				className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-wait disabled:opacity-60"
+				className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-wait disabled:opacity-60"
 			>
 				<ArrowPathIcon className={`h-4 w-4 ${checking ? 'animate-spin' : ''}`} aria-hidden />
 				{checking ? t('checking') : t('button')}

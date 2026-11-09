@@ -189,7 +189,7 @@ export function PlaygroundRequestPanel({
 						aria-pressed={active}
 						className={
 							active
-								? 'rounded px-2.5 py-1 text-xs font-semibold bg-slate-800 text-white disabled:cursor-not-allowed disabled:opacity-40'
+								? 'rounded px-2.5 py-1 text-xs font-medium bg-slate-800 text-white disabled:cursor-not-allowed disabled:opacity-40'
 								: 'rounded px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-white hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40'
 						}
 					>
@@ -240,7 +240,7 @@ export function PlaygroundRequestPanel({
 	return (
 		<section className="flex min-h-0 flex-1 flex-col space-y-3 overflow-y-auto rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm">
 			<div className="flex flex-wrap items-center justify-between gap-2">
-				<h2 className="text-sm font-semibold text-gray-900">{t('requestBody')}</h2>
+				<h2 className="text-sm font-medium text-gray-900">{t('requestBody')}</h2>
 				<div className="flex flex-wrap items-center gap-2">
 					{sending ? (
 						<button
@@ -257,7 +257,7 @@ export function PlaygroundRequestPanel({
 							onClick={onSend}
 							disabled={!canSend}
 							title={sendBlockedHint ?? undefined}
-							className="inline-flex items-center justify-center gap-1.5 rounded-md bg-blue-600 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+							className="inline-flex items-center justify-center gap-1.5 rounded-md admin-primary px-3.5 py-1.5 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							<PaperAirplaneIcon className="h-4 w-4" />
 							{tCommon('send')}
@@ -292,7 +292,7 @@ export function PlaygroundRequestPanel({
 					}
 				/>
 				{selected ? (
-					<p className="text-[11px] text-gray-400">
+					<p className="text-xs text-gray-400">
 						{t(selectedUsesRealtime ? 'requestTargetUrlRealtimeHint' : 'requestTargetUrlHint')}
 					</p>
 				) : null}
@@ -337,7 +337,7 @@ export function PlaygroundRequestPanel({
 								<input
 									type="radio"
 									name="playgroundAudioInput"
-									className="text-blue-600 focus:ring-blue-500"
+									className="text-gray-800 focus:ring-gray-500"
 									checked={audioInputMode === 'file'}
 									onChange={() => onAudioInputModeChange('file')}
 									disabled={sending}
@@ -348,7 +348,7 @@ export function PlaygroundRequestPanel({
 								<input
 									type="radio"
 									name="playgroundAudioInput"
-									className="text-blue-600 focus:ring-blue-500"
+									className="text-gray-800 focus:ring-gray-500"
 									checked={audioInputMode === 'microphone'}
 									onChange={() => onAudioInputModeChange('microphone')}
 									disabled={sending}
@@ -364,10 +364,10 @@ export function PlaygroundRequestPanel({
 								type="file"
 								accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.flac,.pcm"
 								disabled={sending}
-								className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700`}
+								className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-gray-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-gray-800`}
 								onChange={(e) => onAudioFileChange(e.target.files?.[0] ?? null)}
 							/>
-							<p className="mt-1 text-[11px] text-gray-400">
+							<p className="mt-1 text-xs text-gray-400">
 								{t(
 									selectedUsesElevenLabsRealtime
 										? 'audioRealtimeFileElevenLabsHint'
@@ -423,7 +423,7 @@ export function PlaygroundRequestPanel({
 									<input
 										type="radio"
 										name="playgroundImageOperation"
-										className="text-blue-600 focus:ring-blue-500"
+										className="text-gray-800 focus:ring-gray-500"
 										checked={imageOperation === 'generations'}
 										onChange={() => onImageOperationChange('generations')}
 										disabled={sending}
@@ -434,7 +434,7 @@ export function PlaygroundRequestPanel({
 									<input
 										type="radio"
 										name="playgroundImageOperation"
-										className="text-blue-600 focus:ring-blue-500"
+										className="text-gray-800 focus:ring-gray-500"
 										checked={imageOperation === 'edits'}
 										onChange={() => onImageOperationChange('edits')}
 										disabled={sending}
@@ -457,13 +457,13 @@ export function PlaygroundRequestPanel({
 								accept="image/png,image/jpeg,image/webp,image/*"
 								multiple
 								disabled={sending}
-								className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-blue-700`}
+								className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-gray-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-gray-800`}
 								onChange={(e) => {
 									const list = e.target.files ? Array.from(e.target.files) : [];
 									onEditFilesChange(list.slice(0, IMAGE_MAX_REFERENCE_COUNT));
 								}}
 							/>
-							<p className="mt-1 text-[11px] text-gray-400">
+							<p className="mt-1 text-xs text-gray-400">
 								{t('referenceImagesHint', { max: IMAGE_MAX_REFERENCE_COUNT })}
 								{editFiles.length > 0
 									? ` · ${t('referenceImagesSelected', { count: editFiles.length })}`
@@ -500,7 +500,7 @@ export function PlaygroundRequestPanel({
 						<input
 							type="radio"
 							name="geminiAction"
-							className="text-blue-600 focus:ring-blue-500"
+							className="text-gray-800 focus:ring-gray-500"
 							checked={geminiAction === 'generateContent'}
 							onChange={() => onGeminiActionChange('generateContent')}
 						/>
@@ -510,7 +510,7 @@ export function PlaygroundRequestPanel({
 						<input
 							type="radio"
 							name="geminiAction"
-							className="text-blue-600 focus:ring-blue-500"
+							className="text-gray-800 focus:ring-gray-500"
 							checked={geminiAction === 'streamGenerateContent'}
 							onChange={() => onGeminiActionChange('streamGenerateContent')}
 						/>
@@ -522,13 +522,13 @@ export function PlaygroundRequestPanel({
 			<div className="flex min-h-0 flex-1 flex-col gap-3">
 				<div className="shrink-0">
 					<div className="mb-1 flex items-center justify-between gap-2">
-						<label className="text-xs font-medium uppercase tracking-wider text-gray-500" title={headerHint}>
+						<label className="text-xs font-medium normal-case tracking-normal text-gray-500" title={headerHint}>
 							{t('sentHeaders')}
 						</label>
 						{lastSentWireBody ? (
-							<span className="text-[11px] font-medium text-emerald-700">{t('sentBodySourceSent')}</span>
+							<span className="text-xs font-medium text-emerald-700">{t('sentBodySourceSent')}</span>
 						) : mergedPreview.status === 'preview' ? (
-							<span className="text-[11px] font-medium text-slate-500">{t('sentBodySourcePreview')}</span>
+							<span className="text-xs font-medium text-slate-500">{t('sentBodySourcePreview')}</span>
 						) : null}
 					</div>
 					<div className={`${codeBlockClass} max-h-36 overflow-y-auto p-0`}>
@@ -546,7 +546,7 @@ export function PlaygroundRequestPanel({
 											}`}
 										>
 											<span
-												className="truncate font-mono text-xs font-semibold text-gray-800"
+												className="truncate font-mono text-xs font-medium text-gray-800"
 												title={row.name}
 											>
 												{row.name}
@@ -555,7 +555,7 @@ export function PlaygroundRequestPanel({
 												{row.value}
 											</span>
 											<span
-												className={`w-fit shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+												className={`w-fit shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${
 													fromCustom ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-600'
 												}`}
 											>
@@ -572,7 +572,7 @@ export function PlaygroundRequestPanel({
 				<div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-2 xl:items-stretch">
 					<div className="flex min-h-0 min-w-0 flex-col">
 						<div className="mb-1 flex items-center justify-between gap-2">
-							<label className="text-xs font-medium uppercase tracking-wider text-gray-500">
+							<label className="text-xs font-medium normal-case tracking-normal text-gray-500">
 								{t('inputBody')}
 							</label>
 							{llmSampleSwitcher}
@@ -587,7 +587,7 @@ export function PlaygroundRequestPanel({
 					</div>
 					<div className="flex min-h-0 min-w-0 flex-col">
 						<label
-							className="mb-1 text-xs font-medium uppercase tracking-wider text-gray-500"
+							className="mb-1 text-xs font-medium normal-case tracking-normal text-gray-500"
 							title={actualBodyHint}
 						>
 							{t('sentBody')}

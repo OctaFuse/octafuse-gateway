@@ -1102,13 +1102,13 @@ export default function GatewayToolsConfigPage() {
 		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
 			<div className="mb-4 flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<h1 className="text-3xl font-bold text-gray-900">{t('config.title')}</h1>
+					<h1 className="text-2xl font-medium text-gray-900">{t('config.title')}</h1>
 					<p className="mt-1 text-sm text-gray-500">{t('config.subtitle')}</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-3">
 					<Link
 						href="/gateway/tools/invocations"
-						className="text-sm font-medium text-blue-600 hover:underline"
+						className="text-sm font-medium text-gray-800 hover:underline"
 					>
 						{t('config.viewInvocations')}
 					</Link>
@@ -1264,7 +1264,7 @@ export default function GatewayToolsConfigPage() {
 							<div className="mb-3 flex flex-wrap items-center justify-between gap-2">
 								<h3
 									id="rest-connection-heading"
-									className="text-sm font-semibold text-gray-900"
+									className="text-sm font-medium text-gray-900"
 								>
 									{t("serviceList.connection")}
 								</h3>
@@ -1296,7 +1296,7 @@ export default function GatewayToolsConfigPage() {
 												setSecretsVisible(false);
 												setProviderGuideOpen(true);
 											}}
-											className="text-xs font-medium text-blue-600 hover:underline"
+											className="text-xs font-medium text-gray-800 hover:underline"
 										>
 											{t("webSearch.providerGuideLink")}
 										</button>
@@ -1386,7 +1386,7 @@ export default function GatewayToolsConfigPage() {
 						>
 							<h3
 								id="rest-pricing-heading"
-								className="mb-3 text-sm font-semibold text-gray-900"
+								className="mb-3 text-sm font-medium text-gray-900"
 							>
 								{t("serviceList.pricing")}
 							</h3>

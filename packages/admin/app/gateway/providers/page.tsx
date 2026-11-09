@@ -48,10 +48,10 @@ function ProvidersContent() {
 		Boolean(state.providerSearch.trim()) || state.selectedFilter !== 'all';
 
 	return (
-		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
+		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-50 p-4 pb-6 sm:p-6 lg:p-8">
 			<div className="mb-5 flex flex-wrap items-start justify-between gap-3 sm:mb-6">
 				<div className="min-w-0">
-					<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
+					<h1 className="text-2xl font-medium text-gray-900 sm:text-[28px]">{t('title')}</h1>
 					<p className="mt-1 text-sm text-gray-500">
 						{t('subtitle', { product: tBrand('product') })}
 					</p>

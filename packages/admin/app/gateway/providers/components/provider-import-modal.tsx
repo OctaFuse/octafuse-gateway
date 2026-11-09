@@ -64,14 +64,14 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 			}}
 		>
 			<div
-				className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+				className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-panel"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="provider-import-title"
 			>
 				<div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
 					<div>
-						<h2 id="provider-import-title" className="text-xl font-bold text-gray-900">
+						<h2 id="provider-import-title" className="text-xl font-semibold text-gray-900">
 							{t('title')}
 						</h2>
 						<p className="mt-1 text-xs text-gray-500">{t('subtitle')}</p>
@@ -97,7 +97,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 							type="search"
 							value={catalogSearch}
 							onChange={(e) => onCatalogSearchChange(e.target.value)}
-							className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+							className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500"
 							placeholder={t('searchPlaceholder')}
 							aria-label={t('searchPlaceholder')}
 							autoComplete="off"
@@ -106,7 +106,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 							<button
 								type="button"
 								onClick={() => onCatalogSearchChange('')}
-								className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+								className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
 								aria-label={t('clearSearch')}
 							>
 								<XMarkIcon className="h-4 w-4" aria-hidden />
@@ -182,8 +182,8 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 													onTogglePreset(row.id);
 												}
 											}}
-											className={`flex cursor-pointer flex-wrap items-start gap-3 px-4 py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
-												checked ? 'bg-blue-50 hover:bg-blue-50/80' : ''
+											className={`flex cursor-pointer flex-wrap items-start gap-3 px-4 py-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gray-500 ${
+												checked ? 'bg-gray-50 hover:bg-gray-50/80' : ''
 											}`}
 										>
 											<input
@@ -191,7 +191,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 												checked={checked}
 												readOnly
 												tabIndex={-1}
-												className="pointer-events-none mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600"
+												className="pointer-events-none mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-gray-800"
 												aria-hidden
 											/>
 											<VendorIcon
@@ -202,11 +202,11 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 											/>
 											<div className="min-w-0 flex-1 select-none">
 												<div className="flex items-start justify-between gap-2">
-													<p className="text-sm font-semibold text-gray-900">{copy.name}</p>
+													<p className="text-sm font-medium text-gray-900">{copy.name}</p>
 													<ProviderCatalogOutboundLink
 														links={row.links}
 														stopPropagation
-														className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800"
+														className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-gray-800 hover:text-gray-900"
 													/>
 												</div>
 												<div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -238,7 +238,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 						type="button"
 						onClick={() => void onImport()}
 						disabled={submitting || catalogLoading || selectedCount === 0}
-						className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+						className="rounded-md admin-primary px-4 py-2 text-white hover:bg-gray-800 disabled:opacity-50"
 					>
 						{submitting ? tCommon('importing') : t('importSelected', { count: selectedCount })}
 					</button>

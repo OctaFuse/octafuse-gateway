@@ -39,9 +39,9 @@ export default function SimulatorPage() {
 	}
 
 	return (
-		<div className="flex min-h-0 min-w-0 flex-col overflow-x-hidden bg-gray-100/90 p-4 sm:p-6 lg:p-8 xl:h-dvh xl:overflow-hidden">
+		<div className="flex min-h-0 min-w-0 flex-col overflow-x-hidden bg-gray-50 p-4 sm:p-6 lg:p-8 xl:h-dvh xl:overflow-hidden">
 			<div className="mb-4 shrink-0 sm:mb-5">
-				<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
+				<h1 className="text-2xl font-medium text-gray-900 sm:text-[28px]">{t('title')}</h1>
 				<p className="mt-1 max-w-3xl text-sm text-gray-500">
 					{t('subtitle', { product: tBrand('product') })}
 					<span className="text-gray-400"> · </span>

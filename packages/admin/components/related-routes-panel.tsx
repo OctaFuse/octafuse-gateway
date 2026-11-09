@@ -38,7 +38,7 @@ function RouteCapabilityBadges({
 	if (!fields.length) {
 		const automatic = !operation?.trim() || operation.trim() === '*';
 		return (
-			<span className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-500">
+			<span className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
 				<span className="truncate">
 					{automatic ? t('relatedRoutes.autoCapability') : operation}
 				</span>
@@ -63,7 +63,7 @@ function RouteCapabilityBadges({
 				return (
 					<span
 						key={capability}
-						className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-blue-50/70 px-1.5 py-0.5 text-[11px] font-medium leading-4 text-blue-700"
+						className="inline-flex items-center gap-1.5 rounded border border-gray-100 bg-gray-50/70 px-1.5 py-0.5 text-xs font-medium leading-4 text-gray-800"
 					>
 						{name}
 						<InfoHintPopover
@@ -157,7 +157,7 @@ export function RelatedRoutesPanel({
 							onChange={(event) => setQuery(event.target.value)}
 							placeholder={t('search')}
 							aria-label={t('search')}
-							className="w-full rounded-lg border border-gray-200 bg-white py-1.5 pl-9 pr-3 text-sm placeholder:text-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+							className="w-full rounded-lg border border-gray-200 bg-white py-1.5 pl-9 pr-3 text-sm placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
 						/>
 					</div>
 				) : null}
@@ -193,7 +193,7 @@ export function RelatedRoutesPanel({
 						onClick={state.reload}
 						disabled={disabled || state.loading}
 						aria-label={t('refresh')}
-						className="rounded-md p-2 text-gray-400 hover:bg-white hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-40"
+						className="rounded-md p-2 text-gray-400 hover:bg-white hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:opacity-40"
 					>
 						<ArrowPathIcon
 							className={`h-4 w-4 ${state.loading ? 'animate-spin' : ''}`}
@@ -252,7 +252,7 @@ export function RelatedRoutesPanel({
 											aria-label={t('selectAll')}
 											checked={allSelected}
 											disabled={disabled || !filtered.length}
-											className="h-3.5 w-3.5 rounded border-gray-300 accent-blue-600"
+											className="h-3.5 w-3.5 rounded border-gray-300 accent-gray-950"
 											onChange={(event) =>
 												setSelected(
 													event.target.checked
@@ -298,7 +298,7 @@ export function RelatedRoutesPanel({
 										key={route.id}
 										className={
 											selectedIds.includes(route.id)
-												? 'bg-blue-50/40'
+												? 'bg-gray-50/40'
 												: 'hover:bg-gray-50/60'
 										}
 									>
@@ -307,7 +307,7 @@ export function RelatedRoutesPanel({
 												type="checkbox"
 												checked={selectedIds.includes(route.id)}
 												disabled={disabled}
-												className="h-3.5 w-3.5 rounded border-gray-300 accent-blue-600"
+												className="h-3.5 w-3.5 rounded border-gray-300 accent-gray-950"
 												aria-label={t('selectRoute', {
 													model: isModelView
 														? route.provider_name || route.provider_id
@@ -339,7 +339,7 @@ export function RelatedRoutesPanel({
 														onClick={(event) => {
 															if (disabled) event.preventDefault();
 														}}
-														className={`inline-flex min-w-0 items-center gap-1 font-medium leading-5 text-blue-700 hover:underline ${
+														className={`inline-flex min-w-0 items-center gap-1 font-medium leading-5 text-gray-800 hover:underline ${
 															disabled ? 'pointer-events-none opacity-50' : ''
 														}`}
 													>
@@ -347,7 +347,7 @@ export function RelatedRoutesPanel({
 															{route.model_name || route.model_id}
 														</span>
 														<ArrowTopRightOnSquareIcon
-															className="h-3 w-3 shrink-0 text-blue-400"
+															className="h-3 w-3 shrink-0 text-gray-500"
 															aria-hidden
 														/>
 													</Link>

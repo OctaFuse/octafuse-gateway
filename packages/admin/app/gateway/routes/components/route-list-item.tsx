@@ -46,7 +46,7 @@ export function RouteListItem(props: Props) {
 					checked={route.status === 'active'}
 					disabled={togglingId === route.id}
 					onChange={() => onToggleStatus(route)}
-					className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+					className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
 					aria-label={route.status === 'active' ? t('routeEnabled') : t('routeDisabled')}
 				/>
 			</div>
@@ -54,15 +54,15 @@ export function RouteListItem(props: Props) {
 				<button
 					type="button"
 					onClick={() => onEdit(route)}
-					className="-mx-1 min-w-0 flex-1 rounded-md px-1 py-0.5 text-left hover:bg-gray-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+					className="-mx-1 min-w-0 flex-1 rounded-md px-1 py-0.5 text-left hover:bg-gray-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-1"
 				>
 					<div className="flex min-w-0 flex-col gap-0.5 text-xs leading-snug">
 						<div className="flex min-w-0 items-center gap-2">
 							<div className="flex shrink-0 items-center gap-1.5" title={t('priorityTitle')}>
-								<span className="text-[11px] font-semibold tabular-nums text-gray-600">
+								<span className="text-xs font-medium tabular-nums text-gray-600">
 									P{route.priority}
 								</span>
-								<span className="text-[11px] font-semibold tabular-nums text-gray-500">
+								<span className="text-xs font-medium tabular-nums text-gray-500">
 									W{route.weight ?? 1}
 								</span>
 							</div>
@@ -74,7 +74,7 @@ export function RouteListItem(props: Props) {
 							</span>
 						</div>
 						<div
-							className="min-w-0 truncate text-left font-mono text-[11px] text-gray-600"
+							className="min-w-0 truncate text-left font-mono text-xs text-gray-600"
 							title={route.provider_model_name}
 						>
 							{route.provider_model_name}

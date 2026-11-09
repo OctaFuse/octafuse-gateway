@@ -65,7 +65,7 @@ export function ModelPricingPanel({
 							{t('audioPricing')}
 						</p>
 						<div className="space-y-1.5">
-							<p className="text-[11px] font-medium text-gray-600">
+							<p className="text-xs font-medium text-gray-600">
 								{t('audioBillingMode')}
 							</p>
 							<div
@@ -185,7 +185,7 @@ export function ModelPricingPanel({
 												],
 											});
 										}}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
 									/>
 								</div>
 								<div>
@@ -215,7 +215,7 @@ export function ModelPricingPanel({
 												],
 											});
 										}}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
 									/>
 								</div>
 							</div>
@@ -240,7 +240,7 @@ export function ModelPricingPanel({
 												price_per_character: e.target.value,
 											})
 										}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
 									/>
 								</div>
 								<div>
@@ -259,7 +259,7 @@ export function ModelPricingPanel({
 												minimum_characters: e.target.value,
 											})
 										}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
 									/>
 								</div>
 							</div>
@@ -284,7 +284,7 @@ export function ModelPricingPanel({
 												price_per_second: e.target.value,
 											})
 										}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
 									/>
 								</div>
 								<div>
@@ -303,7 +303,7 @@ export function ModelPricingPanel({
 												minimum_seconds: e.target.value,
 											})
 										}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
 									/>
 								</div>
 							</div>

@@ -22,7 +22,7 @@ const MODALITY_STYLES: Record<
 > = {
 	text: {
 		labelKey: 'text',
-		chip: 'bg-blue-100 text-blue-700 ring-blue-200/80',
+		chip: 'bg-gray-100 text-gray-800 ring-gray-200/80',
 		icon: 'text',
 	},
 	image: {
@@ -79,7 +79,7 @@ function ModalityChip({
 			? 'h-5 w-5 rounded-[4px] ring-1'
 			: 'h-6 w-6 rounded-[5px] ring-1';
 	const iconClass = size === 'sm' ? 'h-3 w-3' : 'h-3.5 w-3.5';
-	const textClass = size === 'sm' ? 'text-[10px] font-bold' : 'text-[11px] font-bold';
+	const textClass = size === 'sm' ? 'text-xs font-semibold' : 'text-xs font-semibold';
 
 	return (
 		<span
@@ -168,7 +168,7 @@ export function ModelModalitiesBadge({
 		return <span className="text-xs text-gray-400">{tCommon('noData')}</span>;
 	}
 
-	const arrowClass = size === 'sm' ? 'text-[10px]' : 'text-xs';
+	const arrowClass = size === 'sm' ? 'text-xs' : 'text-xs';
 	const rowGap = spacing === 'relaxed' ? 'gap-x-2.5 gap-y-1.5' : 'gap-x-1 gap-y-1';
 	const chipGap = spacing === 'relaxed' ? 'gap-1.5' : 'gap-1';
 

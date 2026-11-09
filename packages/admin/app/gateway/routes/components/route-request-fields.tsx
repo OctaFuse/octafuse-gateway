@@ -25,7 +25,7 @@ export function RouteRequestFields({ formData, onFormChange }: Props) {
 									custom_headers: [...formData.custom_headers, { name: '', value: '' }],
 								})
 							}
-							className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-gray-800 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 						>
 							<PlusIcon className="h-3.5 w-3.5" aria-hidden />
 							{t('customHeadersAdd')}
@@ -127,7 +127,7 @@ export function RouteRequestFields({ formData, onFormChange }: Props) {
 						rows={8}
 						value={formData.custom_params_json}
 						onChange={(e) => onFormChange({ ...formData, custom_params_json: e.target.value })}
-						className="min-h-60 w-full flex-1 resize-y lg:min-h-0 lg:resize-none rounded-lg border border-gray-200 bg-white p-3 font-mono text-sm leading-6 text-gray-800 outline-none placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+						className="min-h-60 w-full flex-1 resize-y lg:min-h-0 lg:resize-none rounded-lg border border-gray-200 bg-white p-3 font-mono text-sm leading-6 text-gray-800 outline-none placeholder:text-gray-400 focus:border-gray-500 focus:ring-2 focus:ring-gray-500/10"
 						placeholder={t('customParamsPlaceholder')}
 						spellCheck={false}
 						aria-label={t('customBody')}
@@ -174,7 +174,7 @@ function OverrideOption({
 					type="checkbox"
 					checked={checked}
 					onChange={(e) => onChange(e.target.checked)}
-					className="h-4 w-4 rounded border-gray-300 accent-blue-600 focus:ring-blue-500"
+					className="h-4 w-4 rounded border-gray-300 accent-gray-950 focus:ring-gray-500"
 				/>
 				{label}
 			</label>

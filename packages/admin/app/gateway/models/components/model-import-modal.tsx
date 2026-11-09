@@ -56,12 +56,12 @@ function KindFilterChip(props: {
 			aria-pressed={active}
 			className={
 				active
-					? 'rounded-md border border-blue-600 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-800 disabled:opacity-50'
+					? 'rounded-md border border-gray-600 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-900 disabled:opacity-50'
 					: 'rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50'
 			}
 		>
 			{label}
-			<span className={active ? 'ml-1.5 text-blue-600' : 'ml-1.5 text-gray-400'}>{count}</span>
+			<span className={active ? 'ml-1.5 text-gray-800' : 'ml-1.5 text-gray-400'}>{count}</span>
 		</button>
 	);
 }
@@ -77,7 +77,7 @@ function ToolbarTextAction(props: {
 			type="button"
 			onClick={onClick}
 			disabled={disabled}
-			className="font-medium text-blue-600 hover:text-blue-800 hover:underline disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline"
+			className="font-medium text-gray-800 hover:text-gray-900 hover:underline disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline"
 		>
 			{label}
 		</button>
@@ -229,14 +229,14 @@ export function ModelImportModal(props: Props) {
 			}}
 		>
 			<div
-				className="flex max-h-[90vh] w-full max-w-7xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+				className="flex max-h-[90vh] w-full max-w-7xl flex-col overflow-hidden rounded-lg bg-white shadow-panel"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="import-catalog-title"
 			>
 				<div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
 					<div>
-						<h2 id="import-catalog-title" className="text-xl font-bold text-gray-900">
+						<h2 id="import-catalog-title" className="text-xl font-semibold text-gray-900">
 							{t('title')}
 						</h2>
 						<p className="mt-1 text-xs text-gray-500">
@@ -265,7 +265,7 @@ export function ModelImportModal(props: Props) {
 								type="search"
 								value={catalogSearch}
 								onChange={(e) => onCatalogSearchChange(e.target.value)}
-								className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+								className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500"
 								placeholder={t('searchPlaceholder')}
 								aria-label={t('searchPlaceholder')}
 								autoComplete="off"
@@ -274,7 +274,7 @@ export function ModelImportModal(props: Props) {
 								<button
 									type="button"
 									onClick={() => onCatalogSearchChange('')}
-									className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+									className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
 									aria-label={t('clearSearch')}
 								>
 									<XMarkIcon className="h-4 w-4" aria-hidden />
@@ -285,7 +285,7 @@ export function ModelImportModal(props: Props) {
 							type="button"
 							onClick={onReload}
 							disabled={catalogLoading}
-							className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+							className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50"
 							aria-label={t('reloadCatalog')}
 							title={t('reloadCatalog')}
 						>
@@ -300,7 +300,7 @@ export function ModelImportModal(props: Props) {
 						role="group"
 						aria-label={t('kindFilterAria')}
 					>
-						<span className="text-xs font-medium uppercase tracking-wide text-gray-500">
+						<span className="text-xs font-medium normal-case tracking-normal text-gray-500">
 							{t('kind')}
 						</span>
 						<KindFilterChip
@@ -344,7 +344,7 @@ export function ModelImportModal(props: Props) {
 						role="group"
 						aria-label={t('lifecycleFilterAria')}
 					>
-						<span className="text-xs font-medium uppercase tracking-wide text-gray-500">
+						<span className="text-xs font-medium normal-case tracking-normal text-gray-500">
 							{t('lifecycle')}
 						</span>
 						<KindFilterChip
@@ -502,8 +502,8 @@ export function ModelImportModal(props: Props) {
 													!selectable
 														? 'bg-gray-50 text-gray-400'
 														: checked
-															? 'cursor-pointer bg-blue-50 hover:bg-blue-50/80 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500'
-															: 'cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500'
+															? 'cursor-pointer bg-gray-50 hover:bg-gray-50/80 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gray-500'
+															: 'cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gray-500'
 												}
 											>
 												<td className="px-3 py-2 align-middle">
@@ -514,17 +514,17 @@ export function ModelImportModal(props: Props) {
 														tabIndex={-1}
 														disabled={!selectable}
 														aria-hidden
-														className="pointer-events-none h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+														className="pointer-events-none h-4 w-4 rounded border-gray-300 text-gray-800 focus:ring-gray-500 disabled:cursor-not-allowed disabled:opacity-40"
 													/>
 												</td>
 												<td className="px-3 py-2 font-mono text-xs text-gray-900">
 													<div>{row.id}</div>
 													{resolveModelLifecycle(row.retired) === 'retired' ? (
-														<span className="mt-1 inline-flex rounded bg-gray-100 px-1.5 py-0.5 font-sans text-[10px] font-medium text-gray-600">
+														<span className="mt-1 inline-flex rounded bg-gray-100 px-1.5 py-0.5 font-sans text-xs font-medium text-gray-600">
 															{t('retiredBadge', { date: row.retired ?? '' })}
 														</span>
 													) : isModelRetiringSoon(row.retired) ? (
-														<span className="mt-1 inline-flex rounded bg-amber-50 px-1.5 py-0.5 font-sans text-[10px] font-medium text-amber-700">
+														<span className="mt-1 inline-flex rounded bg-amber-50 px-1.5 py-0.5 font-sans text-xs font-medium text-amber-700">
 															{t('retiringBadge', { date: row.retired ?? '' })}
 														</span>
 													) : null}
@@ -610,7 +610,7 @@ export function ModelImportModal(props: Props) {
 						type="button"
 						onClick={onImport}
 						disabled={submitting || catalogLoading || !canImport}
-						className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+						className="rounded-md admin-primary px-4 py-2 text-white hover:bg-gray-800 disabled:opacity-50"
 					>
 						{submitting ? tCommon('importing') : t('importSelected', { count: selectedCount })}
 					</button>

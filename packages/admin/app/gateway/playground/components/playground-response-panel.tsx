@@ -114,7 +114,7 @@ export function PlaygroundResponsePanel({
 	return (
 		<section className="flex min-h-0 flex-1 flex-col space-y-2 overflow-hidden rounded-xl border border-gray-200/80 bg-white p-3 shadow-sm">
 			<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-				<h2 className="shrink-0 text-sm font-semibold text-gray-900">{t('response')}</h2>
+				<h2 className="shrink-0 text-sm font-medium text-gray-900">{t('response')}</h2>
 				{responseMeta ? (
 					<div className="flex min-w-0 flex-wrap items-center justify-end gap-2 text-xs">
 						<span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-800">
@@ -181,7 +181,7 @@ export function PlaygroundResponsePanel({
 									return (
 										<span
 											key={tag.id}
-											className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${observationChipClass(
+											className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${observationChipClass(
 												tag.tone
 											)}`}
 										>
@@ -212,14 +212,14 @@ export function PlaygroundResponsePanel({
 												}`}
 											>
 												<div className="mb-2 flex items-baseline justify-between gap-2">
-													<h3 className="font-semibold text-slate-800">{t(group.titleKey)}</h3>
-													<span className="shrink-0 text-[11px] text-slate-400">{t(group.noteKey)}</span>
+													<h3 className="font-medium text-slate-800">{t(group.titleKey)}</h3>
+													<span className="shrink-0 text-xs text-slate-400">{t(group.noteKey)}</span>
 												</div>
 												<ul className="space-y-1.5">
 													{group.rows.map((row) => (
 														<li key={row.helpKey} className="flex items-start gap-2">
 															<span
-																className={`mt-0.5 inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${observationChipClass(
+																className={`mt-0.5 inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ${observationChipClass(
 																	row.tone
 																)}`}
 															>
@@ -241,7 +241,7 @@ export function PlaygroundResponsePanel({
 
 					{usageHint ? (
 						<div className="shrink-0 text-xs leading-5 text-green-800">
-							<span className="font-semibold">{t('usageDisplayOnly')}</span>
+							<span className="font-medium">{t('usageDisplayOnly')}</span>
 							{usageHint}
 						</div>
 					) : null}
@@ -266,7 +266,7 @@ export function PlaygroundResponsePanel({
 								<a
 									href={audioPreviewUrl ?? undefined}
 									download="speech-output"
-									className="inline-flex text-xs font-medium text-blue-700 hover:text-blue-900 hover:underline"
+									className="inline-flex text-xs font-medium text-gray-800 hover:text-gray-950 hover:underline"
 								>
 									{t('downloadAudio')}
 								</a>
@@ -275,7 +275,7 @@ export function PlaygroundResponsePanel({
 							<div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-slate-200">
 								{mergedReasoningDisplay ? (
 									<div className="flex min-h-0 flex-[0.4] flex-col">
-										<div className="shrink-0 border-b border-amber-100 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-900/85">
+										<div className="shrink-0 border-b border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-medium normal-case tracking-normal text-amber-900/85">
 											{t('thinking')}
 										</div>
 										<pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words bg-amber-50/60 p-3 font-mono text-sm text-gray-900">
@@ -288,7 +288,7 @@ export function PlaygroundResponsePanel({
 										mergedReasoningDisplay ? 'border-t border-slate-200' : ''
 									}`}
 								>
-									<div className="shrink-0 border-b border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+									<div className="shrink-0 border-b border-slate-100 bg-slate-50 px-3 py-1.5 text-xs font-medium normal-case tracking-normal text-slate-600">
 										{t('body')}
 									</div>
 									<pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words bg-slate-50 p-3 font-mono text-sm text-gray-900">

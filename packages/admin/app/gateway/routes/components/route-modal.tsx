@@ -153,7 +153,7 @@ function RouteModalContent(props: RouteModalProps) {
 				aria-modal="true"
 				aria-labelledby="route-modal-title"
 				aria-describedby={modelLabel ? 'route-modal-context' : undefined}
-				className="flex h-[min(920px,94dvh)] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/5"
+				className="flex h-[min(920px,94dvh)] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-panel ring-1 ring-black/5"
 				onKeyDown={(event) => {
 					if (event.key === 'Escape' && !busy) {
 						event.stopPropagation();
@@ -182,7 +182,7 @@ function RouteModalContent(props: RouteModalProps) {
 						<div className="min-w-0 flex-1">
 							<h2
 								id="route-modal-title"
-								className="flex min-w-0 items-baseline gap-3 text-lg font-semibold text-gray-900"
+								className="flex min-w-0 items-baseline gap-3 text-lg font-medium text-gray-900"
 							>
 								<span className="shrink-0">{editingRoute ? t('editTitle') : t('newTitle')}</span>
 								{modelLabel ? (
@@ -210,7 +210,7 @@ function RouteModalContent(props: RouteModalProps) {
 							onClick={onClose}
 							disabled={busy}
 							aria-label={tCommon('close')}
-							className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 						>
 							<XMarkIcon className="h-5 w-5" aria-hidden />
 						</button>
@@ -243,9 +243,9 @@ function RouteModalContent(props: RouteModalProps) {
 									event.preventDefault();
 									selectTab(TABS[next].id, true);
 								}}
-								className={`flex items-center gap-2 whitespace-nowrap border-b-2 pb-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
+								className={`flex items-center gap-2 whitespace-nowrap border-b-2 pb-3 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-500 ${
 									activeTab === id
-										? 'border-blue-600 text-blue-700'
+										? 'border-gray-600 text-gray-800'
 										: 'border-transparent text-gray-500 hover:text-gray-800'
 								}`}
 							>
@@ -253,12 +253,12 @@ function RouteModalContent(props: RouteModalProps) {
 								{t(`editor.tabs.${id}`)}
 								{id === 'request' && hasCustomParams ? (
 									<span
-										className="h-1.5 w-1.5 rounded-full bg-blue-500"
+										className="h-1.5 w-1.5 rounded-full bg-gray-700"
 										aria-label={t('editor.configured')}
 									/>
 								) : null}
 								{id === 'pricing' && scheduleCount > 0 ? (
-									<span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] tabular-nums text-gray-600">
+									<span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs tabular-nums text-gray-600">
 										{scheduleCount}
 									</span>
 								) : null}
@@ -287,7 +287,7 @@ function RouteModalContent(props: RouteModalProps) {
 							aria-labelledby="route-tab-mapping"
 							hidden={activeTab !== 'mapping'}
 							tabIndex={0}
-							className="outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							className="outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 						>
 							<RouteMappingFields {...editorProps} onOpenRequestTab={() => selectTab('request', true)} />
 						</div>
@@ -297,7 +297,7 @@ function RouteModalContent(props: RouteModalProps) {
 							aria-labelledby="route-tab-request"
 							hidden={activeTab !== 'request'}
 							tabIndex={0}
-							className="h-full min-h-0 outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							className="h-full min-h-0 outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 						>
 							<RouteRequestFields {...editorProps} />
 						</div>
@@ -307,7 +307,7 @@ function RouteModalContent(props: RouteModalProps) {
 							aria-labelledby="route-tab-pricing"
 							hidden={activeTab !== 'pricing'}
 							tabIndex={0}
-							className="outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							className="outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 						>
 							<RoutePricingFields {...editorProps} />
 						</div>
@@ -317,7 +317,7 @@ function RouteModalContent(props: RouteModalProps) {
 							aria-labelledby="route-tab-test"
 							hidden={activeTab !== 'test'}
 							tabIndex={0}
-							className="h-full min-h-0 outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							className="h-full min-h-0 outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 						>
 							<RouteQuickTest {...editorProps} />
 						</div>
@@ -364,7 +364,7 @@ function RouteModalContent(props: RouteModalProps) {
 							type="button"
 							onClick={handleSave}
 							disabled={isSaving || isDeleting}
-							className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+							className="rounded-lg admin-primary px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{isSaving ? tCommon('savingDots') : tCommon('save')}
 						</button>

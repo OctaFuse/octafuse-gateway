@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { formatCatalogPricingTierRowsTooltip, getCatalogCardPricing } from '@/lib/pricing-ui';
-import { resolveModelKind, type ModelKind } from '@octafuse/core/db/model-kind';
+import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import { isModelRetiringSoon, resolveModelLifecycle } from '@/lib/model-lifecycle';
 import type { CatalogView } from '../../components/catalog-view-toggle';
 import { tagBadgeClass } from '../model-utils';
@@ -19,13 +19,7 @@ function routeUsageClass(routesCount: number, activeRoutesCount: number): string
 	return 'text-amber-800';
 }
 
-function kindBadgeClass(kind: ModelKind): string {
-	if (kind === 'embedding') return 'bg-emerald-50 text-emerald-700 ring-emerald-200';
-	if (kind === 'image') return 'bg-violet-50 text-violet-700 ring-violet-200';
-	if (kind === 'asr') return 'bg-amber-50 text-amber-700 ring-amber-200';
-	if (kind === 'tts') return 'bg-rose-50 text-rose-700 ring-rose-200';
-	return 'bg-sky-50 text-sky-700 ring-sky-200';
-}
+const kindBadgeClass = 'bg-gray-100 text-gray-600 ring-gray-200';
 
 export function ModelCard(props: {
 	view?: CatalogView;
@@ -85,12 +79,12 @@ export function ModelCard(props: {
 			{tagShown.map((tag) => (
 				<span
 					key={tag}
-					className={`max-w-full break-words rounded px-1.5 py-0.5 text-[10px] font-medium ${tagBadgeClass(tag)}`}
+					className={`max-w-full break-words rounded px-1.5 py-0.5 text-xs font-medium ${tagBadgeClass(tag)}`}
 				>
 					{tag}
 				</span>
 			))}
-			{tagExtra > 0 ? <span className="self-center text-[10px] text-gray-400">+{tagExtra}</span> : null}
+			{tagExtra > 0 ? <span className="self-center text-xs text-gray-400">+{tagExtra}</span> : null}
 		</div>
 	) : null;
 
@@ -102,17 +96,17 @@ export function ModelCard(props: {
 			<button
 				type="button"
 				onClick={() => void onEdit(model)}
-				className={`absolute inset-0 z-0 cursor-pointer bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${isList ? '' : 'rounded-xl'}`}
+				className={`absolute inset-0 z-0 cursor-pointer bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-500 ${isList ? '' : 'rounded-xl'}`}
 				aria-label={t('editModel', { name: displayName })}
 			/>
 
 			<div className={`pointer-events-none relative z-10 flex min-w-0 gap-2.5 ${isList ? 'items-center' : 'items-start'}`}>
 				<ModelVendorIcon vendor={model.vendor} size="default" className="shrink-0" />
 				<div className="min-w-0 flex-1">
-					<h3 className="truncate text-sm font-semibold leading-5 text-gray-900" title={displayName}>
+					<h3 className="truncate text-sm font-medium leading-5 text-gray-900" title={displayName}>
 						{displayName}
 					</h3>
-					<p className="mt-0.5 truncate font-mono text-[11px] leading-4 text-gray-500" title={model.id}>
+					<p className="mt-0.5 truncate font-mono text-xs leading-4 text-gray-500" title={model.id}>
 						{model.id}
 					</p>
 				</div>
@@ -122,7 +116,7 @@ export function ModelCard(props: {
 
 			<div className={`pointer-events-none relative z-10 flex min-w-0 items-center gap-1.5 ${isList ? 'flex-wrap' : ''}`}>
 				<span
-					className={`inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ${kindBadgeClass(kind)}`}
+					className={`inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset ${kindBadgeClass}`}
 				>
 					{kind === 'image'
 						? t('kindImage')
@@ -136,7 +130,7 @@ export function ModelCard(props: {
 				</span>
 				{isRetired || isRetiringSoon ? (
 					<span
-						className={`pointer-events-auto inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ${
+						className={`pointer-events-auto inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset ${
 							isRetired
 								? 'bg-stone-100 text-stone-500 ring-stone-200'
 								: 'bg-stone-50 text-stone-600 ring-stone-300'
@@ -147,7 +141,7 @@ export function ModelCard(props: {
 					</span>
 				) : null}
 				{specs ? (
-					<span className={`min-w-0 truncate text-[11px] tabular-nums text-gray-600 ${isList ? 'w-full' : ''}`} title={specs}>
+					<span className={`min-w-0 truncate text-xs tabular-nums text-gray-600 ${isList ? 'w-full' : ''}`} title={specs}>
 						{specs}
 					</span>
 				) : null}
@@ -155,20 +149,20 @@ export function ModelCard(props: {
 
 			<div className={isList ? 'contents' : 'pointer-events-none relative z-10 flex items-center justify-between gap-2'}>
 				<div className={`pointer-events-none relative z-10 flex min-w-0 items-baseline gap-1 ${isList ? 'flex-wrap' : ''}`} title={pricingTitle}>
-					<span className="truncate text-xs font-semibold tabular-nums text-gray-900">
+					<span className="truncate text-xs font-medium tabular-nums text-gray-900">
 						{pricing.amount}
 					</span>
 					{pricing.unit ? (
-						<span className="shrink-0 text-[10px] text-gray-400">{pricing.unit}</span>
+						<span className="shrink-0 text-xs text-gray-400">{pricing.unit}</span>
 					) : null}
 					{pricing.tierCount > 1 ? (
-						<span className="shrink-0 rounded bg-slate-100 px-1 py-0.5 text-[10px] font-medium text-slate-600">
+						<span className="shrink-0 rounded bg-slate-100 px-1 py-0.5 text-xs font-medium text-slate-600">
 							{t('pricingTiers', { count: pricing.tierCount })}
 						</span>
 					) : null}
 				</div>
 				<span
-					className={`pointer-events-none relative z-10 text-[11px] font-medium tabular-nums ${isList ? 'min-w-0' : 'shrink-0'} ${routeUsageClass(
+					className={`pointer-events-none relative z-10 text-xs font-medium tabular-nums ${isList ? 'min-w-0' : 'shrink-0'} ${routeUsageClass(
 						model.routes_count,
 						model.active_routes_count
 					)}`}

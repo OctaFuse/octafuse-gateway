@@ -101,7 +101,7 @@ export function McpDialog({
 				aria-modal="true"
 				aria-labelledby={titleId}
 				aria-busy={busy}
-				className={`relative flex w-full flex-col overflow-hidden rounded-lg bg-white shadow-xl ${
+				className={`relative flex w-full flex-col overflow-hidden rounded-lg bg-white shadow-panel ${
 					width === 'form'
 						? 'min-h-[min(680px,calc(100dvh-32px))] max-h-[calc(100dvh-32px)] max-w-[1040px]'
 						: width === 'wide' || wide
@@ -111,7 +111,7 @@ export function McpDialog({
 			>
 				<header className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-200 px-5 py-4 sm:px-6">
 					<div className="min-w-0">
-						<h2 id={titleId} className="break-words text-xl font-bold text-gray-900">
+						<h2 id={titleId} className="break-words text-xl font-semibold text-gray-900">
 							{title}
 						</h2>
 						{subtitle ? <p className="mt-1 break-words text-sm text-gray-500">{subtitle}</p> : null}
@@ -122,7 +122,7 @@ export function McpDialog({
 						aria-label={t('close')}
 						disabled={busy && !closeWhileBusy}
 						onClick={onClose}
-						className="shrink-0 rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50"
+						className="shrink-0 rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:opacity-50"
 					>
 						<XMarkIcon className="h-5 w-5" aria-hidden="true" />
 					</button>

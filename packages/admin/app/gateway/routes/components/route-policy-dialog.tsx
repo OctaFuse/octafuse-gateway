@@ -52,14 +52,14 @@ export function RoutePolicyDialog(props: Props) {
 			}}
 		>
 			<div
-				className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5"
+				className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-panel ring-1 ring-black/5"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="route-policy-dialog-title"
 			>
 				<div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-4">
 					<div>
-						<h2 id="route-policy-dialog-title" className="text-base font-semibold text-gray-900">
+						<h2 id="route-policy-dialog-title" className="text-base font-medium text-gray-900">
 							{isTierMode ? t('tierLevel') : t('title')}
 						</h2>
 						<p className="mt-1 text-xs text-gray-500">
@@ -68,7 +68,7 @@ export function RoutePolicyDialog(props: Props) {
 							{isTierMode ? (
 								<>
 									{' '}
-									· <span className="font-semibold text-gray-700">P{dialog.priority}</span>
+									· <span className="font-medium text-gray-700">P{dialog.priority}</span>
 								</>
 							) : null}
 						</p>
@@ -77,7 +77,7 @@ export function RoutePolicyDialog(props: Props) {
 						type="button"
 						onClick={onClose}
 						disabled={saving}
-						className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+						className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
 						aria-label={tCommon('close')}
 					>
 						<span className="block text-xl leading-none" aria-hidden>
@@ -121,7 +121,7 @@ export function RoutePolicyDialog(props: Props) {
 													},
 												})
 											}
-											className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+											className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500/30"
 										>
 											{STRATEGY_OPTIONS.map((opt) => (
 												<option key={opt || 'inherit'} value={opt}>
@@ -129,7 +129,7 @@ export function RoutePolicyDialog(props: Props) {
 												</option>
 											))}
 										</select>
-										<p className="mt-1 text-[11px] leading-relaxed text-gray-500">
+										<p className="mt-1 text-xs leading-relaxed text-gray-500">
 											{isPromptCacheSensitiveCapability(cap)
 												? t('hintCache')
 												: t('hintNoCache')}
@@ -157,7 +157,7 @@ export function RoutePolicyDialog(props: Props) {
 					) : (
 						<div>
 							<div className="mb-1">
-								<h3 className="text-sm font-semibold text-gray-900">{t('guideTitle')}</h3>
+								<h3 className="text-sm font-medium text-gray-900">{t('guideTitle')}</h3>
 								<p className="mt-0.5 text-xs text-gray-500">{t('guideHint')}</p>
 							</div>
 							<RouteStrategyPicker
@@ -174,7 +174,7 @@ export function RoutePolicyDialog(props: Props) {
 						role="note"
 						className="rounded-lg border border-sky-200 bg-sky-50/70 px-4 py-3"
 					>
-						<p className="text-sm font-semibold text-sky-900">{t('cacheHitGuideTitle')}</p>
+						<p className="text-sm font-medium text-sky-900">{t('cacheHitGuideTitle')}</p>
 						<p className="mt-1 text-xs leading-relaxed text-sky-800">
 							{t('cacheHitGuideBody')}
 						</p>
@@ -193,7 +193,7 @@ export function RoutePolicyDialog(props: Props) {
 						type="button"
 						onClick={onSave}
 						disabled={saving || (isTierMode && !dialog.poolId)}
-						className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+						className="rounded-md admin-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						{saving ? tCommon('savingDots') : tCommon('save')}
 					</button>

@@ -23,7 +23,7 @@ const PAGE_SIZE = 20;
 type StatusFilter = '' | OAuthAccessTokenStatus;
 
 const inputClass =
-	'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
+	'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500';
 
 export function OAuthAccessTokensPanel() {
 	const t = useTranslations('oauthAccessTokensPage');
@@ -209,7 +209,7 @@ export function OAuthAccessTokensPanel() {
 				className="flex w-full items-start justify-between gap-4 px-5 py-4 text-left"
 			>
 				<span className="min-w-0">
-					<span className="block text-base font-semibold text-gray-900">{t('title')}</span>
+					<span className="block text-base font-medium text-gray-900">{t('title')}</span>
 					<span className="mt-1 block max-w-2xl text-sm leading-6 text-gray-500">{t('subtitle')}</span>
 				</span>
 				<ChevronDownIcon
@@ -234,7 +234,7 @@ export function OAuthAccessTokensPanel() {
 
 			{stats.length > 0 && (
 				<div>
-					<h2 className="mb-2 text-xs font-semibold tracking-wide text-gray-500">{t('clientsTitle')}</h2>
+					<h2 className="mb-2 text-xs font-medium tracking-normal text-gray-500">{t('clientsTitle')}</h2>
 					<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
 						{stats.map((stat) => {
 							const selected = filterClientId === stat.client_id;
@@ -242,7 +242,7 @@ export function OAuthAccessTokensPanel() {
 								<div
 									key={stat.client_id}
 									className={`rounded-xl border bg-white px-4 py-3 shadow-sm ${
-										selected ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200'
+										selected ? 'border-gray-500 ring-1 ring-gray-500' : 'border-gray-200'
 									}`}
 								>
 									<div className="flex items-start justify-between gap-2">
@@ -258,7 +258,7 @@ export function OAuthAccessTokensPanel() {
 											<div className="truncate text-sm font-medium text-gray-900">
 												{stat.client_name || stat.client_id}
 											</div>
-											<div className="truncate font-mono text-[11px] text-gray-400" title={stat.client_id}>
+											<div className="truncate font-mono text-xs text-gray-400" title={stat.client_id}>
 												{stat.client_id}
 											</div>
 										</button>
@@ -362,12 +362,12 @@ export function OAuthAccessTokensPanel() {
 								{(['user', 'client', 'token', 'expires', 'lastUsed'] as const).map((column) => (
 									<th
 										key={column}
-										className="px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap"
+										className="px-4 py-2.5 text-left text-xs font-medium tracking-normal text-gray-500 whitespace-nowrap"
 									>
 										{t(`table.${column}`)}
 									</th>
 								))}
-								<th className="px-4 py-2.5 text-right text-[11px] font-semibold tracking-wide text-gray-500 whitespace-nowrap">
+								<th className="px-4 py-2.5 text-right text-xs font-medium tracking-normal text-gray-500 whitespace-nowrap">
 									{t('table.actions')}
 								</th>
 							</tr>
@@ -399,12 +399,12 @@ export function OAuthAccessTokensPanel() {
 													<Link
 														href={`/gateway/users/${encodeURIComponent(token.user_id)}`}
 														className={`block truncate text-sm font-medium hover:underline ${
-															live ? 'text-blue-700' : 'text-gray-500'
+															live ? 'text-gray-800' : 'text-gray-500'
 														}`}
 													>
 														{token.user_email || tCommon('noData')}
 													</Link>
-													<div className="mt-0.5 truncate font-mono text-[11px] text-gray-400" title={token.user_id}>
+													<div className="mt-0.5 truncate font-mono text-xs text-gray-400" title={token.user_id}>
 														{token.user_id}
 													</div>
 												</div>
@@ -423,7 +423,7 @@ export function OAuthAccessTokensPanel() {
 												<div className={`truncate text-sm font-medium ${live ? 'text-gray-900' : 'text-gray-500'}`}>
 													{token.client_name}
 												</div>
-												<div className="truncate font-mono text-[11px] text-gray-400">{token.client_id}</div>
+												<div className="truncate font-mono text-xs text-gray-400">{token.client_id}</div>
 											</button>
 										</td>
 										<td className="px-4 py-3.5 font-mono text-xs text-gray-600">

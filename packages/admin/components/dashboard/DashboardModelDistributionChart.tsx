@@ -48,10 +48,10 @@ export function DashboardModelDistributionChart({
 	}, [modelDistribution, topUsers, view]);
 
 	return (
-		<section className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm sm:p-6">
+		<section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<h2 className="text-base font-semibold text-gray-950">{t('usageBreakdown')}</h2>
+					<h2 className="text-base font-medium text-gray-950">{t('usageBreakdown')}</h2>
 					<p className="mt-1 text-xs text-gray-500">
 						{view === 'models' ? t('modelBreakdownHint') : t('userBreakdownHint')}
 					</p>
@@ -79,7 +79,7 @@ export function DashboardModelDistributionChart({
 			) : (
 				<div className="mt-5 overflow-x-auto">
 					<div className="min-w-[34rem]">
-						<div className="grid grid-cols-[minmax(12rem,1fr)_5rem_6rem_7rem] gap-3 border-b border-gray-100 pb-2 text-[11px] font-medium uppercase tracking-wide text-gray-400">
+						<div className="grid grid-cols-[minmax(12rem,1fr)_5rem_6rem_7rem] gap-3 border-b border-gray-100 pb-2 text-xs font-medium normal-case tracking-normal text-gray-400">
 							<span>{view === 'models' ? t('modelColumn') : t('userColumn')}</span>
 							<span className="text-right">{t('requestsColumn')}</span>
 							<span className="text-right">{t('tokensColumn')}</span>
@@ -89,11 +89,11 @@ export function DashboardModelDistributionChart({
 							<div key={row.key} className="grid grid-cols-[minmax(12rem,1fr)_5rem_6rem_7rem] items-center gap-3 border-b border-gray-100 py-3 last:border-0">
 								<div className="min-w-0">
 									<div className="flex items-center gap-2">
-										<span className="w-4 shrink-0 text-[11px] font-medium text-gray-400">{index + 1}</span>
+										<span className="w-4 shrink-0 text-xs font-medium text-gray-400">{index + 1}</span>
 										<span className="truncate text-sm font-medium text-gray-900" title={row.label}>{row.label}</span>
 									</div>
 									<div className="ml-6 mt-2 h-1.5 overflow-hidden rounded-full bg-gray-100">
-										<div className={`h-full rounded-full ${view === 'models' ? 'bg-blue-500' : 'bg-violet-500'}`} style={{ width: `${Math.max(row.share, 2)}%` }} />
+										<div className={`h-full rounded-full ${index === 0 ? 'bg-gray-700' : 'bg-gray-300'}`} style={{ width: `${Math.max(row.share, 2)}%` }} />
 									</div>
 								</div>
 								<span className="text-right text-sm tabular-nums text-gray-600">{row.requestCount.toLocaleString()}</span>
@@ -108,7 +108,7 @@ export function DashboardModelDistributionChart({
 			<div className="mt-4 flex justify-end border-t border-gray-100 pt-4">
 				<Link
 					href={view === 'models' ? '/gateway/analytics/models' : '/gateway/analytics/users'}
-					className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:underline"
+					className="inline-flex items-center gap-1 text-xs font-medium text-gray-800 hover:underline"
 				>
 					{view === 'models' ? t('modelUsageLink') : t('userUsageLink')}
 					<ChevronRightIcon className="h-3.5 w-3.5" />

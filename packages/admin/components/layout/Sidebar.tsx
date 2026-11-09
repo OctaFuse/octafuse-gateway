@@ -32,7 +32,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
-import { ADMIN_NAV_GROUPS, type AdminNavNameKey } from '@/lib/admin-nav';
+import { ADMIN_NAV_GROUPS, matchAdminNavRoute, type AdminNavNameKey } from '@/lib/admin-nav';
 import { adminAppVersion } from '@/lib/app-version';
 
 const NAV_ICONS: Record<AdminNavNameKey, React.ComponentType<{ className?: string }>> = {
@@ -65,6 +65,7 @@ export default function Sidebar({ mobile = false, onNavigate }: { mobile?: boole
   const tCommon = useTranslations('common');
   const pathname = usePathname();
   const router = useRouter();
+  const activeRoute = matchAdminNavRoute(pathname);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -83,85 +84,61 @@ export default function Sidebar({ mobile = false, onNavigate }: { mobile?: boole
   };
 
   return (
-    <aside className={mobile ? 'h-full w-full bg-gray-900' : 'hidden h-dvh w-64 shrink-0 bg-gray-900 lg:block'}>
+    <aside className={`${mobile ? 'h-full w-full' : 'hidden h-dvh w-60 shrink-0 lg:block'} admin-sidebar`}>
       <div className="flex h-full flex-col">
-      {/* Logo / Brand + locale */}
-      <div className="flex h-16 shrink-0 items-center justify-between gap-2 bg-gray-950 px-4 leading-tight">
-        <Link href="/dashboard" onClick={onNavigate} className="flex min-w-0 items-center gap-2 rounded-md hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-500">
-          <BrandMark className="h-8 w-8" />
-          <div className="min-w-0">
-            <span className="block truncate text-lg font-bold tracking-tight text-white">{tBrand('wordmark')}</span>
-            <span className="block truncate text-[10px] font-medium uppercase tracking-wide text-gray-400">
-              {tBrand('sidebarSubtitle')}
-            </span>
-          </div>
-        </Link>
-        {mobile ? (
-          <button type="button" onClick={onNavigate} aria-label={tCommon('close')} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-gray-300 hover:bg-gray-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500">
-            <XMarkIcon className="h-6 w-6" aria-hidden />
-          </button>
-        ) : <LocaleSwitcher variant="header" />}
-      </div>
-
-      {/* Navigation */}
-      <nav aria-label={t('navigation')} className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-3">
-        {ADMIN_NAV_GROUPS.map((group) => (
-          <div key={group.groupKey}>
-            <h3 className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-              {t(`groups.${group.groupKey}`)}
-            </h3>
-            <div className="space-y-px">
-              {group.items.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  (item.href === '/gateway/users' &&
-                    (pathname === '/gateway/users' || pathname?.startsWith('/gateway/users/'))) ||
-                  (item.href === '/gateway/tools' && pathname === '/gateway/tools');
-                const Icon = NAV_ICONS[item.nameKey];
-
-                return (
-                  <Link
-                    key={item.nameKey}
-                    href={item.href}
-                    onClick={onNavigate}
-                    aria-current={isActive ? 'page' : undefined}
-                    className={`
-                      group flex min-h-11 items-center rounded-md px-3 py-2 text-sm font-medium lg:min-h-0
-                      ${isActive
-                        ? 'bg-gray-800 text-white'
-                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                      }
-                    `}
-                  >
-                    <Icon className={`
-                      mr-3 h-5 w-5 flex-shrink-0
-                      ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}
-                    `} />
-                    {t(`nav.${item.nameKey}`)}
-                  </Link>
-                );
-              })}
-              {group.groupKey === 'system' && (
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <ArrowLeftStartOnRectangleIcon className="mr-3 h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-white" />
-                  {isLoggingOut ? tAuth('loggingOut') : tAuth('logout')}
-                </button>
-              )}
+        <div className="flex h-16 shrink-0 items-center justify-between gap-2 px-4">
+          <Link href="/dashboard" onClick={onNavigate} className="flex min-w-0 items-center gap-2 rounded-lg">
+            <BrandMark className="h-8 w-8" />
+            <div className="min-w-0 leading-tight">
+              <span className="block truncate text-base font-semibold text-gray-950">{tBrand('wordmark')}</span>
+              <span className="mt-1 block truncate text-xs text-gray-500">{tBrand('sidebarSubtitle')}</span>
             </div>
-          </div>
-        ))}
-      </nav>
+          </Link>
+          {mobile && (
+            <button type="button" onClick={onNavigate} aria-label={tCommon('close')} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-200">
+              <XMarkIcon className="h-5 w-5" aria-hidden />
+            </button>
+          )}
+        </div>
 
-      {/* Footer: links + version */}
-      <div className="shrink-0 space-y-3 border-t border-gray-800 p-4">
-        <BrandExternalLinks variant="sidebar" />
-        <p className="text-center text-xs text-gray-500">{t('version', { version: adminAppVersion })}</p>
-      </div>
+        <nav aria-label={t('navigation')} className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-3 pb-4 pt-2">
+          {ADMIN_NAV_GROUPS.map((group) => (
+            <div key={group.groupKey}>
+              <h3 className="mb-2 px-3 text-xs font-normal text-gray-500">{t(`groups.${group.groupKey}`)}</h3>
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const Icon = NAV_ICONS[item.nameKey];
+                  return (
+                    <Link
+                      key={item.nameKey}
+                      href={item.href}
+                      onClick={onNavigate}
+                      aria-current={activeRoute?.href === item.href ? 'page' : undefined}
+                      className="admin-nav-item"
+                    >
+                      <Icon aria-hidden="true" />
+                      <span className="min-w-0 truncate">{t(`nav.${item.nameKey}`)}</span>
+                    </Link>
+                  );
+                })}
+                {group.groupKey === 'system' && (
+                  <button type="button" onClick={handleLogout} disabled={isLoggingOut} className="admin-nav-item w-full disabled:cursor-not-allowed disabled:opacity-50">
+                    <ArrowLeftStartOnRectangleIcon aria-hidden="true" />
+                    {isLoggingOut ? tAuth('loggingOut') : tAuth('logout')}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        <div className={`shrink-0 border-t border-gray-200 px-4 py-3 ${mobile ? 'space-y-3' : ''}`}>
+          {mobile && <BrandExternalLinks variant="sidebar" />}
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-xs tabular-nums text-gray-500">{t('version', { version: adminAppVersion })}</span>
+            <LocaleSwitcher variant="header" />
+          </div>
+        </div>
       </div>
     </aside>
   );

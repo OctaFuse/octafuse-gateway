@@ -3,12 +3,12 @@ import type { ReactNode } from 'react';
 
 /**
  * 筛选条统一控件：「灰色小标签 + 灰底胶囊」。
- * 分段按钮（少量互斥项）、下拉（项目多）、文本输入共用同一高度与选中态（白底 / 蓝字 / 阴影）。
+ * 分段按钮（少量互斥项）、下拉（项目多）、文本输入共用同一高度与选中态（白底 / 石墨文字 / 细边框）。
  */
 
 const LABEL_CLASS = 'shrink-0 whitespace-nowrap text-xs text-slate-500';
 const PILL_CLASS = 'rounded-lg bg-slate-100/80 p-1';
-const ACTIVE_CLASS = 'bg-white font-semibold text-blue-700 shadow-sm';
+const ACTIVE_CLASS = 'bg-white font-medium text-gray-800 shadow-sm';
 const IDLE_CLASS = 'bg-transparent text-slate-500 hover:text-slate-900';
 
 /** 一行筛选：各控件之间留足横向间距，放不下时自动换行。 */
@@ -46,14 +46,14 @@ export function FilterSegmented({
 						type="button"
 						aria-pressed={value === option.value}
 						onClick={() => onChange(option.value)}
-						className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition focus-visible:outline-blue-500 ${
+						className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition focus-visible:outline-gray-500 ${
 							value === option.value ? ACTIVE_CLASS : 'text-slate-500 hover:text-slate-900'
 						}`}
 					>
 						{option.dotClass ? <span className={`h-1.5 w-1.5 rounded-full ${option.dotClass}`} aria-hidden /> : null}
 						{option.label}
 						{option.count !== undefined ? (
-							<span className="text-[10px] tabular-nums opacity-70">{option.count}</span>
+							<span className="text-xs tabular-nums opacity-70">{option.count}</span>
 						) : null}
 					</button>
 				))}
@@ -87,7 +87,7 @@ export function FilterSelect({
 				<select
 					value={value}
 					onChange={(event) => onChange(event.target.value)}
-					className={`block h-6 ${widthClass} min-w-0 cursor-pointer appearance-none truncate rounded-md pl-2.5 pr-7 text-xs outline-none transition focus-visible:ring-2 focus-visible:ring-blue-500 ${
+					className={`block h-6 ${widthClass} min-w-0 cursor-pointer appearance-none truncate rounded-md pl-2.5 pr-7 text-xs outline-none transition focus-visible:ring-2 focus-visible:ring-gray-500 ${
 						isActive ? ACTIVE_CLASS : IDLE_CLASS
 					}`}
 				>
@@ -95,7 +95,7 @@ export function FilterSelect({
 				</select>
 				<ChevronDownIcon
 					className={`pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2 ${
-						isActive ? 'text-blue-600' : 'text-slate-400'
+						isActive ? 'text-gray-800' : 'text-slate-400'
 					}`}
 					aria-hidden
 				/>
@@ -131,7 +131,7 @@ export function FilterTextInput({
 					onChange={(event) => onChange(event.target.value)}
 					placeholder={placeholder}
 					autoComplete="off"
-					className={`block h-6 ${widthClass} min-w-0 rounded-md px-2.5 text-xs outline-none transition placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-blue-500 ${
+					className={`block h-6 ${widthClass} min-w-0 rounded-md px-2.5 text-xs outline-none transition placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-gray-500 ${
 						mono ? 'font-mono ' : ''
 					}${value ? 'bg-white text-slate-800 shadow-sm' : 'bg-transparent text-slate-700'}`}
 				/>
@@ -168,15 +168,15 @@ export function FilterTileGroup({
 							type="button"
 							aria-pressed={isActive}
 							onClick={() => onChange(option.value)}
-							className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs ring-1 ring-inset transition focus-visible:outline-blue-500 ${
+							className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1 text-xs ring-1 ring-inset transition focus-visible:outline-gray-500 ${
 								isActive
-									? 'bg-blue-50 font-semibold text-blue-700 ring-blue-200'
+									? 'bg-gray-50 font-medium text-gray-800 ring-gray-200'
 									: 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900'
 							} ${empty ? 'opacity-50' : ''}`}
 						>
 							{option.label}
 							{option.count !== undefined ? (
-								<span className="text-[10px] tabular-nums opacity-70">{option.count}</span>
+								<span className="text-xs tabular-nums opacity-70">{option.count}</span>
 							) : null}
 						</button>
 					);

@@ -31,7 +31,7 @@ const CHIP_DOT: Partial<Record<ProviderListFilter, string>> = {
 	outdated: 'bg-orange-500',
 	openai: 'bg-sky-500',
 	anthropic: 'bg-orange-500',
-	gemini: 'bg-blue-500',
+	gemini: 'bg-gray-700',
 	dashscope: 'bg-violet-500',
 	minimax: 'bg-rose-500',
 	volcengine: 'bg-cyan-600',
@@ -97,11 +97,11 @@ export function ProviderToolbar(props: ProviderToolbarProps) {
 						type="button"
 						aria-pressed={selectedFilter === option.value}
 						onClick={() => onFilterChange(option.value)}
-						className={`inline-flex items-center gap-2 rounded-md px-2.5 py-2 text-xs leading-4 ring-1 ring-inset transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${selectedFilter === option.value ? 'bg-blue-50 font-medium text-blue-700 ring-blue-200' : 'text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900'}`}
+						className={`inline-flex items-center gap-2 rounded-md px-2.5 py-2 text-xs leading-4 ring-1 ring-inset transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${selectedFilter === option.value ? 'bg-gray-50 font-medium text-gray-800 ring-gray-200' : 'text-slate-600 ring-slate-200 hover:bg-slate-50 hover:text-slate-900'}`}
 					>
 						<span className={`h-1.5 w-1.5 shrink-0 rounded-full ${option.dotClass}`} aria-hidden />
 						{option.label}
-						<span className={`rounded px-1.5 text-[10px] tabular-nums ${selectedFilter === option.value ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>{option.count}</span>
+						<span className={`rounded px-1.5 text-xs tabular-nums ${selectedFilter === option.value ? 'bg-gray-100 text-gray-800' : 'bg-slate-100 text-slate-500'}`}>{option.count}</span>
 					</button>
 				))}
 			</div>
@@ -120,7 +120,7 @@ export function ProviderToolbar(props: ProviderToolbarProps) {
 						type="search"
 						value={providerSearch}
 						onChange={(e) => onSearchChange(e.target.value)}
-						className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-9 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+						className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-9 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
 						placeholder={t('searchPlaceholder')}
 						aria-label={t('searchPlaceholder')}
 						autoComplete="off"
@@ -129,7 +129,7 @@ export function ProviderToolbar(props: ProviderToolbarProps) {
 						<button
 							type="button"
 							onClick={() => onSearchChange('')}
-							className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+							className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
 							aria-label={t('clearSearch')}
 						>
 							<XMarkIcon className="h-4 w-4" aria-hidden />

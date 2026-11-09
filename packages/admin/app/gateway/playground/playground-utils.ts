@@ -53,8 +53,8 @@ export {
 } from '@/lib/playground/samples';
 
 export const inputClass =
-	'w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white';
-export const labelClass = 'block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1';
+	'w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 bg-white';
+export const labelClass = 'block text-xs font-medium text-gray-500 normal-case tracking-normal mb-1';
 export const panelClass = 'rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm space-y-3';
 export const codeBlockClass =
 	'p-3 text-xs overflow-x-auto whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-md font-mono text-gray-900';

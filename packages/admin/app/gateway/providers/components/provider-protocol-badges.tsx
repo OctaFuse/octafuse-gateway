@@ -28,7 +28,7 @@ export function ProviderProtocolBadges(props: {
 				return (
 					<span
 						key={protocol.key}
-						className={`inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] leading-4 ${
+						className={`inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-1 text-xs leading-4 ${
 							muted
 								? 'border-slate-200 bg-slate-100/60 text-slate-500 grayscale'
 								: 'border-slate-200 bg-slate-50 text-slate-600'

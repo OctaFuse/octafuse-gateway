@@ -45,7 +45,7 @@ function MultiplierInput({
         value={value}
         aria-label={label}
         onChange={(event) => onChange(event.target.value)}
-        className="h-8 w-full rounded-md border border-gray-300 bg-white pl-2 pr-6 text-right font-mono text-xs [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+        className="h-8 w-full rounded-md border border-gray-300 bg-white pl-2 pr-6 text-right font-mono text-xs [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
       />
       <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400" aria-hidden>
         ×
@@ -85,7 +85,7 @@ export function UserFactorEditor({
       <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-4 sm:px-6">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 id="user-factor-editor-title" className="text-lg font-semibold text-gray-900">
+            <h2 id="user-factor-editor-title" className="text-lg font-medium text-gray-900">
               {t('fields.chargedCostFactors')}
             </h2>
             <InfoHintPopover label={t('fields.chargedCostFactors')} portal openOnHover align="start">
@@ -110,7 +110,7 @@ export function UserFactorEditor({
               onChange={(event) => setSearch(event.target.value)}
               aria-label={te('searchModels')}
               placeholder={te('searchModels')}
-              className="h-8 w-full rounded-md border border-gray-300 bg-white pl-8 pr-2 text-xs focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              className="h-8 w-full rounded-md border border-gray-300 bg-white pl-8 pr-2 text-xs focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
             />
           </label>
           <button
@@ -128,7 +128,7 @@ export function UserFactorEditor({
           <button
             type="button"
             onClick={onAddModel}
-            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50 px-3 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-3 text-xs font-medium text-gray-800 hover:bg-gray-100"
           >
             <PlusIcon className="h-4 w-4" aria-hidden />
             {te('addModel')}
@@ -194,7 +194,7 @@ export function UserFactorEditor({
                           {label}
                         </span>
                         <span
-                          className="mt-0.5 block truncate font-mono text-[11px] text-gray-500"
+                          className="mt-0.5 block truncate font-mono text-xs text-gray-500"
                           title={card.modelId}
                         >
                           {card.modelId}
@@ -234,7 +234,7 @@ export function UserFactorEditor({
                         onClick={() => onAddGroup(card.modelId, ALL_GROUPS)}
                         aria-label={te('setDefaultFor', { model: label })}
                         title={`${te('inherited')} ${te('setDefault')}`}
-                        className="inline-flex h-8 max-w-full items-center gap-2 whitespace-nowrap rounded-md border border-dashed border-gray-300 bg-white px-2 text-xs text-gray-500 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                        className="inline-flex h-8 max-w-full items-center gap-2 whitespace-nowrap rounded-md border border-dashed border-gray-300 bg-white px-2 text-xs text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800"
                       >
                         <span className="min-w-0 truncate">{te('routeBilling')}</span>
                         <PlusIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -264,7 +264,7 @@ export function UserFactorEditor({
                                     routeGroup: event.target.value,
                                   })
                                 }
-                                className="h-8 w-28 min-w-0 rounded-md border border-gray-300 bg-white px-2 text-xs text-gray-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                                className="h-8 w-28 min-w-0 rounded-md border border-gray-300 bg-white px-2 text-xs text-gray-700 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
                               >
                                 {options.map((group) => (
                                   <option key={group} value={group}>
@@ -294,7 +294,7 @@ export function UserFactorEditor({
                               </button>
                             </div>
                             {!known && (
-                              <p className="mt-1 text-[11px] text-amber-700">{t('chargedCostFactors.unknownGroup')}</p>
+                              <p className="mt-1 text-xs text-amber-700">{t('chargedCostFactors.unknownGroup')}</p>
                             )}
                           </div>
                         );
@@ -306,7 +306,7 @@ export function UserFactorEditor({
                           onChange={(event) => {
                             if (event.target.value) onAddGroup(card.modelId, event.target.value);
                           }}
-                          className="h-8 max-w-full rounded-md border border-dashed border-indigo-200 bg-white px-2 text-xs text-indigo-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                          className="h-8 max-w-full rounded-md border border-dashed border-gray-200 bg-white px-2 text-xs text-gray-800 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
                         >
                           <option value="" disabled>
                             {te('addGroup')}
@@ -370,7 +370,7 @@ export function UserFactorEditor({
             <pre
               tabIndex={0}
               aria-label={te('jsonTitle')}
-              className="mt-2 max-h-64 overflow-auto rounded-md border border-gray-200 bg-white p-3 font-mono text-xs leading-5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              className="mt-2 max-h-64 overflow-auto rounded-md border border-gray-200 bg-white p-3 font-mono text-xs leading-5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200"
             >
               {configPreview.json}
             </pre>

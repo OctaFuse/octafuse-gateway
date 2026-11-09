@@ -160,7 +160,7 @@ export function PlaygroundToolsSetup({ state }: { state: PlaygroundToolsState })
 
 	return (
 		<section className={panelClass}>
-			<h2 className="text-sm font-semibold text-gray-900">{t('toolsSection')}</h2>
+			<h2 className="text-sm font-medium text-gray-900">{t('toolsSection')}</h2>
 			<p className="text-xs text-gray-500">{t('toolsHint')}</p>
 			<div className="space-y-3">
 				<div>
@@ -205,7 +205,7 @@ export function PlaygroundToolsWorkspace({ state }: { state: PlaygroundToolsStat
 		<div className="space-y-4">
 			<section className="space-y-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm">
 				<div className="flex flex-wrap items-center justify-between gap-2">
-					<h2 className="text-sm font-semibold text-gray-900">{t('requestBody')}</h2>
+					<h2 className="text-sm font-medium text-gray-900">{t('requestBody')}</h2>
 					<div className="flex flex-wrap items-center gap-2">
 						<button
 							type="button"
@@ -218,7 +218,7 @@ export function PlaygroundToolsWorkspace({ state }: { state: PlaygroundToolsStat
 							type="button"
 							disabled={state.sending}
 							onClick={() => void state.send()}
-							className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+							className="inline-flex items-center gap-1.5 rounded-md admin-primary px-3.5 py-1.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
 						>
 							<PaperAirplaneIcon className="h-4 w-4" />
 							{state.sending ? tCommon('sending') : tCommon('send')}
@@ -227,7 +227,7 @@ export function PlaygroundToolsWorkspace({ state }: { state: PlaygroundToolsStat
 				</div>
 				<div className="grid min-h-0 grid-cols-1 gap-3 xl:grid-cols-2 xl:items-stretch">
 					<div className="flex min-h-0 min-w-0 flex-col">
-						<label className="mb-1 text-xs font-medium uppercase tracking-wider text-gray-500">
+						<label className="mb-1 text-xs font-medium normal-case tracking-normal text-gray-500">
 							{t('inputBody')}
 						</label>
 						<textarea
@@ -240,12 +240,12 @@ export function PlaygroundToolsWorkspace({ state }: { state: PlaygroundToolsStat
 					</div>
 					<div className="flex min-h-0 min-w-0 flex-col">
 						<div className="mb-1 flex items-center justify-between gap-2">
-							<label className="text-xs font-medium uppercase tracking-wider text-gray-500">{t('sentBody')}</label>
+							<label className="text-xs font-medium normal-case tracking-normal text-gray-500">{t('sentBody')}</label>
 							{state.wireBody ? (
-								<span className="text-[11px] font-medium text-emerald-700">{t('sentBodySourceSent')}</span>
+								<span className="text-xs font-medium text-emerald-700">{t('sentBodySourceSent')}</span>
 							) : null}
 						</div>
-						<p className="mb-1 text-[11px] text-gray-500">
+						<p className="mb-1 text-xs text-gray-500">
 							{state.wireBody ? t('sentBodyHint') : t('sentBodyEmpty')}
 						</p>
 						<pre className={`${codeBlockClass} min-h-[180px] flex-1 overflow-y-auto`}>
@@ -261,7 +261,7 @@ export function PlaygroundToolsWorkspace({ state }: { state: PlaygroundToolsStat
 			</section>
 
 			<section className="space-y-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm">
-				<h2 className="text-sm font-semibold text-gray-900">{t('response')}</h2>
+				<h2 className="text-sm font-medium text-gray-900">{t('response')}</h2>
 				{state.responseMeta ? (
 					<div className="flex flex-wrap gap-2 text-xs">
 						<span className="rounded-full bg-gray-100 px-2.5 py-1 font-medium">HTTP {state.responseMeta.status}</span>

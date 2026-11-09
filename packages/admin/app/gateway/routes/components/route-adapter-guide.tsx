@@ -67,7 +67,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 				onClick={() => void copy()}
 				aria-label={status === 'copied' ? tCommon('copied') : label}
 				title={label}
-				className="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+				className="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 			>
 				{status === 'copied' ? (
 					<CheckIcon className="h-3.5 w-3.5" aria-hidden />
@@ -84,13 +84,13 @@ function CodeExample({ value, language, label }: { value: string; language: stri
 	return (
 		<div className="min-w-0 rounded-md bg-slate-50">
 			<div className="flex flex-wrap items-center justify-between gap-2 px-3 pt-2">
-				<span className="font-mono text-[11px] text-slate-500">{language}</span>
+				<span className="font-mono text-xs text-slate-500">{language}</span>
 				<CopyButton key={value} value={value} label={label} />
 			</div>
 			<pre
 				tabIndex={0}
 				aria-label={label}
-				className="max-h-64 overflow-auto p-3 font-mono text-xs leading-5 text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+				className="max-h-64 overflow-auto p-3 font-mono text-xs leading-5 text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-500"
 			>
 				<code>{value}</code>
 			</pre>
@@ -130,13 +130,13 @@ export function RouteAdapterGuide({ descriptor, modelId, routeGroup, onOpenReque
 	return (
 		<section aria-label={t('guide.title')} className="mt-4 min-w-0 border-t border-slate-200 pt-3">
 			<div className="flex flex-wrap items-center justify-between gap-2">
-				<h4 className="text-xs font-semibold text-slate-700">{t('guide.title')}</h4>
+				<h4 className="text-xs font-medium text-slate-700">{t('guide.title')}</h4>
 				<button
 					type="button"
 					onClick={() => setExpanded(!expanded)}
 					aria-expanded={expanded}
 					aria-controls={`${id}-details`}
-					className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+					className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-gray-800 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 				>
 					{t(expanded ? 'guide.hideDetails' : 'guide.showDetails')}
 					<ChevronDownIcon
@@ -150,7 +150,7 @@ export function RouteAdapterGuide({ descriptor, modelId, routeGroup, onOpenReque
 					<div className="min-w-0 space-y-3 lg:pr-6">
 						<h5 className="py-2 text-xs font-medium text-slate-600">{t('guide.call')}</h5>
 						<div className="flex flex-wrap items-center gap-2">
-							<span className="font-mono text-[11px] font-semibold text-blue-700">{method}</span>
+							<span className="font-mono text-xs font-medium text-gray-800">{method}</span>
 							<code className="min-w-0 flex-1 break-all text-xs text-slate-800">{callPath}</code>
 							<CopyButton key={callPath} value={callPath} label={t('guide.copyPath')} />
 						</div>
@@ -216,15 +216,15 @@ export function RouteAdapterGuide({ descriptor, modelId, routeGroup, onOpenReque
 											setActiveTab(next);
 											document.getElementById(`${id}-tab-${next}`)?.focus();
 										}}
-										className={`flex items-center gap-1.5 border-b-2 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
+										className={`flex items-center gap-1.5 border-b-2 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-500 ${
 											selectedTab === section
-												? 'border-blue-600 text-blue-700'
+												? 'border-gray-600 text-gray-800'
 												: 'border-transparent text-slate-500 hover:text-slate-800'
 										}`}
 									>
 										{t(`guide.${section}`)}
 										{section === 'mapping' ? (
-											<span className="text-[10px] font-normal text-slate-400">{mapping.length}</span>
+											<span className="text-xs font-normal text-slate-400">{mapping.length}</span>
 										) : null}
 									</button>
 								))}
@@ -238,7 +238,7 @@ export function RouteAdapterGuide({ descriptor, modelId, routeGroup, onOpenReque
 								aria-labelledby={`${id}-tab-${section}`}
 								hidden={selectedTab !== section}
 								tabIndex={0}
-								className="space-y-3 pb-1 pt-3 text-xs leading-5 text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+								className="space-y-3 pb-1 pt-3 text-xs leading-5 text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-500"
 							>
 								{section === 'mapping' ? (
 									<ul className="list-disc space-y-2 pl-4 marker:text-slate-400">
@@ -261,7 +261,7 @@ export function RouteAdapterGuide({ descriptor, modelId, routeGroup, onOpenReque
 											<div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
 												<span>{t('guide.protectedTitle')}</span>
 												{protectedFields.map((field) => (
-													<code key={field} className="text-[11px] text-slate-600">
+													<code key={field} className="text-xs text-slate-600">
 														{field}
 													</code>
 												))}
@@ -274,7 +274,7 @@ export function RouteAdapterGuide({ descriptor, modelId, routeGroup, onOpenReque
 												<button
 													type="button"
 													onClick={onOpenRequestTab}
-													className="rounded font-medium text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+													className="rounded font-medium text-gray-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 												>
 													{t('guide.openRequest')}
 												</button>

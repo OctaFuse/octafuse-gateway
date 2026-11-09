@@ -43,7 +43,7 @@ export function McpCatalogItemRow({
 	return (
 		<li
 			className={`rounded-xl border p-4 transition ${
-				selected ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200 bg-white'
+				selected ? 'border-gray-200 bg-gray-50/30' : 'border-gray-200 bg-white'
 			} ${item.status === 'removed' ? 'opacity-60' : ''}`}
 		>
 			<div className="flex items-start gap-3">
@@ -53,11 +53,11 @@ export function McpCatalogItemRow({
 					disabled={busy || item.status === 'removed'}
 					onChange={(e) => onSelect(e.target.checked)}
 					aria-label={t('selectItem', { name: item.exposedName })}
-					className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 accent-blue-600"
+					className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 accent-gray-950"
 				/>
 				<div className="min-w-0 flex-1">
 					<div className="flex flex-wrap items-center gap-2">
-						<span className="break-all font-mono text-sm font-semibold text-gray-900">
+						<span className="break-all font-mono text-sm font-medium text-gray-900">
 							{item.upstreamKey}
 						</span>
 						{item.reviewState === 'new' && item.status !== 'removed' ? (
@@ -102,7 +102,7 @@ export function McpCatalogItemRow({
 							aria-checked={item.status === 'enabled'}
 							disabled={busy}
 							onClick={() => onToggle(item.status !== 'enabled')}
-							className={`relative h-5 w-9 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
+							className={`relative h-5 w-9 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 ${
 								item.status === 'enabled' ? 'bg-gray-900' : 'bg-gray-300'
 							} disabled:opacity-50`}
 						>
@@ -171,7 +171,7 @@ export function McpCatalogItemRow({
 						) : (
 							<span className="text-red-600">{t('pricing.invalidStored')}</span>
 						)}
-						<span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px]">
+						<span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">
 							{t(custom ? 'custom' : 'inheritedPrice')}
 						</span>
 						<button
@@ -186,7 +186,7 @@ export function McpCatalogItemRow({
 								}
 								setPricing(!pricing);
 							}}
-							className="font-medium text-blue-600 hover:underline disabled:opacity-50"
+							className="font-medium text-gray-800 hover:underline disabled:opacity-50"
 						>
 							{t(pricing ? 'collapsePrice' : 'customPrice')}
 						</button>

@@ -132,8 +132,8 @@ export function ScheduleWindowEffectivePrices({
 
 	return (
 		<div className="overflow-x-auto rounded border border-gray-200 bg-white">
-			<table className="min-w-full text-left text-[10px]">
-				<thead className="bg-gray-50 text-[10px] font-semibold tracking-wide text-gray-500">
+			<table className="min-w-full text-left text-xs">
+				<thead className="bg-gray-50 text-xs font-medium tracking-normal text-gray-500">
 					<tr>
 						<th className="whitespace-nowrap px-2 py-1">
 							<span className="inline-flex items-center gap-1">
@@ -153,7 +153,7 @@ export function ScheduleWindowEffectivePrices({
 						dash={dash}
 						rows={chargedRows}
 						showRange={showRange}
-						sideClass="text-blue-800"
+						sideClass="text-gray-900"
 						sideLabel={t('chargedCost')}
 					/>
 					<SideRows
@@ -165,7 +165,7 @@ export function ScheduleWindowEffectivePrices({
 					/>
 				</tbody>
 			</table>
-			<p className="border-t border-gray-100 bg-gray-50/90 px-2 py-1 text-[10px] leading-snug text-gray-500">
+			<p className="border-t border-gray-100 bg-gray-50/90 px-2 py-1 text-xs leading-snug text-gray-500">
 				{tTable('unitFooter', {
 					unit: tTable('unitPerMillion', { symbol: getGatewayCurrencySymbol(billingCurrency) }),
 				})}

@@ -44,7 +44,7 @@ export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: strin
 	return (
 		<section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
 			<div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-				<h2 className="text-sm font-semibold text-gray-900">{t('title')}</h2>
+				<h2 className="text-sm font-medium text-gray-900">{t('title')}</h2>
 				{result ? (
 					<span className="text-xs text-gray-500">{t('mode', { mode: result.preview.user_charged_factor_mode })}</span>
 				) : null}
@@ -54,7 +54,7 @@ export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: strin
 			<div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
 				<div className="min-w-0">
 					<div className="flex flex-wrap items-end gap-2">
-						<label className="block min-w-[9rem] flex-1 text-[11px] font-medium text-gray-500">
+						<label className="block min-w-[9rem] flex-1 text-xs font-medium text-gray-500">
 							{t('model')}
 							<input
 								value={model}
@@ -63,7 +63,7 @@ export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: strin
 								className="mt-1 h-8 w-full rounded-md border border-gray-300 bg-white px-2 text-xs font-normal text-gray-900"
 							/>
 						</label>
-						<label className="block w-32 text-[11px] font-medium text-gray-500">
+						<label className="block w-32 text-xs font-medium text-gray-500">
 							{t('routeGroups')}
 							<input
 								value={routeGroups}
@@ -71,7 +71,7 @@ export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: strin
 								className="mt-1 h-8 w-full rounded-md border border-gray-300 bg-white px-2 font-mono text-xs font-normal text-gray-900"
 							/>
 						</label>
-						<label className="block w-32 text-[11px] font-medium text-gray-500">
+						<label className="block w-32 text-xs font-medium text-gray-500">
 							{t('kind')}
 							<select
 								value={kind}
@@ -135,7 +135,7 @@ export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: strin
 				</div>
 				<div className="min-w-0">
 					<h3 className="mb-2 text-xs font-medium text-gray-500">{t('response')}</h3>
-					<pre className="max-h-[70vh] min-h-48 overflow-auto rounded-md bg-gray-950 p-3 text-[11px] leading-5 text-gray-100">
+					<pre className="max-h-[70vh] min-h-48 overflow-auto rounded-md bg-gray-950 p-3 text-xs leading-5 text-gray-100">
 						{payload ? JSON.stringify(payload, null, 2) : ''}
 					</pre>
 				</div>

@@ -30,7 +30,7 @@ function budgetUsageRatio(spent: number, max: number | null | undefined): number
 function budgetBarClass(ratio: number): string {
   if (ratio >= 1) return 'bg-red-500';
   if (ratio >= 0.8) return 'bg-amber-500';
-  return 'bg-blue-500';
+  return 'bg-gray-700';
 }
 
 function spentToneClass(ratio: number | null, idle: boolean): string {
@@ -211,7 +211,7 @@ export default function GatewayUsersPage() {
         aria-label={`Sort by ${label}`}
       >
         {label}
-        <span className={`text-[10px] leading-none ${active ? 'text-blue-600' : 'text-gray-300'}`}>
+        <span className={`text-xs leading-none ${active ? 'text-gray-800' : 'text-gray-300'}`}>
           {active ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
         </span>
       </button>
@@ -228,7 +228,7 @@ export default function GatewayUsersPage() {
     align?: 'left' | 'right';
   }) => (
     <th
-      className={`px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap ${
+      className={`px-4 py-2.5 text-xs font-medium normal-case tracking-normal whitespace-nowrap ${
         align === 'right' ? 'text-right' : 'text-left'
       }`}
     >
@@ -322,13 +322,13 @@ export default function GatewayUsersPage() {
     <div className="min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">{t('title')}</h1>
+          <h1 className="text-2xl font-medium tracking-tight text-gray-900">{t('title')}</h1>
           <p className="mt-1 max-w-2xl text-sm text-gray-500">{t('subtitle')}</p>
         </div>
         <button
           type="button"
           onClick={openCreate}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="inline-flex items-center gap-2 rounded-lg admin-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
         >
           <PlusIcon className="h-4 w-4" />
           {t('newUser')}
@@ -350,7 +350,7 @@ export default function GatewayUsersPage() {
             <button
               type="button"
               onClick={clearFilters}
-              className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-blue-700"
+              className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-gray-800"
             >
               <XMarkIcon className="h-3.5 w-3.5" aria-hidden />
               {tCommon('clearFilters')}
@@ -378,18 +378,18 @@ export default function GatewayUsersPage() {
           </colgroup>
           <thead className="border-b border-gray-200 bg-gray-50/80">
             <tr>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">
+              <th className="px-4 py-2.5 text-left text-xs font-medium normal-case tracking-normal text-gray-500 whitespace-nowrap">
                 {t('table.user')}
               </th>
               <th className="px-4 py-2.5 text-right">
                 <div className="flex flex-col items-end gap-0.5">
-                  <div className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                  <div className="inline-flex items-center gap-1 text-xs font-medium normal-case tracking-normal text-gray-500">
                     <span>{t('table.budget')}</span>
                     <InfoHintPopover label={t('hints.budgetTitle')}>
                       <p>{t('hints.budgetVsWallet')}</p>
                     </InfoHintPopover>
                   </div>
-                  <div className="inline-flex items-center gap-1 text-[10px] font-medium normal-case tracking-normal whitespace-nowrap">
+                  <div className="inline-flex items-center gap-1 text-xs font-medium normal-case tracking-normal whitespace-nowrap">
                     <SortButton label={t('table.spent')} columnKey="budget_spent" />
                     <span className="text-gray-300">/</span>
                     <SortButton label={t('table.max')} columnKey="budget_max" />
@@ -402,13 +402,13 @@ export default function GatewayUsersPage() {
               </th>
               <th className="px-4 py-2.5 text-right">
                 <div className="flex flex-col items-end gap-0.5">
-                  <div className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                  <div className="inline-flex items-center gap-1 text-xs font-medium normal-case tracking-normal text-gray-500">
                     <span>{t('table.wallet')}</span>
                     <InfoHintPopover label={t('hints.walletTitle')}>
                       <p>{t('hints.budgetVsWallet')}</p>
                     </InfoHintPopover>
                   </div>
-                  <div className="inline-flex items-center gap-1 text-[10px] font-medium normal-case tracking-normal whitespace-nowrap">
+                  <div className="inline-flex items-center gap-1 text-xs font-medium normal-case tracking-normal whitespace-nowrap">
                     <SortButton label={t('table.walletBalance')} columnKey="wallet_granted" />
                     <span className="text-gray-300">/</span>
                     <SortButton label={t('table.walletSpent')} columnKey="wallet_spent" />
@@ -416,7 +416,7 @@ export default function GatewayUsersPage() {
                 </div>
               </th>
               <th className="px-4 py-2.5 text-right" title={t('help.rateLimitRpm')}>
-                <div className="inline-flex items-center justify-end gap-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                <div className="inline-flex items-center justify-end gap-1 text-xs font-medium normal-case tracking-normal text-gray-500">
                   <span>{t('table.rateLimit')}</span>
                   <InfoHintPopover label={t('hints.rateLimitTitle')}>
                     <p>{t('help.rateLimitRpm')}</p>
@@ -424,16 +424,16 @@ export default function GatewayUsersPage() {
                 </div>
               </th>
               <th
-                className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap"
+                className="px-4 py-2.5 text-right text-xs font-medium normal-case tracking-normal text-gray-500 whitespace-nowrap"
                 title={t('table.keysActiveOfTotal')}
               >
                 {t('table.keys')}
               </th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">
+              <th className="px-4 py-2.5 text-left text-xs font-medium normal-case tracking-normal text-gray-500 whitespace-nowrap">
                 {t('table.metadata')}
               </th>
               <th
-                className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap"
+                className="px-4 py-2.5 text-left text-xs font-medium normal-case tracking-normal text-gray-500 whitespace-nowrap"
                 title={t('help.chargedCostFactors')}
               >
                 {t('table.chargedCostFactors')}
@@ -493,8 +493,8 @@ export default function GatewayUsersPage() {
                 key={u.id}
                 role="link"
                 tabIndex={0}
-                aria-label={`User detail: ${u.email || u.id}`}
-                className={`cursor-pointer transition-colors hover:bg-blue-50/40 focus:bg-blue-50/60 focus:outline-none ${
+                aria-label={`${t('title')}: ${u.email || u.id}`}
+                className={`cursor-pointer transition-colors hover:bg-gray-50/40 focus:bg-gray-50/60 focus:outline-none ${
                   disabled ? 'bg-gray-50/60' : ''
                 }`}
                 onClick={() => router.push(detailHref)}
@@ -524,13 +524,13 @@ export default function GatewayUsersPage() {
                           {u.email || tCommon('noData')}
                         </span>
                         {disabled && (
-                          <span className="inline-flex shrink-0 items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-600 ring-1 ring-inset ring-gray-200">
+                          <span className="inline-flex shrink-0 items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium normal-case tracking-normal text-gray-600 ring-1 ring-inset ring-gray-200">
                             {tOptions('userStatus.disabled')}
                           </span>
                         )}
                       </div>
                       {externalLabel ? (
-                        <div className="mt-0.5 truncate font-mono text-[11px] text-gray-400" title={externalLabel}>
+                        <div className="mt-0.5 truncate font-mono text-xs text-gray-400" title={externalLabel}>
                           {externalLabel}
                         </div>
                       ) : null}
@@ -546,7 +546,7 @@ export default function GatewayUsersPage() {
                     </div>
                     {resetHint ? (
                       <div
-                        className="mt-0.5 truncate text-[11px] text-gray-400"
+                        className="mt-0.5 truncate text-xs text-gray-400"
                         title={u.budget_reset_at ? formatDateTime(u.budget_reset_at) : resetHint}
                       >
                         {resetHint}
@@ -563,7 +563,7 @@ export default function GatewayUsersPage() {
                   >
                     {formatGatewayMoneyCode(walletRemaining, billingCurrency, 2)}
                   </div>
-                  <div className="mt-0.5 text-[11px] tabular-nums text-gray-400">
+                  <div className="mt-0.5 text-xs tabular-nums text-gray-400">
                     {t('table.walletSpent')} {formatGatewayMoneyCode(walletSpent, billingCurrency, 2)}
                   </div>
                 </td>
@@ -626,7 +626,7 @@ export default function GatewayUsersPage() {
                 </td>
                 <td className="px-4 py-3.5 overflow-hidden whitespace-nowrap">
                   <div className="truncate text-sm text-gray-700">{formatDate(u.created_at)}</div>
-                  <div className="truncate text-[11px] tabular-nums text-gray-400">{formatTime(u.created_at)}</div>
+                  <div className="truncate text-xs tabular-nums text-gray-400">{formatTime(u.created_at)}</div>
                 </td>
               </tr>
               );
@@ -669,9 +669,9 @@ export default function GatewayUsersPage() {
 
       {showCreate && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-panel max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">{t('createTitle')}</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{t('createTitle')}</h2>
               <button type="button" onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600">×</button>
             </div>
             <div className="p-6 space-y-5">
@@ -695,7 +695,7 @@ export default function GatewayUsersPage() {
                 />
               </div>
               <div className="rounded-lg border border-sky-200 bg-sky-50/70 p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-sky-950">{t('table.budget')}</h3>
+                <h3 className="text-sm font-medium text-sky-950">{t('table.budget')}</h3>
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -763,7 +763,7 @@ export default function GatewayUsersPage() {
               </div>
 
               <div className="pt-4 border-t border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-900">
+                <h3 className="text-sm font-medium text-gray-900">
                   {t('externalIdentity.title')} <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                 </h3>
                 <p className="mt-1 text-xs text-gray-500">
@@ -799,7 +799,7 @@ export default function GatewayUsersPage() {
             </div>
             <div className="px-6 py-4 border-t flex justify-end gap-2">
               <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 border rounded-md text-sm" disabled={isSaving}>{tCommon('cancel')}</button>
-              <button type="button" onClick={submitCreate} disabled={isSaving} className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm disabled:opacity-50">
+              <button type="button" onClick={submitCreate} disabled={isSaving} className="px-4 py-2 admin-primary rounded-md text-sm disabled:opacity-50">
                 {isSaving ? tCommon('saving') : tCommon('create')}
               </button>
             </div>
@@ -811,10 +811,10 @@ export default function GatewayUsersPage() {
         const m = summarizeMetadata(metadataViewUser.metadata);
         return (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+            <div className="bg-white rounded-lg shadow-panel max-w-2xl w-full max-h-[90vh] flex flex-col">
               <div className="px-6 py-4 border-b flex justify-between items-center">
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-gray-900">{tCommon('metadata')}</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">{tCommon('metadata')}</h2>
                   <p className="mt-0.5 text-xs text-gray-500 font-mono truncate" title={metadataViewUser.id}>
                     {[metadataViewUser.email, metadataViewUser.id].filter(Boolean).join(' · ')}
                   </p>
@@ -861,10 +861,10 @@ export default function GatewayUsersPage() {
         const f = summarizeChargedCostFactors(factorsViewUser.charged_cost_factors);
         return (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+            <div className="bg-white rounded-lg shadow-panel max-w-2xl w-full max-h-[90vh] flex flex-col">
               <div className="px-6 py-4 border-b flex justify-between items-center">
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-gray-900">{t('fields.chargedCostFactors')}</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">{t('fields.chargedCostFactors')}</h2>
                   <p className="mt-0.5 text-xs text-gray-500 font-mono truncate" title={factorsViewUser.id}>
                     {[factorsViewUser.email, factorsViewUser.id].filter(Boolean).join(' · ')}
                   </p>
