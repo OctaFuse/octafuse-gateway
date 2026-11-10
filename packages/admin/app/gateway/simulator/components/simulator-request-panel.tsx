@@ -1,6 +1,7 @@
 'use client';
+import { AdminContentMark } from '@/components/admin-content-mark';
 
-import { PaperAirplaneIcon, StopIcon } from '@heroicons/react/24/outline';
+import { PaperAirplaneIcon, StopIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { RequestTargetUrl } from '@/components/request-target-url';
 import { validateAudioTranscriptionFile } from '@/lib/audio-transcriptions';
@@ -246,9 +247,9 @@ export function SimulatorRequestPanel({
 		);
 
 	return (
-		<section className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto rounded-xl border border-gray-200 bg-white p-4">
+		<section className="admin-editor-panel admin-content-panel flex h-full min-h-0 flex-col gap-4 overflow-y-auto rounded-xl border border-gray-200 bg-white p-4">
 			<div className="flex flex-wrap items-center justify-between gap-2">
-				<h2 className="text-sm font-medium text-gray-900">{t('requestBody')}</h2>
+				<h2 className="flex items-center gap-2 text-sm font-medium text-gray-900"><AdminContentMark icon={ArrowUpTrayIcon} compact />{t('requestBody')}</h2>
 				<div className="flex flex-wrap items-center gap-2">
 					<AdminInspector label={t('wirePreview')} disabled={!displayWire}>
 						{displayWire && (

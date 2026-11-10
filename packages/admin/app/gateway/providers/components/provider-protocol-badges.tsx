@@ -30,7 +30,8 @@ export function ProviderProtocolBadges(props: {
 				return (
 					<span
 						key={protocol.key}
-						className={`inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-1 text-xs leading-4 ${
+						data-protocol={protocol.key}
+						className={`provider-protocol-tile inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-1 text-xs leading-4 ${
 							muted
 								? 'border-slate-200 bg-slate-100/60 text-slate-500 grayscale'
 								: 'border-gray-100 bg-gray-50/70 text-gray-600'
@@ -38,15 +39,13 @@ export function ProviderProtocolBadges(props: {
 						title={protocolSummary}
 						aria-label={protocolSummary}
 					>
-						<span className="h-3.5 w-3.5 shrink-0" aria-hidden>
+						<span className="provider-protocol-symbol h-3.5 w-3.5 shrink-0" aria-hidden>
 							<ProviderProtocolIcon protocol={protocol.key} />
 						</span>
-						{compact ? <span className="truncate">{upstream(protocol.key)}</span> : badgeLabels.length > 0 ? (
-							<span className="min-w-0 truncate text-slate-500">
-								{badgeLabels.slice(0, 2).join(' · ')}
-								{badgeLabels.length > 2 ? ` +${badgeLabels.length - 2}` : ''}
-							</span>
-						) : null}
+						<span className="min-w-0">
+							<span className="block truncate">{upstream(protocol.key)}</span>
+							{!compact && badgeLabels.length > 0 ? <span className="mt-0.5 block truncate text-xs text-slate-500">{badgeLabels.slice(0, 2).join(' · ')}{badgeLabels.length > 2 ? ` +${badgeLabels.length - 2}` : ''}</span> : null}
+						</span>
 					</span>
 				);
 			})}

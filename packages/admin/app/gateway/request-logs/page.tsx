@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminContentMark } from '@/components/admin-content-mark';
+
 import { AdminPageTitle } from '@/components/admin-page-title';
 
 /**
@@ -14,6 +16,7 @@ import { useFeedback } from '@/components/feedback';
 import { useBusinessTimezoneContext } from '@/components/BusinessTimezoneProvider';
 import { LogRangeControl } from './log-range-control';
 import { readRequestLogFilters, requestLogDuration, requestLogQuery } from './request-log-query';
+import { dashboardErrorSummary } from '@/components/dashboard/dashboard-presentation';
 import { useLocale, useTranslations } from 'next-intl';
 import { Fragment, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
@@ -54,6 +57,7 @@ export default function GatewayRequestLogsPage() {
 	const router = useRouter();
 	const t = useTranslations('requestLogs');
 	const tCommon = useTranslations('common');
+	const tDashboard = useTranslations('dashboard');
 	const tOptions = useTranslations('options');
 	const tKind = useTranslations('providers.kind');
 	const tToken = useTranslations('oauthAccessTokensPage');
@@ -443,7 +447,7 @@ export default function GatewayRequestLogsPage() {
 
 	const renderCostCell = (standardCost: number, chargedCost: number, meteredCost: number) => (
 		<div
-			className="grid grid-cols-[auto_auto_auto] justify-end gap-x-1.5 gap-y-1 text-right text-xs tabular-nums"
+			className="admin-money-comparison grid grid-cols-[auto_auto_auto] justify-end gap-x-1.5 gap-y-1 text-right text-xs tabular-nums"
 			title={[
 				`${t('titles.standardCatalogPrice')}: ${formatGatewayMoneyCode(standardCost, billingCurrency, 6)}`,
 				`${t('titles.chargedUserBudget')}: ${formatCostMultiplier(chargedCost, standardCost) || '—'}`,
@@ -611,7 +615,7 @@ export default function GatewayRequestLogsPage() {
 	};
 
 	return (
-		<div className="min-h-full min-w-0 p-4 sm:p-6 lg:p-8">
+		<div className="admin-content-workspace content-tone-inference min-h-full min-w-0 p-4 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<AdminPageTitle>{t('title')}</AdminPageTitle>
@@ -643,7 +647,7 @@ export default function GatewayRequestLogsPage() {
 				</div>
 			</div>
 
-			<section aria-label={t('ui.filters')} className="mb-5 space-y-3">
+			<section aria-label={t('ui.filters')} className="admin-filter-surface mb-5 space-y-3">
 				<div className="flex flex-wrap items-center gap-3">
 					<div className="relative min-w-0 flex-1 basis-60 sm:max-w-xs">
 						<MagnifyingGlassIcon
@@ -828,7 +832,7 @@ export default function GatewayRequestLogsPage() {
 				</div>
 			)}
 
-			<div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+			<div className="admin-content-panel admin-table-surface overflow-hidden rounded-xl border border-gray-200 bg-white">
 				<div
 					className={`overflow-x-auto ${isLoading && logs.length > 0 ? 'opacity-60' : ''}`}
 					aria-busy={isLoading}
@@ -921,8 +925,8 @@ export default function GatewayRequestLogsPage() {
 											<span>{formatTime(log.created_at)}</span>
 										</div>
 										{log.error_message?.trim() && (
-											<p className="mt-1 truncate text-xs text-red-600" title={log.error_message}>
-												{log.error_message}
+											<p className="mt-1 truncate text-xs text-red-600" title={dashboardErrorSummary(log.error_message, tDashboard('upstreamError'))}>
+												{dashboardErrorSummary(log.error_message, tDashboard('upstreamError'))}
 											</p>
 										)}
 									</td>
@@ -1003,11 +1007,12 @@ export default function GatewayRequestLogsPage() {
 						role="dialog"
 						aria-modal="true"
 						aria-labelledby="log-detail-title"
-						className="flex max-h-[90dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white outline-none"
+						className="admin-content-dialog flex max-h-[90dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white outline-none"
 					>
-						<header className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
+						<header className="admin-dialog-header flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
 							<div className="min-w-0">
-								<h2 id="log-detail-title" className="text-base font-medium">
+								<h2 id="log-detail-title" className="admin-dialog-title text-base font-medium">
+									<AdminContentMark />
 									{t('ui.detailTitle')}
 								</h2>
 								<div className="mt-1 flex items-center gap-2">
@@ -1033,7 +1038,7 @@ export default function GatewayRequestLogsPage() {
 								<XMarkIcon className="h-5 w-5" aria-hidden />
 							</button>
 						</header>
-						<div className="min-h-0 overflow-y-auto overscroll-contain">
+						<div className="admin-dialog-body min-h-0 overflow-y-auto overscroll-contain">
 							<RequestLogFlow
 								key={detailLog.id}
 								log={detailLog}
@@ -1053,7 +1058,7 @@ export default function GatewayRequestLogsPage() {
 								onExplainTiming={() => setTimingHelpLog(detailLog)}
 							/>
 						</div>
-						<footer className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 bg-gray-50 px-5 py-3">
+						<footer className="admin-dialog-footer flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 bg-gray-50 px-5 py-3">
 							<span className="text-xs text-gray-500">
 								{formatShortDate(detailLog.created_at)} {formatTime(detailLog.created_at)}
 							</span>
@@ -1076,10 +1081,10 @@ export default function GatewayRequestLogsPage() {
 						role="dialog"
 						aria-modal="true"
 						aria-labelledby="timing-help-title"
-						className="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white outline-none"
+						className="admin-content-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white outline-none"
 					>
-						<header className="flex shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
-							<h2 id="timing-help-title" className="flex items-center gap-2 text-base font-medium">
+						<header className="admin-dialog-header flex shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
+							<h2 id="timing-help-title" className="admin-section-title flex items-center gap-2 text-base font-medium">
 								<ClockIcon className="h-4 w-4 text-gray-400" aria-hidden />
 								{t('timing.helpTitle')}
 							</h2>
@@ -1092,7 +1097,7 @@ export default function GatewayRequestLogsPage() {
 								<XMarkIcon className="h-4 w-4" aria-hidden />
 							</button>
 						</header>
-						<div className="min-h-0 overflow-y-auto p-5">
+						<div className="admin-dialog-body min-h-0 overflow-y-auto p-5">
 							<div className="grid gap-3 sm:grid-cols-2">
 								{[
 									{ label: 'gateway', value: timingHelpLog.gateway_overhead_ms },
@@ -1126,7 +1131,7 @@ export default function GatewayRequestLogsPage() {
 								</pre>
 							</details>
 						</div>
-						<footer className="flex shrink-0 justify-end border-t border-gray-100 bg-gray-50 px-5 py-3">
+						<footer className="admin-dialog-footer flex shrink-0 justify-end border-t border-gray-100 bg-gray-50 px-5 py-3">
 							<button
 								type="button"
 								onClick={() => setTimingHelpLog(null)}

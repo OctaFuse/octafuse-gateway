@@ -1,5 +1,7 @@
 'use client';
 
+import './providers-workspace.css';
+
 import { AdminPageTitle } from '@/components/admin-page-title';
 
 /**
@@ -30,7 +32,7 @@ function ProvidersContent() {
 	const t = useTranslations('providers');
 	const tCommon = useTranslations('common');
 	const state = useProvidersPageState();
-	const [initialTab, setInitialTab] = useState<'basic' | 'routes'>('basic');
+	const [initialTab, setInitialTab] = useState<'basic' | 'endpoints' | 'routes'>('basic');
 	const [view, setView] = useCatalogView('octafuse.admin.providers.view');
 	const sync = useProviderSync({
 		onChanged: state.refreshProviders,
@@ -60,7 +62,7 @@ function ProvidersContent() {
 		state.selectedProtocol !== 'all';
 
 	return (
-		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-50 p-4 pb-6 sm:p-6 lg:p-8">
+		<div className="providers-design-workspace min-h-full min-w-0 overflow-x-hidden bg-gray-50 p-4 pb-6 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-start justify-between gap-3">
 				<div className="min-w-0">
 					<AdminPageTitle>
@@ -70,8 +72,8 @@ function ProvidersContent() {
 				</div>
 				<div className="flex flex-wrap items-start gap-2">
 					<ProviderSyncCheckButton
-						checking={sync.checking}
-						onCheck={() => void sync.check()}
+						checking={sync.loading || sync.checking}
+						onCheck={() => sync.openSync()}
 					/>
 					<button
 						type="button"
@@ -120,24 +122,23 @@ function ProvidersContent() {
 			<div
 				className={
 					view === 'list'
-						? 'overflow-hidden rounded-xl border border-gray-200 bg-white'
-						: 'admin-catalog-grid'
+						? 'provider-list-canvas overflow-hidden rounded-2xl'
+						: 'provider-card-canvas admin-catalog-grid'
 				}
 			>
 				{view === 'list' && (
 					<div
-						className={`hidden gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 xl:grid ${PROVIDER_LIST_COLUMNS}`}
+						className={`provider-list-heading hidden gap-4 px-4 py-3 text-xs font-medium text-slate-500 xl:grid ${PROVIDER_LIST_COLUMNS}`}
 						aria-hidden
 					>
 						<span>{t('list.provider')}</span>
 						<span>{t('list.protocols')}</span>
 						<span>{t('list.keyAndQuota')}</span>
 						<span>{t('list.routes')}</span>
-						<span>{t('list.status')}</span>
 					</div>
 				)}
 				<div
-					className={view === 'list' ? 'divide-y divide-slate-200' : 'contents'}
+					className={view === 'list' ? 'provider-list-items' : 'contents'}
 					role={view === 'list' ? 'list' : undefined}
 					aria-label={view === 'list' ? t('title') : undefined}
 				>
@@ -150,6 +151,10 @@ function ProvidersContent() {
 							statusTogglingId={state.statusTogglingId}
 							onEdit={(provider) => {
 								setInitialTab('basic');
+								state.handleEdit(provider);
+							}}
+							onViewEndpoints={(provider) => {
+								setInitialTab('endpoints');
 								state.handleEdit(provider);
 							}}
 							onViewRoutes={(provider) => {

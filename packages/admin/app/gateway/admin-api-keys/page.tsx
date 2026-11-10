@@ -326,7 +326,7 @@ export default function AdminApiKeysPage() {
 			[key.name, key.description].some((text) => text?.toLowerCase().includes(query.trim().toLowerCase()))
 	);
 	return (
-		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
+		<div className="admin-content-workspace content-tone-inference min-w-0 p-4 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<AdminPageTitle>{t('title')}</AdminPageTitle>
@@ -375,7 +375,7 @@ export default function AdminApiKeysPage() {
 					<option value="revoked">{t('status.revoked')}</option>
 				</select>
 			</div>
-			<div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+			<div className="admin-content-panel overflow-x-auto rounded-xl border border-gray-200 bg-white">
 				<table className="admin-data-table min-w-full divide-y">
 					<thead className="bg-gray-50 text-left text-xs normal-case text-gray-500">
 						<tr>

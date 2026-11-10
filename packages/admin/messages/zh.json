@@ -465,7 +465,8 @@
 			"officialUpdateTitle": "官方模板有更新，点击查看并同步",
 			"kindOrphaned": "类型需迁移",
 			"kindOrphanedTitle": "官方模板已改名或下线，点击迁移到新类型",
-			"viewRoutes": "查看 {name} 的关联路由"
+			"viewRoutes": "查看 {name} 的关联路由",
+			"editEndpoints": "配置 {name} 的协议端点"
 		},
 		"import": {
 			"title": "从模板导入",
@@ -691,7 +692,9 @@
 			"jsonConfigTitle": "端点 JSON · 全部协议",
 			"jsonConfigHint": "当前表单将提交的 endpoints，包含未保存修改，不含供应商密钥字段。",
 			"jsonCopyFailed": "自动复制失败，已选中内容，可手动复制。",
-			"apiKeyRequiredError": "请填写 API Key"
+			"apiKeyRequiredError": "请填写 API Key",
+			"credentialsTitle": "账号与凭证",
+			"duplicateHint": "已复制现有配置，保存前请检查名称、凭证与端点。"
 		},
 		"sync": {
 			"title": "与官方同步",
@@ -3368,7 +3371,7 @@
 			"title": "当前状态"
 		},
 		"settingsCard": {
-			"title": "开启维护",
+			"title": "维护设置",
 			"description": "选择预计时长和提示文案，开启前会再次确认。"
 		},
 		"configured": {
@@ -3379,6 +3382,9 @@
 		},
 		"preview": "客户端看到的提示",
 		"form": {
+			"durationHelp": "预计时长用于客户端提示；到时后仍需手动结束维护。",
+			"impact": "影响范围",
+			"inferenceImpact": "维护期间，推理请求返回 HTTP 503；健康检查和只读列表不受影响。",
 			"duration": "预计时长",
 			"noDuration": "不预估",
 			"customMinutes": "自定义（分钟）",
@@ -3389,7 +3395,7 @@
 			"messageZh": "中文文案（zh）",
 			"messageEn": "英文文案（en）",
 			"blockAdmin": "同时拒绝后台写操作",
-			"blockAdminHelp": "数据迁移期间建议开启。调用 Admin API 的门户（开通用户、加额）会收到 503，应自行重试。集成密钥、本页和调试台仍可操作。"
+			"blockAdminHelp": "数据迁移期间建议开启。调用 Admin API 的门户（开通用户、加额）会收到 503，应自行重试。集成密钥、维护操作和调试台仍可操作。"
 		},
 		"actions": {
 			"enable": "开启维护",
@@ -3442,7 +3448,7 @@
 	},
 	"config": {
 		"title": "系统配置",
-		"subtitle": "配置网关的时区、计费、路由和错误通知，各项设置分别保存。",
+		"subtitle": "配置网关的时区、计费、路由和通知，或管理维护模式。各项设置分别保存。",
 		"saveTimezone": "保存时区",
 		"saveCurrency": "保存货币",
 		"saveUserChargedCostFactorMode": "保存用户计费倍率模式",
@@ -3489,7 +3495,7 @@
 		},
 		"saveRouteStrategy": "保存路由策略",
 		"ux": {
-			"subtitle": "配置网关的时区、计费、路由和错误通知，各项设置分别保存。",
+			"subtitle": "配置网关的时区、计费、路由和通知，或管理维护模式。各项设置分别保存。",
 			"timezoneHint": "决定每日额度与用量报表按哪个时区划分日期。",
 			"currencyHint": "模型价格、预算和计费金额统一使用的币种。",
 			"billingModeHint": "选择路由倍率与用户倍率的组合方式，修改后约 30 秒生效。",

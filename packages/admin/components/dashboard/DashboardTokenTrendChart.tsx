@@ -56,10 +56,10 @@ export function DashboardTokenTrendChart({ timeseries, granularity, billingCurre
 	const tabs: TrendView[] = ['requests', 'tokens', 'cost', 'latency'];
 
 	return (
-		<div className="flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
+		<div className="admin-content-panel flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<h2 className="flex items-center gap-2 text-sm font-medium text-gray-950"><ChartBarIcon className="h-4 w-4 text-gray-500" aria-hidden />{t('trafficTrend')}</h2>
+					<h2 className="admin-section-title flex items-center gap-2 text-sm font-medium text-gray-950"><ChartBarIcon className="h-4 w-4 text-gray-500" aria-hidden />{t('trafficTrend')}</h2>
 					<p className="mt-1 text-xs text-gray-500">{t(`trendHints.${view}`)}</p>
 				</div>
 				<div role="group" aria-label={t('trafficTrend')} className="inline-flex max-w-full overflow-x-auto rounded-lg bg-gray-100 p-1">

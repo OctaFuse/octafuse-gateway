@@ -14,6 +14,7 @@ import {
 	AdjustmentsHorizontalIcon,
 	ArrowsRightLeftIcon,
 	BellIcon,
+	PauseCircleIcon,
 } from '@heroicons/react/24/outline';
 import { ConfigCardShell } from '@/components/ConfigCardShell';
 import { InfoHintPopover } from '@/components/InfoHintPopover';
@@ -45,6 +46,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { useBusinessTimezoneContext } from '@/components/BusinessTimezoneProvider';
 import { GlobalRouteStrategySection } from './global-route-strategy-section';
+import { MaintenanceSettings } from './maintenance-settings';
 
 const OTHER_TZ = '__other__';
 
@@ -225,12 +227,15 @@ function ConfigSaveActions({
 export default function GatewayConfigPage() {
 	const t = useTranslations('config');
 	const remaining = useTranslations('remainingUi');
-	const [category, setCategory] = useState<'general' | 'routing' | 'notifications'>('general');
+	const maintenance = useTranslations('maintenance');
+	const [category, setCategory] = useState<'general' | 'routing' | 'notifications' | 'maintenance'>('general');
 	useEffect(() => {
 		const reveal = () => {
 			const hash = window.location.hash;
 			setCategory(
-				hash.includes('webhooks') || hash.includes('notifications')
+				hash.includes('maintenance')
+					? 'maintenance'
+					: hash.includes('webhooks') || hash.includes('notifications')
 					? 'notifications'
 					: hash.includes('routing') || hash.includes('multipliers')
 					? 'routing'
@@ -627,45 +632,18 @@ export default function GatewayConfigPage() {
 		}
 	};
 
-	if (isLoading) {
-		return (
-			<div className="flex items-center justify-center h-full">
-				<div className="text-gray-600">{tCommon('loading')}</div>
-			</div>
-		);
-	}
-
-	if (loadError) {
-		return (
-			<div className="p-4 sm:p-6 lg:p-8">
-				<AdminPageTitle>{t('title')}</AdminPageTitle>
-				<div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-5" role="alert">
-					<p className="font-medium text-red-800">{t('ux.loadFailed')}</p>
-					<p className="mt-1 text-sm text-red-700">{loadError}</p>
-					<button
-						type="button"
-						onClick={() => void fetchConfig()}
-						className="mt-4 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-800"
-					>
-						{tCommon('retry')}
-					</button>
-				</div>
-			</div>
-		);
-	}
-
 	return (
-		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
+		<div className="admin-content-workspace content-tone-settings min-w-0 p-4 sm:p-6 lg:p-8">
 			<div className="mb-6">
 				<AdminPageTitle>{t('title')}</AdminPageTitle>
 				<p className="mt-1 text-sm text-gray-500">{t('ux.subtitle')}</p>
 			</div>
-			{saveError && (
+			{category !== 'maintenance' && saveError && (
 				<div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
 					{saveError}
 				</div>
 			)}
-			{saveSuccess && (
+			{category !== 'maintenance' && saveSuccess && (
 				<div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-700" role="status">
 					{saveSuccess}
 				</div>
@@ -674,13 +652,14 @@ export default function GatewayConfigPage() {
 			<div
 				role="tablist"
 				aria-label={remaining('configCategories')}
-				className="mb-6 flex flex-wrap gap-5 border-b border-gray-200"
+				className="mb-6 flex gap-4 overflow-x-auto border-b border-gray-200 sm:gap-5"
 			>
 				{(
 					[
 						{ id: 'general', icon: AdjustmentsHorizontalIcon },
 						{ id: 'routing', icon: ArrowsRightLeftIcon },
 						{ id: 'notifications', icon: BellIcon },
+						{ id: 'maintenance', icon: PauseCircleIcon },
 					] as const
 				).map(({ id, icon: Icon }, index, items) => (
 					<button
@@ -720,255 +699,277 @@ export default function GatewayConfigPage() {
 							);
 							document.getElementById(`config-tab-${items[target].id}`)?.focus();
 						}}
-						className={`inline-flex items-center gap-2 border-b-2 pb-3 text-sm font-medium ${
+						className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 pb-3 text-sm font-medium sm:gap-2 ${
 							category === id ? 'border-gray-950 text-gray-950' : 'border-transparent text-gray-500'
 						}`}
 					>
 						<Icon className="h-4 w-4" aria-hidden="true" />
-						{remaining(id)}
+						{id === 'maintenance' ? maintenance('title') : remaining(id)}
 					</button>
 				))}
 			</div>
-			<div
-				id="config-panel-general"
-				role="tabpanel"
-				aria-labelledby="config-tab-general"
-				hidden={category !== 'general'}
-			>
-				<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-					<ConfigCardShell
-						id="config-timezone"
-						title={t('businessTimezone.title')}
-						description={t('ux.timezoneHint')}
-						hint={<p>{t('businessTimezone.description')}</p>}
-						footer={
-							<ConfigSaveActions
-								dirty={timezoneDirty}
-								saving={bizSaving}
-								section={t('businessTimezone.title')}
-								saveLabel={t('saveTimezone')}
-								onSave={() => void handleSaveBusinessTimezone()}
-								onDiscard={() => syncBusinessTimezoneUi(config, setBizSelectValue, setBizOtherValue)}
-							/>
-						}
+			{category !== 'maintenance' && (isLoading ? (
+				<div className="flex min-h-48 items-center justify-center text-gray-600" role="status">
+					{tCommon('loading')}
+				</div>
+			) : loadError ? (
+				<div className="rounded-xl border border-red-200 bg-red-50 p-5" role="alert">
+					<p className="font-medium text-red-800">{t('ux.loadFailed')}</p>
+					<p className="mt-1 text-sm text-red-700">{loadError}</p>
+					<button type="button" onClick={() => void fetchConfig()}
+						className="mt-4 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-800">
+						{tCommon('retry')}
+					</button>
+				</div>
+			) : null)}
+			{!isLoading && !loadError && (
+				<>
+					<div
+						id="config-panel-general"
+						role="tabpanel"
+						aria-labelledby="config-tab-general"
+						hidden={category !== 'general'}
 					>
-						<label htmlFor="config-timezone-select" className="mb-1 block text-sm font-medium text-gray-700">
-							{t('businessTimezone.timezone')}
-						</label>
-						<select
-							id="config-timezone-select"
-							value={bizSelectValue}
-							disabled={bizSaving}
-							onChange={(e) => {
-								setBizSelectValue(e.target.value);
-								if (e.target.value !== OTHER_TZ) setBizOtherValue('');
-							}}
-							className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900"
-						>
-							{businessTimezoneOptions.map((option) => (
-								<option key={option.value} value={option.value}>
-									{option.label}
-								</option>
-							))}
-							<option value={OTHER_TZ}>{t('businessTimezone.otherManual')}</option>
-						</select>
-						{bizSelectValue === OTHER_TZ && (
-							<div className="mt-3">
-								<label
-									htmlFor="config-timezone-custom"
-									className="mb-1 block text-sm font-medium text-gray-700"
-								>
-									{t('businessTimezone.ianaIdentifier')}
+						<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+							<ConfigCardShell
+								id="config-timezone"
+								title={t('businessTimezone.title')}
+								description={t('ux.timezoneHint')}
+								hint={<p>{t('businessTimezone.description')}</p>}
+								footer={
+									<ConfigSaveActions
+										dirty={timezoneDirty}
+										saving={bizSaving}
+										section={t('businessTimezone.title')}
+										saveLabel={t('saveTimezone')}
+										onSave={() => void handleSaveBusinessTimezone()}
+										onDiscard={() => syncBusinessTimezoneUi(config, setBizSelectValue, setBizOtherValue)}
+									/>
+								}
+							>
+								<label htmlFor="config-timezone-select" className="mb-1 block text-sm font-medium text-gray-700">
+									{t('businessTimezone.timezone')}
 								</label>
-								<input
-									id="config-timezone-custom"
-									type="text"
+								<select
+									id="config-timezone-select"
+									value={bizSelectValue}
 									disabled={bizSaving}
-									value={bizOtherValue}
-									onChange={(e) => setBizOtherValue(e.target.value)}
-									placeholder={t('businessTimezone.ianaPlaceholder')}
-									className="w-full rounded-lg border border-gray-200 px-3 py-2 font-mono text-sm"
-								/>
-							</div>
-						)}
-					</ConfigCardShell>
-
-					<ConfigCardShell
-						id="config-currency"
-						title={t('billingCurrency.title')}
-						description={t('ux.currencyHint')}
-						hint={<p>{t('billingCurrency.description')}</p>}
-						footer={
-							<ConfigSaveActions
-								dirty={currencyDirty}
-								saving={billSaving}
-								section={t('billingCurrency.title')}
-								saveLabel={t('saveCurrency')}
-								onSave={() => void handleSaveBillingCurrency()}
-								onDiscard={() => syncBillingCurrencyUi(config, setBillSelectValue)}
-							/>
-						}
-					>
-						<label htmlFor="config-currency-select" className="mb-1 block text-sm font-medium text-gray-700">
-							{t('billingCurrency.currency')}
-						</label>
-						<select
-							id="config-currency-select"
-							value={billSelectValue}
-							disabled={billSaving}
-							onChange={(e) => setBillSelectValue(e.target.value)}
-							className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900"
-						>
-							{billingCurrencyOptions.map((option) => (
-								<option key={option.value} value={option.value}>
-									{option.label}
-								</option>
-							))}
-						</select>
-					</ConfigCardShell>
-				</div>
-			</div>
-			<div
-				id="config-panel-routing"
-				role="tabpanel"
-				aria-labelledby="config-tab-routing"
-				hidden={category !== 'routing'}
-			>
-				<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-					<ConfigCardShell
-						id="config-routing"
-						title={t('routeStrategy.title')}
-						description={t('ux.routeHint')}
-						hint={<p>{t('routeStrategy.description')}</p>}
-					>
-						<GlobalRouteStrategySection
-							value={routeStrategyValue}
-							saving={routeStrategySaving}
-							onSave={handleSaveRouteStrategy}
-						/>
-					</ConfigCardShell>
-
-					<ConfigCardShell
-						id="config-multipliers"
-						title={t('userChargedCostFactorMode.title')}
-						description={t('ux.billingModeHint')}
-						hint={<p>{t('userChargedCostFactorMode.description')}</p>}
-						footer={
-							<ConfigSaveActions
-								dirty={modeDirty}
-								saving={userChargedModeSaving}
-								section={t('userChargedCostFactorMode.title')}
-								saveLabel={t('saveUserChargedCostFactorMode')}
-								onSave={() => void handleSaveUserChargedCostFactorMode()}
-								onDiscard={() => syncUserChargedCostFactorModeUi(config, setUserChargedModeValue)}
-							/>
-						}
-					>
-						<div
-							className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-							role="radiogroup"
-							aria-label={t('userChargedCostFactorMode.title')}
-						>
-							{USER_CHARGED_COST_FACTOR_MODES.map((mode) => (
-								<div
-									key={mode}
-									className={`rounded-lg border p-3 ${
-										userChargedModeValue === mode
-											? 'border-gray-200 bg-gray-50/50'
-											: 'border-gray-200 bg-white'
-									}`}
-								>
-									<div className="flex items-center gap-2">
-										<input
-											id={`config-multiplier-${mode}`}
-											type="radio"
-											name="user-charged-cost-factor-mode"
-											value={mode}
-											checked={userChargedModeValue === mode}
-											disabled={userChargedModeSaving}
-											onChange={() => setUserChargedModeValue(mode)}
-										/>
-										<label
-											htmlFor={`config-multiplier-${mode}`}
-											className="flex-1 cursor-pointer text-sm font-medium text-gray-900"
-										>
-											{t(`userChargedCostFactorMode.${mode}Title`)}
-										</label>
-										<InfoHintPopover
-											label={t(`userChargedCostFactorMode.${mode}Title`)}
-											portal
-											openOnHover
-											align="start"
-										>
-											<p>{t(`userChargedCostFactorMode.${mode}Help`)}</p>
-										</InfoHintPopover>
-									</div>
-									<p className="mt-2 text-xs leading-relaxed text-gray-600">{t(`ux.${mode}Summary`)}</p>
-								</div>
-							))}
-						</div>
-					</ConfigCardShell>
-				</div>
-			</div>
-			<div
-				id="config-panel-notifications"
-				role="tabpanel"
-				aria-labelledby="config-tab-notifications"
-				hidden={category !== 'notifications'}
-			>
-				<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-					<div className="min-w-0 xl:col-span-2">
-						<ConfigCardShell
-							id="config-webhooks"
-							title={t('errorWebhooks.title')}
-							description={t('ux.webhookHint')}
-							hint={<p>{t('errorWebhooks.description')}</p>}
-							footer={
-								<ConfigSaveActions
-									dirty={webhooksDirty}
-									saving={alertWebhooksSaving}
-									section={t('errorWebhooks.title')}
-									saveLabel={t('saveErrorWebhooks')}
-									onSave={() => void handleSaveAlertWebhooks()}
-									onDiscard={() => {
-										setWecomWebhookDraft(savedWecom);
-										setFeishuWebhookDraft(savedFeishu);
+									onChange={(e) => {
+										setBizSelectValue(e.target.value);
+										if (e.target.value !== OTHER_TZ) setBizOtherValue('');
 									}}
-								/>
-							}
-						>
-							<div className="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-2">
-								<WebhookUrlField
-									showLabel={tCommon('show')}
-									hideLabel={tCommon('hide')}
-									id="alert-webhook-wecom"
-									label={t('errorWebhooks.wecomLabel')}
-									optionalHint={tCommon('optional')}
-									value={wecomWebhookDraft}
-									onChange={setWecomWebhookDraft}
-									placeholder={t('errorWebhooks.wecomPlaceholder')}
-									visible={webhookWecomVisible}
-									disabled={alertWebhooksSaving}
-									onToggleVisible={() => setWebhookWecomVisible((value) => !value)}
-								/>
-								<WebhookUrlField
-									showLabel={tCommon('show')}
-									hideLabel={tCommon('hide')}
-									id="alert-webhook-feishu"
-									label={t('errorWebhooks.feishuLabel')}
-									optionalHint={tCommon('optional')}
-									value={feishuWebhookDraft}
-									onChange={setFeishuWebhookDraft}
-									placeholder={t('errorWebhooks.feishuPlaceholder')}
-									visible={webhookFeishuVisible}
-									disabled={alertWebhooksSaving}
-									onToggleVisible={() => setWebhookFeishuVisible((value) => !value)}
-								/>
-							</div>
-							<p className="mt-3 text-xs text-gray-500">{t('errorWebhooks.urlsNote')}</p>
-						</ConfigCardShell>
+									className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900"
+								>
+									{businessTimezoneOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+									<option value={OTHER_TZ}>{t('businessTimezone.otherManual')}</option>
+								</select>
+								{bizSelectValue === OTHER_TZ && (
+									<div className="mt-3">
+										<label
+											htmlFor="config-timezone-custom"
+											className="mb-1 block text-sm font-medium text-gray-700"
+										>
+											{t('businessTimezone.ianaIdentifier')}
+										</label>
+										<input
+											id="config-timezone-custom"
+											type="text"
+											disabled={bizSaving}
+											value={bizOtherValue}
+											onChange={(e) => setBizOtherValue(e.target.value)}
+											placeholder={t('businessTimezone.ianaPlaceholder')}
+											className="w-full rounded-lg border border-gray-200 px-3 py-2 font-mono text-sm"
+										/>
+									</div>
+								)}
+							</ConfigCardShell>
+
+							<ConfigCardShell
+								id="config-currency"
+								title={t('billingCurrency.title')}
+								description={t('ux.currencyHint')}
+								hint={<p>{t('billingCurrency.description')}</p>}
+								footer={
+									<ConfigSaveActions
+										dirty={currencyDirty}
+										saving={billSaving}
+										section={t('billingCurrency.title')}
+										saveLabel={t('saveCurrency')}
+										onSave={() => void handleSaveBillingCurrency()}
+										onDiscard={() => syncBillingCurrencyUi(config, setBillSelectValue)}
+									/>
+								}
+							>
+								<label htmlFor="config-currency-select" className="mb-1 block text-sm font-medium text-gray-700">
+									{t('billingCurrency.currency')}
+								</label>
+								<select
+									id="config-currency-select"
+									value={billSelectValue}
+									disabled={billSaving}
+									onChange={(e) => setBillSelectValue(e.target.value)}
+									className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900"
+								>
+									{billingCurrencyOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</select>
+							</ConfigCardShell>
+						</div>
 					</div>
-				</div>
+					<div
+						id="config-panel-routing"
+						role="tabpanel"
+						aria-labelledby="config-tab-routing"
+						hidden={category !== 'routing'}
+					>
+						<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+							<ConfigCardShell
+								id="config-routing"
+								title={t('routeStrategy.title')}
+								description={t('ux.routeHint')}
+								hint={<p>{t('routeStrategy.description')}</p>}
+							>
+								<GlobalRouteStrategySection
+									value={routeStrategyValue}
+									saving={routeStrategySaving}
+									onSave={handleSaveRouteStrategy}
+								/>
+							</ConfigCardShell>
+
+							<ConfigCardShell
+								id="config-multipliers"
+								title={t('userChargedCostFactorMode.title')}
+								description={t('ux.billingModeHint')}
+								hint={<p>{t('userChargedCostFactorMode.description')}</p>}
+								footer={
+									<ConfigSaveActions
+										dirty={modeDirty}
+										saving={userChargedModeSaving}
+										section={t('userChargedCostFactorMode.title')}
+										saveLabel={t('saveUserChargedCostFactorMode')}
+										onSave={() => void handleSaveUserChargedCostFactorMode()}
+										onDiscard={() => syncUserChargedCostFactorModeUi(config, setUserChargedModeValue)}
+									/>
+								}
+							>
+								<div
+									className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+									role="radiogroup"
+									aria-label={t('userChargedCostFactorMode.title')}
+								>
+									{USER_CHARGED_COST_FACTOR_MODES.map((mode) => (
+										<div
+											key={mode}
+											className={`rounded-lg border p-3 ${
+												userChargedModeValue === mode
+													? 'border-gray-200 bg-gray-50/50'
+													: 'border-gray-200 bg-white'
+											}`}
+										>
+											<div className="flex items-center gap-2">
+												<input
+													id={`config-multiplier-${mode}`}
+													type="radio"
+													name="user-charged-cost-factor-mode"
+													value={mode}
+													checked={userChargedModeValue === mode}
+													disabled={userChargedModeSaving}
+													onChange={() => setUserChargedModeValue(mode)}
+												/>
+												<label
+													htmlFor={`config-multiplier-${mode}`}
+													className="flex-1 cursor-pointer text-sm font-medium text-gray-900"
+												>
+													{t(`userChargedCostFactorMode.${mode}Title`)}
+												</label>
+												<InfoHintPopover
+													label={t(`userChargedCostFactorMode.${mode}Title`)}
+													portal
+													openOnHover
+													align="start"
+												>
+													<p>{t(`userChargedCostFactorMode.${mode}Help`)}</p>
+												</InfoHintPopover>
+											</div>
+											<p className="mt-2 text-xs leading-relaxed text-gray-600">{t(`ux.${mode}Summary`)}</p>
+										</div>
+									))}
+								</div>
+							</ConfigCardShell>
+						</div>
+					</div>
+					<div
+						id="config-panel-notifications"
+						role="tabpanel"
+						aria-labelledby="config-tab-notifications"
+						hidden={category !== 'notifications'}
+					>
+						<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+							<div className="min-w-0 xl:col-span-2">
+								<ConfigCardShell
+									id="config-webhooks"
+									title={t('errorWebhooks.title')}
+									description={t('ux.webhookHint')}
+									hint={<p>{t('errorWebhooks.description')}</p>}
+									footer={
+										<ConfigSaveActions
+											dirty={webhooksDirty}
+											saving={alertWebhooksSaving}
+											section={t('errorWebhooks.title')}
+											saveLabel={t('saveErrorWebhooks')}
+											onSave={() => void handleSaveAlertWebhooks()}
+											onDiscard={() => {
+												setWecomWebhookDraft(savedWecom);
+												setFeishuWebhookDraft(savedFeishu);
+											}}
+										/>
+									}
+								>
+									<div className="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-2">
+										<WebhookUrlField
+											showLabel={tCommon('show')}
+											hideLabel={tCommon('hide')}
+											id="alert-webhook-wecom"
+											label={t('errorWebhooks.wecomLabel')}
+											optionalHint={tCommon('optional')}
+											value={wecomWebhookDraft}
+											onChange={setWecomWebhookDraft}
+											placeholder={t('errorWebhooks.wecomPlaceholder')}
+											visible={webhookWecomVisible}
+											disabled={alertWebhooksSaving}
+											onToggleVisible={() => setWebhookWecomVisible((value) => !value)}
+										/>
+										<WebhookUrlField
+											showLabel={tCommon('show')}
+											hideLabel={tCommon('hide')}
+											id="alert-webhook-feishu"
+											label={t('errorWebhooks.feishuLabel')}
+											optionalHint={tCommon('optional')}
+											value={feishuWebhookDraft}
+											onChange={setFeishuWebhookDraft}
+											placeholder={t('errorWebhooks.feishuPlaceholder')}
+											visible={webhookFeishuVisible}
+											disabled={alertWebhooksSaving}
+											onToggleVisible={() => setWebhookFeishuVisible((value) => !value)}
+										/>
+									</div>
+									<p className="mt-3 text-xs text-gray-500">{t('errorWebhooks.urlsNote')}</p>
+								</ConfigCardShell>
+							</div>
+						</div>
+					</div>
+				</>
+			)}
+			<div id="config-panel-maintenance" role="tabpanel" className="scroll-mt-64"
+				aria-labelledby="config-tab-maintenance" hidden={category !== 'maintenance'}>
+				<MaintenanceSettings visible={category === 'maintenance'} />
 			</div>
 		</div>
 	);

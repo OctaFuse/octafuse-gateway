@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminContentMark } from '@/components/admin-content-mark';
+
 import { useId, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -119,11 +121,12 @@ export function AuditDetailModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${id}-title`}
-        className="flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white outline-none"
+        className="admin-content-dialog flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white outline-none"
       >
-        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
+        <header className="admin-dialog-header flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
           <div className="min-w-0">
-            <h2 id={`${id}-title`} className="text-base font-medium text-gray-900">
+            <h2 id={`${id}-title`} className="admin-dialog-title text-base font-medium text-gray-900">
+              <AdminContentMark />
               {t('ui.detailTitle')}
             </h2>
             <div className="mt-1 flex min-w-0 items-center gap-2">
@@ -208,7 +211,7 @@ export function AuditDetailModal({
           role="tabpanel"
           id={`${id}-panel-${tab}`}
           aria-labelledby={`${id}-tab-${tab}`}
-          className="min-h-0 overflow-y-auto overscroll-contain p-5"
+          className="admin-dialog-body min-h-0 overflow-y-auto overscroll-contain p-5"
         >
           {tab === 'overview' && (
             <div className="space-y-5">
@@ -338,7 +341,7 @@ export function AuditDetailModal({
             </div>
           )}
         </div>
-        <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-100 bg-gray-50 px-5 py-3">
+        <footer className="admin-dialog-footer flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-100 bg-gray-50 px-5 py-3">
           <div className="flex flex-wrap gap-3 text-xs text-gray-600">
             {requestHref && (
               <Link href={requestHref} className="inline-flex items-center gap-1 hover:underline">

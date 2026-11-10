@@ -15,9 +15,9 @@ export function DashboardActivity({ logs, errors }: { logs: GatewayRequestLog[];
   const { formatDateTime } = useGatewayDateTime();
   const [view, setView] = useState<'recent' | 'errors'>('recent');
   const rows = view === 'recent' ? logs : errors;
-  return <section className="flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
+  return <section className="admin-content-panel flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <h2 className="inline-flex items-center gap-2 text-sm font-medium text-gray-900"><ClockIcon className="h-4 w-4 text-gray-500" aria-hidden />{t('activity')}</h2>
+      <h2 className="admin-section-title inline-flex items-center gap-2 text-sm font-medium text-gray-900"><ClockIcon className="h-4 w-4 text-gray-500" aria-hidden />{t('activity')}</h2>
       <div className="inline-flex rounded-lg bg-gray-100 p-1" role="group" aria-label={t('activity')}>
         {(['recent', 'errors'] as const).map(tab => <button key={tab} type="button" aria-pressed={view === tab} onClick={() => setView(tab)}
           className={`rounded-md px-3 py-1 text-xs transition-colors ${view === tab ? 'bg-white text-gray-950 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>{t(tab === 'recent' ? 'recentRequests' : 'recentErrors')}</button>)}

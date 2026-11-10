@@ -865,7 +865,7 @@ export default function GatewayUserDetailPage() {
   }
 
   return (
-    <div className="w-full min-w-0 p-4 sm:p-6 lg:p-8">
+    <div className="admin-content-workspace content-tone-accounts w-full min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
         <Link href="/gateway/users" className="text-sm text-gray-800 hover:underline">
           {t('backUsers')}
@@ -895,7 +895,7 @@ export default function GatewayUserDetailPage() {
       <div
         role="tablist"
         aria-label={t('detailTitle')}
-        className="mb-5 flex gap-1 overflow-x-auto border-b border-gray-200 pb-3"
+        className="admin-detail-tabs mb-5 flex gap-1 overflow-x-auto"
       >
         {(['overview', 'billing', 'keys', 'activity', 'models'] as const).map((section, index, sections) => (
           <button
@@ -941,7 +941,7 @@ export default function GatewayUserDetailPage() {
       </div>
 
       {activeSection === 'overview' && (
-        <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <div className="admin-summary-canvas mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
           {[
             {
               label: t('fields.walletBalance'),
@@ -1014,7 +1014,7 @@ export default function GatewayUserDetailPage() {
         >
           <div className="grid grid-cols-1 items-start gap-4 sm:gap-4 xl:grid-cols-2">
             <div className="min-w-0 space-y-4 sm:space-y-4">
-              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 space-y-4">
+              <div className="admin-content-panel rounded-xl border border-gray-200 bg-white p-4 sm:p-5 space-y-4">
                 <div>
                   <h2 className="text-sm font-medium text-gray-900">{t('userDetail')}</h2>
                   <p className="mt-1 text-sm text-gray-500">{t('detailUx.overviewHint')}</p>
@@ -1092,7 +1092,7 @@ export default function GatewayUserDetailPage() {
                   </button>
                 </div>
               </div>
-              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+              <div className="admin-content-panel rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <h2 className="text-sm font-medium text-gray-900">{t('apiKeys')}</h2>
                   <button
@@ -1151,7 +1151,7 @@ export default function GatewayUserDetailPage() {
               </div>
             </div>
             <div className="min-w-0 space-y-4 sm:space-y-4">
-              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+              <div className="admin-content-panel rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
                 <h2 className="text-sm font-medium text-gray-900">
                   {t('externalIdentity.title')}{' '}
                   <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
@@ -1219,9 +1219,9 @@ export default function GatewayUserDetailPage() {
           <p className="mb-4 text-sm text-gray-500">{t('detailUx.billingOrder')}</p>
           <div className="space-y-4 sm:space-y-4">
             <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-4 xl:grid-cols-2">
-              <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+              <div className="admin-content-panel flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
                 <div className="flex items-center gap-1.5">
-                  <h2 className="flex items-center gap-2 text-sm font-medium text-gray-900"><ClockIcon className="h-4 w-4 text-gray-400" aria-hidden />{t('table.budget')}</h2>
+                  <h2 className="admin-section-title flex items-center gap-2 text-sm font-medium text-gray-900"><ClockIcon className="h-4 w-4 text-gray-400" aria-hidden />{t('table.budget')}</h2>
                   <InfoHintPopover label={t('hints.budgetTitle')} portal openOnHover align="start">
                     <p>{t('hints.budgetVsWallet')}</p>
                   </InfoHintPopover>
@@ -1323,9 +1323,9 @@ export default function GatewayUserDetailPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+              <div className="admin-content-panel flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
                 <div className="flex items-center gap-1.5">
-                  <h2 className="flex items-center gap-2 text-sm font-medium text-gray-900"><WalletIcon className="h-4 w-4 text-gray-400" aria-hidden />{t('table.wallet')}</h2>
+                  <h2 className="admin-section-title flex items-center gap-2 text-sm font-medium text-gray-900"><WalletIcon className="h-4 w-4 text-gray-400" aria-hidden />{t('table.wallet')}</h2>
                   <InfoHintPopover label={t('hints.walletTitle')} portal openOnHover align="start">
                     <p>{t('hints.budgetVsWallet')}</p>
                   </InfoHintPopover>
@@ -1420,7 +1420,7 @@ export default function GatewayUserDetailPage() {
         hidden={activeSection !== 'keys'}
         tabIndex={0}
       >
-        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 flex min-w-0 flex-col">
+        <div className="admin-content-panel bg-white rounded-xl border border-gray-200 p-4 sm:p-5 flex min-w-0 flex-col">
           <div className="flex justify-between items-center mb-4 shrink-0">
             <h2 className="text-sm font-medium text-gray-900">{t('apiKeys')}</h2>
             <button
@@ -1565,7 +1565,7 @@ export default function GatewayUserDetailPage() {
         hidden={activeSection !== 'activity'}
         tabIndex={0}
       >
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+        <div className="admin-content-panel mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-medium text-gray-900">{t('detailSections.recentRequestLogs')}</h2>
             <Link
@@ -1639,7 +1639,7 @@ export default function GatewayUserDetailPage() {
           </div>
         </div>
 
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+        <div className="admin-content-panel mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-medium text-gray-900">{t('detailSections.userAuditLogs')}</h2>
             <Link
@@ -1743,7 +1743,7 @@ export default function GatewayUserDetailPage() {
           onClick={() => setShowModelPicker(false)}
         >
           <div
-            ref={modelPickerRef} tabIndex={-1} className="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+            ref={modelPickerRef} tabIndex={-1} className="admin-content-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
             role="dialog"
             aria-modal="true"
             aria-labelledby="user-factor-model-picker-title"
@@ -1775,7 +1775,7 @@ export default function GatewayUserDetailPage() {
                 />
               </label>
             </div>
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="admin-dialog-body flex-1 overflow-y-auto px-6 py-4">
               {pickerModelsByVendor.length === 0 ? (
                 <p className="py-6 text-sm text-gray-500">{t('chargedCostFactors.pickEmpty')}</p>
               ) : (
@@ -1831,7 +1831,7 @@ export default function GatewayUserDetailPage() {
         const m = summarizeMetadata(metaViewKey.metadata);
         return (
           <div className="fixed inset-0 bg-gray-950/40 flex items-center justify-center z-50 p-3 sm:p-6">
-            <div ref={keyMetadataRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="key-metadata-title" className="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none">
+            <div ref={keyMetadataRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="key-metadata-title" className="admin-content-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none">
               <div className="px-6 py-4 border-b flex justify-between items-center">
                 <div className="min-w-0">
                   <h3 id="key-metadata-title" className="text-base font-medium text-gray-900">{t('detailSections.keyMetadata')}</h3>
@@ -1848,7 +1848,7 @@ export default function GatewayUserDetailPage() {
                   ×
                 </button>
               </div>
-              <div className="p-6 overflow-y-auto">
+              <div className="admin-dialog-body p-6 overflow-y-auto">
                 {m.empty ? (
                   <div className="text-sm text-gray-500">{t('metadata.none')}</div>
                 ) : (
@@ -1889,7 +1889,7 @@ export default function GatewayUserDetailPage() {
 
       {showNewKey && (
         <div className="fixed inset-0 bg-gray-950/40 flex items-center justify-center z-50 p-3 sm:p-6">
-          <div ref={newKeyRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="new-user-key-title" className="max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-panel outline-none">
+          <div ref={newKeyRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="new-user-key-title" className="admin-content-dialog max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-panel outline-none">
             <h3 id="new-user-key-title" className="mb-4 text-base font-medium text-gray-900">{t('detailSections.newApiKey')}</h3>
             {keyError && <div role="alert" className="mb-3 p-2 bg-red-50 text-red-700 text-sm rounded">{keyError}</div>}
             <fieldset disabled={isKeySaving} className="space-y-3">

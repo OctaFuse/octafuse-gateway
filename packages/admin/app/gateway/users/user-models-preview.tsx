@@ -44,7 +44,7 @@ export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: strin
 	const payload = result ? { object: result.object, data: result.data } : null;
 
 	return (
-		<section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+		<section className="admin-content-panel admin-table-surface rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
 			<div className="mb-1 flex flex-wrap items-center justify-between gap-2">
 				<h2 className="text-sm font-medium text-gray-900">{t('title')}</h2>
 				{result ? (

@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminContentMark } from '@/components/admin-content-mark';
+
 import { useAdminDialog } from '@/components/use-admin-dialog';
 import {
 	ArrowPathIcon,
@@ -284,17 +286,17 @@ export function ModelImportModal(props: Props) {
 			<div
 				ref={dialogRef}
 				tabIndex={-1}
-				className="flex max-h-[90dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+				className="admin-content-dialog flex max-h-[90dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="import-catalog-title"
 			>
-				<div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
+				<div className="admin-dialog-header flex shrink-0 items-center justify-between border-b px-6 py-4">
 					<div>
 						<h2
 							id="import-catalog-title"
-							className="text-lg font-medium text-gray-900"
-						>
+							className="admin-dialog-title text-lg font-medium text-gray-900"
+						><AdminContentMark />
 							{t('title')}
 						</h2>
 						<p className="mt-1 text-xs text-gray-500">
@@ -462,7 +464,7 @@ export function ModelImportModal(props: Props) {
 					</div>
 				</div>
 
-				<div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+				<div className="admin-dialog-body min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
 					{catalogLoading && (
 						<div className="py-12 text-center text-gray-600">
 							{t('loadingCatalog')}
@@ -700,7 +702,7 @@ export function ModelImportModal(props: Props) {
 						)}
 				</div>
 
-				<div className="flex shrink-0 flex-wrap items-center justify-end gap-3 border-t bg-gray-50 px-6 py-4">
+				<div className="admin-dialog-footer flex shrink-0 flex-wrap items-center justify-end gap-3 border-t bg-gray-50 px-6 py-4">
 					<button
 						type="button"
 						onClick={onClose}

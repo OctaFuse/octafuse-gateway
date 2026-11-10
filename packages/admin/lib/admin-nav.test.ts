@@ -22,14 +22,17 @@ describe('matchAdminNavRoute', () => {
 		);
 	});
 
-	it('puts Maintenance next to Config in the System group', () => {
+	it('groups integration keys with Config and nests maintenance under Config', () => {
 		const system = ADMIN_NAV_GROUPS.find((group) => group.groupKey === 'system');
 		assert.deepEqual(
 			system?.items.map((item) => item.nameKey),
-			['config', 'maintenance'],
+			['config', 'adminApiKeys'],
 		);
-		assert.equal(matchAdminNavRoute('/gateway/maintenance')?.nameKey, 'maintenance');
+		assert.equal(matchAdminNavRoute('/gateway/maintenance')?.nameKey, 'config');
 		assert.equal(matchAdminNavRoute('/gateway/config')?.nameKey, 'config');
+		assert.equal(matchAdminNavRoute('/gateway/config#config-panel-maintenance')?.nameKey, 'config');
+		assert.equal(ADMIN_NAV_GROUPS.some((group) => group.items.some((item) => item.nameKey === 'maintenance')), false);
+		assert.equal(matchAdminNavRoute('/gateway/admin-api-keys')?.nameKey, 'adminApiKeys');
 	});
 
 	it('treats user detail as Users', () => {

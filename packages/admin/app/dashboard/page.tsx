@@ -22,7 +22,7 @@ import { useAnalyticsRange } from '@/lib/use-analytics-range';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 
 function Metric({ icon: Icon, tone, label, value, children }: { icon: ComponentType<{ className?: string }>; tone: string; label: string; value: string; children: ReactNode }) {
-  return <div className="min-w-0 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+  return <div className="admin-content-panel min-w-0 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
     <div className="flex min-h-8 items-center gap-2"><span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${tone}`}><Icon className="h-4 w-4" aria-hidden="true" /></span><span className="text-xs leading-4 text-gray-600">{label}</span></div>
     <p title={value} className="mt-3 truncate font-mono text-[28px] font-medium leading-tight tabular-nums text-gray-950 sm:text-3xl">{value}</p>
     <div className="mt-2 min-h-5 text-xs leading-5 text-gray-500">{children}</div>
@@ -81,7 +81,7 @@ export default function DashboardPage() {
     setRefresh(v => v + 1);
   };
 
-  return <div className="min-h-full min-w-0 space-y-5 p-4 sm:space-y-6 sm:p-6 lg:p-8" aria-busy={loading}>
+  return <div className="admin-content-workspace content-tone-inference min-h-full min-w-0 space-y-5 p-4 sm:space-y-6 sm:p-6 lg:p-8" aria-busy={loading}>
     <header className="flex flex-wrap items-start justify-between gap-4">
       <div><AdminPageTitle>{t('title')}</AdminPageTitle><p className="mt-1 text-sm text-gray-500">{t('overviewSubtitle')}</p></div>
       <div className="flex min-w-0 max-w-full items-center gap-2">
@@ -92,7 +92,7 @@ export default function DashboardPage() {
     {loadError && <div role="alert" className="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"><span>{t('loadError')}</span><button type="button" onClick={retry} className="shrink-0 underline underline-offset-2">{t('retry')}</button></div>}
     <section aria-label={t('overview')}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs"><span className="text-gray-500">{loading ? c('loading') : loadedRangeLabel}</span><span className={`inline-flex items-center gap-1.5 ${statusStyle}`}><span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />{hasMetrics ? t(`status.${state}`) : '—'}</span></div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+      <div className="admin-summary-canvas grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <Metric icon={ArrowsRightLeftIcon} tone="bg-blue-50 text-blue-700" label={t('requests')} value={hasMetrics ? count.toLocaleString() : '—'}>{hasMetrics ? t('requestContext', { users: kpi.activeUsers, tokens: formatCompactTokens(kpi.totalTokens ?? 0) }) : '—'}</Metric>
         <Metric icon={ShieldCheckIcon} tone="bg-emerald-50 text-emerald-700" label={t('successRate')} value={hasTraffic ? `${kpi!.successRate.toFixed(1)}%` : '—'}>{hasTraffic ? <Link href={errorsHref} className="inline-flex items-center gap-1 hover:text-gray-950">{t('errorContext', { count: Math.round(count * errorRate / 100), rate: errorRate.toFixed(2) })}<ArrowUpRightIcon className="h-3 w-3 shrink-0" aria-hidden /></Link> : hasMetrics ? t('waitingForRequests') : '—'}</Metric>
         <Metric icon={ClockIcon} tone="bg-amber-50 text-amber-700" label={t('avgLatency')} value={latencyLabel}>{hasTraffic ? <Link href={logsHref} className="inline-flex items-center gap-1 hover:text-gray-950">{t('inspectRequests')}<ArrowUpRightIcon className="h-3 w-3 shrink-0" aria-hidden /></Link> : hasMetrics ? t('waitingForRequests') : '—'}</Metric>
@@ -101,8 +101,8 @@ export default function DashboardPage() {
     </section>
     <div className="grid min-w-0 items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
       <DashboardTokenTrendChart timeseries={stats?.timeseries ?? []} granularity={stats?.granularity ?? 'hour'} billingCurrency={currency} businessTimezone={businessTimezone} onExplore={range.preset === '7d' ? undefined : () => setRange(createRangeValue('7d', businessTimezone))} />
-      <section className="flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
-        <h2 className="flex items-center gap-2 text-sm font-medium text-gray-900"><BoltIcon className="h-4 w-4 text-blue-600" aria-hidden />{t('liveSnapshot')}</h2>
+      <section className="admin-content-panel flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
+        <h2 className="admin-section-title flex items-center gap-2 text-sm font-medium text-gray-900"><BoltIcon className="h-4 w-4 text-blue-600" aria-hidden />{t('liveSnapshot')}</h2>
         <p className="mt-1 text-xs text-gray-500">{t('throughput')}</p>
         <div className="mt-4 grid grid-cols-2 gap-4 border-b border-gray-100 pb-5">
           <div><p className="font-mono text-2xl tabular-nums text-gray-950">{hasMetrics ? (kpi.rpm ?? 0).toLocaleString() : '—'}</p><p className="mt-1 text-xs text-gray-500">RPM</p></div>

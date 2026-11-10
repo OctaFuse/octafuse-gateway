@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminContentMark } from '@/components/admin-content-mark';
+
 import { useAdminDialog } from '@/components/use-admin-dialog';
 import { useState } from 'react';
 import { PencilSquareIcon } from '@heroicons/react/24/outline';
@@ -92,16 +94,17 @@ export function GlobalRouteStrategySection({ value, saving, onSave }: Props) {
 					}}
 				>
 					<div
-						className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+						className="admin-content-dialog flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 						ref={ref}
 						tabIndex={-1}
 						role="dialog"
 						aria-modal="true"
 						aria-labelledby="global-route-strategy-dialog-title"
 					>
-						<div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4">
+						<div className="admin-dialog-header flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4">
 							<div>
-								<h2 id="global-route-strategy-dialog-title" className="text-base font-medium text-gray-900">
+								<h2 id="global-route-strategy-dialog-title" className="admin-dialog-title text-base font-medium text-gray-900">
+									<AdminContentMark />
 									{t('title')}
 								</h2>
 								<p className="mt-1 text-xs text-gray-500">{t('dialogHint')}</p>
@@ -118,10 +121,10 @@ export function GlobalRouteStrategySection({ value, saving, onSave }: Props) {
 								</span>
 							</button>
 						</div>
-						<div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+						<div className="admin-dialog-body min-h-0 flex-1 overflow-y-auto px-6 py-4">
 							<RouteStrategyPicker value={draft} onChange={setDraft} disabled={saving} dense />
 						</div>
-						<div className="flex shrink-0 justify-end gap-2 border-t border-gray-100 px-6 py-4">
+						<div className="admin-dialog-footer flex shrink-0 justify-end gap-2 border-t border-gray-100 px-6 py-4">
 							<button
 								type="button"
 								onClick={() => setOpen(false)}

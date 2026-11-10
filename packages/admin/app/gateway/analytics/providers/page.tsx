@@ -294,7 +294,7 @@ export default function ProviderUsagePage() {
 	};
 
 	return (
-		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
+		<div className="admin-content-workspace content-tone-analytics min-w-0 p-4 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<AdminPageTitle>{t('title')}</AdminPageTitle>
@@ -340,7 +340,7 @@ export default function ProviderUsagePage() {
 					<AnalyticsTokenDisplayPicker value={tokenDisplayMode} onChange={setTokenDisplayMode} label="" />
 				)}
 			</AnalyticsControls>
-			<div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+			<div className="admin-content-panel admin-table-surface overflow-hidden rounded-xl border border-gray-200 bg-white">
 				<div className="overflow-x-auto">
 					<table className="admin-data-table min-w-full divide-y divide-gray-200">
 						<thead className="bg-gray-50">

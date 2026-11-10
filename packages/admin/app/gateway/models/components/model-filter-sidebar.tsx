@@ -82,7 +82,7 @@ export function ModelFilterSidebar({
 	const selectClass =
 		'h-10 min-w-0 max-w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100';
 	return (
-		<section aria-label={t('title')} className="mb-5 space-y-4">
+		<section aria-label={t('title')} className="admin-filter-surface mb-5 space-y-4">
 			<div className="flex flex-wrap items-center gap-3">
 				<div className="relative min-w-0 flex-1 basis-64 sm:max-w-sm">
 					<MagnifyingGlassIcon

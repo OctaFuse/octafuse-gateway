@@ -66,11 +66,11 @@ export function AnalyticsInsights({
 	];
 	return (
 		<section className="mb-5 space-y-3" aria-label={t("summary")}>
-			<div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+			<div className="admin-summary-canvas grid grid-cols-2 gap-3 xl:grid-cols-4">
 				{cards.map(({ label, value, icon: Icon, tone, note }) => (
 					<div
 						key={label}
-						className="min-w-0 rounded-xl border border-gray-200 bg-white p-4"
+						className="admin-summary-metric min-w-0 rounded-xl border border-gray-200 bg-white p-4"
 					>
 						<p className="flex items-center gap-2 text-xs text-gray-500">
 							<span
@@ -81,7 +81,7 @@ export function AnalyticsInsights({
 							</span>
 							{label}
 						</p>
-						<p className="mt-3 break-words font-mono text-xl font-medium tabular-nums text-gray-900">
+						<p className="admin-summary-value mt-3 break-words font-mono text-xl font-medium tabular-nums text-gray-900">
 							{value}
 						</p>
 						<p className="mt-2 min-h-4 text-xs tabular-nums text-gray-500">
@@ -140,7 +140,7 @@ export function AnalyticsControls({
 		"all",
 	];
 	return (
-		<div className="mb-4 flex flex-wrap items-center gap-3">
+		<div className="admin-filter-surface mb-4 flex flex-wrap items-center gap-3">
 			{children}
 			<div className="relative w-full shrink-0 sm:min-w-0 sm:w-auto sm:flex-1 sm:max-w-sm">
 				<MagnifyingGlassIcon

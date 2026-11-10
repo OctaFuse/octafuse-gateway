@@ -176,7 +176,7 @@ export default function GatewayToolInvocationsPage() {
 	};
 
 	return (
-		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
+		<div className="admin-content-workspace content-tone-tools min-w-0 p-4 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<AdminPageTitle>{t('invocations.title')}</AdminPageTitle>
@@ -304,7 +304,7 @@ export default function GatewayToolInvocationsPage() {
 					{t('invocations.empty')}
 				</div>
 			) : (
-				<div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+				<div className="admin-content-panel admin-table-surface overflow-hidden rounded-xl border border-gray-200 bg-white">
 					<div className="overflow-x-auto">
 						<table className="min-w-full divide-y divide-gray-200 text-sm">
 							<thead className="bg-gray-50">

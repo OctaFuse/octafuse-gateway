@@ -51,7 +51,7 @@ function ModelsContent() {
 		: t('createTitleVendor', { vendor: state.activeVendorTitle });
 
 	return (
-		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-50 p-4 pb-6 sm:p-6 lg:p-8">
+		<div className="admin-content-workspace content-tone-inference min-h-full min-w-0 overflow-x-hidden bg-gray-50 p-4 pb-6 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-start justify-between gap-3">
 				<div className="min-w-0">
 					<AdminPageTitle>
@@ -61,8 +61,8 @@ function ModelsContent() {
 				</div>
 				<div className="flex flex-wrap items-start gap-2">
 					<ModelSyncCheckButton
-						checking={sync.checking}
-						onCheck={() => void sync.check()}
+						checking={sync.loading || sync.checking}
+						onCheck={() => sync.openSync()}
 					/>
 					<button
 						type="button"
@@ -122,13 +122,13 @@ function ModelsContent() {
 			<div
 				className={
 					view === 'list'
-						? 'overflow-hidden rounded-xl border border-slate-200 bg-white'
-						: 'admin-catalog-grid'
+						? 'admin-collection-canvas overflow-hidden rounded-2xl'
+						: 'admin-collection-canvas admin-catalog-grid'
 				}
 			>
 				{view === 'list' && (
 					<div
-						className={`hidden gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 xl:grid ${MODEL_LIST_COLUMNS}`}
+						className={`hidden gap-4 px-4 pb-3 pt-1 text-xs font-medium text-slate-500 xl:grid ${MODEL_LIST_COLUMNS}`}
 						aria-hidden
 					>
 						<span>{t('list.model')}</span>
@@ -139,7 +139,7 @@ function ModelsContent() {
 					</div>
 				)}
 				<div
-					className={view === 'list' ? 'divide-y divide-slate-200' : 'contents'}
+					className={view === 'list' ? 'admin-model-list' : 'contents'}
 					role={view === 'list' ? 'list' : undefined}
 					aria-label={view === 'list' ? t('title') : undefined}
 				>

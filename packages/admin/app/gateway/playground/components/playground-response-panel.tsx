@@ -1,4 +1,5 @@
 'use client';
+import { AdminContentMark } from '@/components/admin-content-mark';
 
 import { useState, type RefObject } from 'react';
 import { QuestionMarkCircleIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
@@ -111,9 +112,9 @@ export function PlaygroundResponsePanel({
 	const isAudioResponse = Boolean(audioPreviewUrl);
 
 	return (
-		<section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
-			<div className="flex min-h-[57px] shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-gray-100 px-4 py-2.5">
-				<h2 className="shrink-0 text-sm font-medium text-gray-900">{t('response')}</h2>
+		<section className="admin-editor-panel admin-content-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
+			<div className="admin-editor-heading flex min-h-[57px] shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-gray-100 px-4 py-2.5">
+				<h2 className="flex items-center gap-2 shrink-0 text-sm font-medium text-gray-900"><AdminContentMark icon={ArrowDownTrayIcon} compact />{t('response')}</h2>
 				{responseMeta ? (
 					<div className="flex min-w-0 flex-wrap items-center justify-end gap-2 text-xs">
 						<span

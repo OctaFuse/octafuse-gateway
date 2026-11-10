@@ -1,4 +1,5 @@
 'use client';
+import { AdminContentMark } from '@/components/admin-content-mark';
 
 import type { RefObject } from 'react';
 import Link from 'next/link';
@@ -76,9 +77,9 @@ export function SimulatorResponsePanel({
 	const logsLinkLabel = isToolKind ? t('openToolsInvocations') : t('openRequestLogs');
 
 	return (
-		<section className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
-			<div className="flex min-h-[57px] shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-gray-100 px-4 py-2.5">
-				<h2 className="text-sm font-medium text-gray-900 shrink-0">{t('response')}</h2>
+		<section className="admin-editor-panel admin-content-panel flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
+			<div className="admin-editor-heading flex min-h-[57px] shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-gray-100 px-4 py-2.5">
+				<h2 className="flex items-center gap-2 text-sm font-medium text-gray-900 shrink-0"><AdminContentMark icon={ArrowDownTrayIcon} compact />{t('response')}</h2>
 				{responseMeta ? (
 					<div className="flex flex-wrap items-center justify-end gap-2 text-xs min-w-0">
 						<span

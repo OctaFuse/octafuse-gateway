@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminContentMark } from '@/components/admin-content-mark';
+
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { CalendarDaysIcon, ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -75,10 +77,11 @@ export function LogRangeControl({
             role="dialog"
             aria-modal="true"
             aria-labelledby="log-range-title"
-            className="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white outline-none"
+            className="admin-content-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white outline-none"
           >
-            <header className="flex shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
-              <h2 id="log-range-title" className="text-base font-medium">
+            <header className="admin-dialog-header flex shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
+              <h2 id="log-range-title" className="admin-dialog-title text-base font-medium">
+                <AdminContentMark />
                 {t('rangeTitle')}
               </h2>
               <button
@@ -90,7 +93,7 @@ export function LogRangeControl({
                 <XMarkIcon className="h-4 w-4" aria-hidden />
               </button>
             </header>
-            <div className="min-h-0 space-y-5 overflow-y-auto p-5">
+            <div className="admin-dialog-body min-h-0 space-y-5 overflow-y-auto p-5">
               <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('presets')}>
                 {[...GATEWAY_CALENDAR_PRESETS, ...GATEWAY_TIME_RANGE_PRESETS].map((preset) => (
                   <button
@@ -175,7 +178,7 @@ export function LogRangeControl({
                 {t('openRangeHint')}
               </p>
             </div>
-            <footer className="flex shrink-0 justify-end gap-2 border-t border-gray-100 bg-gray-50 px-5 py-3">
+            <footer className="admin-dialog-footer flex shrink-0 justify-end gap-2 border-t border-gray-100 bg-gray-50 px-5 py-3">
               <button
                 type="button"
                 onClick={() => setOpen(false)}

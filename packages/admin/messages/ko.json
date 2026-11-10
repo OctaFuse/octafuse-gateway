@@ -465,7 +465,8 @@
 			"officialUpdateTitle": "공식 템플릿이 변경되었습니다. 클릭하여 확인하고 동기화",
 			"kindOrphaned": "유형 이전 필요",
 			"kindOrphanedTitle": "공식 템플릿 이름이 바뀌었거나 삭제되었습니다. 클릭하여 새 유형으로 이전",
-			"viewRoutes": "{name}의 연결 라우트 보기"
+			"viewRoutes": "{name}의 연결 라우트 보기",
+			"editEndpoints": "{name}의 엔드포인트 설정"
 		},
 		"import": {
 			"title": "템플릿에서 가져오기",
@@ -691,7 +692,9 @@
 			"jsonConfigTitle": "엔드포인트 JSON · 전체 프로토콜",
 			"jsonConfigHint": "현재 양식에서 전송할 endpoints입니다. 저장하지 않은 변경 사항을 포함하며 공급자 자격 증명은 제외됩니다.",
 			"jsonCopyFailed": "자동 복사에 실패했습니다. 선택된 내용을 수동으로 복사할 수 있습니다.",
-			"apiKeyRequiredError": "API 키를 입력해 주세요"
+			"apiKeyRequiredError": "API 키를 입력해 주세요",
+			"credentialsTitle": "계정 및 인증 정보",
+			"duplicateHint": "설정을 복사했습니다. 저장하기 전에 이름, 인증 정보 및 엔드포인트를 확인하세요."
 		},
 		"sync": {
 			"title": "공식 정보와 동기화",
@@ -3368,7 +3371,7 @@
 			"title": "현재 상태"
 		},
 		"settingsCard": {
-			"title": "점검 시작",
+			"title": "점검 설정",
 			"description": "예상 시간과 메시지를 선택합니다. 시작하기 전에 확인 창이 표시됩니다."
 		},
 		"configured": {
@@ -3379,6 +3382,9 @@
 		},
 		"preview": "클라이언트에 표시되는 메시지",
 		"form": {
+			"durationHelp": "예상 시간은 클라이언트 안내용입니다. 시간이 지나도 점검은 직접 종료해야 합니다.",
+			"impact": "영향 범위",
+			"inferenceImpact": "점검 중 추론 요청은 HTTP 503을 반환합니다. 상태 확인과 읽기 전용 목록은 계속 사용할 수 있습니다.",
 			"duration": "예상 소요 시간",
 			"noDuration": "예상 안 함",
 			"customMinutes": "직접 입력(분)",
@@ -3389,7 +3395,7 @@
 			"messageZh": "중국어 메시지(zh)",
 			"messageEn": "영어 메시지(en)",
 			"blockAdmin": "Admin 쓰기도 차단",
-			"blockAdminHelp": "데이터 이전 중에는 켜 두는 것을 권장합니다. Admin API를 호출하는 포털(사용자 생성, 충전)은 503을 받으므로 재시도해야 합니다. 통합 키, 이 페이지, 플레이그라운드는 계속 사용할 수 있습니다."
+			"blockAdminHelp": "데이터 이전 중에는 켜 두는 것을 권장합니다. Admin API를 호출하는 포털(사용자 생성, 충전)은 503을 받으므로 재시도해야 합니다. 통합 키, 점검 제어, 플레이그라운드는 계속 사용할 수 있습니다."
 		},
 		"actions": {
 			"enable": "점검 시작",
@@ -3442,7 +3448,7 @@
 	},
 	"config": {
 		"title": "시스템 설정",
-		"subtitle": "게이트웨이 시간대, 과금, 라우팅, 오류 알림을 설정하고 각 항목을 개별 저장하세요.",
+		"subtitle": "게이트웨이 시간대, 과금, 라우팅, 알림 및 점검 모드를 관리하고 각 항목을 개별 저장하세요.",
 		"saveTimezone": "시간대 저장",
 		"saveCurrency": "통화 저장",
 		"saveUserChargedCostFactorMode": "사용자 과금 배율 모드 저장",
@@ -3489,7 +3495,7 @@
 		},
 		"saveRouteStrategy": "라우트 전략 저장",
 		"ux": {
-			"subtitle": "게이트웨이 시간대, 과금, 라우팅, 오류 알림을 설정하고 각 항목을 개별 저장하세요.",
+			"subtitle": "게이트웨이 시간대, 과금, 라우팅, 알림 및 점검 모드를 관리하고 각 항목을 개별 저장하세요.",
 			"timezoneHint": "일일 할당량과 사용 보고서의 날짜를 구분하는 시간대입니다.",
 			"currencyHint": "모델 가격, 예산, 과금액에 사용하는 통화입니다.",
 			"billingModeHint": "라우트와 사용자 배수를 결합하는 방식을 선택하세요. 변경은 약 30초 후 적용됩니다.",

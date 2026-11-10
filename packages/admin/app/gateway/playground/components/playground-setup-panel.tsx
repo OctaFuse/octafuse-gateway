@@ -1,10 +1,11 @@
 'use client';
+import { AdminContentMark } from '@/components/admin-content-mark';
 
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { ModelKindFilter } from '../../models/types';
 import { AdminInspector } from '@/components/admin-inspector';
-import { CheckIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { CheckIcon, MagnifyingGlassIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 import {
 	formatRouteJsonColumn,
 	inputClass,
@@ -70,7 +71,7 @@ export function PlaygroundSetupPanel({
 	return (
 		<div className="flex h-full min-h-0 flex-col gap-4">
 			<section className={`${panelClass} flex min-h-0 flex-1 flex-col`}>
-				<h2 className="text-sm font-medium text-gray-900">{t('routeSection')}</h2>
+				<h2 className="flex items-center gap-2 text-sm font-medium text-gray-900"><AdminContentMark icon={AdjustmentsHorizontalIcon} compact />{t('routeSection')}</h2>
 				<div role="group" aria-label={t('kind')} className="flex flex-wrap gap-1">
 					{(['llm', 'image', 'asr', 'tts', 'embedding'] as const).map((kind) => (
 						<button
@@ -261,7 +262,7 @@ export function PlaygroundSetupPanel({
 				</div>
 			</section>
 
-			<div className="shrink-0 rounded-xl border border-gray-200 bg-white p-4">
+			<div className="admin-editor-panel admin-content-panel shrink-0 rounded-xl border border-gray-200 bg-white p-4">
 				{selected ? (
 					<p className="mb-3 truncate text-sm font-medium text-gray-900">
 						{selected.model_name ?? selected.model_id}

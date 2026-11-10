@@ -8,7 +8,7 @@ type ProviderSyncCheckButtonProps = {
 	onCheck: () => void;
 };
 
-/** Checking feedback lives here; results are shown by the banner or notification. */
+/** Open the comparison panel before applying any catalog changes. */
 export function ProviderSyncCheckButton({
 	checking,
 	onCheck,

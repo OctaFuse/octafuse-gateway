@@ -1,4 +1,5 @@
 "use client";
+import "./admin-content.css";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { ADMIN_NAV_GROUPS, matchAdminNavRoute } from "@/lib/admin-nav";

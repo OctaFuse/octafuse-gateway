@@ -77,7 +77,7 @@ export function McpServerTable({
 	const pending = servers.reduce((sum, s) => sum + s.pendingCount, 0);
 	return (
 		<section className="min-w-0 space-y-4" aria-label={t('sections.services')}>
-			<div className="flex flex-wrap items-center gap-2">
+			<div className="admin-filter-surface flex flex-wrap items-center gap-2">
 				<div className="relative w-full sm:max-w-sm">
 					<MagnifyingGlassIcon
 						className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-gray-400"
@@ -129,7 +129,7 @@ export function McpServerTable({
 					<ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
 				</button>
 			</div>
-			<div className="overflow-hidden rounded-xl border border-gray-200 bg-white" aria-busy={loading}>
+			<div className="admin-content-panel admin-table-surface overflow-hidden rounded-xl border border-gray-200 bg-white" aria-busy={loading}>
 				{error ? (
 					<div
 						role="alert"

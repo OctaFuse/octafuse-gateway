@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useProviderDialog } from '../use-provider-dialog';
-import { BanknotesIcon } from '@heroicons/react/24/outline';
+import { BanknotesIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useLocale, useTranslations } from 'next-intl';
 import type { ProviderQuotaSnapshot, ProviderQuotaState } from '@octafuse/core/provider-quota';
 import { formatGatewayMoneyCompact } from '@/lib/format-gateway-currency';
@@ -104,7 +104,7 @@ export function ProviderQuotaButton({ providerId }: ProviderQuotaButtonProps) {
 	const dialog =
 		open && typeof document !== 'undefined'
 			? createPortal(
-					<div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
+					<div className="providers-design-workspace fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
 						<button
 							type="button"
 							className="absolute inset-0 bg-slate-900/40"
@@ -117,18 +117,20 @@ export function ProviderQuotaButton({ providerId }: ProviderQuotaButtonProps) {
 							role="dialog"
 							aria-modal="true"
 							aria-labelledby="provider-quota-title"
-							className="relative z-10 max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 shadow-panel outline-none"
+							className="provider-quota-dialog relative z-10 max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 shadow-panel outline-none"
 						>
 							<div className="flex items-start justify-between gap-3">
-								<h2 id="provider-quota-title" className="text-sm font-medium text-slate-900">
+								<h2 id="provider-quota-title" className="flex items-center gap-2 text-sm font-medium text-slate-900">
+									<span className="provider-dialog-symbol" aria-hidden><BanknotesIcon className="h-4 w-4" /></span>
 									{t('title')}
 								</h2>
 								<button
 									type="button"
 									onClick={() => setOpen(false)}
+									aria-label={t('close')}
 									className="rounded-md px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-800"
 								>
-									{t('close')}
+									<XMarkIcon className="h-4 w-4" aria-hidden />
 								</button>
 							</div>
 							<div className="mt-3 space-y-3">

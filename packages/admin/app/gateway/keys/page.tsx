@@ -401,7 +401,7 @@ export default function GatewayKeysPage() {
     'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500';
 
   return (
-    <div className="min-w-0 p-4 sm:p-6 lg:p-8">
+    <div className="admin-content-workspace content-tone-accounts min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <AdminPageTitle>{t('title')}</AdminPageTitle>
@@ -426,7 +426,7 @@ export default function GatewayKeysPage() {
         </div>
       )}
 
-      <section aria-label={t('ui.filters')} className="mb-5 flex flex-wrap items-center gap-3">
+      <section aria-label={t('ui.filters')} className="admin-filter-surface mb-5 flex flex-wrap items-center gap-3">
         <div className="relative min-w-0 flex-1 basis-64 sm:max-w-sm">
           <MagnifyingGlassIcon
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
@@ -495,7 +495,7 @@ export default function GatewayKeysPage() {
         </p>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div className="admin-content-panel admin-table-surface overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className={`overflow-x-auto ${isLoading ? 'opacity-70' : ''}`}>
           <table className="admin-data-table w-full min-w-[64rem] table-fixed">
             <colgroup>
@@ -591,14 +591,17 @@ export default function GatewayKeysPage() {
                   >
                     <td className="px-4 py-3.5 overflow-hidden">
                       <div className="flex min-w-0 items-start gap-2.5">
+                        <span className="admin-key-mark">
+                          <KeyIcon className="h-4 w-4" aria-hidden />
                         <span
-                          className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${keyStatusSwatchClass(
+                          className={`h-2 w-2 shrink-0 rounded-full ${keyStatusSwatchClass(
                             key.status
                           )}`}
                           title={key.status}
                           role="img"
                           aria-label={statusLabel(key.status)}
                         />
+                        </span>
                         <div className="min-w-0 flex-1">
                           {key.name?.trim() ? (
                             <span
@@ -817,12 +820,12 @@ export default function GatewayKeysPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-key-title"
-            className="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white outline-none"
+            className="admin-content-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white outline-none"
           >
-            <header className="flex shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
+            <header className="admin-dialog-header flex shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
               <h2
                 id="create-key-title"
-                className="flex items-center gap-2 text-base font-medium text-gray-950"
+                className="admin-section-title flex items-center gap-2 text-base font-medium text-gray-950"
               >
                 <KeyIcon className="h-5 w-5 text-gray-400" aria-hidden />
                 {t('createTitle')}
@@ -837,7 +840,7 @@ export default function GatewayKeysPage() {
                 <XMarkIcon className="h-5 w-5" aria-hidden />
               </button>
             </header>
-            <fieldset disabled={isSaving} className="min-h-0 space-y-5 overflow-y-auto p-5">
+            <fieldset disabled={isSaving} className="admin-dialog-body min-h-0 space-y-5 overflow-y-auto p-5">
               {saveError && (
                 <p
                   role="alert"
@@ -984,7 +987,7 @@ export default function GatewayKeysPage() {
               </p>
               <p className="text-xs leading-5 text-amber-700">{t('create.secretOnce')}</p>
             </fieldset>
-            <footer className="flex shrink-0 justify-end gap-2 border-t border-gray-100 bg-gray-50 px-5 py-3">
+            <footer className="admin-dialog-footer flex shrink-0 justify-end gap-2 border-t border-gray-100 bg-gray-50 px-5 py-3">
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
@@ -1013,12 +1016,12 @@ export default function GatewayKeysPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="edit-key-title"
-            className="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white outline-none"
+            className="admin-content-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white outline-none"
           >
-            <header className="flex shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
+            <header className="admin-dialog-header flex shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
               <h2
                 id="edit-key-title"
-                className="flex items-center gap-2 text-base font-medium text-gray-950"
+                className="admin-section-title flex items-center gap-2 text-base font-medium text-gray-950"
               >
                 <KeyIcon className="h-5 w-5 text-gray-400" aria-hidden />
                 {t('editTitle')}
@@ -1035,7 +1038,7 @@ export default function GatewayKeysPage() {
             </header>
             <fieldset
               disabled={isSaving || isDeleting || statusTogglingId != null}
-              className="min-h-0 space-y-5 overflow-y-auto p-5"
+              className="admin-dialog-body min-h-0 space-y-5 overflow-y-auto p-5"
             >
               {saveError && (
                 <p
@@ -1265,7 +1268,7 @@ export default function GatewayKeysPage() {
                 </Link>
               </div>
             </fieldset>
-            <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-100 bg-gray-50 px-5 py-3">
+            <footer className="admin-dialog-footer flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-100 bg-gray-50 px-5 py-3">
               <button
                 type="button"
                 onClick={handleEditDelete}

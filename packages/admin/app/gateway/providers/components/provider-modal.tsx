@@ -11,6 +11,9 @@ import {
 	InformationCircleIcon,
 	AdjustmentsHorizontalIcon,
 	ShareIcon,
+	KeyIcon,
+	ServerStackIcon,
+	ChatBubbleLeftEllipsisIcon,
 } from "@heroicons/react/24/outline";
 import { CheckIcon } from "@heroicons/react/24/solid";
 import { useTranslations, useLocale } from "next-intl";
@@ -62,7 +65,7 @@ import { PROVIDER_ENDPOINT_FIELDS } from "../provider-endpoint-fields";
 
 type ProviderModalProps = {
 	open: boolean;
-	initialTab?: "basic" | "routes";
+	initialTab?: "basic" | "endpoints" | "routes";
 	editingProvider: GatewayProvider | null;
 	duplicateSourceId: string | null;
 	formData: ProviderFormData;
@@ -245,7 +248,7 @@ function ProtocolFields({
 			: null;
 
 	return (
-		<div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+		<div className="provider-endpoint-fields overflow-hidden rounded-xl border border-gray-200 bg-white">
 			<div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-gray-200 bg-gray-50/70 px-4 py-3">
 				<fieldset className="shrink-0">
 					<legend className="sr-only">{t("endpointMode")}</legend>
@@ -634,7 +637,7 @@ export function ProviderModal(props: ProviderModalProps) {
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
+			className="providers-design-workspace fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
 			onMouseDown={(e) => {
 				if (e.target === e.currentTarget && !busy) {
 					onClose();
@@ -681,24 +684,20 @@ export function ProviderModal(props: ProviderModalProps) {
 						first?.focus();
 					}
 				}}
-				className="flex max-h-[min(720px,90dvh)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+				className="provider-dialog flex max-h-[min(720px,90dvh)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby={titleId}
 			>
-				<div className="flex shrink-0 items-start justify-between gap-4 px-5 pb-5 pt-6 sm:px-7">
+				<div className="provider-dialog-heading flex shrink-0 items-start justify-between gap-4 px-5 pb-5 pt-6 sm:px-7">
 					<div>
-						<h2 id={titleId} className="text-lg font-medium text-gray-900">
+						<h2 id={titleId} className="flex items-center gap-3 text-lg font-medium text-gray-900">
+							<span className="provider-dialog-symbol" aria-hidden><ServerStackIcon className="h-5 w-5" /></span>
 							{editingProvider ? t("editTitle") : t("newTitle")}
 						</h2>
 						<p className="mt-1.5 text-sm text-gray-500">
-							{editingProvider ? t("editHint") : t("newHint")}
+							{editingProvider ? editingProvider.name : duplicateSourceId ? t("duplicateHint") : t("newHint")}
 						</p>
-						{!editingProvider && duplicateSourceId && (
-							<p className="mt-1 text-xs text-gray-500">
-								{t("prefilledFrom", { id: duplicateSourceId })}
-							</p>
-						)}
 					</div>
 					<button
 						type="button"
@@ -713,11 +712,11 @@ export function ProviderModal(props: ProviderModalProps) {
 					</button>
 				</div>
 
-				<div className="flex shrink-0 flex-wrap items-start justify-between gap-x-4 border-b border-gray-200 px-5 sm:px-7">
+				<div className="provider-main-tabs flex shrink-0 flex-wrap items-start justify-between gap-x-4 px-5 sm:px-7">
 					<div
 						role="tablist"
 						aria-label={t("modalTabs")}
-						className="flex gap-3 sm:gap-5"
+						className="provider-tablist flex flex-wrap gap-1"
 					>
 						{mainTabs.map(({ key, label, Icon }) => (
 							<button
@@ -769,7 +768,7 @@ export function ProviderModal(props: ProviderModalProps) {
 						</button>
 					) : null}
 				</div>
-				<div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-6 sm:px-7">
+				<div className="provider-dialog-body flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-6 sm:px-7">
 					{saveError && (
 						<div role="alert" className="mb-4 shrink-0 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">
 							{saveError}
@@ -785,7 +784,8 @@ export function ProviderModal(props: ProviderModalProps) {
 							aria-labelledby={`${tabsId}-basic`}
 						>
 							<div className="grid items-start gap-6 md:grid-cols-[1fr_0.9fr]">
-								<div className="min-w-0 space-y-5">
+								<div className="provider-credentials min-w-0 space-y-5">
+									<h3 className="provider-section-title"><KeyIcon className="h-4 w-4" aria-hidden />{t("credentialsTitle")}</h3>
 									<div>
 										<label
 											htmlFor={`${tabsId}-kind`}
@@ -978,8 +978,9 @@ export function ProviderModal(props: ProviderModalProps) {
 								</div>
 								<div className="flex min-w-0 flex-col gap-5">
 									{catalogIntro ? (
-										<div className="rounded-xl bg-gray-50 p-4">
-											<h3 className="shrink-0 text-xs font-medium text-gray-500">
+										<div className="provider-catalog-intro rounded-xl bg-gray-50 p-4">
+											<h3 className="provider-section-title shrink-0 text-xs font-medium text-gray-500">
+												<InformationCircleIcon className="h-4 w-4" aria-hidden />
 												{t("catalogIntro")}
 											</h3>
 											<p
@@ -990,12 +991,12 @@ export function ProviderModal(props: ProviderModalProps) {
 											</p>
 										</div>
 									) : null}
-									<div className="shrink-0">
+									<div className="provider-note shrink-0">
 										<label
 											htmlFor={`${tabsId}-note`}
-											className="mb-2 block text-xs font-medium text-gray-700"
+											className="provider-section-title mb-3 text-xs font-medium text-gray-700"
 										>
-											{t("note")}
+											<ChatBubbleLeftEllipsisIcon className="h-4 w-4" aria-hidden />{t("note")}
 										</label>
 										<textarea
 											id={`${tabsId}-note`}
@@ -1024,7 +1025,7 @@ export function ProviderModal(props: ProviderModalProps) {
 							) : (
 								<div className="grid items-start gap-5 md:grid-cols-[160px_minmax(0,1fr)]">
 									<div
-										className="flex flex-wrap gap-1 rounded-xl bg-gray-50 p-2 md:flex-col"
+										className="provider-endpoint-tabs flex flex-wrap gap-1 rounded-xl bg-gray-50 p-2 md:flex-col"
 										role="tablist"
 										aria-label={t("endpointsTabsAria")}
 									>
@@ -1042,6 +1043,7 @@ export function ProviderModal(props: ProviderModalProps) {
 													id={`provider-endpoint-tab-${key}`}
 													aria-selected={selected}
 													aria-controls={`provider-endpoint-panel-${key}`}
+													aria-label={t(labelKey)}
 													onClick={() => setEndpointTab(key)}
 													onKeyDown={navigateTabs}
 													tabIndex={selected ? 0 : -1}
@@ -1101,7 +1103,7 @@ export function ProviderModal(props: ProviderModalProps) {
 					</div>
 				</div>
 
-				<div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50 px-5 py-4 sm:px-7">
+				<div className="provider-dialog-footer flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50 px-5 py-4 sm:px-7">
 					<div className="flex flex-wrap items-center gap-2">
 						{editingProvider &&
 							(deleteDisabledReason ? (

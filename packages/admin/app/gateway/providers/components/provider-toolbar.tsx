@@ -50,7 +50,7 @@ export function ProviderToolbar({
 				selectedFilter === 'outdated')
 	);
 	return (
-		<div className="mb-5 space-y-4">
+		<div className="provider-filter-panel mb-5 space-y-3">
 			<div className="flex flex-wrap items-center gap-3">
 				<div className="relative min-w-0 flex-1 basis-60 sm:max-w-sm">
 					<MagnifyingGlassIcon
@@ -100,7 +100,7 @@ export function ProviderToolbar({
 				</div>
 			</div>
 			<div
-				className="flex flex-wrap gap-1 border-b border-gray-200 pb-3"
+				className="flex flex-wrap gap-1 border-t border-gray-100 pt-3"
 				role="group"
 				aria-label={t('filters.groupStatus')}
 			>

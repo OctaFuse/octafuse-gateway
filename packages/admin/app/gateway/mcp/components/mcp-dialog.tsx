@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminContentMark } from '@/components/admin-content-mark';
+
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
@@ -106,7 +108,7 @@ export function McpDialog({
 				tabIndex={-1}
 				aria-labelledby={titleId}
 				aria-busy={busy}
-				className={`relative flex w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl outline-none ${
+				className={`admin-content-dialog relative flex w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl outline-none ${
 					width === 'form'
 						? 'max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] max-w-[880px]'
 						: width === 'wide' || wide
@@ -114,9 +116,10 @@ export function McpDialog({
 						: 'max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] max-w-[720px]'
 				}`}
 			>
-				<header className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-5 sm:px-6">
+				<header className="admin-dialog-header flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-5 sm:px-6">
 					<div className="min-w-0">
-						<h2 id={titleId} className="break-words text-lg font-medium text-gray-900">
+						<h2 id={titleId} className="admin-dialog-title break-words text-lg font-medium text-gray-900">
+							<AdminContentMark />
 							{title}
 						</h2>
 						{subtitle ? <p className="mt-1 break-words text-sm text-gray-500">{subtitle}</p> : null}
@@ -133,8 +136,8 @@ export function McpDialog({
 					</button>
 				</header>
 				{navigation ? <nav className="shrink-0 border-b border-gray-100">{navigation}</nav> : null}
-				<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 sm:px-6">{children}</div>
-				<footer className="shrink-0 border-t border-gray-100 bg-gray-50/60 px-5 py-4 sm:px-6">
+				<div className="admin-dialog-body min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 sm:px-6">{children}</div>
+				<footer className="admin-dialog-footer shrink-0 border-t border-gray-100 bg-gray-50/60 px-5 py-4 sm:px-6">
 					{footer}
 				</footer>
 			</div>

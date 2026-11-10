@@ -218,7 +218,7 @@ export function OAuthAccessTokensPanel() {
 		<section
 			id="oauth-access-tokens"
 			ref={sectionRef}
-			className="mb-6 scroll-mt-4 rounded-xl border border-gray-200 bg-white"
+			className="admin-content-panel admin-table-surface mb-6 scroll-mt-4 rounded-xl border border-gray-200 bg-white"
 		>
 			<button
 				type="button"
@@ -314,7 +314,7 @@ export function OAuthAccessTokensPanel() {
 						</div>
 					)}
 
-					<div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+					<div className="admin-content-panel rounded-xl border border-gray-200 bg-white px-4 py-3">
 						<div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
 							<div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-2 xl:max-w-3xl">
 								<div className="min-w-0">
@@ -393,7 +393,7 @@ export function OAuthAccessTokensPanel() {
 							</button>
 						</div>
 					) : null}
-					<div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+					<div className="admin-content-panel admin-table-surface overflow-hidden rounded-xl border border-gray-200 bg-white">
 						<div className={`overflow-x-auto ${isLoading ? 'opacity-70' : ''}`}>
 							<table className="admin-data-table w-full min-w-[60rem] table-fixed">
 								<colgroup>

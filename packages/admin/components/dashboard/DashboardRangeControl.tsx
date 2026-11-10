@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminContentMark } from '@/components/admin-content-mark';
+
 import { useId, useRef, useState } from 'react';
 import { CalendarDaysIcon, ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
@@ -36,9 +38,12 @@ export function DashboardRangeControl({ value, label, timeZone, onChange }: {
     </button>
     <dialog ref={ref} aria-labelledby={headingId} onClose={() => setOpen(false)}
       onClick={(event) => { if (event.target === event.currentTarget) ref.current?.close(); }}
-      className="fixed inset-3 m-auto max-h-[calc(100dvh-24px)] w-[calc(100vw-24px)] sm:inset-6 sm:max-h-[calc(100dvh-48px)] sm:w-[calc(100vw-48px)] max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-white p-0 text-gray-900 shadow-panel backdrop:bg-gray-950/20">
-      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-        <h2 id={headingId} className="text-base font-medium">{t('analysisWindow')}</h2>
+      className="admin-content-dialog fixed inset-3 m-auto max-h-[calc(100dvh-24px)] w-[calc(100vw-24px)] sm:inset-6 sm:max-h-[calc(100dvh-48px)] sm:w-[calc(100vw-48px)] max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-white p-0 text-gray-900 shadow-panel backdrop:bg-gray-950/20">
+      <div className="admin-dialog-header flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <h2 id={headingId} className="admin-dialog-title text-base font-medium">
+          <AdminContentMark />
+          {t('analysisWindow')}
+        </h2>
         <button type="button" aria-label={c('close')} onClick={() => ref.current?.close()} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"><XMarkIcon className="h-4 w-4" aria-hidden /></button>
       </div>
       <div className="space-y-5 p-5">

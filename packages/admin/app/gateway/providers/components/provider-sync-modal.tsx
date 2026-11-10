@@ -312,7 +312,7 @@ export function ProviderSyncModal({ sync }: ProviderSyncModalProps) {
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
+			className="providers-design-workspace fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
 			onMouseDown={(e) => {
 				if (e.target === e.currentTarget && !sync.submitting) sync.close();
 			}}
@@ -320,14 +320,15 @@ export function ProviderSyncModal({ sync }: ProviderSyncModalProps) {
 			<div
 				ref={dialogRef}
         tabIndex={-1}
-        className="flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+        className="provider-dialog flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="provider-sync-title"
 			>
-				<div className="flex shrink-0 items-start justify-between gap-3 border-b px-6 py-4">
+				<div className="provider-dialog-heading flex shrink-0 items-start justify-between gap-3 border-b px-6 py-4">
 					<div>
-						<h2 id="provider-sync-title" className="text-lg font-medium text-gray-900">
+						<h2 id="provider-sync-title" className="flex items-center gap-3 text-lg font-medium text-gray-900">
+							<span className="provider-dialog-symbol" aria-hidden><ArrowPathIcon className="h-5 w-5" /></span>
 							{t('title')}
 						</h2>
 						<p className="mt-1 text-xs text-gray-500">{t('subtitle')}</p>
@@ -417,7 +418,7 @@ export function ProviderSyncModal({ sync }: ProviderSyncModalProps) {
 						</nav>
 					) : null}
 
-					<div className="min-h-0 flex-1 overflow-y-auto bg-gray-50/50 px-6 py-5">
+					<div className="provider-sync-body min-h-0 min-w-0 flex-1 overflow-y-auto bg-gray-50/50 px-6 py-5">
 						{sync.loading && !report ? (
 							<div className="py-16 text-center text-gray-600">{t('loading')}</div>
 						) : null}
@@ -438,7 +439,7 @@ export function ProviderSyncModal({ sync }: ProviderSyncModalProps) {
 					</div>
 				</div>
 
-				<div className="flex shrink-0 flex-wrap items-center justify-end gap-3 border-t bg-gray-50 px-6 py-4">
+				<div className="provider-dialog-footer flex shrink-0 flex-wrap items-center justify-end gap-3 border-t bg-gray-50 px-6 py-4">
 					{hasAnything && <div className="min-w-0 flex-1 text-sm text-gray-600">
 						<p>
 							{t('summary', {

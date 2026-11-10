@@ -80,7 +80,7 @@ export default function McpServersPage() {
 
 	const currency = billing.loading ? '—' : billing.currency;
 	return (
-		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
+		<div className="admin-content-workspace content-tone-tools min-w-0 p-4 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-center justify-between gap-4">
 				<div>
 					<AdminPageTitle>{t('title')}</AdminPageTitle>
@@ -113,7 +113,7 @@ export default function McpServersPage() {
 			<div
 				role="tablist"
 				aria-label={t('sections.label')}
-				className="mb-6 flex gap-6 border-b border-gray-200"
+				className="admin-detail-tabs mb-6 flex flex-wrap gap-1"
 			>
 				{sections.map(({ id, label, icon: Icon }, index) => (
 					<button
@@ -188,7 +188,7 @@ export default function McpServersPage() {
 			>
 				<div className="mb-6 grid gap-4 xl:grid-cols-2">
 					<section
-						className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6"
+						className="admin-content-panel rounded-xl border border-gray-200 bg-white p-4 sm:p-6"
 						aria-labelledby="mcp-client-access-title"
 					>
 						<h2 id="mcp-client-access-title" className="text-base font-medium text-gray-900">

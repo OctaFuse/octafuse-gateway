@@ -251,7 +251,7 @@ export function ModelCard(props: {
 					onClick={() => onViewPricing(model)}
 					aria-label={t('viewPricing', { name: displayName })}
 					title={pricingTitle}
-					className="relative z-10 min-w-0 rounded-md py-1 text-left hover:text-blue-700"
+					className="admin-model-price relative z-10 min-w-0 rounded-md py-1 text-left hover:text-blue-700"
 				>
 					<span className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
 						<span className="font-mono text-sm tabular-nums text-gray-900">
@@ -279,7 +279,7 @@ export function ModelCard(props: {
 					type="button"
 					onClick={() => onViewRoutes(model)}
 					aria-label={t('viewRoutes', { name: displayName })}
-					className="relative z-10 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md py-1 text-left text-xs text-gray-600 hover:text-gray-950"
+					className="admin-model-route relative z-10 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md py-1 text-left text-xs text-gray-600 hover:text-gray-950"
 				>
 					<ShareIcon
 						className="h-3.5 w-3.5 shrink-0 text-gray-400"

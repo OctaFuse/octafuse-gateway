@@ -1097,9 +1097,9 @@ export default function GatewayToolsConfigPage() {
 
 	if (loadFailed) {
 		return (
-			<div className="p-4 sm:p-6 lg:p-8">
+			<div className="admin-content-workspace content-tone-tools p-4 sm:p-6 lg:p-8">
 				<AdminPageTitle>{t('config.title')}</AdminPageTitle>
-				<div role="alert" className="mt-6 rounded-xl border border-gray-200 bg-white p-6">
+				<div role="alert" className="admin-content-panel mt-6 rounded-xl border border-gray-200 bg-white p-6">
 					<p className="text-sm text-gray-600">{t('ui.loadFailed')}</p>
 					<button
 						type="button"
@@ -1225,7 +1225,7 @@ export default function GatewayToolsConfigPage() {
 			: '';
 
 	return (
-		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
+		<div className="admin-content-workspace content-tone-tools min-w-0 p-4 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<AdminPageTitle>{t('config.title')}</AdminPageTitle>

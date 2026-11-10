@@ -1,4 +1,5 @@
 'use client';
+import { AdminContentMark } from '@/components/admin-content-mark';
 
 import { useTranslations } from 'next-intl';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
@@ -6,7 +7,7 @@ import type { GatewayToolDefinition } from '@/lib/gateway-tools';
 import type { InvokeKind } from '@/lib/invoke-kind';
 import type { KeyboardEvent } from 'react';
 import { AdminInspector } from '@/components/admin-inspector';
-import { CheckIcon } from '@heroicons/react/24/outline';
+import { CheckIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import type { SimulatorProtocol } from '@/lib/simulator/endpoint';
 import { inputClass, labelClass, panelClass } from '../simulator-utils';
 import type { AdminModelRow, RouteListRow } from '../types';
@@ -93,7 +94,7 @@ export function SimulatorRoutingPanel({
 	return (
 		<section className={`${panelClass} flex min-h-0 flex-1 flex-col`}>
 			<div className="flex items-center justify-between gap-2">
-				<h2 className="text-sm font-medium text-gray-900">{t('routingTarget')}</h2>
+				<h2 className="flex items-center gap-2 text-sm font-medium text-gray-900"><AdminContentMark icon={ArrowsRightLeftIcon} compact />{t('routingTarget')}</h2>
 				<span className="truncate font-mono text-xs text-gray-500" title={modelRoutingString}>
 					{isToolKind ? (selectedToolId ? `/v1/tools/${selectedToolId}` : '') : modelRoutingString || ''}
 				</span>

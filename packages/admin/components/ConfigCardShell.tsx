@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminContentMark } from "./admin-content-mark";
 import { useId, type ReactNode } from "react";
 import { InfoHintPopover } from "./InfoHintPopover";
 import {
@@ -45,16 +46,11 @@ export function ConfigCardShell({
 		<section
 			id={id}
 			aria-labelledby={titleId}
-			className="flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-4 sm:p-6"
+			className="admin-content-panel flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-4 sm:p-6"
 		>
 			<div className="mb-5">
 				<div className="flex items-center gap-2">
-					{Icon && (
-						<Icon
-							className="h-4 w-4 shrink-0 text-gray-400"
-							aria-hidden="true"
-						/>
-					)}
+					{Icon ? <AdminContentMark icon={Icon} compact /> : null}
 					<h2 id={titleId} className="text-base font-medium text-gray-900">
 						{title}
 					</h2>

@@ -465,7 +465,8 @@
 			"officialUpdateTitle": "公式テンプレートが変更されました。クリックして確認・同期",
 			"kindOrphaned": "タイプの移行が必要",
 			"kindOrphanedTitle": "公式テンプレートの名称変更または廃止。クリックして新しいタイプへ移行",
-			"viewRoutes": "{name} の関連ルートを表示"
+			"viewRoutes": "{name} の関連ルートを表示",
+			"editEndpoints": "{name} のエンドポイントを設定"
 		},
 		"import": {
 			"title": "テンプレートからインポート",
@@ -691,7 +692,9 @@
 			"jsonConfigTitle": "エンドポイント JSON · 全プロトコル",
 			"jsonConfigHint": "現在のフォームで送信する endpoints です。未保存の変更を含み、認証情報は含みません。",
 			"jsonCopyFailed": "自動コピーに失敗しました。選択した内容を手動でコピーできます。",
-			"apiKeyRequiredError": "API キーを入力してください"
+			"apiKeyRequiredError": "API キーを入力してください",
+			"credentialsTitle": "アカウントと認証情報",
+			"duplicateHint": "設定をコピーしました。保存前に名前、認証情報、エンドポイントを確認してください。"
 		},
 		"sync": {
 			"title": "公式と同期",
@@ -3368,7 +3371,7 @@
 			"title": "現在の状態"
 		},
 		"settingsCard": {
-			"title": "メンテナンスを開始",
+			"title": "メンテナンス設定",
 			"description": "予定時間とメッセージを選択します。開始前に確認が表示されます。"
 		},
 		"configured": {
@@ -3379,6 +3382,9 @@
 		},
 		"preview": "クライアントに表示されるメッセージ",
 		"form": {
+			"durationHelp": "予定時間はクライアントへの案内用です。時間が過ぎても、メンテナンスは手動で終了する必要があります。",
+			"impact": "影響範囲",
+			"inferenceImpact": "メンテナンス中の推論リクエストは HTTP 503 を返します。ヘルスチェックと読み取り専用リストは利用できます。",
 			"duration": "想定時間",
 			"noDuration": "見積もりなし",
 			"customMinutes": "カスタム（分）",
@@ -3389,7 +3395,7 @@
 			"messageZh": "中国語メッセージ（zh）",
 			"messageEn": "英語メッセージ（en）",
 			"blockAdmin": "Admin の書き込みも拒否する",
-			"blockAdminHelp": "データ移行中は推奨です。Admin API を呼ぶポータル（ユーザー作成、チャージ）は 503 を受け取るため、再試行が必要です。連携キー、このページ、Playground は引き続き操作できます。"
+			"blockAdminHelp": "データ移行中は推奨です。Admin API を呼ぶポータル（ユーザー作成、チャージ）は 503 を受け取るため、再試行が必要です。連携キー、メンテナンス操作、Playground は引き続き操作できます。"
 		},
 		"actions": {
 			"enable": "メンテナンスを開始",
@@ -3442,7 +3448,7 @@
 	},
 	"config": {
 		"title": "システム設定",
-		"subtitle": "ゲートウェイのタイムゾーン、課金、ルーティング、エラー通知を設定します。各項目は個別に保存してください。",
+		"subtitle": "ゲートウェイのタイムゾーン、課金、ルーティング、通知、メンテナンスを管理します。各項目は個別に保存してください。",
 		"saveTimezone": "タイムゾーンを保存",
 		"saveCurrency": "通貨を保存",
 		"saveUserChargedCostFactorMode": "ユーザー課金倍率モードを保存",
@@ -3489,7 +3495,7 @@
 		},
 		"saveRouteStrategy": "ルート戦略を保存",
 		"ux": {
-			"subtitle": "ゲートウェイのタイムゾーン、課金、ルーティング、エラー通知を設定します。各項目は個別に保存してください。",
+			"subtitle": "ゲートウェイのタイムゾーン、課金、ルーティング、通知、メンテナンスを管理します。各項目は個別に保存してください。",
 			"timezoneHint": "日次クォータと利用レポートの日付を区切るタイムゾーンです。",
 			"currencyHint": "モデル価格、予算、請求額に使用する通貨です。",
 			"billingModeHint": "ルートとユーザーの倍率の組み合わせを選択します。変更は約 30 秒で反映されます。",

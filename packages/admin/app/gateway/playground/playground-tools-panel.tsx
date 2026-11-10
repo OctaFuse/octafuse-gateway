@@ -225,7 +225,7 @@ export function PlaygroundToolsWorkspace({ state }: { state: PlaygroundToolsStat
 		<div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-2 xl:grid-rows-[minmax(0,1fr)]">
 			<section
 				aria-label={t('requestBody')}
-				className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white"
+				className="admin-content-panel flex min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white"
 			>
 				<header className="flex min-h-[57px] shrink-0 flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-4 py-2.5">
 					<h2 className="text-sm font-medium text-gray-900">{t('requestBody')}</h2>
@@ -286,7 +286,7 @@ export function PlaygroundToolsWorkspace({ state }: { state: PlaygroundToolsStat
 			</section>
 			<section
 				aria-label={t('response')}
-				className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white"
+				className="admin-content-panel flex min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white"
 			>
 				<header className="flex min-h-[57px] shrink-0 flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-4 py-2.5">
 					<h2 className="text-sm font-medium text-gray-900">{t('response')}</h2>

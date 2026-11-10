@@ -71,7 +71,7 @@ export function SimulatorSetupPanel({
 		</div>
 	);
 	return (
-		<section aria-label={t('connection')} className="shrink-0 rounded-xl border border-gray-200 bg-white p-4">
+		<section aria-label={t('connection')} className="admin-editor-panel admin-content-panel shrink-0 rounded-xl border border-gray-200 bg-white p-4">
 			<div className="flex flex-wrap items-end gap-3">
 				<div className="min-w-0 flex-1 basis-64">
 					<label htmlFor="simulator-proxy" className={labelClass}>

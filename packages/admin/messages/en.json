@@ -465,7 +465,8 @@
 			"officialUpdateTitle": "The official template has changed. Click to review and sync",
 			"kindOrphaned": "Type needs migration",
 			"kindOrphanedTitle": "The official template was renamed or removed. Click to migrate to a new type",
-			"viewRoutes": "View routes for {name}"
+			"viewRoutes": "View routes for {name}",
+			"editEndpoints": "Configure endpoints for {name}"
 		},
 		"import": {
 			"title": "Import from templates",
@@ -691,7 +692,9 @@
 			"jsonConfigTitle": "Endpoint JSON · All protocols",
 			"jsonConfigHint": "The endpoints field submitted by the current form, including unsaved changes. Provider credentials are excluded.",
 			"jsonCopyFailed": "Automatic copy failed. The content is selected for manual copying.",
-			"apiKeyRequiredError": "Enter an API key"
+			"apiKeyRequiredError": "Enter an API key",
+			"credentialsTitle": "Account & credentials",
+			"duplicateHint": "Configuration copied. Review the name, credentials and endpoints before saving."
 		},
 		"sync": {
 			"title": "Sync with official",
@@ -3368,7 +3371,7 @@
 			"title": "Current status"
 		},
 		"settingsCard": {
-			"title": "Start maintenance",
+			"title": "Maintenance settings",
 			"description": "Choose the expected duration and message. You will be asked to confirm before it starts."
 		},
 		"configured": {
@@ -3379,6 +3382,9 @@
 		},
 		"preview": "Message shown to clients",
 		"form": {
+			"durationHelp": "The estimate is shown to clients. Maintenance must still be ended manually.",
+			"impact": "Affected requests",
+			"inferenceImpact": "Inference requests return HTTP 503 during maintenance. Health checks and read-only lists remain available.",
 			"duration": "Expected duration",
 			"noDuration": "No estimate",
 			"customMinutes": "Custom (minutes)",
@@ -3389,7 +3395,7 @@
 			"messageZh": "Chinese message (zh)",
 			"messageEn": "English message (en)",
 			"blockAdmin": "Also block Admin writes",
-			"blockAdminHelp": "Recommended during data migration. Portals that call the Admin API (provisioning, top-ups) will get 503 and should retry. Integration Keys, this page and the Playground stay writable."
+			"blockAdminHelp": "Recommended during data migration. Portals that call the Admin API (provisioning, top-ups) will get 503 and should retry. Integration Keys, maintenance controls and the Playground stay writable."
 		},
 		"actions": {
 			"enable": "Enable maintenance",
@@ -3442,7 +3448,7 @@
 	},
 	"config": {
 		"title": "System config",
-		"subtitle": "Configure gateway timezone, billing, routing and error notifications. Save each section separately.",
+		"subtitle": "Configure gateway timezone, billing, routing, notifications, and maintenance. Save each section separately.",
 		"saveTimezone": "Save timezone",
 		"saveCurrency": "Save currency",
 		"saveUserChargedCostFactorMode": "Save charged factor mode",
@@ -3489,7 +3495,7 @@
 		},
 		"saveRouteStrategy": "Save route strategy",
 		"ux": {
-			"subtitle": "Configure gateway timezone, billing, routing and error notifications. Save each section separately.",
+			"subtitle": "Configure gateway timezone, billing, routing, notifications, and maintenance. Save each section separately.",
 			"timezoneHint": "Sets the calendar day used by daily quotas and usage reports.",
 			"currencyHint": "The currency used for model prices, budgets and charges.",
 			"billingModeHint": "Choose how route and user multipliers combine. Updates take effect in about 30 seconds.",

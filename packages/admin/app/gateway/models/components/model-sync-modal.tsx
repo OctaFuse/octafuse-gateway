@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminContentMark } from '@/components/admin-content-mark';
+
 import { useAdminDialog } from '@/components/use-admin-dialog';
 import {
 	ArrowPathIcon,
@@ -217,7 +219,7 @@ function ModelBlock(props: {
 	const selectedCount = sync.selectedFieldsOf(model).length;
 
 	return (
-		<section className="rounded-xl border border-gray-200 bg-white shadow-sm">
+		<section className="admin-content-panel rounded-xl border border-gray-200 bg-white shadow-sm">
 			<header className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-3">
 				<div className="min-w-0">
 					<h3 className="truncate text-sm font-medium text-gray-900">
@@ -336,17 +338,17 @@ export function ModelSyncModal({ sync }: ModelSyncModalProps) {
 			<div
 				ref={dialogRef}
 				tabIndex={-1}
-				className="flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+				className="admin-content-dialog flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="model-sync-title"
 			>
-				<div className="flex shrink-0 items-start justify-between gap-3 border-b px-6 py-4">
+				<div className="admin-dialog-header flex shrink-0 items-start justify-between gap-3 border-b px-6 py-4">
 					<div>
 						<h2
 							id="model-sync-title"
-							className="text-lg font-medium text-gray-900"
-						>
+							className="admin-dialog-title text-lg font-medium text-gray-900"
+						><AdminContentMark />
 							{t('title')}
 						</h2>
 						<p className="mt-1 text-xs text-gray-500">{t('subtitle')}</p>
@@ -457,7 +459,7 @@ export function ModelSyncModal({ sync }: ModelSyncModalProps) {
 					</div>
 				</div>
 
-				<div className="flex shrink-0 flex-wrap items-center justify-end gap-3 border-t bg-gray-50 px-6 py-4">
+				<div className="admin-dialog-footer flex shrink-0 flex-wrap items-center justify-end gap-3 border-t bg-gray-50 px-6 py-4">
 					{hasAnything && (
 						<div className="min-w-0 flex-1 text-sm text-gray-600">
 							<p>

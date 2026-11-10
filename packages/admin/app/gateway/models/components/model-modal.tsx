@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminContentMark } from '@/components/admin-content-mark';
+
 import {
 	cloneElement,
 	isValidElement,
@@ -339,14 +341,14 @@ export function ModelModal(props: ModelModalProps) {
 				aria-labelledby={`${id}-title`}
 				tabIndex={-1}
 				onKeyDown={handleKeys}
-				className="flex max-h-[min(800px,90dvh)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+				className="admin-content-dialog flex max-h-[min(800px,90dvh)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 			>
-				<header className="flex shrink-0 items-start justify-between gap-4 px-5 pb-5 pt-6 sm:px-7">
+				<header className="admin-dialog-header flex shrink-0 items-start justify-between gap-4 px-5 pb-5 pt-6 sm:px-7">
 					<div className="min-w-0">
 						<h2
 							id={`${id}-title`}
-							className="text-lg font-medium text-gray-900"
-						>
+							className="admin-dialog-title text-lg font-medium text-gray-900"
+						><AdminContentMark />
 							{editingModel ? t('editTitle') : t('newTitle')}
 						</h2>
 						<p className="mt-1.5 text-sm text-gray-500">{t('editHint')}</p>
@@ -370,7 +372,7 @@ export function ModelModal(props: ModelModalProps) {
 					<div
 						role="tablist"
 						aria-label={t('settingsLabel')}
-						className="flex min-w-0 flex-1 gap-5 overflow-x-auto [scrollbar-width:none]"
+						className="admin-detail-tabs flex min-w-0 flex-1 gap-5 overflow-x-auto [scrollbar-width:none]"
 					>
 						{tabs.map(({ key, label, icon: Icon }) => (
 							<button
@@ -430,7 +432,7 @@ export function ModelModal(props: ModelModalProps) {
 				) : null}
 				<div
 					ref={contentRef}
-					className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+					className="admin-dialog-body min-h-0 flex-1 overflow-y-auto overscroll-contain"
 				>
 					<fieldset disabled={busy} className="m-0 min-w-0 border-0 p-0">
 						<section
@@ -833,7 +835,7 @@ export function ModelModal(props: ModelModalProps) {
 						</section>
 					</fieldset>
 				</div>
-				<footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50/80 px-5 py-4 sm:px-7">
+				<footer className="admin-dialog-footer flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50/80 px-5 py-4 sm:px-7">
 					<div>
 						{editingModel ? (
 							deleteReason ? (

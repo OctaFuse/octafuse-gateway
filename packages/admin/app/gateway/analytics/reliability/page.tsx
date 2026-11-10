@@ -12,6 +12,7 @@ import { AnalyticsInsights, AnalyticsLoadError } from '@/components/AnalyticsIns
 import { AnalyticsTtftCell } from '@/components/AnalyticsTtftCell';
 import { useAnalyticsRange } from '@/lib/use-analytics-range';
 import { AnalyticsRangeControl } from '@/components/AnalyticsRangeControl';
+import { dashboardErrorSummary } from '@/components/dashboard/dashboard-presentation';
 import { ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { useAnalyticsProviderKind } from '@/components/AnalyticsProviderKind';
 import { ProviderAccountLines } from '@/components/ProviderAccountLines';
@@ -34,6 +35,7 @@ type ReliabilityPayload = {
 export default function ReliabilityPage() {
 	const t = useTranslations('analytics.reliability');
 	const tA = useTranslations('analytics');
+	const tDashboard = useTranslations('dashboard');
 	const tCommon = useTranslations('common');
 	const tKind = useTranslations('providers.kind');
 	const locale = useLocale();
@@ -145,7 +147,7 @@ export default function ReliabilityPage() {
 	const formatDate = (s: string) => formatDateTime(s);
 
 	return (
-		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
+		<div className="admin-content-workspace content-tone-analytics min-w-0 p-4 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<AdminPageTitle>{t('title')}</AdminPageTitle>
@@ -160,13 +162,13 @@ export default function ReliabilityPage() {
 			)}
 			{/* Provider table */}
 			<div className="mb-8">
-				<h2 className="flex items-center gap-2 text-base font-medium text-gray-900 mb-3">
+				<h2 className="admin-section-title flex items-center gap-2 text-base font-medium text-gray-900 mb-3">
 					<ShieldCheckIcon className="h-4 w-4 text-gray-400" aria-hidden="true" />
 					{t('providerQuality')}
 				</h2>
-				<div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+				<div className="admin-content-panel admin-table-surface overflow-hidden rounded-xl border border-gray-200 bg-white">
 					<div className="overflow-x-auto">
-						<table className="admin-data-table min-w-full divide-y divide-gray-200">
+						<table className="admin-reliability-table admin-data-table min-w-full divide-y divide-gray-200">
 							<thead className="bg-gray-50">
 								<tr>
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">
@@ -253,13 +255,13 @@ export default function ReliabilityPage() {
 			</div>
 
 			{/* Model–provider breakdown */}
-			<details className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
+			<details className="admin-content-panel mb-6 rounded-xl border border-gray-200 bg-white p-4">
 				<summary className="cursor-pointer text-sm font-medium text-gray-900">
 					{t('perModelComparison')}
 				</summary>
-				<div className="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white">
+				<div className="admin-content-panel admin-table-surface mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white">
 					<div className="overflow-x-auto">
-						<table className="admin-data-table min-w-full divide-y divide-gray-200">
+						<table className="admin-reliability-table admin-data-table min-w-full divide-y divide-gray-200">
 							<thead className="bg-gray-50">
 								<tr>
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">
@@ -352,9 +354,9 @@ export default function ReliabilityPage() {
 						{t('viewAllErrors')}
 					</Link>
 				</h2>
-				<div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+				<div className="admin-content-panel admin-table-surface overflow-hidden rounded-xl border border-gray-200 bg-white">
 					<div className="overflow-x-auto">
-						<table className="admin-data-table min-w-full divide-y divide-gray-200">
+						<table className="admin-reliability-table admin-data-table min-w-full divide-y divide-gray-200">
 							<thead className="bg-gray-50">
 								<tr>
 									<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal">
@@ -379,7 +381,7 @@ export default function ReliabilityPage() {
 									<tr key={log.id} className="hover:bg-gray-50">
 										<td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
 											<Link
-												href={`/gateway/request-logs?id=${encodeURIComponent(log.id)}`}
+												href={`/gateway/request-logs?id=${encodeURIComponent(log.id)}&start_date=&end_date=`}
 												className="rounded hover:text-gray-950 hover:underline"
 											>
 												{formatDate(log.created_at)}
@@ -400,9 +402,9 @@ export default function ReliabilityPage() {
 										</td>
 										<td
 											className="px-4 py-3 text-sm text-red-600 truncate max-w-xs"
-											title={log.error_message ?? ''}
+											title={dashboardErrorSummary(log.error_message, tDashboard('upstreamError'))}
 										>
-											{log.error_message || tCommon('unknownError')}
+											{dashboardErrorSummary(log.error_message, tDashboard('upstreamError'))}
 										</td>
 									</tr>
 								))}

@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminContentMark } from '@/components/admin-content-mark';
+
 /**
  * Tools Provider 居中弹窗：内容滚动、固定操作区；Escape / 遮罩关闭与焦点恢复。
  */
@@ -149,13 +151,14 @@ export function ToolProviderDrawer({
 				aria-labelledby={titleId}
 				aria-busy={busy}
 				onKeyDown={onPanelKeyDown}
-				className={`relative flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl outline-none ${
+				className={`admin-content-dialog relative flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl outline-none ${
 					wide ? 'max-w-5xl' : 'max-w-[720px]'
 				}`}
 			>
-				<div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 px-5 py-5 sm:px-6">
+				<div className="admin-dialog-header flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 px-5 py-5 sm:px-6">
 					<div className="min-w-0 flex-1">
-						<h2 id={titleId} className="break-words text-lg font-medium text-gray-900">
+						<h2 id={titleId} className="admin-dialog-title break-words text-lg font-medium text-gray-900">
+							<AdminContentMark />
 							{title}
 						</h2>
 						{subtitle ? <p className="mt-1 text-sm text-gray-500">{subtitle}</p> : null}
@@ -200,8 +203,8 @@ export function ToolProviderDrawer({
 					</div>
 				) : null}
 				{navigation}
-				<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 sm:px-6">{children}</div>
-				<div className="shrink-0 border-t border-gray-100 bg-gray-50/60 px-5 py-4 sm:px-6">{footer}</div>
+				<div className="admin-dialog-body min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 sm:px-6">{children}</div>
+				<div className="admin-dialog-footer shrink-0 border-t border-gray-100 bg-gray-50/60 px-5 py-4 sm:px-6">{footer}</div>
 			</div>
 		</div>
 	);

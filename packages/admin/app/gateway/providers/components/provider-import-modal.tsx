@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDownIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ArrowDownTrayIcon, ChevronDownIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useProviderDialog } from '../use-provider-dialog';
 import { VendorIcon } from '@/components/model-vendor-icon';
 import { providerImportCatalogCopy } from '@/lib/provider-import-preset';
@@ -58,7 +58,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
+			className="providers-design-workspace fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
 			onMouseDown={(e) => {
 				if (e.target === e.currentTarget && !submitting) {
 					onClose();
@@ -68,14 +68,15 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 			<div
 				ref={dialogRef}
         tabIndex={-1}
-        className="flex max-h-[90dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+        className="provider-dialog flex max-h-[90dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="provider-import-title"
 			>
-				<div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
+				<div className="provider-dialog-heading flex shrink-0 items-center justify-between border-b px-6 py-4">
 					<div>
-						<h2 id="provider-import-title" className="text-lg font-medium text-gray-900">
+						<h2 id="provider-import-title" className="flex items-center gap-3 text-lg font-medium text-gray-900">
+							<span className="provider-dialog-symbol" aria-hidden><ArrowDownTrayIcon className="h-5 w-5" /></span>
 							{t('title')}
 						</h2>
 						<p className="mt-1 text-xs text-gray-500">{t('subtitle')}</p>
@@ -154,7 +155,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 					</div>
 				</div>
 
-				<div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6">
+				<div className="provider-import-body min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6">
 					{catalogLoading && (
 						<div className="py-12 text-center text-gray-600">{t('loadingCatalog')}</div>
 					)}
@@ -168,7 +169,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 						<div className="py-12 text-center text-gray-500">{t('noMatch')}</div>
 					)}
 					{!catalogLoading && !catalogError && filteredCatalogRows.length > 0 && (
-						<ul className="divide-y divide-gray-200 rounded-lg border border-gray-200">
+						<ul className="provider-import-list space-y-2">
 							{filteredCatalogRows.map((row) => {
 								const checked = Boolean(selected[row.id]);
 								const copy = providerImportCatalogCopy(row, locale);
@@ -232,7 +233,7 @@ export function ProviderImportModal(props: ProviderImportModalProps) {
 					)}
 				</div>
 
-				<div className="flex shrink-0 flex-wrap items-center justify-end gap-3 border-t bg-gray-50 px-6 py-4">
+				<div className="provider-dialog-footer flex shrink-0 flex-wrap items-center justify-end gap-3 border-t bg-gray-50 px-6 py-4">
 					<button
 						type="button"
 						onClick={onClose}

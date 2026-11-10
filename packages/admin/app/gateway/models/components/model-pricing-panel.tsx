@@ -65,7 +65,7 @@ export function ModelPricingPanel({
 	};
 	return (
 		<div className="space-y-6">
-			<div className="min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white p-4 sm:p-5 [&_input]:h-10 [&_input]:text-sm">
+			<div className="admin-content-panel min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white p-4 sm:p-5 [&_input]:h-10 [&_input]:text-sm">
 				{isAudioModel && audioPricingDraft && onAudioPricingDraftChange ? (
 					<div className="space-y-3">
 						<p className="text-sm font-medium text-gray-800">

@@ -198,7 +198,7 @@ export default function GatewayAuditLogsPage() {
   const hasFilters = Boolean(filters.email || scope !== 'changes' || advanced.length);
   const totalPages = Math.ceil(total / 50);
   return (
-    <div className="min-h-full min-w-0 p-4 sm:p-6 lg:p-8">
+    <div className="admin-content-workspace content-tone-inference min-h-full min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <AdminPageTitle>{t('title')}</AdminPageTitle>
@@ -226,7 +226,7 @@ export default function GatewayAuditLogsPage() {
           </button>
         </div>
       </div>
-      <section aria-label={t('ui.filters')} className="mb-5 space-y-3">
+      <section aria-label={t('ui.filters')} className="admin-filter-surface mb-5 space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative min-w-0 flex-1 basis-60 sm:max-w-xs">
             <MagnifyingGlassIcon
@@ -420,7 +420,7 @@ export default function GatewayAuditLogsPage() {
           </button>
         </div>
       )}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div className="admin-content-panel admin-table-surface overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div
           aria-busy={loading}
           className={`overflow-x-auto ${loading && logs.length ? 'opacity-60' : ''}`}

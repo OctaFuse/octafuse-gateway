@@ -96,7 +96,7 @@ export function ToolProviderList({
 		'h-10 min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100';
 	return (
 		<section className="min-w-0 space-y-4" aria-label={t('name')}>
-			<div className="flex flex-wrap items-center gap-2">
+			<div className="admin-filter-surface flex flex-wrap items-center gap-2">
 				<div className="relative w-full sm:max-w-sm">
 					<MagnifyingGlassIcon
 						className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-gray-400"
@@ -152,7 +152,7 @@ export function ToolProviderList({
 					{t('count', { visible: visible.length, total: rows.length })}
 				</span>
 			</div>
-			<div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+			<div className="admin-content-panel admin-table-surface overflow-hidden rounded-xl border border-gray-200 bg-white">
 				{visible.length === 0 ? (
 					<div className="px-5 py-16 text-center">
 						<MagnifyingGlassIcon className="mx-auto mb-3 h-6 w-6 text-gray-400" aria-hidden="true" />
@@ -214,7 +214,7 @@ export function ToolProviderList({
 										>
 											<td className="px-5 py-4">
 												<div className="flex items-center gap-3">
-													<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
+													<div className="admin-tool-symbol flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
 														<Icon className="h-4 w-4" aria-hidden="true" />
 													</div>
 													<div className="min-w-0">

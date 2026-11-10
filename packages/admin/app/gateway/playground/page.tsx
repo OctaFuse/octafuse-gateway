@@ -38,7 +38,7 @@ function PlaygroundPageInner() {
 	}
 
 	return (
-		<div className="flex min-h-0 min-w-0 flex-col overflow-x-hidden bg-gray-50 p-4 sm:p-6 lg:p-8 xl:h-full xl:overflow-hidden">
+		<div className="admin-content-workspace content-tone-inference flex min-h-0 min-w-0 flex-col overflow-x-hidden bg-gray-50 p-4 sm:p-6 lg:p-8 xl:h-full xl:overflow-hidden">
 			<div className="mb-6 flex shrink-0 flex-wrap items-start justify-between gap-4">
 				<div className="min-w-0">
 					<AdminPageTitle>{t('title')}</AdminPageTitle>

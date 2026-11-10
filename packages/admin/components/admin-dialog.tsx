@@ -1,4 +1,6 @@
 "use client";
+
+import { AdminContentMark } from '@/components/admin-content-mark';
 import { useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { XMarkIcon } from "@heroicons/react/24/outline";
@@ -45,16 +47,16 @@ export function AdminDialog({
 				aria-labelledby={id}
 				aria-describedby={hint ? `${id}-hint` : undefined}
 				aria-busy={busy}
-				className={`flex max-h-[calc(100dvh-1.5rem)] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl outline-none sm:max-h-[calc(100dvh-3rem)] ${
+				className={`admin-content-dialog flex max-h-[calc(100dvh-1.5rem)] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl outline-none sm:max-h-[calc(100dvh-3rem)] ${
 					size === "md" ? "max-w-md" : wide ? "max-w-5xl" : "max-w-3xl"
 				}`}
 			>
-				<header className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6">
+				<header className="admin-dialog-header flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6">
 					<div className="min-w-0">
 						<h2
 							id={id}
-							className="break-words text-lg font-medium text-gray-900"
-						>
+							className="admin-dialog-title break-words text-lg font-medium text-gray-900"
+						><AdminContentMark />
 							{title}
 						</h2>
 						{hint ? (
@@ -76,10 +78,10 @@ export function AdminDialog({
 						<XMarkIcon className="h-4 w-4" aria-hidden="true" />
 					</button>
 				</header>
-				<div className="min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-6">
+				<div className="admin-dialog-body min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-6">
 					{children}
 				</div>
-				<footer className="shrink-0 border-t border-gray-100 bg-gray-50/60 px-5 py-3 sm:px-6">
+				<footer className="admin-dialog-footer shrink-0 border-t border-gray-100 bg-gray-50/60 px-5 py-3 sm:px-6">
 					{footer ?? (
 						<div className="flex justify-end">
 							<button

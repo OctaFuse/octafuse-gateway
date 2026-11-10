@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminContentMark } from '@/components/admin-content-mark';
+
 import { AdminPageTitle } from '@/components/admin-page-title';
 
 /**
@@ -289,7 +291,7 @@ export default function GatewayUsersPage() {
   const showSkeleton = isLoading && users.length === 0;
 
   return (
-    <div className="min-w-0 p-4 sm:p-6 lg:p-8">
+    <div className="admin-content-workspace content-tone-accounts min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <AdminPageTitle>{t('title')}</AdminPageTitle>
@@ -305,7 +307,7 @@ export default function GatewayUsersPage() {
         </button>
       </div>
 
-      <section aria-label={t('ui.filters')} className="mb-5 flex flex-wrap items-center gap-3">
+      <section aria-label={t('ui.filters')} className="admin-filter-surface mb-5 flex flex-wrap items-center gap-3">
         <div className="relative min-w-0 flex-1 basis-64 sm:max-w-sm">
           <MagnifyingGlassIcon
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
@@ -425,7 +427,7 @@ export default function GatewayUsersPage() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div className="admin-content-panel admin-table-surface overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className={`overflow-x-auto ${isLoading ? 'opacity-70' : ''}`}>
           <table className="admin-data-table w-full min-w-[56rem] table-fixed">
             <colgroup>
@@ -537,8 +539,10 @@ export default function GatewayUsersPage() {
                   >
                     <td className="px-4 py-3.5 overflow-hidden">
                       <div className="flex min-w-0 items-start gap-2.5">
+                        <span className="admin-account-avatar">
+                          <span aria-hidden className="!static !h-auto !w-auto !border-0 !bg-transparent">{(u.email?.trim().slice(0, 1) || "?").toUpperCase()}</span>
                         <span
-                          className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                          className={`h-2 w-2 shrink-0 rounded-full ${
                             disabled ? 'bg-gray-400' : 'bg-emerald-500'
                           }`}
                           title={u.status}
@@ -547,6 +551,7 @@ export default function GatewayUsersPage() {
                             disabled ? 'userStatus.disabled' : 'userStatus.active'
                           )}
                         />
+                        </span>
                         <div className="min-w-0">
                           <div className="flex min-w-0 items-center gap-2">
                             <span
@@ -734,10 +739,11 @@ export default function GatewayUsersPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-user-title"
-            className="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+            className="admin-content-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
           >
-            <div className="px-6 py-4 border-b flex justify-between items-center">
-              <h2 id="create-user-title" className="text-base font-medium text-gray-900">
+            <div className="admin-dialog-header px-6 py-4 border-b flex justify-between items-center">
+              <h2 id="create-user-title" className="admin-dialog-title text-base font-medium text-gray-900">
+                <AdminContentMark />
                 {t('createTitle')}
               </h2>
               <button
@@ -750,7 +756,7 @@ export default function GatewayUsersPage() {
                 <XMarkIcon className="h-5 w-5" aria-hidden />
               </button>
             </div>
-            <fieldset disabled={isSaving} className="min-h-0 space-y-5 overflow-y-auto p-5">
+            <fieldset disabled={isSaving} className="admin-dialog-body min-h-0 space-y-5 overflow-y-auto p-5">
               {saveError && (
                 <div
                   role="alert"
@@ -952,7 +958,7 @@ export default function GatewayUsersPage() {
                 </div>
               </details>
             </fieldset>
-            <div className="shrink-0 border-t border-gray-100 bg-gray-50 px-5 py-3 flex justify-end gap-2">
+            <div className="admin-dialog-footer shrink-0 border-t border-gray-100 bg-gray-50 px-5 py-3 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setShowCreate(false)}
@@ -985,11 +991,12 @@ export default function GatewayUsersPage() {
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="user-metadata-title"
-                className="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+                className="admin-content-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
               >
-                <div className="px-6 py-4 border-b flex justify-between items-center">
+                <div className="admin-dialog-header px-6 py-4 border-b flex justify-between items-center">
                   <div className="min-w-0">
-                    <h2 id="user-metadata-title" className="text-base font-medium text-gray-900">
+                    <h2 id="user-metadata-title" className="admin-dialog-title text-base font-medium text-gray-900">
+                      <AdminContentMark />
                       {tCommon('metadata')}
                     </h2>
                     <p
@@ -1008,7 +1015,7 @@ export default function GatewayUsersPage() {
                     <XMarkIcon className="h-4 w-4" aria-hidden />
                   </button>
                 </div>
-                <div className="p-6 overflow-y-auto">
+                <div className="admin-dialog-body p-6 overflow-y-auto">
                   {m.empty ? (
                     <div className="text-sm text-gray-500">{t('metadata.none')}</div>
                   ) : (
@@ -1050,11 +1057,12 @@ export default function GatewayUsersPage() {
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="user-factors-title"
-                className="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+                className="admin-content-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
               >
-                <div className="px-6 py-4 border-b flex justify-between items-center">
+                <div className="admin-dialog-header px-6 py-4 border-b flex justify-between items-center">
                   <div className="min-w-0">
-                    <h2 id="user-factors-title" className="text-base font-medium text-gray-900">
+                    <h2 id="user-factors-title" className="admin-dialog-title text-base font-medium text-gray-900">
+                      <AdminContentMark />
                       {t('fields.chargedCostFactors')}
                     </h2>
                     <p
@@ -1073,7 +1081,7 @@ export default function GatewayUsersPage() {
                     <XMarkIcon className="h-4 w-4" aria-hidden />
                   </button>
                 </div>
-                <div className="p-6 overflow-y-auto">
+                <div className="admin-dialog-body p-6 overflow-y-auto">
                   {f.empty ? (
                     <div className="text-sm text-gray-500">{t('chargedCostFactors.none')}</div>
                   ) : (

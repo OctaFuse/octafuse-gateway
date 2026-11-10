@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminContentMark } from '@/components/admin-content-mark';
+
 import { useTranslations } from 'next-intl';
 import type { MetadataPreviewState } from '../types';
 
@@ -20,15 +22,16 @@ export function ModelMetadataPreviewModal(props: Props) {
 			onClick={onClose}
 		>
 			<div
-				className="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-panel"
+				className="admin-content-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-panel"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="metadata-preview-title"
 				onClick={(e) => e.stopPropagation()}
 			>
-				<div className="flex shrink-0 items-start justify-between gap-4 border-b px-6 py-4">
+				<div className="admin-dialog-header flex shrink-0 items-start justify-between gap-4 border-b px-6 py-4">
 					<div className="min-w-0">
-						<h2 id="metadata-preview-title" className="text-lg font-semibold text-gray-900">
+						<h2 id="metadata-preview-title" className="admin-dialog-title text-lg font-semibold text-gray-900">
+							<AdminContentMark />
 							{t('title')}
 						</h2>
 						<p className="mt-1 truncate text-sm text-gray-700" title={displayName}>
@@ -47,12 +50,12 @@ export function ModelMetadataPreviewModal(props: Props) {
 						×
 					</button>
 				</div>
-				<div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+				<div className="admin-dialog-body min-h-0 flex-1 overflow-y-auto px-6 py-4">
 					<pre className="whitespace-pre-wrap break-words rounded-md border border-gray-200 bg-gray-50 p-4 font-mono text-xs leading-relaxed text-gray-800">
 						{preview.summary.formatted}
 					</pre>
 				</div>
-				<div className="flex shrink-0 justify-end border-t bg-gray-50 px-6 py-4">
+				<div className="admin-dialog-footer flex shrink-0 justify-end border-t bg-gray-50 px-6 py-4">
 					<button
 						type="button"
 						onClick={onClose}

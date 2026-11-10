@@ -80,7 +80,7 @@ export function UserFactorEditor({
     <section
       id="user-factor-editor"
       aria-labelledby="user-factor-editor-title"
-      className="min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white"
+      className="admin-content-panel admin-table-surface min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white"
     >
       <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-4 sm:px-6">
         <div className="min-w-0">
