@@ -1,5 +1,54 @@
 [
 	{
+		"id": "claude-fable-5-2",
+		"display_name": "Claude Fable 5.2",
+		"description": "Anthropic's model built for demanding reasoning and long-horizon agentic work. It has a 1M context window and a 128K synchronous max output. Adaptive thinking is always on and cannot be turned off; the default effort is high, and supported values are low, medium, high, xhigh, and max. Setting thinking to disabled or sending budget_tokens returns 400. Forced tool_choice values any and tool return 400; use auto or none. Non-default temperature, top_p, and top_k return 400. 人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+		"i18n": {
+			"en": "Anthropic's model built for demanding reasoning and long-horizon agentic work. It has a 1M context window and a 128K synchronous max output. Adaptive thinking is always on and cannot be turned off; the default effort is high, and supported values are low, medium, high, xhigh, and max. Setting thinking to disabled or sending budget_tokens returns 400. Forced tool_choice values any and tool return 400; use auto or none. Non-default temperature, top_p, and top_k return 400. 人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"zh": "面向高要求推理与长程 Agent 工作的 Anthropic 模型。上下文 1M，同步最大输出 128K。自适应思考始终开启且不能关闭，默认 effort 为 high，支持 low、medium、high、xhigh 和 max。thinking 设为 disabled，或手动传入 budget_tokens，会返回 400。tool_choice 的 any 与 tool 会返回 400，应使用 auto 或 none。非默认的 temperature、top_p、top_k 也会返回 400。人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"ja": "要求の高い推論と、長い期間のエージェント作業向けに作られた Anthropic モデルです。コンテキストは 1M、同期の最大出力は 128K です。適応的思考は常にオンで切ることができません。effort の初期値は high で、low、medium、high、xhigh、max を指定できます。thinking を disabled にするか、budget_tokens を手で指定すると 400 が返ります。tool_choice の any と tool は 400 になるので、auto か none を使います。初期値でない temperature、top_p、top_k も 400 になります。人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"ko": "높은 수준의 추론과 긴 흐름의 에이전트 작업을 위해 만든 Anthropic 모델입니다. 컨텍스트는 1M이고, 동기 최대 출력은 128K입니다. 적응형 사고는 항상 켜져 있고 끌 수 없습니다. effort 기본값은 high이며 low, medium, high, xhigh, max를 지정할 수 있습니다. thinking을 disabled로 두거나 budget_tokens를 직접 넣으면 400이 반환됩니다. tool_choice의 any와 tool은 400이 나므로 auto 또는 none을 씁니다. 기본값이 아닌 temperature, top_p, top_k도 400입니다. 人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。"
+		},
+		"vendor": "anthropic",
+		"context_window": 1000000,
+		"max_tokens": 128000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 8,
+						"output_price": 40,
+						"cache_read_price": 0.2,
+						"cache_write_price": 10
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 56,
+						"output_price": 280,
+						"cache_read_price": 1.4,
+						"cache_write_price": 70
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-11-09"
+	},
+	{
 		"id": "claude-sonnet-5-5",
 		"display_name": "Claude Sonnet 5.5",
 		"description": "Anthropic's faster Sonnet for coding, agents, and professional work. Adaptive thinking is on by default and cannot be fully disabled; the default effort is high, and between_tools turns off up-front thinking at high effort or below. Forced tool_choice values any and tool return an error, as do non-default temperature, top_p, and top_k.",

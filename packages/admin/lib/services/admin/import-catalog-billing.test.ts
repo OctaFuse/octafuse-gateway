@@ -243,6 +243,47 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(profile?.tiers[0]?.cache_write_price, 2.5);
 	});
 
+	it('includes claude-fable-5-2 at the $8 / $40 list price with 5-minute cache writes', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'claude-fable-5-2');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'claude-fable-5-2');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.display_name, 'Claude Fable 5.2');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 128000);
+		assert.equal(usd!.pricing_label, '$8 / $40 /M');
+		assert.equal(cny!.pricing_label, '¥56 / ¥280 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'claude-fable-5-2');
+		assert.ok(preset);
+		assert.equal(preset!.vendor, 'anthropic');
+		assert.equal(preset!.released, '2026-11-09');
+		assert.equal(preset!.retired, undefined);
+		assert.deepEqual(preset!.modalities, {
+			input: ['text', 'image', 'file'],
+			output: ['text'],
+		});
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers.length, 1);
+		assert.equal(profile?.tiers[0]?.upto, null);
+		assert.equal(profile?.tiers[0]?.input_price, 8);
+		assert.equal(profile?.tiers[0]?.output_price, 40);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.2);
+		assert.equal(profile?.tiers[0]?.cache_write_price, 10);
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.equal(cnyProfile?.tiers.length, 1);
+		assert.equal(cnyProfile?.tiers[0]?.upto, null);
+		assert.equal(cnyProfile?.tiers[0]?.input_price, 56);
+		assert.equal(cnyProfile?.tiers[0]?.output_price, 280);
+		assert.equal(cnyProfile?.tiers[0]?.cache_read_price, 1.4);
+		assert.equal(cnyProfile?.tiers[0]?.cache_write_price, 70);
+		const note = '人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。';
+		for (const text of [preset!.description, preset!.i18n?.en, preset!.i18n?.zh, preset!.i18n?.ja, preset!.i18n?.ko]) {
+			assert.equal(text?.endsWith(note), true);
+		}
+		assert.equal(listStaticModelPresets().some((p) => p.id === 'claude-mythos-5-2'), false);
+		assert.equal(listStaticModelPresets().some((p) => p.id === 'claude-fable-5-2-fast'), false);
+	});
+
 	it('includes claude-fable-5-1 with cheaper cache-read list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'claude-fable-5-1');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'claude-fable-5-1');

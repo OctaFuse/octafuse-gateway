@@ -410,6 +410,11 @@ describe('playground-utils', () => {
 		assert.equal(fable51.thinking?.type, 'adaptive');
 		assert.equal(fable51.output_config?.effort, 'high');
 
+		const fable52 = parse('claude-fable-5-2');
+		assert.equal(fable52.thinking?.type, 'adaptive');
+		assert.equal(fable52.output_config?.effort, 'high');
+		assert.equal(fable52.thinking?.budget_tokens, undefined);
+
 		const sonnet4 = parse('claude-sonnet-4', 'claude-sonnet-4-20250514');
 		assert.equal(sonnet4.thinking?.type, 'enabled');
 		assert.equal(sonnet4.output_config, undefined);
