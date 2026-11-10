@@ -161,11 +161,11 @@
 		"end": "終了",
 		"custom": "カスタム",
 		"presets": {
-			"1h": "1h",
-			"1d": "1d",
-			"7d": "7d",
-			"14d": "14d",
-			"30d": "30d"
+			"1h": "直近 1 時間",
+			"1d": "直近 1 日",
+			"7d": "直近 7 日間",
+			"14d": "直近 14 日間",
+			"30d": "直近 30 日間"
 		},
 		"calendar": {
 			"today": "今日",
@@ -318,7 +318,30 @@
 			"today": "今日",
 			"this_week": "今週",
 			"this_month": "今月"
-		}
+		},
+		"overviewSubtitle": "ゲートウェイのトラフィック・品質・料金",
+		"chooseRange": "期間：{range}",
+		"invalidRange": "開始日時が終了日時より前になる有効な期間を選択してください",
+		"activity": "最近のアクティビティ",
+		"activityScope": "選択期間に関係なく、全期間の最新記録を表示",
+		"openRequest": "リクエストを表示：{model}",
+		"upstreamError": "上流でエラーが発生しました。詳細はリクエストを確認してください",
+		"waitingForRequests": "この期間のリクエストはありません",
+		"noCharges": "この期間の課金はありません",
+		"inspectRequests": "期間内のリクエスト",
+		"liveSnapshot": "現在の状況",
+		"liveScope": "スループットは直近60秒、アカウントとキーは現在の件数",
+		"exploreWeek": "直近7日間を表示",
+		"inspectUsage": "{name} のリクエストを表示",
+		"requestCount": "{count} 件のリクエスト",
+		"requestStatus": {
+			"success": "成功",
+			"error": "失敗",
+			"incomplete": "未完了",
+			"cancelled": "キャンセル"
+		},
+		"tokenSummary": "トークン集計",
+		"cacheReadShare": "入力にはキャッシュ読み書きを含む · 読み取りの割合 {rate}"
 	},
 	"filter": {
 		"title": "フィルター",
@@ -373,7 +396,7 @@
 		"list": {
 			"provider": "プロバイダー",
 			"routes": "ルート",
-			"protocols": "プロトコルと機能",
+			"protocols": "プロトコル",
 			"keyAndQuota": "API キーと利用枠",
 			"status": "状態"
 		},
@@ -441,11 +464,12 @@
 			"officialUpdate": "公式の更新",
 			"officialUpdateTitle": "公式テンプレートが変更されました。クリックして確認・同期",
 			"kindOrphaned": "タイプの移行が必要",
-			"kindOrphanedTitle": "公式テンプレートの名称変更または廃止。クリックして新しいタイプへ移行"
+			"kindOrphanedTitle": "公式テンプレートの名称変更または廃止。クリックして新しいタイプへ移行",
+			"viewRoutes": "{name} の関連ルートを表示"
 		},
 		"import": {
 			"title": "テンプレートからインポート",
-			"subtitle": "一般的なエンドポイントを事前入力します。LLM 専用の OpenAI テンプレートは chat URL を、Images 対応 Provider は Base URL を使用します。インポートごとに新しい Provider 行が作成されます。",
+			"subtitle": "テンプレートでエンドポイントを設定し、インポート後に API キーを入力します。",
 			"searchPlaceholder": "テンプレート名を検索",
 			"clearSearch": "テンプレート検索をクリア",
 			"clear": "クリア",
@@ -460,7 +484,8 @@
 			"finished": "{created} 件の Provider をインポートしました。",
 			"finishedWithFail": "{created} 件の Provider をインポートしました。{failed} 件失敗しました。",
 			"failed": "インポートに失敗しました",
-			"copyFailed": "API Key のコピーに失敗しました"
+			"copyFailed": "API Key のコピーに失敗しました",
+			"templateDetails": "テンプレートの説明"
 		},
 		"quota": {
 			"action": "残高",
@@ -665,7 +690,8 @@
 			"backToEndpointForm": "フォームに戻る",
 			"jsonConfigTitle": "エンドポイント JSON · 全プロトコル",
 			"jsonConfigHint": "現在のフォームで送信する endpoints です。未保存の変更を含み、認証情報は含みません。",
-			"jsonCopyFailed": "自動コピーに失敗しました。選択した内容を手動でコピーできます。"
+			"jsonCopyFailed": "自動コピーに失敗しました。選択した内容を手動でコピーできます。",
+			"apiKeyRequiredError": "API キーを入力してください"
 		},
 		"sync": {
 			"title": "公式と同期",
@@ -733,16 +759,20 @@
 				"migrated": "タイプを移行しました"
 			},
 			"check": {
-				"button": "公式の更新を確認",
-				"checking": "確認中…",
+				"button": "同期",
+				"checking": "比較中…",
 				"neverChecked": "未確認",
 				"lastCheckedUpdates": "{time} 確認：更新あり",
 				"lastCheckedUpToDate": "{time} 確認：最新です",
 				"upToDate": "確認済み：すべてのプロバイダーが公式と一致しています",
 				"foundUpdates": "{providers} 件のプロバイダー（{kinds} タイプ）に公式の更新があります",
-				"foundOrphans": "{count} 件のプロバイダーでタイプの移行が必要です"
+				"foundOrphans": "{count} 件のプロバイダーでタイプの移行が必要です",
+				"review": "結果を表示",
+				"tooltip": "プロバイダーの静的データを同期：差分を比較し、確認後に適用"
 			}
-		}
+		},
+		"overviewSubtitle": "上流アカウント、API キー、プロトコルのエンドポイントを管理",
+		"allProtocols": "すべてのプロトコル"
 	},
 	"models": {
 		"list": {
@@ -785,7 +815,11 @@
 			"kindImage": "画像",
 			"kindAsr": "音声認識",
 			"kindTts": "音声合成",
-			"kindEmbedding": "埋め込み"
+			"kindEmbedding": "埋め込み",
+			"searchPlaceholder": "モデル名、ID、ベンダー、タグで検索",
+			"clearSearch": "検索をクリア",
+			"allVendors": "すべてのベンダー",
+			"allLifecycles": "すべての状態"
 		},
 		"imagePricing": {
 			"enabled": "旧機能（廃止済み）",
@@ -804,7 +838,7 @@
 		},
 		"import": {
 			"title": "静的カタログからインポート",
-			"subtitle": "同じ model id が Gateway にすでに存在するプリセットは選択できず、インポートしても上書きされません。gpt-image-2 の token 料金を反映するには、削除して再インポートするか、編集して保存してください。価格にはカタログの {currency} ブランチ（USD/CNY、{unit} を参照）が使用されます。",
+			"subtitle": "モデルを選んでインポートします。同じ ID の既存モデルは保持されます。料金は {currency} 表示です。",
 			"searchPlaceholder": "Model ID または表示名を検索",
 			"clearSearch": "検索をクリア",
 			"clearSelection": "選択をクリア",
@@ -825,8 +859,8 @@
 			"modelId": "Model ID",
 			"displayName": "表示名",
 			"vendor": "ベンダー",
-			"context": "Context",
-			"maxTokens": "Max Tokens",
+			"context": "コンテキスト",
+			"maxTokens": "最大出力",
 			"pricing": "料金",
 			"alreadyInGatewayRow": "{id} は Gateway に登録済みです",
 			"importPresetRow": "プリセット {id} をインポート",
@@ -839,7 +873,9 @@
 			"finished": "{created} 件のモデルをインポートしました。",
 			"finishedWithSkip": "{created} 件のモデルをインポートしました。既存の {skipped} 件をスキップしました。",
 			"finishedWithFail": "{created} 件のモデルをインポートしました。{failed} 件失敗しました。",
-			"failed": "インポートに失敗しました"
+			"failed": "インポートに失敗しました",
+			"modelColumn": "モデル",
+			"priceOrder": "入力 / 出力"
 		},
 		"modal": {
 			"editTitle": "モデルを編集",
@@ -962,7 +998,18 @@
 				"priority": "優先度",
 				"weight": "重み"
 			},
-			"routesBlocked": "先に関連ルート {count} 件を削除してください"
+			"routesBlocked": "先に関連ルート {count} 件を削除してください",
+			"optionalSetting": "任意の設定",
+			"scheduleWindowCount": "{count} 時間帯",
+			"pricingColumns": {
+				"upto": "入力上限",
+				"input": "入力",
+				"output": "出力",
+				"cacheRead": "キャッシュ読み取り",
+				"cacheWrite": "キャッシュ書き込み"
+			},
+			"modelIdRequiredError": "モデル ID を入力してください",
+			"invalidMetadata": "メタデータには有効な JSON オブジェクトを入力してください"
 		},
 		"metadata": {
 			"title": "メタデータ"
@@ -980,14 +1027,19 @@
 			"retired": "提供終了",
 			"retiringSoon": "提供終了予定",
 			"retiredAt": "提供終了日：{date}",
-			"specs": "{context} · {max}",
+			"specs": "コンテキスト {context} · 最大出力 {max}",
 			"editModel": "{name} を編集",
 			"pricingNoData": "—",
 			"pricingTiers": "{count} 段階",
 			"noRoutes": "ルートなし",
 			"officialUpdateTitle": "公式カタログに更新があります。クリックして確認・同期",
 			"kindEmbedding": "埋め込み",
-			"embeddingHint": "埋め込み · コンテキスト {context}"
+			"embeddingHint": "埋め込み · コンテキスト {context}",
+			"viewPricing": "{name} の料金設定を表示",
+			"viewRoutes": "{name} の関連ルートを表示",
+			"inputOutputPricing": "入力 / 出力 · 100万トークン",
+			"textImagePricing": "テキスト入力 / 画像出力 · 100万トークン",
+			"inputOnlyPricing": "入力のみ · 100万トークン"
 		},
 		"sync": {
 			"title": "公式カタログと同期",
@@ -1045,15 +1097,19 @@
 				"review": "確認して同期"
 			},
 			"check": {
-				"button": "公式の更新を確認",
-				"checking": "確認中…",
+				"button": "同期",
+				"checking": "比較中…",
 				"neverChecked": "未確認",
 				"lastCheckedUpdates": "{time} 確認：更新あり",
 				"lastCheckedUpToDate": "{time} 確認：最新",
 				"upToDate": "確認済み：すべてのモデルが公式カタログと一致",
-				"foundUpdates": "{models} モデル（{vendors} ベンダー）に公式の更新があります"
+				"foundUpdates": "{models} モデル（{vendors} ベンダー）に公式の更新があります",
+				"review": "結果を表示",
+				"tooltip": "モデルの静的データを同期：差分を比較し、確認後に適用"
 			}
-		}
+		},
+		"overviewSubtitle": "モデルの機能、標準料金、関連ルートを管理",
+		"emptyFilterHint": "検索語を変更するか、フィルターをクリアしてください"
 	},
 	"routes": {
 		"title": "モデルルート",
@@ -1096,7 +1152,15 @@
 			"stickyRefresh10m": "10分ごと",
 			"stickyRefreshNow": "Sticky を更新",
 			"stickyRefreshEmptyHint": "このページに Sticky 有効なプールはありません",
-			"stickyRefreshUpdatedAgo": "{ago}前に更新"
+			"stickyRefreshUpdatedAgo": "{ago}前に更新",
+			"moreFilters": "詳細フィルター",
+			"clearSearch": "検索をクリア",
+			"allStatuses": "すべての状態",
+			"allVendors": "すべてのベンダー",
+			"allProviderKinds": "すべてのプロバイダー種別",
+			"allProviders": "すべてのプロバイダー",
+			"allRouteGroups": "すべてのルートグループ",
+			"displaySettings": "表示設定"
 		},
 		"flow": {
 			"requestNode": "リクエスト入口",
@@ -1247,7 +1311,19 @@
 			"activeTotalRoutes": "有効 {active} 件 / 全 {total} 件",
 			"noRoutesYet": "Route はまだありません",
 			"clickToAdd": "+ をクリックして最初の Route を追加",
-			"embeddingModelHint": "埋め込み · 入力トークン課金"
+			"embeddingModelHint": "埋め込み · 入力トークン課金",
+			"modelBilling": {
+				"imagePerImage": "画像単位",
+				"imageTokens": "トークン単位",
+				"image": "画像生成",
+				"asrTokens": "音声認識 · トークン",
+				"asrSeconds": "音声認識 · 秒",
+				"asr": "音声認識",
+				"ttsTokens": "音声合成 · トークン",
+				"ttsCharacters": "音声合成 · 文字",
+				"tts": "音声合成",
+				"embedding": "埋め込み"
+			}
 		},
 		"protocol": {
 			"sectionTitle": "upstream_protocol: {protocol} · route_group: {group}",
@@ -1990,7 +2066,7 @@
 	},
 	"playground": {
 		"title": "プレイグラウンド",
-		"subtitle": "単一のモデルルートで上流に直接接続し、接続状態と応答を確認します。フェイルオーバーは行いません。",
+		"subtitle": "単一ルートのリクエストと上流レスポンスを確認",
 		"usageNote": "テストはゲートウェイのユーザー課金とリクエストログの対象外です。",
 		"routeSection": "Route",
 		"requestBody": "リクエスト",
@@ -2044,7 +2120,7 @@
 		"thinking": "Reasoning / Thinking",
 		"body": "Body",
 		"rawPayload": "Raw payload",
-		"emptyResponseHint": "Send を実行すると、アップストリームのステータス、Headers、Body、またはストリーム出力がここに表示されます。",
+		"emptyResponseHint": "送信後、ここで上流レスポンスを確認できます",
 		"imageOpenaiOnly": "画像生成モデルは upstream_protocol=openai、dashscope、minimax、volcengine、gemini のみ対応します。Route を編集するか、対応するプロトコルの Route を選択してください。",
 		"imageDashScopeHint": "DashScope 変換：OpenAI Images の JSON（prompt、n、size）を編集します。Playground が multimodal-generation に書き換え、n は常に送信します（既定 1）。図生図は JSON image を使い、edits は非対応です。課金もリクエストログもありません。",
 		"imageDashScopePassthroughHint": "ネイティブ透過：JSON は multimodal-generation へそのまま転送されます。Playground は model をルートのプロバイダーモデル名に置き換えます。課金もリクエストログもありません。",
@@ -2093,12 +2169,12 @@
 		"mode": "モード",
 		"modeRoutes": "Routes",
 		"modeTools": "Tools",
-		"toolsSubtitle": "ツールとプロバイダーを選んでテスト呼び出しを行い、接続設定と応答を確認します。",
+		"toolsSubtitle": "ツールとエンジンのリクエストと実行結果を確認",
 		"toolsSection": "ツールとエンジン",
-		"toolsHint": "認証情報は system_config catalog から読みます。Active 切替前のキー検証に使えます。",
+		"toolsHint": "設定済みの認証情報でツールとエンジンをテスト",
 		"tool": "ツール",
 		"engineProvider": "エンジン Provider",
-		"engineProviderHint": "Active 以外でも、実装済み catalog エントリを検証できます。",
+		"engineProviderHint": "既定のエンジンを変更せず、対応エンジンをテストできます",
 		"toolsBodyMustBeObject": "リクエストボディは JSON オブジェクトである必要があります。",
 		"toolsNeedProvider": "エンジン Provider を選択してください。",
 		"applyTemplate": "テンプレートを適用",
@@ -2184,13 +2260,14 @@
 		"realtimeWaitingElevenLabs": "WebSocket 接続済み。上流の応答を待っています…",
 		"realtimeClosed": "リアルタイム接続が閉じました（{code}{reason}）。",
 		"streamDisconnected": "上流のストリーム読み取り中に切断されました（{cause}）。stream を false にして確認するか、再試行してください。",
-		"kindEmbedding": "埋め込み"
+		"kindEmbedding": "埋め込み",
+		"actualRequest": "実際のリクエスト"
 	},
 	"simulator": {
 		"title": "シミュレーター",
 		"subtitle": "ユーザーの API キーでクライアントのリクエストを再現し、認証、ルーティング、フェイルオーバーを検証します。",
-		"connection": "接続",
-		"proxyBaseUrl": "Proxy Base URL",
+		"connection": "接続設定",
+		"proxyBaseUrl": "ゲートウェイ URL",
 		"requestBody": "リクエスト Body",
 		"response": "レスポンス",
 		"usageNote": "通常の課金ルールとリクエストログが適用されます。",
@@ -2237,7 +2314,7 @@
 		"thinkingReasoning": "Thinking / reasoning",
 		"body": "Body",
 		"rawPayload": "Raw payload",
-		"emptyResponseHint": "Send をクリックすると、ステータス、Body、またはストリーム出力がここに表示されます。",
+		"emptyResponseHint": "送信後、ゲートウェイの応答と使用量を確認できます",
 		"readyNeedProxyUrl": "有効な Proxy Base URL（http/https）を入力してください。",
 		"readyNeedModel": "モデルを選択してください。",
 		"readyNeedOpenaiForImage": "画像生成モデルには openai（Proxy /v1/images/generations または /v1/images/edits）、dashscope（ネイティブ multimodal-generation）、minimax（POST /minimax/v1/image_generation）、volcengine（POST /volcengine/api/v3/images/generations）、または gemini（POST /v1beta/models/{model}:generateContent）が必要です。",
@@ -2258,13 +2335,13 @@
 		"imagePreview": "生成画像",
 		"protocolSwitchConfirm": "リクエスト Body は編集済みです。プロトコルを切り替え、デフォルトテンプレートに置き換えますか？",
 		"applyTemplate": "テンプレートにリセット",
-		"wirePreview": "送信内容のプレビュー（URL / headers / body）",
+		"wirePreview": "実際のリクエスト",
 		"wirePreviewEmpty": "リクエストをプレビューするには、Proxy URL、モデル、API Key、および有効な JSON を入力してください。",
 		"wireHeaders": "Headers（マスキング済み）",
 		"wireBody": "Body",
 		"tabMerged": "統合",
 		"tabRaw": "Raw",
-		"openRequestLogs": "リクエストログを開く →",
+		"openRequestLogs": "リクエストログを開く",
 		"receiving": "（受信中…）",
 		"couldNotExtractBody": "（payload から Body を抽出できませんでした）",
 		"errProxyUrlRequired": "Proxy Base URL は必須です",
@@ -2311,11 +2388,14 @@
 		"noRoutedModels": "この Kind に Active Route があるモデルはありません。",
 		"modelHasRoute": "Route あり",
 		"modelNoRoute": "Route なし",
-		"matchingRoutesSummary": "一致する Active Route {count} 件",
-		"matchingRoutesHint": "このモデルとグループで Proxy が使い得る Active Route の読み取り専用プレビューです。failover はリクエスト時に行われます。",
+		"matchingRoutesSummary": "一致するルート · {count}",
+		"matchingRoutesHint": "ローカル設定の一致ルートです。実際の経路はゲートウェイが決定します",
 		"supportedSurfacesEmpty": "このモデルと Route group に有効な公開 Surface がありません。",
 		"kindEmbedding": "埋め込み",
-		"protocolLockedEmbedding": "埋め込みルートは OpenAI POST /v1/embeddings と Gemini ネイティブ :embedContent / :batchEmbedContents に対応します。"
+		"protocolLockedEmbedding": "埋め込みルートは OpenAI POST /v1/embeddings と Gemini ネイティブ :embedContent / :batchEmbedContents に対応します。",
+		"keyFilters": "キーを絞り込む",
+		"keyReady": "キー準備完了",
+		"selectedKeyOutsideFilter": "選択中のキー · {id}（フィルター対象外）"
 	},
 	"users": {
 		"detailUx": {
@@ -2354,13 +2434,13 @@
 				"walletSpent": "これまでにウォレットから消費した累計金額です。変更すると消費額が修正されます。残高は累計付与額から累計消費額を引いた金額です。"
 			},
 			"fieldLabels": {
-				"budgetMax": "Budget 上限",
-				"budgetSpent": "Budget 使用額",
-				"budgetBase": "Budget 基準額",
-				"budgetPeriod": "Budget 周期",
-				"budgetResetAt": "Budget リセット日時",
-				"walletGranted": "Wallet 累計付与額",
-				"walletSpent": "Wallet 累計使用額"
+				"budgetMax": "利用枠の上限",
+				"budgetSpent": "使用済み",
+				"budgetBase": "リセット基準",
+				"budgetPeriod": "リセット周期",
+				"budgetResetAt": "次回リセット",
+				"walletGranted": "付与累計",
+				"walletSpent": "使用累計"
 			}
 		},
 		"title": "ユーザー",
@@ -2437,7 +2517,7 @@
 			"rateLimitRpm": "空欄 = 無制限"
 		},
 		"help": {
-			"createUser": "新しい Gateway ユーザーを作成します。メールアドレスは必須で、その他の項目は任意です。別システムのアカウントに関連付けるには、下部の「外部 ID」セクションを使用してください。",
+			"createUser": "メールアドレスでユーザーを作成できます。利用枠、メタデータ、外部 ID は任意です。",
 			"budgetMax": "現在のサイクルで利用できる最大金額。空欄は上限なし。",
 			"budgetBase": "周期リセット時の上限の参考額。",
 			"budgetSpent": "現在のサイクル予算のうち、すでに使用した金額。",
@@ -2515,12 +2595,13 @@
 			"truncated": "先頭 {count} 件で打ち切られました。モデルの絞り込みを狭めて再リクエストしてください。",
 			"mode": "合成モード {mode}",
 			"summary": "現在の時間帯",
-			"response": "レスポンス"
+			"response": "レスポンス",
+			"audioKind": "音声（認識と合成）"
 		},
 		"externalIdentity": {
 			"title": "外部 ID",
 			"hint": "別システム（自社 SaaS、OAuth Provider など）のアカウントに関連付けるための項目です。Gateway 内部専用ユーザーの場合は両方とも空欄にしてください。入力する場合は両方を設定する必要があります。",
-			"createHint": "別システム（自社 SaaS、OAuth Provider など）のアカウントに関連付けるための項目です。Gateway 内部専用ユーザーの場合は両方とも空欄にしてください。両方を設定すると、（external system、external user ID）の組み合わせに対して冪等に作成されます。"
+			"createHint": "外部アカウントを連携する場合はシステムとユーザー ID の両方を入力してください。同じ外部 ID で再作成すると既存のユーザーが返されます。"
 		},
 		"metadata": {
 			"none": "メタデータはありません。",
@@ -2563,6 +2644,34 @@
 			"chargedCostFactorModelRequired": "Charged cost factor の各行にはモデル ID が必要です。",
 			"chargedCostFactorValueInvalid": "Charged cost factor は 0 以上の数値である必要があります。",
 			"chargedCostFactorDuplicate": "Charged cost factors に重複したモデルとルートグループがあります。"
+		},
+		"ui": {
+			"filters": "ユーザーを絞り込む",
+			"allStatuses": "すべての状態",
+			"moreFilters": "詳細フィルター",
+			"sort": "並び替え",
+			"ascending": "昇順",
+			"descending": "降順",
+			"access": "アクセス",
+			"configuration": "設定",
+			"manageUserKeys": "{user} のキーを管理",
+			"sortOptions": {
+				"created_at": "作成日時",
+				"budget_spent": "周期枠 · 使用済み",
+				"budget_max": "周期枠 · 上限",
+				"budget_base": "周期枠 · リセット基準",
+				"budget_reset_at": "周期枠 · リセット日時",
+				"wallet_granted": "永久枠 · 付与累計",
+				"wallet_spent": "永久枠 · 使用済み"
+			}
+		},
+		"createErrors": {
+			"emailRequired": "メールアドレスを入力してください",
+			"emailInvalid": "有効なメールアドレスを入力してください",
+			"externalPair": "外部識別の両項目を入力するか、両方空にしてください",
+			"amountInvalid": "有効な枠の数値を入力してください",
+			"metadataObject": "メタデータには有効な JSON オブジェクトを入力してください",
+			"invalid": "入力内容を確認してください"
 		}
 	},
 	"oauthAccessTokensPage": {
@@ -2646,7 +2755,7 @@
 			"afterCreation": "作成後",
 			"existingHelp1": "Gateway User ID（ユーザー一覧の users.id）を入力します。すでにユーザー詳細ページを開いている場合は、そこから Key を作成することを推奨します。",
 			"existingHelp2": "ユーザーごとに複数の有効な Key を作成できます。予算はユーザーに紐づくため、「ユーザー」で編集してください。",
-			"secretOnce": "完全な sk-… Secret は一覧上部のバナーに一度だけ表示されます。すぐにコピーしてください。",
+			"secretOnce": "作成後にキーをコピーし、安全に保管してください。",
 			"metadataHelp": "metadata は Key に保存する任意の JSON です（GET /v1/me で返されます）。",
 			"externalHelp1": "External system、External user ID、メールアドレスを入力します。Gateway はこの組み合わせで既存ユーザーを照合するか、新規作成します（メールアドレスは users.email に保存され、初回作成時は必須）。ユーザーがすでに存在する場合、リクエストのメールアドレスで保存済みの値は上書きされません。",
 			"externalHelp2": "この方法で作成された新規ユーザーの初期予算は 0 です。「ユーザー」でプランを設定してください。"
@@ -2677,7 +2786,7 @@
 			"externalUserId": "アップストリームユーザー ID",
 			"userEmail": "外部 ID から作成する場合は users.email に保存",
 			"keyName": "Admin / クライアントに表示するラベル",
-			"metadataJson": "任意、例：{\"plan_id\":\"pro\"}",
+			"metadataJson": "任意、例：'{\"plan_id\":\"pro\"}'",
 			"optionalLabel": "任意のラベル",
 			"rateLimitRpm": "空欄 = 無制限"
 		},
@@ -2699,7 +2808,41 @@
 		"copyKey": "Key をコピー",
 		"copyId": "ID をコピー",
 		"copySecret": "Secret をコピー",
-		"confirmDelete": "この API Key を完全に削除しますか？"
+		"confirmDelete": "この API Key を完全に削除しますか？",
+		"ui": {
+			"filters": "API キーを絞り込む",
+			"moreFilters": "詳細フィルター",
+			"newestFirst": "作成日時の新しい順",
+			"oldestFirst": "作成日時の古い順",
+			"selectUser": "ユーザーを選択",
+			"searchUser": "メールアドレスで検索",
+			"noUsers": "ユーザーが見つかりません。別のメールアドレスを検索するか、ユーザー ID を入力してください。",
+			"changeUser": "選び直す",
+			"gatewayUser": "Gateway ユーザー",
+			"userDisabled": "無効",
+			"enterUserId": "ユーザー ID を直接入力",
+			"externalHint": "外部システムとユーザー ID で照合し、存在しない場合はユーザーを作成します。",
+			"quotaHint": "利用枠はユーザーに属し、そのユーザーのすべてのキーで共有されます。",
+			"userQuota": "ユーザーの共有利用枠",
+			"manageQuota": "ユーザーの利用枠を管理",
+			"resetBase": "リセット基準額",
+			"technicalDetails": "識別子と利用記録",
+			"keyId": "キー ID",
+			"showSecret": "キー全体を表示",
+			"hideSecret": "キー全体を隠す",
+			"editMetadata": "キーのメタデータを表示・編集",
+			"loadFailed": "読み込めませんでした。再試行してください。",
+			"deleteFailed": "キーを削除できませんでした。再試行してください。",
+			"unnamedKey": "名前のないキー"
+		},
+		"errors": {
+			"userRequired": "ユーザーを選択するか ID を入力してください",
+			"externalRequired": "外部システムと外部ユーザー ID の両方を入力してください",
+			"emailRequired": "メールアドレスを入力してください",
+			"emailInvalid": "有効なメールアドレスを入力してください",
+			"metadata": "有効な JSON を入力してください",
+			"rpm": "限流は 0 以上の整数で入力してください。空欄は無制限です"
+		}
 	},
 	"requestLogs": {
 		"title": "リクエストログ",
@@ -2892,6 +3035,36 @@
 			"copyFailed": "コピーに失敗しました。再試行してください。",
 			"yes": "はい",
 			"no": "いいえ"
+		},
+		"ui": {
+			"allTime": "全期間",
+			"chooseRange": "期間：{range}",
+			"presets": "期間の選択",
+			"invalidRange": "開始・終了日時を確認してください。終了を開始より前に設定できません。",
+			"openRangeHint": "片方を空欄にすると、その側の期間を制限しません",
+			"refresh": "ログを更新",
+			"filters": "リクエストログを絞り込む",
+			"allStatuses": "すべての状態",
+			"allModels": "すべてのモデル",
+			"moreFilters": "詳細フィルター",
+			"removeFilter": "{name}の絞り込みを解除",
+			"retry": "再試行",
+			"loadFailed": "ログを読み込めませんでした。再試行してください。",
+			"notInCatalog": "{value}（現在のカタログにありません）",
+			"notInRoutes": "{value}（現在のルートにありません）",
+			"upstreamLatency": "上流 {time}",
+			"charged": "請求",
+			"metered": "原価",
+			"modelRoute": "モデルとルート",
+			"latency": "所要時間",
+			"detailHint": "リクエストを選択して処理フロー、使用量、会計詳細を確認",
+			"detailTitle": "リクエスト詳細",
+			"copyRequestId": "リクエスト ID をコピー",
+			"timingDiagram": "計測区間の図",
+			"chargedFactor": "請求 / カタログ倍率",
+			"meteredFactor": "原価 / カタログ倍率",
+			"profit": "粗利益",
+			"rangeTitle": "期間"
 		}
 	},
 	"auditLogs": {
@@ -2900,8 +3073,8 @@
 		"empty": "フィルターに一致する監査ログはありません。",
 		"filters": {
 			"eventType": "イベント種別",
-			"actor": "実行者",
-			"actorKind": "実行元",
+			"actor": "操作者の区分",
+			"actorKind": "識別種別",
 			"actorId": "実行主体 ID",
 			"userId": "User ID",
 			"userEmail": "ユーザーのメールアドレス",
@@ -3001,7 +3174,54 @@
 			"noChangeDetail": "展開可能な変更詳細はありません。",
 			"more": "他 {count} 件"
 		},
-		"userRemovedTitle": "ユーザーは削除済みです。snapshot / change_payload を確認してください"
+		"userRemovedTitle": "ユーザーは削除済みです。snapshot / change_payload を確認してください",
+		"ui": {
+			"detailTitle": "監査詳細",
+			"overview": "概要",
+			"changes": "項目の変更",
+			"raw": "元の記録",
+			"copyAuditId": "監査 ID をコピー",
+			"copyFailed": "コピーできませんでした。再試行してください。",
+			"userUnavailable": "ユーザーを参照できません",
+			"reasonText": "操作の説明",
+			"identifiers": "関連 ID",
+			"requestId": "リクエスト ID",
+			"beforeSnapshot": "変更前のユーザースナップショット",
+			"afterSnapshot": "変更後のユーザースナップショット",
+			"changedFields": "変更項目の一覧",
+			"rawHint": "書き込み時点のスナップショットです。欠落値は未記録を示します。",
+			"viewRequest": "リクエストを表示",
+			"userActivity": "ユーザーの履歴",
+			"notRecorded": "未記録",
+			"unchanged": "変更なし",
+			"refresh": "記録を更新",
+			"filters": "監査ログを絞り込む",
+			"eventScope": "イベント範囲",
+			"changeRecords": "変更記録",
+			"allEvents": "すべてのイベント",
+			"customEvents": "カスタムイベント",
+			"moreFilters": "詳細フィルター",
+			"removeFilter": "{name}の絞り込みを解除",
+			"searchEmail": "ユーザーのメールに完全一致…",
+			"retry": "再試行",
+			"loadFailed": "監査ログを読み込めませんでした。再試行してください。",
+			"optionsFailed": "理由の選択肢を読み込めませんでした。現在の絞り込みは保持されます。",
+			"eventTime": "イベント・日時",
+			"user": "ユーザー",
+			"changeCount": "{count} 項目の変更",
+			"defaultHint": "既定ではリクエストごとの請求を除外します。記録を選択して詳細を確認。",
+			"detailHint": "記録を選択して変更と関連リクエストを確認",
+			"fields": {
+				"spent": "消費",
+				"max": "上限",
+				"base": "基準額",
+				"period": "周期",
+				"resetAt": "次回リセット",
+				"granted": "付与",
+				"remaining": "残高"
+			},
+			"userArchived": "削除済みユーザー"
+		}
 	},
 	"analytics": {
 		"modelUsage": {
@@ -3113,7 +3333,8 @@
 			"failoverShare": "切り替えリクエスト率",
 			"streamSpeed": "ストリーム Token/秒",
 			"outcomes": "成功 {success} · 失敗 {errors} · 未完了 / キャンセル {other}",
-			"streamSamples": "計測ストリーム {count} 件"
+			"streamSamples": "計測ストリーム {count} 件",
+			"detailLabel": "詳細を開く・閉じる"
 		},
 		"providerDimensions": {
 			"all": "すべての種別",
@@ -3141,7 +3362,9 @@
 			"blocked": "Admin の書き込みを拒否中",
 			"allowed": "Admin の書き込みは可能"
 		},
-		"statusCard": { "title": "現在の状態" },
+		"statusCard": {
+			"title": "現在の状態"
+		},
 		"settingsCard": {
 			"title": "メンテナンスを開始",
 			"description": "予定時間とメッセージを選択します。開始前に確認が表示されます。"
@@ -3288,7 +3511,7 @@
 		},
 		"config": {
 			"title": "REST サービス",
-			"subtitle": "REST ツールサービスを接続し、認証情報と料金を設定して、テスト・有効化を行います。",
+			"subtitle": "検索、Web抽出、コンテンツ検出サービスを管理",
 			"viewInvocations": "呼び出し履歴を表示 →",
 			"saveWebSearch": "Web Search を保存",
 			"saveWebFetch": "Web Fetch を保存",
@@ -3502,7 +3725,7 @@
 			"lossHint": "ユーザー課金が供給単価を下回っています（赤字）"
 		},
 		"serviceList": {
-			"search": "サービス名、識別子、ツール種類で検索",
+			"search": "サービスやツールの種類を検索",
 			"toolType": "ツール種類",
 			"status": "状態",
 			"name": "サービス",
@@ -3519,6 +3742,20 @@
 			"connection": "接続設定",
 			"pricing": "課金ルール",
 			"credentialsRequired": "認証情報を入力すると保存して有効化できます。設定だけ先に保存することもできます。"
+		},
+		"ui": {
+			"notConfigured": "未設定",
+			"multiplierHint": "標準価格に対する倍率",
+			"oneActivePerType": "ツールの種類ごとに有効なサービスは1つ",
+			"invocations": "呼び出し履歴",
+			"test": "サービスをテスト",
+			"testSavedConfig": "調整画面で保存済みの設定をテスト",
+			"discard": "変更を元に戻す",
+			"draftHint": "変更は保存するまでこのページに保持されます。テストには保存済みの設定を使用します",
+			"saveHint": "このサービスのみ保存します。有効にすると同じ種類のサービスを置き換えます",
+			"activationFailed": "設定は保存されましたが、有効化に失敗しました：{message}",
+			"loadFailed": "サービス設定を読み込めませんでした",
+			"retry": "再読み込み"
 		}
 	},
 	"pricing": {
@@ -3688,7 +3925,7 @@
 		},
 		"connectGuide": {
 			"button": "接続ガイド",
-			"title": "接続ガイド：外部 Agent から MCP を使う",
+			"title": "クライアント接続ガイド",
 			"subtitle": "クライアントを選んで設定をコピーします。Agent に必要なのはゲートウェイ URL とユーザー API Key だけで、上流のシークレットは不要です。",
 			"proxyUrl": "Proxy URL",
 			"proxyHint": "Proxy のベース URL を入力してください。/mcp は自動で付きます。「公開カタログのテスト」と共有します。",
@@ -3969,6 +4206,19 @@
 			"invalidStored": "課金設定が無効か、このバージョンでは未対応です。ツールを使用する前に呼び出しごとの価格を設定してください。",
 			"perCall": "回数課金",
 			"factorSummary": "ユーザー倍率 ×{chargedFactor} · 供給倍率 ×{meteredFactor}"
+		},
+		"ui": {
+			"invocations": "呼び出し履歴",
+			"connect": "クライアント接続",
+			"factorHint": "標準価格に対する倍率",
+			"perRequest": "呼び出しごと",
+			"requestUnit": "回",
+			"exposedItems": "{count} 件を公開",
+			"tokenLoadFailed": "認可履歴を読み込めませんでした",
+			"retry": "再読み込み",
+			"connectionNotes": "接続に関する注意事項",
+			"tokenSummary": "第三者クライアントの認可を確認し、ユーザーやアプリごとにアクセスを取り消す",
+			"oauthSaved": "OAuth 検出を設定済み"
 		}
 	},
 	"toolPricing": {
@@ -3993,5 +4243,46 @@
 		"perUnitMode": "単位ごとの課金",
 		"charactersUnit": "{count} 文字",
 		"requestUnit": "回"
+	},
+	"remainingUi": {
+		"effectiveFactor": "対象レコードの金額を標準金額で割った実効倍率",
+		"allStatuses": "すべての状態",
+		"loadFailed": "データを読み込めませんでした",
+		"retry": "再読み込み",
+		"invocationDetails": "呼び出し詳細",
+		"providerScope": "プロバイダーの範囲",
+		"modelPrefix": "サービスモデルの接頭辞",
+		"discardTitle": "未保存の変更を破棄しますか？",
+		"discardHint": "変更はまだ反映されていません。閉じると下書きを破棄します",
+		"discard": "変更を破棄",
+		"integrationHint": "用途ごとに権限を設定。再生成したキーは保存後に反映されます",
+		"searchKeys": "連携名や説明を検索",
+		"allPermissions": "すべての管理権限（*）",
+		"read": "読み取り",
+		"write": "書き込み",
+		"secrets": "認証情報の読み取り",
+		"execute": "実行",
+		"configCategories": "設定カテゴリ",
+		"general": "基本設定",
+		"routing": "ルーティングと課金",
+		"notifications": "通知",
+		"localizedMessages": "言語別のメッセージ（任意）",
+		"noMatches": "一致する結果がありません",
+		"resources": {
+			"users": "ユーザー",
+			"user_keys": "ユーザーキー",
+			"providers": "プロバイダー",
+			"models": "モデル",
+			"routes": "ルート",
+			"config": "システム設定",
+			"analytics": "利用分析",
+			"logs": "ログ",
+			"playground": "調整画面",
+			"mcp": "MCP サービス",
+			"maintenance": "メンテナンス"
+		},
+		"wholeMinutes": "1 分以上の整数を入力してください",
+		"requestLogs": "リクエストログ",
+		"writeIncludesRead": "書き込みには同じリソースの読み取りを含みます。認証情報には別途権限が必要です"
 	}
 }

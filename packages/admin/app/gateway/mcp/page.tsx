@@ -1,15 +1,10 @@
 'use client';
 
+import { AdminPageTitle } from '@/components/admin-page-title';
+
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import {
-	PlusIcon,
-	ClockIcon,
-	ServerStackIcon,
-	CheckCircleIcon,
-	ExclamationTriangleIcon,
-	CodeBracketIcon,
-	LinkIcon,
-} from '@heroicons/react/24/outline';
+import { PlusIcon, ClockIcon, ServerStackIcon, CodeBracketIcon, LinkIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { McpServerDrawer } from './components/mcp-server-drawer';
@@ -44,18 +39,28 @@ export default function McpServersPage() {
 	const billing = useBillingCurrency();
 	const [catalogScope, setCatalogScope] = useState<string | null>(null);
 	const [guideOpen, setGuideOpen] = useState(false);
+	const [guideScope, setGuideScope] = useState('');
 	const [guideAuth, setGuideAuth] = useState<McpConnectAuth>('key');
 	const proxyBaseUrl = useSyncExternalStore(subscribeProxyUrl, proxyUrlSnapshot, () => '');
 	const refreshProxyBaseUrl = () => window.dispatchEvent(new Event(PROXY_URL_CHANGED));
 	const [section, setSection] = useState<'services' | 'clients'>('services');
 	const sections = [
-		{ id: 'services', label: t('sections.services') },
-		{ id: 'clients', label: t('sections.clients') },
+		{ id: 'services', icon: ServerStackIcon, label: t('sections.services') },
+		{ id: 'clients', icon: LinkIcon, label: t('sections.clients') },
 	] as const;
+
+	function selectSection(next: 'services' | 'clients') {
+		setSection(next);
+		window.history.replaceState(
+			window.history.state,
+			'',
+			`${window.location.pathname}${window.location.search}${next === 'clients' ? '#mcp-panel-clients' : ''}`
+		);
+	}
 
 	useEffect(() => {
 		const revealHashTarget = () => {
-			if (['#mcp-oauth', '#oauth-access-tokens'].includes(window.location.hash)) {
+			if (['#mcp-panel-clients', '#mcp-oauth', '#oauth-access-tokens'].includes(window.location.hash)) {
 				setSection('clients');
 			}
 		};
@@ -65,60 +70,52 @@ export default function McpServersPage() {
 	}, []);
 
 	useEffect(() => {
-		if (section === 'clients' && ['#mcp-oauth', '#oauth-access-tokens'].includes(window.location.hash)) {
+		if (
+			section === 'clients' &&
+			['#mcp-oauth', '#oauth-access-tokens'].includes(window.location.hash)
+		) {
 			document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: 'start' });
 		}
 	}, [section]);
 
 	const currency = billing.loading ? '—' : billing.currency;
-	const metrics = [
-		{
-			label: t('totalServers'),
-			value: state.servers.length,
-			icon: ServerStackIcon,
-			tone: 'bg-gray-100 text-gray-500',
-		},
-		{
-			label: t('enabledItems'),
-			value: state.servers.filter((s) => s.status === 'active').reduce((sum, s) => sum + s.enabledCount, 0),
-			icon: CheckCircleIcon,
-			tone: 'bg-emerald-50 text-emerald-600',
-		},
-		{
-			label: t('pendingCount'),
-			value: state.servers.reduce((sum, s) => sum + s.pendingCount, 0),
-			icon: ClockIcon,
-			tone: 'bg-amber-50 text-amber-600',
-		},
-		{
-			label: t('syncError'),
-			value: state.servers.filter((s) => s.lastSyncError).length,
-			icon: ExclamationTriangleIcon,
-			tone: 'bg-red-50 text-red-500',
-		},
-	];
 	return (
 		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-center justify-between gap-4">
 				<div>
-					<h1 className="text-2xl font-medium tracking-tight text-gray-900 sm:text-[28px]">{t('title')}</h1>
-					<p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500">{t('subtitle')}</p>
+					<AdminPageTitle>{t('title')}</AdminPageTitle>
+					<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
 				</div>
-				<button
-					type="button"
-					disabled={state.busy}
-					onClick={() => {
-						setSection('services');
-						state.openCreate();
-					}}
-					className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 disabled:opacity-50"
-				>
-					<PlusIcon className="h-4 w-4" aria-hidden="true" />
-					{t('add')}
-				</button>
+				<div className="flex flex-wrap items-center gap-2">
+					<Link
+						href="/gateway/tools/invocations?source=mcp"
+						className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 hover:bg-gray-50"
+					>
+						<ClockIcon className="h-4 w-4" aria-hidden="true" />
+						{t('ui.invocations')}
+					</Link>
+					{section === 'services' ? (
+						<button
+							type="button"
+							disabled={state.busy}
+							onClick={() => {
+								selectSection('services');
+								state.openCreate();
+							}}
+							className="inline-flex items-center gap-2 rounded-lg bg-gray-950 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 disabled:opacity-50"
+						>
+							<PlusIcon className="h-4 w-4" aria-hidden="true" />
+							{t('add')}
+						</button>
+					) : null}
+				</div>
 			</div>
-			<div role="tablist" aria-label={t('sections.label')} className="mb-6 flex gap-6 border-b border-gray-200">
-				{sections.map(({ id, label }, index) => (
+			<div
+				role="tablist"
+				aria-label={t('sections.label')}
+				className="mb-6 flex gap-6 border-b border-gray-200"
+			>
+				{sections.map(({ id, label, icon: Icon }, index) => (
 					<button
 						key={id}
 						id={`mcp-tab-${id}`}
@@ -127,43 +124,48 @@ export default function McpServersPage() {
 						aria-selected={section === id}
 						aria-controls={`mcp-panel-${id}`}
 						tabIndex={section === id ? 0 : -1}
-						onClick={() => setSection(id)}
+						onClick={() => selectSection(id)}
 						onKeyDown={(event) => {
 							let nextIndex: number;
 							switch (event.key) {
-								case 'ArrowRight': nextIndex = (index + 1) % sections.length; break;
-								case 'ArrowLeft': nextIndex = (index + sections.length - 1) % sections.length; break;
-								case 'Home': nextIndex = 0; break;
-								case 'End': nextIndex = sections.length - 1; break;
-								default: return;
+								case 'ArrowRight':
+									nextIndex = (index + 1) % sections.length;
+									break;
+								case 'ArrowLeft':
+									nextIndex = (index + sections.length - 1) % sections.length;
+									break;
+								case 'Home':
+									nextIndex = 0;
+									break;
+								case 'End':
+									nextIndex = sections.length - 1;
+									break;
+								default:
+									return;
 							}
 							event.preventDefault();
 							const next = sections[nextIndex].id;
-							setSection(next);
+							selectSection(next);
 							document.getElementById(`mcp-tab-${next}`)?.focus();
 						}}
-						className={`border-b-2 px-1 pb-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${section === id ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}`}
+						className={`inline-flex items-center gap-2 border-b-2 px-1 pb-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${
+							section === id
+								? 'border-gray-900 text-gray-900'
+								: 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+						}`}
 					>
+						<Icon className="h-4 w-4" aria-hidden="true" />
 						{label}
 					</button>
 				))}
 			</div>
-			<div id="mcp-panel-services" role="tabpanel" aria-labelledby="mcp-tab-services" hidden={section !== 'services'} tabIndex={0}>
-				<div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
-					{metrics.map(({ label, value, icon: Icon, tone }) => (
-						<div key={label} className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-4 sm:px-5">
-							<span className={`rounded-lg p-2.5 ${tone}`}>
-								<Icon className="h-5 w-5" aria-hidden="true" />
-							</span>
-							<div className="min-w-0">
-								<p className="text-xs text-gray-500">{label}</p>
-								<p className="mt-1 text-2xl font-medium tabular-nums text-gray-900">
-									{(state.listLoading || state.listError) && !state.servers.length ? '—' : value}
-								</p>
-							</div>
-						</div>
-					))}
-				</div>
+			<div
+				id="mcp-panel-services"
+				role="tabpanel"
+				aria-labelledby="mcp-tab-services"
+				hidden={section !== 'services'}
+				tabIndex={0}
+			>
 				<McpServerTable
 					proxyBaseUrl={proxyBaseUrl}
 					currency={currency}
@@ -177,45 +179,66 @@ export default function McpServersPage() {
 				/>
 			</div>
 			{/* Keep both panels mounted so switching tabs preserves filters and unsaved OAuth settings. */}
-			<div id="mcp-panel-clients" role="tabpanel" aria-labelledby="mcp-tab-clients" hidden={section !== 'clients'} tabIndex={0}>
-				<section className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-6" aria-labelledby="mcp-client-access-title">
-					<h2 id="mcp-client-access-title" className="text-base font-medium text-gray-900">{t('clientAccess.title')}</h2>
-					<p className="mt-1 text-sm leading-6 text-gray-500">{t('clientAccess.description')}</p>
-					<div className="mt-4 flex flex-wrap gap-3">
-						<button
-							type="button"
-							onClick={() => {
-								setGuideAuth('key');
-								setGuideOpen(true);
-							}}
-							className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700"
-						>
-							<LinkIcon className="h-4 w-4" aria-hidden="true" />
-							{t('connectGuide.button')}
-						</button>
-						<button
-							type="button"
-							disabled={state.busy}
-							onClick={() => setCatalogScope('')}
-							className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
-						>
-							<CodeBracketIcon className="h-4 w-4" aria-hidden="true" />
-							{t('catalogTest.title')}
-						</button>
-					</div>
-				</section>
-				<McpOAuthSettings
-					onOpenGuide={() => {
-						setGuideAuth('oauth');
-						setGuideOpen(true);
-					}}
-				/>
+			<div
+				id="mcp-panel-clients"
+				role="tabpanel"
+				aria-labelledby="mcp-tab-clients"
+				hidden={section !== 'clients'}
+				tabIndex={0}
+			>
+				<div className="mb-6 grid gap-4 xl:grid-cols-2">
+					<section
+						className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6"
+						aria-labelledby="mcp-client-access-title"
+					>
+						<h2 id="mcp-client-access-title" className="text-base font-medium text-gray-900">
+							{t('clientAccess.title')}
+						</h2>
+						<p className="mt-1 text-sm leading-6 text-gray-500">{t('clientAccess.description')}</p>
+						<div className="mt-4 flex flex-wrap gap-3">
+							<button
+								type="button"
+								onClick={() => {
+									setGuideScope('');
+									setGuideAuth('key');
+									setGuideOpen(true);
+								}}
+								className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-700"
+							>
+								<LinkIcon className="h-4 w-4" aria-hidden="true" />
+								{t('connectGuide.button')}
+							</button>
+							<button
+								type="button"
+								disabled={state.busy}
+								onClick={() => setCatalogScope('')}
+								className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+							>
+								<CodeBracketIcon className="h-4 w-4" aria-hidden="true" />
+								{t('catalogTest.title')}
+							</button>
+						</div>
+					</section>
+					<McpOAuthSettings
+						onOpenGuide={() => {
+							setGuideScope('');
+							setGuideAuth('oauth');
+							setGuideOpen(true);
+						}}
+					/>
+				</div>
 				<OAuthAccessTokensPanel />
 			</div>
 			<McpServerDrawer
+				proxyBaseUrl={proxyBaseUrl}
+				onConnectGuide={() => {
+					setGuideScope(state.detail?.server.slug ?? '');
+					setGuideAuth('key');
+					setGuideOpen(true);
+				}}
 				currency={currency}
 				key={state.selectedId ?? 'closed'}
-				open={state.selectedId != null && state.formMode == null && catalogScope == null}
+				open={state.selectedId != null && state.formMode == null && catalogScope == null && !guideOpen}
 				detail={state.detail}
 				summary={state.servers.find((s) => s.id === state.selectedId)}
 				loading={state.detailLoading}
@@ -260,7 +283,7 @@ export default function McpServersPage() {
 			{guideOpen ? (
 				<McpConnectGuideModal
 					servers={state.servers}
-					initialSlug=""
+					initialSlug={guideScope}
 					initialAuth={guideAuth}
 					onClose={() => {
 						setGuideOpen(false);

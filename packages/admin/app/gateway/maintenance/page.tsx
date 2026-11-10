@@ -1,12 +1,15 @@
 'use client';
 
+import { AdminPageTitle } from '@/components/admin-page-title';
+
 /**
  * 维护模式：开启后 Proxy 对推理请求返回友好的 503，可选同时冻结 Admin 写接口。
  * 数据迁移的"核心切换"依赖它冻结写入，也可单独用于任何维护窗口。
  * 版式与 `/gateway/config` 一致：标题区 + `ConfigCardShell` 卡片网格。
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { customMaintenanceMinutes } from './maintenance-input';
 import { ConfigCardShell } from '@/components/ConfigCardShell';
 import { useFeedback } from '@/components/feedback';
 import { readApiJson } from '@/lib/api-json';
@@ -22,14 +25,17 @@ const MESSAGE_TOKEN = '{minutes}';
 type Preset = 'none' | 'custom' | (typeof DURATION_PRESETS)[number];
 
 const inputClass =
-	'w-full min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 disabled:bg-gray-50 disabled:text-gray-500';
+	'w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 disabled:bg-gray-50 disabled:text-gray-500';
 const labelClass = 'mb-1 block text-sm font-medium text-gray-700';
 const secondaryButtonClass =
-	'rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50';
+	'rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50';
 
 export default function MaintenancePage() {
 	const t = useTranslations('maintenance');
 	const tCommon = useTranslations('common');
+	const ui = useTranslations('remainingUi');
+	const generation = useRef(0);
+	const savingRef = useRef(false);
 	const { notify, confirm } = useFeedback();
 	const { formatDateTime } = useGatewayDateTime();
 
@@ -45,26 +51,39 @@ export default function MaintenancePage() {
 	const [blockAdmin, setBlockAdmin] = useState(true);
 
 	const load = useCallback(async () => {
+		if (savingRef.current) return;
+		const request = ++generation.current;
 		try {
 			const response = await fetch('/api/admin/maintenance', { cache: 'no-store' });
 			const data = await readApiJson<MaintenanceStatus>(response);
+			if (request !== generation.current) return;
 			if (!response.ok || !data.success || !data.data) {
 				throw new Error(data.message || tCommon('requestFailed'));
 			}
 			setStatus(data.data);
 			setLoadError('');
 		} catch (cause) {
+			if (request !== generation.current) return;
 			setLoadError(cause instanceof Error ? cause.message : t('loadFailed'));
 		}
 	}, [t, tCommon]);
 
+	const invalidateLoads = useCallback(() => {
+		++generation.current;
+	}, []);
 	useEffect(() => {
 		void load();
 		const timer = window.setInterval(() => void load(), REFRESH_MS);
-		return () => window.clearInterval(timer);
-	}, [load]);
+		return () => {
+			window.clearInterval(timer);
+			invalidateLoads();
+		};
+	}, [load, invalidateLoads]);
 
 	const save = async (body: Record<string, unknown>, successKey: 'enabled' | 'extended' | 'disabled') => {
+		if (savingRef.current) return;
+		savingRef.current = true;
+		++generation.current;
 		setBusy(true);
 		try {
 			const response = await fetch('/api/admin/maintenance', {
@@ -79,10 +98,15 @@ export default function MaintenancePage() {
 			setStatus(data.data);
 			setLoadError('');
 			window.dispatchEvent(new Event(MAINTENANCE_CHANGED_EVENT));
-			notify('success', t(`toast.${successKey}`), t('propagation', { seconds: data.data.propagation_seconds }));
+			notify(
+				'success',
+				t(`toast.${successKey}`),
+				t('propagation', { seconds: data.data.propagation_seconds })
+			);
 		} catch (cause) {
 			notify('error', cause instanceof Error ? cause.message : tCommon('requestFailed'));
 		} finally {
+			savingRef.current = false;
 			setBusy(false);
 		}
 	};
@@ -90,8 +114,7 @@ export default function MaintenancePage() {
 	const durationMinutes = (): number | null => {
 		if (preset === 'none') return null;
 		if (preset === 'custom') {
-			const parsed = Number(customMinutes);
-			return Number.isFinite(parsed) && parsed > 0 ? parsed : Number.NaN;
+			return customMaintenanceMinutes(customMinutes) ?? Number.NaN;
 		}
 		return preset;
 	};
@@ -150,7 +173,9 @@ export default function MaintenancePage() {
 
 	const header = (
 		<div className="mb-6">
-			<h1 className="text-2xl font-medium text-gray-900">{t('title')}</h1>
+			<AdminPageTitle>
+				{t('title')}
+			</AdminPageTitle>
 			<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
 		</div>
 	);
@@ -166,14 +191,16 @@ export default function MaintenancePage() {
 	if (!status) {
 		return (
 			<div className="p-4 sm:p-6 lg:p-8">
-				<h1 className="text-2xl font-medium text-gray-900">{t('title')}</h1>
+				<AdminPageTitle>
+					{t('title')}
+				</AdminPageTitle>
 				<div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-5" role="alert">
 					<p className="font-medium text-red-800">{t('loadFailed')}</p>
 					<p className="mt-1 text-sm text-red-700">{loadError}</p>
 					<button
 						type="button"
 						onClick={() => void load()}
-						className="mt-4 rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-800"
+						className="mt-4 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-800"
 					>
 						{tCommon('retry')}
 					</button>
@@ -193,12 +220,12 @@ export default function MaintenancePage() {
 			{header}
 
 			{loadError && (
-				<div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700" role="alert">
+				<div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
 					{loadError}
 				</div>
 			)}
 
-			<div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-2">
+			<div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
 				<ConfigCardShell
 					id="maintenance-status"
 					title={t('statusCard.title')}
@@ -222,12 +249,14 @@ export default function MaintenancePage() {
 										type="button"
 										disabled={busy}
 										onClick={() => void handleDisable()}
-										className="ml-auto rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+										className="ml-auto rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
 									>
 										{busy ? tCommon('saving') : t('actions.disable')}
 									</button>
 								</div>
-								<p className="text-xs text-gray-500">{t('propagation', { seconds: status.propagation_seconds })}</p>
+								<p className="text-xs text-gray-500">
+									{t('propagation', { seconds: status.propagation_seconds })}
+								</p>
 							</div>
 						) : undefined
 					}
@@ -249,7 +278,7 @@ export default function MaintenancePage() {
 						<dl className="mt-4 space-y-3 text-sm">
 							<div>
 								<dt className="text-xs text-gray-500">{t('preview')}</dt>
-								<dd className="mt-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-gray-900">
+								<dd className="mt-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-900">
 									{status.effective_message}
 								</dd>
 							</div>
@@ -310,12 +339,14 @@ export default function MaintenancePage() {
 						description={t('settingsCard.description')}
 						footer={
 							<div className="flex flex-wrap items-center justify-between gap-3">
-								<span className="text-xs text-gray-500">{t('propagation', { seconds: status.propagation_seconds })}</span>
+								<span className="text-xs text-gray-500">
+									{t('propagation', { seconds: status.propagation_seconds })}
+								</span>
 								<button
 									type="button"
 									disabled={busy || customInvalid}
 									onClick={() => void handleEnable()}
-									className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
+									className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
 								>
 									{busy ? tCommon('saving') : t('actions.enable')}
 								</button>
@@ -332,18 +363,18 @@ export default function MaintenancePage() {
 											option === 'none'
 												? t('form.noDuration')
 												: option === 'custom'
-													? t('form.customMinutes')
-													: t('form.minutes', { minutes: option });
+												? t('form.customMinutes')
+												: t('form.minutes', { minutes: option });
 										return (
 											<button
 												key={String(option)}
 												type="button"
 												aria-pressed={selected}
 												onClick={() => setPreset(option)}
-												className={`rounded-md border px-3 py-2 text-sm ${
+												className={`rounded-lg border px-3 py-2 text-sm ${
 													selected
 														? 'border-gray-900 bg-gray-900 font-medium text-white'
-														: 'border-gray-300 text-gray-700 hover:bg-gray-50'
+														: 'border-gray-200 text-gray-700 hover:bg-gray-50'
 												}`}
 											>
 												{label}
@@ -364,6 +395,11 @@ export default function MaintenancePage() {
 											aria-invalid={customInvalid}
 											className={`${inputClass} ${customInvalid ? 'border-red-400' : ''}`}
 										/>
+										{customInvalid ? (
+											<p role="alert" className="mt-2 text-xs text-red-700">
+												{ui('wholeMinutes')}
+											</p>
+										) : null}
 									</div>
 								)}
 							</fieldset>
@@ -382,39 +418,46 @@ export default function MaintenancePage() {
 									disabled={busy}
 									className={inputClass}
 								/>
-								<p className="mt-1 text-xs text-gray-500">{t('form.messageHelp', { token: MESSAGE_TOKEN })}</p>
+								<p className="mt-1 text-xs text-gray-500">
+									{t('form.messageHelp', { token: MESSAGE_TOKEN })}
+								</p>
 							</div>
 
-							<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-								<div>
-									<label htmlFor="maintenance-message-zh" className={labelClass}>
-										{t('form.messageZh')}
-									</label>
-									<textarea
-										id="maintenance-message-zh"
-										rows={2}
-										maxLength={500}
-										value={messageZh}
-										onChange={(event) => setMessageZh(event.target.value)}
-										disabled={busy}
-										className={inputClass}
-									/>
+							<details className="rounded-lg border border-gray-200 p-3">
+								<summary className="cursor-pointer text-sm text-gray-600">{ui('localizedMessages')}</summary>
+								<div className="mt-4">
+									<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+										<div>
+											<label htmlFor="maintenance-message-zh" className={labelClass}>
+												{t('form.messageZh')}
+											</label>
+											<textarea
+												id="maintenance-message-zh"
+												rows={2}
+												maxLength={500}
+												value={messageZh}
+												onChange={(event) => setMessageZh(event.target.value)}
+												disabled={busy}
+												className={inputClass}
+											/>
+										</div>
+										<div>
+											<label htmlFor="maintenance-message-en" className={labelClass}>
+												{t('form.messageEn')}
+											</label>
+											<textarea
+												id="maintenance-message-en"
+												rows={2}
+												maxLength={500}
+												value={messageEn}
+												onChange={(event) => setMessageEn(event.target.value)}
+												disabled={busy}
+												className={inputClass}
+											/>
+										</div>
+									</div>
 								</div>
-								<div>
-									<label htmlFor="maintenance-message-en" className={labelClass}>
-										{t('form.messageEn')}
-									</label>
-									<textarea
-										id="maintenance-message-en"
-										rows={2}
-										maxLength={500}
-										value={messageEn}
-										onChange={(event) => setMessageEn(event.target.value)}
-										disabled={busy}
-										className={inputClass}
-									/>
-								</div>
-							</div>
+							</details>
 
 							<label className="flex items-start gap-3 rounded-lg border border-gray-200 p-3 text-sm">
 								<input
@@ -422,11 +465,13 @@ export default function MaintenancePage() {
 									checked={blockAdmin}
 									onChange={(event) => setBlockAdmin(event.target.checked)}
 									disabled={busy}
-									className="mt-0.5 h-4 w-4 rounded border-gray-300"
+									className="mt-0.5 h-4 w-4 rounded border-gray-200"
 								/>
 								<span>
 									<span className="font-medium text-gray-900">{t('form.blockAdmin')}</span>
-									<span className="mt-0.5 block text-xs leading-relaxed text-gray-500">{t('form.blockAdminHelp')}</span>
+									<span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
+										{t('form.blockAdminHelp')}
+									</span>
 								</span>
 							</label>
 						</div>

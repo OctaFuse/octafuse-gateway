@@ -9,7 +9,7 @@ import { locales, type Locale } from '@/lib/locale';
 type Variant = 'header' | 'login';
 
 const triggerClass: Record<Variant, string> = {
-  header: 'inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-gray-500 transition-colors hover:bg-gray-200/60 hover:text-gray-950 disabled:cursor-not-allowed',
+  header: 'inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-950 disabled:cursor-not-allowed',
   login: 'inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-950 disabled:cursor-not-allowed',
 };
 const codeClass: Record<Variant, string> = {
@@ -18,7 +18,7 @@ const codeClass: Record<Variant, string> = {
 };
 const chevronClass: Record<Variant, string> = { header: 'text-gray-500', login: 'text-gray-500' };
 const menuClass: Record<Variant, string> = {
-  header: 'absolute bottom-full right-0 z-50 mb-2 min-w-[10rem] overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-panel',
+  header: 'absolute right-0 top-full z-50 mt-2 min-w-[10rem] overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-panel',
   login: 'absolute right-0 top-full z-50 mt-2 min-w-[10rem] overflow-hidden rounded-xl border border-gray-200 bg-white p-1 shadow-panel',
 };
 const optionClass: Record<Variant, string> = {

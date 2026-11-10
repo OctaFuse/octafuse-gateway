@@ -1,14 +1,16 @@
 'use client';
 
+import { AdminPageTitle } from '@/components/admin-page-title';
+
 /**
  * 模型目录：CRUD、标签、定价字段；数据来自 `/api/admin/models`。
  * 页面筛选条 Kind（All | LLM | Image | ASR | TTS | Embedding）+ Lifecycle（All | Active | Retired）+ Vendor；下方支持卡片与列表切换；`?kind=` / `?vendor=` / `?lifecycle=` 持久化（`useSearchParams` + Suspense）。
  * `?edit=<model_id>` 可从 Routes 等入口深链直接打开编辑弹窗（消费后从 URL 清除）。
  */
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useModelsPageState } from './use-models-page-state';
-import { ModelAddCard } from './components/model-add-card';
+import { ArrowDownTrayIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useCatalogView } from '../components/use-catalog-view';
 import { MODEL_LIST_COLUMNS, ModelCard } from './components/model-card';
 import { ModelFilterSidebar } from './components/model-filter-sidebar';
@@ -22,9 +24,11 @@ import { normalizeModelVendorInput } from '@/lib/model-vendor';
 
 function ModelsContent() {
 	const t = useTranslations('models');
-	const tBrand = useTranslations('brand');
 	const tCommon = useTranslations('common');
 	const state = useModelsPageState();
+	const [initialTab, setInitialTab] = useState<'basic' | 'pricing' | 'routes'>(
+		'basic'
+	);
 	const [view, setView] = useCatalogView('octafuse.admin.models.view');
 	const sync = useModelSync({
 		onChanged: state.reloadModelsQuietly,
@@ -46,36 +50,45 @@ function ModelsContent() {
 		? t('createTitleAll')
 		: t('createTitleVendor', { vendor: state.activeVendorTitle });
 
-	const addModelCard = (
-		<ModelAddCard
-			compact={view === 'list'}
-			importSubmitting={state.importSubmitting}
-			createTitle={createTitle}
-			onImport={state.openImportCatalogModal}
-			onCreate={() => {
-				state.handleCreate(
-					state.isAllVendors ? undefined : state.activeVendorKey,
-					state.selectedKind === 'all' ? 'llm' : state.selectedKind
-				);
-			}}
-		/>
-	);
-
 	return (
 		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-50 p-4 pb-6 sm:p-6 lg:p-8">
-			<div className="mb-5 flex flex-wrap items-start justify-between gap-3 sm:mb-6">
+			<div className="mb-6 flex flex-wrap items-start justify-between gap-3">
 				<div className="min-w-0">
-					<h1 className="text-2xl font-medium text-gray-900 sm:text-[28px]">{t('title')}</h1>
-					<p className="mt-1 text-sm text-gray-500">
-						{t('subtitle', { product: tBrand('product') })}
-					</p>
+					<AdminPageTitle>
+						{t('title')}
+					</AdminPageTitle>
+					<p className="mt-1 text-sm text-gray-500">{t('overviewSubtitle')}</p>
 				</div>
-				<ModelSyncCheckButton
-					checking={sync.checking}
-					lastCheckedAt={sync.lastCheckedAt}
-					hasUpdates={officialUpdateCount > 0}
-					onCheck={() => void sync.check()}
-				/>
+				<div className="flex flex-wrap items-start gap-2">
+					<ModelSyncCheckButton
+						checking={sync.checking}
+						onCheck={() => void sync.check()}
+					/>
+					<button
+						type="button"
+						disabled={state.importSubmitting}
+						onClick={state.openImportCatalogModal}
+						className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+					>
+						<ArrowDownTrayIcon className="h-4 w-4" aria-hidden />
+						{tCommon('import')}
+					</button>
+					<button
+						type="button"
+						title={createTitle}
+						onClick={() => {
+							setInitialTab('basic');
+							state.handleCreate(
+								state.isAllVendors ? undefined : state.activeVendorKey,
+								state.selectedKind === 'all' ? 'llm' : state.selectedKind
+							);
+						}}
+						className="inline-flex h-9 items-center gap-2 rounded-lg admin-primary px-4 text-xs font-medium text-white"
+					>
+						<PlusIcon className="h-4 w-4" aria-hidden />
+						{t('addCard.title')}
+					</button>
+				</div>
 			</div>
 
 			<ModelSyncBanner
@@ -86,6 +99,8 @@ function ModelsContent() {
 
 			<ModelFilterSidebar
 				view={view}
+				search={state.modelSearch}
+				onSearchChange={state.setModelSearch}
 				onViewChange={setView}
 				filteredCount={state.selectedVendorItems.length}
 				modelCount={state.models.length}
@@ -104,41 +119,70 @@ function ModelsContent() {
 				onClearFilter={state.clearFilters}
 			/>
 
-			{view === 'list' ? addModelCard : null}
-			<div className={view === 'list' ? 'overflow-hidden rounded-xl border border-slate-200 bg-white' : 'admin-catalog-grid'}>
-				{view === 'cards' ? addModelCard : (
-					<div className={`hidden gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 xl:grid ${MODEL_LIST_COLUMNS}`} aria-hidden>
+			<div
+				className={
+					view === 'list'
+						? 'overflow-hidden rounded-xl border border-slate-200 bg-white'
+						: 'admin-catalog-grid'
+				}
+			>
+				{view === 'list' && (
+					<div
+						className={`hidden gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 xl:grid ${MODEL_LIST_COLUMNS}`}
+						aria-hidden
+					>
 						<span>{t('list.model')}</span>
 						<span>{t('list.kindAndSpecs')}</span>
 						<span>{t('list.pricing')}</span>
 						<span>{t('list.routes')}</span>
-						<span>{t('list.tags')}</span>
 						<span />
 					</div>
 				)}
-				<div className={view === 'list' ? 'divide-y divide-slate-200' : 'contents'} role={view === 'list' ? 'list' : undefined} aria-label={view === 'list' ? t('title') : undefined}>
+				<div
+					className={view === 'list' ? 'divide-y divide-slate-200' : 'contents'}
+					role={view === 'list' ? 'list' : undefined}
+					aria-label={view === 'list' ? t('title') : undefined}
+				>
 					{state.selectedVendorItems.map((model) => (
 						<ModelCard
 							key={model.id}
 							view={view}
 							model={model}
 							billingCurrency={state.billingCurrency}
-							onEdit={state.handleEdit}
-							onReviewOfficialUpdate={(m) => sync.openSync(normalizeModelVendorInput(m.vendor))}
+							onEdit={(model) => {
+								setInitialTab('basic');
+								void state.handleEdit(model);
+							}}
+							onViewPricing={(model) => {
+								setInitialTab('pricing');
+								void state.handleEdit(model);
+							}}
+							onViewRoutes={(model) => {
+								setInitialTab('routes');
+								void state.handleEdit(model);
+							}}
+							onReviewOfficialUpdate={(m) =>
+								sync.openSync(normalizeModelVendorInput(m.vendor))
+							}
 						/>
 					))}
 					{view === 'list' && state.selectedVendorItems.length === 0 ? (
-						<div role="listitem" className="p-8 text-center text-sm text-slate-500">
+						<div
+							role="listitem"
+							className="p-8 text-center text-sm text-slate-500"
+						>
 							<p>{t('empty')}</p>
-							<p className="mt-1 text-xs text-slate-400">{t('emptyHint')}</p>
+							<p className="mt-1 text-xs text-slate-400">{t(state.hasActiveFilter ? 'emptyFilterHint' : 'emptyHint')}</p>
 						</div>
 					) : null}
 				</div>
 			</div>
-			{view === 'cards' && state.selectedVendorItems.length === 0 && state.hasActiveFilter ? (
+			{view === 'cards' && state.selectedVendorItems.length === 0 ? (
 				<p className="mt-4 text-center text-sm text-gray-500">
 					{t('empty')}
-					<span className="mt-1 block text-xs text-gray-400">{t('emptyHint')}</span>
+					<span className="mt-1 block text-xs text-gray-400">
+						{t(state.hasActiveFilter ? 'emptyFilterHint' : 'emptyHint')}
+					</span>
 				</p>
 			) : null}
 
@@ -147,6 +191,7 @@ function ModelsContent() {
 			<ModelModal
 				onRoutesChanged={state.reloadModelsQuietly}
 				open={state.showModal}
+				initialTab={initialTab}
 				editingModel={state.editingModel}
 				duplicateSourceModelId={state.duplicateSourceModelId}
 				formData={state.formData}

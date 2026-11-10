@@ -65,14 +65,14 @@ export function UserOAuthAccessTokensPanel({ userId }: { userId: string }) {
   };
 
   return (
-    <div className="mt-6 flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+    <div className="mt-6 flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
       <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-lg font-medium text-gray-900">{t('userSectionTitle')}</h2>
+        <h2 className="text-sm font-medium text-gray-900">{t('userSectionTitle')}</h2>
         <Link href="/gateway/mcp#oauth-access-tokens" className="text-sm text-gray-800 hover:underline">
           {t('viewAll')}
         </Link>
       </div>
-      <p className="mb-4 text-sm text-gray-500">{t('userSectionHint')}</p>
+      <p className="mb-4 text-xs leading-5 text-gray-500">{t('userSectionHint')}</p>
       {loaded && tokens.length === 0 ? (
         <p className="py-2 text-sm text-gray-500">{t('userSectionEmpty')}</p>
       ) : (

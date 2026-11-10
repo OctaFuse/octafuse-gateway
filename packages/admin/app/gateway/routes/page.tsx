@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminPageTitle } from '@/components/admin-page-title';
+
 /**
  * 模型路由：`model_routes` CRUD、协议与 route_group、URL 查询参数驱动列表筛选（`useSearchParams` + Suspense）。
  * 模型卡片标题 / 铅笔图标可就地打开 ModelModal（改 Tag 等），无需跳转 Models 页。
@@ -50,7 +52,6 @@ function subscribeFlowDensity(onStoreChange: () => void) {
 function RoutesContent() {
 	const t = useTranslations('routes');
 	const tCommon = useTranslations('common');
-	const tf = useTranslations('filter');
 	const [catalogView, setCatalogView] = useCatalogView(ROUTE_DETAIL_STORAGE_KEY, 'topology');
 	const density: RouteFlowDensity = catalogView === 'cards' ? 'topology' : 'list';
 	const setDensity = useCallback((next: RouteFlowDensity) => {
@@ -108,17 +109,12 @@ function RoutesContent() {
 
 	return (
 		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-50 p-4 pb-6 sm:p-6 lg:p-8">
-			<div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<h1 className="text-2xl font-medium text-gray-900 sm:text-[28px]">{t('title')}</h1>
+					<AdminPageTitle>{t('title')}</AdminPageTitle>
 					<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
-					<div className="mt-3 flex flex-wrap items-center gap-3 text-xs tabular-nums text-slate-500">
-						<span>{tf('modelsAndRoutes', {models: state.models.length, routes: state.routes.length})}</span>
-						<span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{tCommon('active')} {state.statusCounts.active}</span>
-						<span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-slate-400" />{tCommon('inactive')} {state.statusCounts.inactive}</span>
-					</div>
 				</div>
-				<button type="button" onClick={() => state.handleCreate()} className="inline-flex items-center gap-2 rounded-lg admin-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus-visible:outline-gray-500"><PlusIcon className="h-4 w-4" aria-hidden />{t('flow.addRoute')}</button>
+				<button type="button" onClick={() => state.handleCreate()} className="inline-flex items-center h-9 gap-2 rounded-lg admin-primary px-4 text-xs font-medium text-white hover:bg-gray-800 focus-visible:outline-gray-500"><PlusIcon className="h-4 w-4" aria-hidden />{t('flow.addRoute')}</button>
 			</div>
 
 			<RouteFilterSidebar

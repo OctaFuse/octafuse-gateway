@@ -1,5 +1,7 @@
 'use client';
 
+import { useAdminDialog } from '@/components/use-admin-dialog';
+
 import { useTranslations } from 'next-intl';
 
 type Props = {
@@ -10,6 +12,7 @@ type Props = {
 export function FailoverRulesDialog({ open, onClose }: Props) {
 	const t = useTranslations('routes.failover');
 	const tCommon = useTranslations('common');
+	const dialogRef = useAdminDialog(open, false, onClose);
 
 	if (!open) return null;
 
@@ -26,13 +29,15 @@ export function FailoverRulesDialog({ open, onClose }: Props) {
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
 			onMouseDown={(event) => {
 				if (event.target === event.currentTarget) onClose();
 			}}
 		>
 			<div
-				className="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-xl bg-white shadow-panel ring-1 ring-black/5"
+				className="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none ring-1 ring-black/5"
+				ref={dialogRef}
+				tabIndex={-1}
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="failover-rules-dialog-title"

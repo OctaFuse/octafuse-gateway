@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type RefObject } from 'react';
-import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { QuestionMarkCircleIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { ImageGenerationsPreview } from '@/components/image-generations-preview';
 import type { ImagePreviewItem } from '@/lib/image-generations';
@@ -9,7 +9,6 @@ import type { ObservationTag } from '@/lib/playground/response-observations';
 import type { ResponseMeta, ResponseTab } from '../types';
 import { LlmResponseContent } from '@/components/model-test/llm-response-content';
 import type { ResponsePreview } from '@/lib/playground/response-preview';
-
 
 type ObservationHelpTone = ObservationTag['tone'];
 
@@ -112,12 +111,16 @@ export function PlaygroundResponsePanel({
 	const isAudioResponse = Boolean(audioPreviewUrl);
 
 	return (
-		<section className="flex min-h-0 flex-1 flex-col space-y-2 overflow-hidden rounded-xl border border-gray-200/80 bg-white p-3 shadow-sm">
-			<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+		<section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
+			<div className="flex min-h-[57px] shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-gray-100 px-4 py-2.5">
 				<h2 className="shrink-0 text-sm font-medium text-gray-900">{t('response')}</h2>
 				{responseMeta ? (
 					<div className="flex min-w-0 flex-wrap items-center justify-end gap-2 text-xs">
-						<span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-800">
+						<span
+							className={`inline-flex items-center rounded-md px-2 py-1 font-medium tabular-nums ${
+								responseMeta.status >= 400 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
+							}`}
+						>
 							HTTP {responseMeta.status}
 						</span>
 						{responseMeta.latencyMs != null ? (
@@ -138,7 +141,7 @@ export function PlaygroundResponsePanel({
 			</div>
 
 			{hasContent ? (
-				<div className="flex min-h-0 flex-1 flex-col gap-2">
+				<div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
 					{responseMeta?.upstreamUrl ? (
 						<div className="shrink-0 truncate text-xs text-gray-500" title={responseMeta.upstreamUrl}>
 							<span className="font-medium text-gray-600">{t('upstream')}</span>
@@ -157,6 +160,7 @@ export function PlaygroundResponsePanel({
 								key={id}
 								type="button"
 								onClick={() => onResponseTabChange(id)}
+								aria-pressed={responseTab === id}
 								className={`rounded-md px-3 py-1 text-xs font-medium ${
 									responseTab === id
 										? 'bg-slate-800 text-white'
@@ -310,7 +314,12 @@ export function PlaygroundResponsePanel({
 					)}
 				</div>
 			) : (
-				<p className="min-h-0 flex-1 text-sm text-gray-500">{t('emptyResponseHint')}</p>
+				<div className="flex min-h-[320px] flex-1 flex-col items-center justify-center gap-4 px-6 py-12 text-center">
+					<span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400">
+						<ArrowDownTrayIcon className="h-5 w-5" aria-hidden />
+					</span>
+					<p className="max-w-64 text-xs leading-6 text-gray-500">{t('emptyResponseHint')}</p>
+				</div>
 			)}
 		</section>
 	);

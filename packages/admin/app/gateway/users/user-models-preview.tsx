@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { readApiJson } from '@/lib/api-json';
 import type { UserModelsPreview } from '@/lib/services/admin/user-models-preview';
@@ -9,12 +9,14 @@ type Kind = UserModelsPreview['preview']['kind'];
 
 export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: string; factorsDirty: boolean }) {
 	const t = useTranslations('users.modelsPreview');
+	const tf = useTranslations('filter');
 	const [model, setModel] = useState('');
 	const [routeGroups, setRouteGroups] = useState('default,free');
 	const [kind, setKind] = useState<Kind>('llm');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
 	const [result, setResult] = useState<UserModelsPreview | null>(null);
+	useEffect(() => { setResult(null); setError(''); }, [model, routeGroups, kind]);
 
 	const request = async () => {
 		setLoading(true);
@@ -56,7 +58,7 @@ export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: strin
 					<div className="flex flex-wrap items-end gap-2">
 						<label className="block min-w-[9rem] flex-1 text-xs font-medium text-gray-500">
 							{t('model')}
-							<input
+							<input disabled={loading}
 								value={model}
 								onChange={(event) => setModel(event.target.value)}
 								placeholder={t('modelPlaceholder')}
@@ -65,7 +67,7 @@ export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: strin
 						</label>
 						<label className="block w-32 text-xs font-medium text-gray-500">
 							{t('routeGroups')}
-							<input
+							<input disabled={loading}
 								value={routeGroups}
 								onChange={(event) => setRouteGroups(event.target.value)}
 								className="mt-1 h-8 w-full rounded-md border border-gray-300 bg-white px-2 font-mono text-xs font-normal text-gray-900"
@@ -73,18 +75,18 @@ export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: strin
 						</label>
 						<label className="block w-32 text-xs font-medium text-gray-500">
 							{t('kind')}
-							<select
+							<select disabled={loading}
 								value={kind}
 								onChange={(event) => setKind(event.target.value as Kind)}
 								className="mt-1 h-8 w-full rounded-md border border-gray-300 bg-white px-2 text-xs font-normal text-gray-900"
 							>
-								<option value="llm">llm</option>
-								<option value="image">image</option>
-								<option value="asr">asr</option>
-								<option value="tts">tts</option>
-								<option value="audio">audio (asr + tts)</option>
-								<option value="embedding">embedding</option>
-								<option value="all">all</option>
+								<option value="llm">{tf('kindLlm')}</option>
+								<option value="image">{tf('kindImage')}</option>
+								<option value="asr">{tf('kindAsr')}</option>
+								<option value="tts">{tf('kindTts')}</option>
+								<option value="audio">{t('audioKind')}</option>
+								<option value="embedding">{tf('kindEmbedding')}</option>
+								<option value="all">{tf('all')}</option>
 							</select>
 						</label>
 						<button

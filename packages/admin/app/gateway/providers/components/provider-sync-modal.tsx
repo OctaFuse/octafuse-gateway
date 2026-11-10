@@ -1,7 +1,8 @@
 'use client';
 
-import { ArrowPathIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, CheckCircleIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useLocale, useTranslations } from 'next-intl';
+import { useProviderDialog } from '../use-provider-dialog';
 import { VendorIcon } from '@/components/model-vendor-icon';
 import { pickProviderKindLabel } from '@/lib/provider-kind';
 import type {
@@ -295,6 +296,7 @@ function OrphansPanel({ sync }: { sync: ProviderSyncState }) {
 }
 
 export function ProviderSyncModal({ sync }: ProviderSyncModalProps) {
+	const dialogRef = useProviderDialog(sync.open, sync.submitting || Boolean(sync.orphanBusyId), sync.close);
 	const t = useTranslations('providers.sync');
 	const tCommon = useTranslations('common');
 	const locale = useLocale();
@@ -310,20 +312,22 @@ export function ProviderSyncModal({ sync }: ProviderSyncModalProps) {
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
 			onMouseDown={(e) => {
 				if (e.target === e.currentTarget && !sync.submitting) sync.close();
 			}}
 		>
 			<div
-				className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg bg-white shadow-panel"
+				ref={dialogRef}
+        tabIndex={-1}
+        className="flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="provider-sync-title"
 			>
 				<div className="flex shrink-0 items-start justify-between gap-3 border-b px-6 py-4">
 					<div>
-						<h2 id="provider-sync-title" className="text-xl font-semibold text-gray-900">
+						<h2 id="provider-sync-title" className="text-lg font-medium text-gray-900">
 							{t('title')}
 						</h2>
 						<p className="mt-1 text-xs text-gray-500">{t('subtitle')}</p>
@@ -343,10 +347,10 @@ export function ProviderSyncModal({ sync }: ProviderSyncModalProps) {
 							type="button"
 							onClick={sync.close}
 							disabled={sync.submitting}
-							className="px-2 text-2xl leading-none text-gray-400 hover:text-gray-600 disabled:opacity-50"
+							className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
 							aria-label={tCommon('close')}
 						>
-							×
+							<XMarkIcon className="h-5 w-5" aria-hidden />
 						</button>
 					</div>
 				</div>
@@ -434,8 +438,8 @@ export function ProviderSyncModal({ sync }: ProviderSyncModalProps) {
 					</div>
 				</div>
 
-				<div className="flex shrink-0 flex-wrap items-center gap-3 border-t bg-gray-50 px-6 py-4">
-					<div className="min-w-0 flex-1 text-sm text-gray-600">
+				<div className="flex shrink-0 flex-wrap items-center justify-end gap-3 border-t bg-gray-50 px-6 py-4">
+					{hasAnything && <div className="min-w-0 flex-1 text-sm text-gray-600">
 						<p>
 							{t('summary', {
 								fields: sync.totals.fields,
@@ -448,7 +452,7 @@ export function ProviderSyncModal({ sync }: ProviderSyncModalProps) {
 							) : null}
 						</p>
 						<p className="mt-0.5 text-xs text-gray-400">{t('safeNote')}</p>
-					</div>
+					</div>}
 					{report && report.groups.length > 0 ? (
 						<button
 							type="button"
@@ -467,14 +471,14 @@ export function ProviderSyncModal({ sync }: ProviderSyncModalProps) {
 					>
 						{tCommon('close')}
 					</button>
-					<button
+					{hasAnything && <button
 						type="button"
 						onClick={() => void sync.runApply()}
 						disabled={sync.submitting || sync.loading || sync.totals.fields === 0}
 						className="rounded-md admin-primary px-4 py-2 text-white hover:bg-gray-800 disabled:opacity-50"
 					>
 						{sync.submitting ? t('applying') : t('applyAll', { count: sync.totals.providers })}
-					</button>
+					</button>}
 				</div>
 			</div>
 		</div>

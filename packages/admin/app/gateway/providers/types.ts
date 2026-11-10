@@ -194,6 +194,16 @@ export type ProviderListFilter =
 	| 'volcengine'
 	| 'elevenlabs';
 
+export const PROVIDER_PROTOCOL_FILTERS: readonly ProviderListFilter[] = [
+	'openai',
+	'anthropic',
+	'gemini',
+	'dashscope',
+	'minimax',
+	'volcengine',
+	'elevenlabs',
+];
+
 export const DEFAULT_PROVIDER_LIST_FILTER: ProviderListFilter = 'all';
 
 export const PROVIDER_LIST_FILTERS: readonly ProviderListFilter[] = [
@@ -227,3 +237,22 @@ export type ProviderKeyStatusKind =
 	| 'disabled'
 	| 'no_key'
 	| 'key_set';
+
+/** Preserve legacy ?filter=openai links while separating status from protocol. */
+export function parseProviderListFilters(
+	filter: string | null,
+	protocol: string | null
+) {
+	const legacy = parseProviderListFilterParam(filter);
+	const parsedProtocol = parseProviderListFilterParam(protocol);
+	return {
+		status: PROVIDER_PROTOCOL_FILTERS.includes(legacy)
+			? ('all' as const)
+			: legacy,
+		protocol: PROVIDER_PROTOCOL_FILTERS.includes(parsedProtocol)
+			? parsedProtocol
+			: PROVIDER_PROTOCOL_FILTERS.includes(legacy)
+			? legacy
+			: ('all' as const),
+	};
+}

@@ -7,6 +7,7 @@ import {
 	ExclamationTriangleIcon,
 	PowerIcon,
 	ShareIcon,
+	ArrowUpRightIcon,
 } from '@heroicons/react/24/outline';
 import { useLocale, useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
@@ -27,6 +28,7 @@ type ProviderCardProps = {
 	copiedId: string | null;
 	statusTogglingId: string | null;
 	onEdit: (provider: GatewayProvider) => void;
+	onViewRoutes: (provider: GatewayProvider) => void;
 	onToggleStatus: (provider: GatewayProvider) => void;
 	onCopyApiKey: (provider: GatewayProvider) => void;
 	/** 点击「有更新」徽标：打开与官方同步面板。 */
@@ -37,28 +39,28 @@ const CARD_SHELL: Record<ProviderKeyStatusKind, string> = {
 	key_set: 'border-slate-200 bg-white hover:border-gray-300',
 	no_key: 'border-rose-200 bg-white hover:border-rose-300',
 	pending: 'border-slate-200 bg-white hover:border-gray-300',
-	disabled: 'border-slate-300 bg-slate-200/80 hover:border-slate-400',
+	disabled: 'border-gray-200 bg-gray-50/70 hover:border-gray-300',
 };
 
 const CARD_FOOTER: Record<ProviderKeyStatusKind, string> = {
 	key_set: 'border-slate-100 bg-slate-50/70',
 	no_key: 'border-slate-100 bg-slate-50/70',
 	pending: 'border-slate-100 bg-slate-50/70',
-	disabled: 'border-slate-300/70 bg-slate-200',
+	disabled: 'border-gray-100 bg-gray-50',
 };
 
 const STATUS_BADGE: Record<ProviderKeyStatusKind, string> = {
-	key_set: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+	key_set: 'text-gray-600 ring-transparent',
 	no_key: 'bg-rose-100 text-rose-800 ring-rose-200',
-	pending: 'bg-amber-700 text-white ring-amber-700',
-	disabled: 'bg-slate-600 text-white ring-slate-600',
+	pending: 'bg-amber-50 text-amber-800 ring-transparent',
+	disabled: 'bg-gray-100 text-gray-600 ring-transparent',
 };
 
 const STATUS_DOT: Record<ProviderKeyStatusKind, string> = {
 	key_set: 'bg-emerald-500',
-	pending: 'bg-amber-200',
+	pending: 'bg-amber-500',
 	no_key: 'bg-rose-500',
-	disabled: 'bg-slate-200',
+	disabled: 'bg-gray-400',
 };
 
 export const PROVIDER_LIST_COLUMNS =
@@ -77,6 +79,7 @@ export function ProviderCard(props: ProviderCardProps) {
 		copiedId,
 		statusTogglingId,
 		onEdit,
+		onViewRoutes,
 		onToggleStatus,
 		onCopyApiKey,
 		onReviewOfficialUpdate,
@@ -139,7 +142,7 @@ export function ProviderCard(props: ProviderCardProps) {
 	return (
 		<article
 			role={isList ? 'listitem' : undefined}
-			className={`group relative min-w-0 gap-3 p-4 transition-[border-color,box-shadow] ${CARD_SHELL[shellStatus]} ${isList ? `grid sm:grid-cols-2 xl:items-center xl:gap-4 hover:ring-1 hover:ring-inset hover:ring-gray-200 ${PROVIDER_LIST_COLUMNS}` : 'flex flex-col rounded-xl border shadow-sm hover:shadow-panel'}`}
+			className={`group relative min-w-0 gap-3 p-4 transition-[border-color,box-shadow] ${CARD_SHELL[shellStatus]} ${isList ? `grid sm:grid-cols-2 xl:items-center xl:gap-4 hover:ring-1 hover:ring-inset hover:ring-gray-200 ${PROVIDER_LIST_COLUMNS}` : 'flex flex-col rounded-xl border'}`}
 			data-provider-status={isActive ? 'active' : 'disabled'}
 		>
 			<button
@@ -184,7 +187,7 @@ export function ProviderCard(props: ProviderCardProps) {
 						className={`pointer-events-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-50 ${
 							isActive
 								? 'bg-emerald-50 text-emerald-700 ring-emerald-200 hover:bg-emerald-100'
-								: 'bg-rose-50 text-rose-700 ring-rose-300 hover:bg-rose-100'
+								: 'bg-gray-100 text-gray-500 ring-gray-200 hover:bg-gray-200'
 						}`}
 						title={isActive ? t('providerEnabled') : t('providerDisabled')}
 						aria-label={isActive ? t('providerEnabled') : t('providerDisabled')}
@@ -194,25 +197,18 @@ export function ProviderCard(props: ProviderCardProps) {
 				) : null}
 			</div>
 
-			<div
-				className={`pointer-events-none relative z-10 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5 ${isList ? 'order-4 xl:justify-start' : ''}`}
-				title={routeTitle}
-			>
-				<ShareIcon className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
-				<span className="text-slate-600">{routesCount <= 0 ? t('noRoutes') : routesLabel}</span>
-				{routesCount > 0 ? (
-					<>
-						<span className="text-slate-300" aria-hidden>·</span>
-						<span className={`font-medium tabular-nums ${isActive ? routeUsageClass(routesCount, activeRoutesCount) : 'text-slate-500'}`}>
-							{t('activeRoutes', { count: activeRoutesCount })}
-						</span>
-					</>
-				) : null}
-			</div>
+      <div className={`relative z-10 min-w-0 ${isList ? 'order-4' : ''}`}>
+        <button type="button" onClick={() => onViewRoutes(provider)} title={routeTitle} aria-label={t('viewRoutes', { name: provider.name })} className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-md py-1 text-left text-xs leading-5 text-gray-600 hover:text-gray-950">
+          <ShareIcon className="h-3.5 w-3.5 shrink-0 text-gray-400" aria-hidden />
+          <span>{routesCount <= 0 ? t('noRoutes') : routesLabel}</span>
+          {routesCount > 0 && <span className={isActive ? routeUsageClass(routesCount, activeRoutesCount) : 'text-gray-500'}>{t('activeRoutes', { count: activeRoutesCount })}</span>}
+          <ArrowUpRightIcon className="h-3 w-3 text-gray-400" aria-hidden />
+        </button>
+      </div>
 
 			<div className={`pointer-events-none relative z-10 min-w-0 ${isList ? 'order-2' : 'flex-1'}`}>
 				{protocols.length > 0 ? (
-					<ProviderProtocolBadges summaries={protocols} muted={!isActive} />
+					<ProviderProtocolBadges summaries={protocols} muted={!isActive} compact={isList} />
 				) : (
 					<span
 						className={`inline-flex rounded-md border border-dashed px-2 py-1 text-xs ${
@@ -274,7 +270,7 @@ export function ProviderCard(props: ProviderCardProps) {
 						className={`pointer-events-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-50 ${
 							isActive
 								? 'bg-emerald-50 text-emerald-700 ring-emerald-200 hover:bg-emerald-100'
-								: 'bg-rose-50 text-rose-700 ring-rose-300 hover:bg-rose-100'
+								: 'bg-gray-100 text-gray-500 ring-gray-200 hover:bg-gray-200'
 						}`}
 						title={isActive ? t('providerEnabled') : t('providerDisabled')}
 						aria-label={isActive ? t('providerEnabled') : t('providerDisabled')}

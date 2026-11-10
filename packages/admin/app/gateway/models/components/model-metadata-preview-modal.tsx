@@ -16,11 +16,11 @@ export function ModelMetadataPreviewModal(props: Props) {
 
 	return (
 		<div
-			className="fixed inset-0 z-[55] flex items-center justify-center bg-black/50 p-4"
+			className="fixed inset-0 z-[55] flex items-center justify-center bg-black/50 p-3 sm:p-6"
 			onClick={onClose}
 		>
 			<div
-				className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-panel"
+				className="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-panel"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="metadata-preview-title"

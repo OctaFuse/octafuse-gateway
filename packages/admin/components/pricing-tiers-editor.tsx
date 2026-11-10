@@ -18,6 +18,7 @@ import {
 } from '@/lib/pricing-tiers-draft';
 
 export type PricingTiersEditorProps = {
+	columnLabels?: Partial<Record<'upto' | 'input' | 'output' | 'cacheRead' | 'cacheWrite', string>>;
 	rows: PricingTierDraftRow[];
 	onChange: (rows: PricingTierDraftRow[]) => void;
 	/** 至少保留行数；低于则禁用删除（默认 0，可删光） */
@@ -77,6 +78,7 @@ function PriceCell(props: {
 
 export function PricingTiersEditor({
 	rows,
+	columnLabels,
 	onChange,
 	minRows = 0,
 	title,
@@ -305,7 +307,7 @@ export function PricingTiersEditor({
 								}
 							>
 								<tr>
-									<th className="whitespace-nowrap px-2 py-2">{t('upto')}</th>
+									<th className="whitespace-nowrap px-2 py-2">{columnLabels?.upto ?? t('upto')}</th>
 									{imageColHeaders ? (
 										imageColHeaders.map((label) => (
 											<th key={label} className="whitespace-nowrap px-2 py-2">
@@ -314,12 +316,12 @@ export function PricingTiersEditor({
 										))
 									) : (
 										<>
-											<th className="whitespace-nowrap px-2 py-2">{t('input')}</th>
+											<th className="whitespace-nowrap px-2 py-2">{columnLabels?.input ?? t('input')}</th>
 											{isEmbedding ? null : (
 												<>
-													<th className="whitespace-nowrap px-2 py-2">{t('output')}</th>
-													<th className="whitespace-nowrap px-2 py-2">{t('cacheRead')}</th>
-													<th className="whitespace-nowrap px-2 py-2">{t('cacheWrite')}</th>
+													<th className="whitespace-nowrap px-2 py-2">{columnLabels?.output ?? t('output')}</th>
+													<th className="whitespace-nowrap px-2 py-2">{columnLabels?.cacheRead ?? t('cacheRead')}</th>
+													<th className="whitespace-nowrap px-2 py-2">{columnLabels?.cacheWrite ?? t('cacheWrite')}</th>
 												</>
 											)}
 										</>

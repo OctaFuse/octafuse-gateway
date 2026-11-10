@@ -4,12 +4,36 @@ import { useTranslations } from 'next-intl';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import type { GatewayToolDefinition } from '@/lib/gateway-tools';
 import type { InvokeKind } from '@/lib/invoke-kind';
-import { FilterTileGroup } from '../../components/filter-controls';
+import type { KeyboardEvent } from 'react';
+import { AdminInspector } from '@/components/admin-inspector';
+import { CheckIcon } from '@heroicons/react/24/outline';
 import type { SimulatorProtocol } from '@/lib/simulator/endpoint';
 import { inputClass, labelClass, panelClass } from '../simulator-utils';
 import type { AdminModelRow, RouteListRow } from '../types';
 
+function onListboxKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+	const buttons = Array.from(
+		event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('button[role="option"]') ?? []
+	);
+	const index = buttons.indexOf(event.currentTarget);
+	const next =
+		event.key === 'ArrowDown'
+			? Math.min(index + 1, buttons.length - 1)
+			: event.key === 'ArrowUp'
+			? Math.max(index - 1, 0)
+			: event.key === 'Home'
+			? 0
+			: event.key === 'End'
+			? buttons.length - 1
+			: null;
+	if (next === null) return;
+	event.preventDefault();
+	buttons[next]?.focus();
+	buttons[next]?.click();
+}
+
 type Props = {
+	disabled: boolean;
 	filterKind: InvokeKind;
 	protocol: SimulatorProtocol;
 	onFilterKindChange: (kind: InvokeKind) => void;
@@ -37,6 +61,7 @@ type Props = {
 };
 
 export function SimulatorRoutingPanel({
+	disabled,
 	filterKind,
 	protocol,
 	onFilterKindChange,
@@ -73,24 +98,37 @@ export function SimulatorRoutingPanel({
 					{isToolKind ? (selectedToolId ? `/v1/tools/${selectedToolId}` : '') : modelRoutingString || ''}
 				</span>
 			</div>
-			<FilterTileGroup
-				label={t('kind')}
-				value={filterKind}
-				onChange={(value) => onFilterKindChange(value as InvokeKind)}
-				options={[
-					{ value: 'llm', label: t('kindLlm'), count: kindCounts.llm },
-					{ value: 'image', label: t('kindImage'), count: kindCounts.image },
-					{ value: 'asr', label: t('kindAsr'), count: kindCounts.asr },
-					{ value: 'tts', label: t('kindTts'), count: kindCounts.tts },
-					{ value: 'embedding', label: t('kindEmbedding'), count: kindCounts.embedding },
-					{ value: 'tool', label: t('kindTool'), count: kindCounts.tool },
-				]}
-			/>
+			<div role="group" aria-label={t('kind')} className="flex flex-wrap gap-1">
+				{(['llm', 'image', 'asr', 'tts', 'embedding', 'tool'] as const).map((kind) => (
+					<button
+						key={kind}
+						type="button"
+						disabled={disabled}
+						aria-pressed={filterKind === kind}
+						onClick={() => onFilterKindChange(kind)}
+						className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs disabled:opacity-50 ${
+							filterKind === kind ? 'bg-gray-950 font-medium text-white' : 'text-gray-600 hover:bg-gray-100'
+						}`}
+					>
+						{t(
+							{
+								llm: 'kindLlm',
+								image: 'kindImage',
+								asr: 'kindAsr',
+								tts: 'kindTts',
+								embedding: 'kindEmbedding',
+								tool: 'kindTool',
+							}[kind]
+						)}
+						<span className="font-mono tabular-nums opacity-60">{kindCounts[kind]}</span>
+					</button>
+				))}
+			</div>
 
 			{isToolKind ? (
 				<div className="flex min-h-0 flex-1 flex-col">
 					<div
-						className="h-40 min-h-0 flex-none overflow-y-auto xl:h-auto xl:flex-1 rounded-md border border-gray-200 bg-white xl:min-h-0"
+						className="h-56 min-h-0 flex-none overflow-y-auto overscroll-contain rounded-lg bg-white xl:h-auto xl:flex-1"
 						role="listbox"
 						aria-label={t('tool')}
 					>
@@ -100,13 +138,22 @@ export function SimulatorRoutingPanel({
 								<button
 									key={tool.id}
 									type="button"
+									disabled={disabled}
 									role="option"
 									aria-selected={active}
+									onKeyDown={onListboxKeyDown}
+									tabIndex={
+										active ||
+										(!gatewayTools.some((tool) => tool.id === selectedToolId) &&
+											tool.id === gatewayTools[0]?.id)
+											? 0
+											: -1
+									}
 									onClick={() => onSelectTool(tool.id)}
 									className={
 										active
-											? 'flex w-full flex-col items-start gap-0.5 border-b border-gray-100 bg-gray-50 px-3 py-2 text-left last:border-b-0'
-											: 'flex w-full flex-col items-start gap-0.5 border-b border-gray-100 px-3 py-2 text-left last:border-b-0 hover:bg-gray-50'
+											? 'flex w-full flex-col items-start gap-0.5 rounded-lg bg-gray-100 px-3 py-3 ring-1 ring-inset ring-gray-200 text-left last:border-b-0'
+											: 'flex w-full flex-col items-start gap-0.5 rounded-lg px-3 py-3 text-left last:border-b-0 hover:bg-gray-50'
 									}
 								>
 									<span className="text-sm font-medium text-gray-900">{tTools(tool.nameKey)}</span>
@@ -122,6 +169,7 @@ export function SimulatorRoutingPanel({
 						<input
 							id="simulator-model-search"
 							type="search"
+							disabled={disabled}
 							placeholder={t('modelFilterPlaceholder')}
 							value={filterModel}
 							onChange={(e) => onFilterModelChange(e.target.value)}
@@ -130,7 +178,7 @@ export function SimulatorRoutingPanel({
 							aria-label={t('model')}
 						/>
 						<div
-							className="h-48 min-h-0 flex-none overflow-y-auto xl:h-auto xl:flex-1 rounded-md border border-gray-200 bg-white xl:min-h-0"
+							className="h-56 min-h-0 flex-none overflow-y-auto overscroll-contain rounded-lg bg-white xl:h-auto xl:flex-1"
 							role="listbox"
 							aria-label={t('model')}
 						>
@@ -146,22 +194,30 @@ export function SimulatorRoutingPanel({
 										<button
 											key={m.id}
 											type="button"
+											disabled={disabled}
 											role="option"
 											aria-selected={active}
+											onKeyDown={onListboxKeyDown}
+											tabIndex={
+												active ||
+												(!filteredModels.some((model) => model.id === selectedModelId) &&
+													m.id === filteredModels[0]?.id)
+													? 0
+													: -1
+											}
 											onClick={() => onSelectModel(m.id)}
 											className={
 												active
-													? 'flex w-full items-center gap-2.5 border-b border-gray-100 bg-gray-50 px-3 py-2 text-left last:border-b-0'
-													: 'flex w-full items-center gap-2.5 border-b border-gray-100 px-3 py-2 text-left last:border-b-0 hover:bg-gray-50'
+													? 'flex w-full items-center gap-2.5 rounded-lg bg-gray-100 px-3 py-3 ring-1 ring-inset ring-gray-200 text-left last:border-b-0'
+													: 'flex w-full items-center gap-2.5 rounded-lg px-3 py-3 text-left last:border-b-0 hover:bg-gray-50'
 											}
 										>
 											<ModelVendorIcon vendor={m.vendor} size="compact" />
 											<span className="min-w-0 flex-1">
 												<span className="block truncate text-sm font-medium text-gray-900">{name}</span>
-												<span className="block truncate font-mono text-xs text-gray-500">
-													{m.id} · {m.vendor}
-												</span>
+												<span className="block truncate font-mono text-xs text-gray-500">{m.id}</span>
 											</span>
+											{active && <CheckIcon className="h-4 w-4 shrink-0 text-gray-700" aria-hidden />}
 										</button>
 									);
 								})
@@ -174,27 +230,36 @@ export function SimulatorRoutingPanel({
 
 					<div className="shrink-0 space-y-2 border-t border-gray-100 pt-2">
 						<div>
-							<label className={labelClass}>{t('routeGroupOptional')}</label>
+							<label className={labelClass} htmlFor="simulator-route-group">
+								{t('routeGroupOptional')}
+							</label>
 							<select
-								value={routeGroup}
+								id="simulator-route-group"
+								value={routeGroup === 'default' ? '' : routeGroup}
 								onChange={(e) => onRouteGroupChange(e.target.value)}
 								className={inputClass}
-								disabled={!selectedModelId}
+								disabled={disabled || !selectedModelId}
 							>
 								<option value="">{t('defaultRouteGroup')}</option>
-								{routeGroupsForModel.map((g) => (
-									<option key={g} value={g}>
-										{g}
-									</option>
-								))}
+								{routeGroupsForModel
+									.filter((group) => group && group !== 'default')
+									.map((g) => (
+										<option key={g} value={g}>
+											{g}
+										</option>
+									))}
 							</select>
 						</div>
 						{(protocol === 'dashscope' || protocol === 'elevenlabs') &&
 						selectedModelIsAudio &&
 						realtimeOperationOptions.length > 0 ? (
 							<div>
-								<label className={labelClass}>{t('realtimeOperation')}</label>
+								<label className={labelClass} htmlFor="simulator-realtime-operation">
+									{t('realtimeOperation')}
+								</label>
 								<select
+									id="simulator-realtime-operation"
+									disabled={disabled}
 									value={realtimeOperation ?? ''}
 									onChange={(e) => onRealtimeOperationChange(e.target.value)}
 									className={`${inputClass} font-mono`}
@@ -207,32 +272,30 @@ export function SimulatorRoutingPanel({
 								</select>
 							</div>
 						) : null}
-						<details className="text-xs text-gray-600">
-							<summary className="cursor-pointer select-none hover:text-gray-900">
-								{t('matchingRoutesSummary', { count: matchingRoutes.length })}
-							</summary>
-							<div className="mt-2">
-								{!selectedModelId ? (
-									<p className="text-xs text-gray-500">{t('matchingRoutesNeedModel')}</p>
-								) : matchingRoutes.length === 0 ? (
-									<p className="text-xs text-amber-800">{t('matchingRoutesEmpty')}</p>
-								) : (
-									<ul className="max-h-32 divide-y divide-gray-100 overflow-y-auto rounded-md border border-gray-200 bg-gray-50/80 text-xs">
-										{matchingRoutes.map((r) => (
-											<li key={r.id} className="px-2.5 py-1.5 font-mono text-gray-800">
-												<span className="font-medium text-gray-900">
-													{providerLabelFor(r) || '—'}
-												</span>
-												<span className="text-gray-500">
-													{' '}
-													p{r.priority} · {r.route_group || 'default'}
-												</span>
-											</li>
-										))}
-									</ul>
-								)}
-							</div>
-						</details>
+						<AdminInspector
+							label={t('matchingRoutesSummary', { count: matchingRoutes.length })}
+							size="md"
+							hint={t('matchingRoutesHint')}
+							disabled={!selectedModelId}
+						>
+							{matchingRoutes.length ? (
+								<ul className="divide-y divide-gray-100">
+									{matchingRoutes.map((route) => (
+										<li
+											key={route.id}
+											className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
+										>
+											<span>{providerLabelFor(route) || '—'}</span>
+											<span className="font-mono text-xs text-gray-500">
+												P{route.priority} · {route.route_group || 'default'}
+											</span>
+										</li>
+									))}
+								</ul>
+							) : (
+								<p className="text-sm text-gray-500">{t('matchingRoutesEmpty')}</p>
+							)}
+						</AdminInspector>
 					</div>
 				</>
 			)}

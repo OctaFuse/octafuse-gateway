@@ -1,14 +1,23 @@
 'use client';
 
+import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
-import { CatalogViewToggle, type CatalogView } from '../../components/catalog-view-toggle';
-import { FilterRow, FilterSegmented, FilterSelect } from '../../components/filter-controls';
+import {
+	CatalogViewToggle,
+	type CatalogView,
+} from '../../components/catalog-view-toggle';
 import { getModelVendorLabel } from '@/lib/model-vendor';
-import { ALL_VENDORS_KEY, type ModelLifecycleFilter, type ModelListKindFilter } from '../types';
+import {
+	ALL_VENDORS_KEY,
+	type ModelLifecycleFilter,
+	type ModelListKindFilter,
+} from '../types';
 
 type Props = {
 	view: CatalogView;
 	onViewChange: (view: CatalogView) => void;
+	search: string;
+	onSearchChange: (value: string) => void;
 	filteredCount: number;
 	modelCount: number;
 	hasActiveFilter: boolean;
@@ -16,8 +25,13 @@ type Props = {
 	selectedVendor: string;
 	modelsByVendor: [string, unknown[]][];
 	selectedKind: ModelListKindFilter;
-	kindCounts: { llm: number; image: number; asr: number; tts: number; embedding: number };
-	/** Kind「All」计数（已应用现役/退役筛选）。 */
+	kindCounts: {
+		llm: number;
+		image: number;
+		asr: number;
+		tts: number;
+		embedding: number;
+	};
 	kindAllCount: number;
 	selectedLifecycle: ModelLifecycleFilter;
 	lifecycleCounts: { active: number; retired: number };
@@ -27,107 +41,142 @@ type Props = {
 	onClearFilter: () => void;
 };
 
-export function ModelFilterSidebar(props: Props) {
-	const {
-		view,
-		onViewChange,
-		filteredCount,
-		modelCount,
-		hasActiveFilter,
-		isAllVendors,
-		selectedVendor,
-		modelsByVendor,
-		selectedKind,
-		kindCounts,
-		kindAllCount,
-		selectedLifecycle,
-		lifecycleCounts,
-		onSelectLifecycle,
-		onSelectVendor,
-		onSelectKind,
-		onClearFilter,
-	} = props;
-
+export function ModelFilterSidebar({
+	view,
+	onViewChange,
+	search,
+	onSearchChange,
+	filteredCount,
+	modelCount,
+	hasActiveFilter,
+	selectedVendor,
+	modelsByVendor,
+	selectedKind,
+	kindCounts,
+	kindAllCount,
+	selectedLifecycle,
+	onSelectLifecycle,
+	onSelectVendor,
+	onSelectKind,
+	onClearFilter,
+}: Props) {
 	const t = useTranslations('models.filter');
-	const tFilter = useTranslations('filter');
-	const tCommon = useTranslations('common');
-
-	const vendorTotal = modelsByVendor.reduce((n, [, items]) => n + items.length, 0);
-
+	const f = useTranslations('filter');
+	const c = useTranslations('common');
+	const kinds = [
+		{ key: 'all', label: f('all'), count: kindAllCount },
+		...(['llm', 'image', 'asr', 'tts', 'embedding'] as const).map((key) => ({
+			key,
+			label: t(
+				{
+					llm: 'kindLlm',
+					image: 'kindImage',
+					asr: 'kindAsr',
+					tts: 'kindTts',
+					embedding: 'kindEmbedding',
+				}[key]
+			),
+			count: kindCounts[key],
+		})),
+	];
+	const selectClass =
+		'h-10 min-w-0 max-w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100';
 	return (
-		<section className="mb-5 space-y-3 rounded-xl border border-slate-200 bg-white p-4" aria-label={t('title')}>
-			<div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-				<span className="text-xs tabular-nums text-slate-500">{tCommon('showing', { filtered: filteredCount, total: modelCount })}</span>
-				<CatalogViewToggle value={view} onChange={onViewChange} />
-			</div>
-			<div className="grid grid-cols-2 gap-3 md:hidden">
-				<label className="min-w-0 text-xs text-gray-500">
-					{t('kind')}
-					<select value={selectedKind} onChange={(event) => onSelectKind(event.target.value as ModelListKindFilter)} className="mt-1 min-h-11 w-full min-w-0 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900">
-						<option value="all">{tFilter('all')} ({kindAllCount})</option>
-						<option value="llm">{t('kindLlm')} ({kindCounts.llm})</option>
-						<option value="image">{t('kindImage')} ({kindCounts.image})</option>
-						<option value="asr">{t('kindAsr')} ({kindCounts.asr})</option>
-						<option value="tts">{t('kindTts')} ({kindCounts.tts})</option>
-						<option value="embedding">{t('kindEmbedding')} ({kindCounts.embedding})</option>
-					</select>
-				</label>
-				<label className="min-w-0 text-xs text-gray-500">
-					{t('lifecycle')}
-					<select value={selectedLifecycle} onChange={(event) => onSelectLifecycle(event.target.value as ModelLifecycleFilter)} className="mt-1 min-h-11 w-full min-w-0 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900">
-						<option value="all">{tFilter('all')} ({modelCount})</option>
-						<option value="active">{t('lifecycleActive')} ({lifecycleCounts.active})</option>
-						<option value="retired">{t('lifecycleRetired')} ({lifecycleCounts.retired})</option>
-					</select>
-				</label>
-				<label className="min-w-0 text-xs text-gray-500">
-					{tFilter('vendor')}
-					<select value={selectedVendor} onChange={(event) => onSelectVendor(event.target.value)} className="mt-1 min-h-11 w-full min-w-0 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900">
-						<option value={ALL_VENDORS_KEY}>{tFilter('all')} ({vendorTotal})</option>
-						{modelsByVendor.map(([key, items]) => <option key={key} value={key}>{getModelVendorLabel(key)} ({items.length})</option>)}
-					</select>
-				</label>
-				{hasActiveFilter && <button type="button" onClick={onClearFilter} className="col-span-2 min-h-9 text-left text-xs font-medium text-gray-800">{tFilter('clear')}</button>}
-			</div>
-			<div className="hidden items-center gap-4 md:flex">
-				<FilterRow className="min-w-0 flex-1">
-					<FilterSegmented
-						label={t('kind')}
-						value={selectedKind}
-						onChange={(value) => onSelectKind(value as ModelListKindFilter)}
-						options={[
-							{ value: 'all', label: tFilter('all'), count: kindAllCount },
-							{ value: 'llm', label: t('kindLlm'), count: kindCounts.llm },
-							{ value: 'image', label: t('kindImage'), count: kindCounts.image },
-							{ value: 'asr', label: t('kindAsr'), count: kindCounts.asr },
-							{ value: 'tts', label: t('kindTts'), count: kindCounts.tts },
-							{ value: 'embedding', label: t('kindEmbedding'), count: kindCounts.embedding },
-						]}
+		<section aria-label={t('title')} className="mb-5 space-y-4">
+			<div className="flex flex-wrap items-center gap-3">
+				<div className="relative min-w-0 flex-1 basis-64 sm:max-w-sm">
+					<MagnifyingGlassIcon
+						className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+						aria-hidden
 					/>
-					<FilterSegmented
-						label={t('lifecycle')}
-						value={selectedLifecycle}
-						onChange={(value) => onSelectLifecycle(value as ModelLifecycleFilter)}
-						options={[
-							{ value: 'all', label: tFilter('all'), count: modelCount },
-							{ value: 'active', label: t('lifecycleActive'), count: lifecycleCounts.active },
-							{ value: 'retired', label: t('lifecycleRetired'), count: lifecycleCounts.retired },
-						]}
+					<input
+						type="search"
+						value={search}
+						onChange={(event) => onSearchChange(event.target.value)}
+						aria-label={t('searchPlaceholder')}
+						placeholder={t('searchPlaceholder')}
+						className={`${selectClass} w-full pl-9 pr-9`}
+						autoComplete="off"
 					/>
-					<FilterSelect label={tFilter('vendor')} value={selectedVendor} onChange={onSelectVendor} active={!isAllVendors} widthClass="w-44">
-						<option value={ALL_VENDORS_KEY}>{tFilter('all')} ({vendorTotal})</option>
-						{modelsByVendor.map(([key, items]) => <option key={key} value={key}>{getModelVendorLabel(key)} ({items.length})</option>)}
-					</FilterSelect>
-				</FilterRow>
-				{hasActiveFilter ? (
+					{search && (
+						<button
+							type="button"
+							onClick={() => onSearchChange('')}
+							aria-label={t('clearSearch')}
+							className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+						>
+							<XMarkIcon className="h-4 w-4" aria-hidden />
+						</button>
+					)}
+				</div>
+				<select
+					aria-label={f('vendor')}
+					value={selectedVendor}
+					onChange={(event) => onSelectVendor(event.target.value)}
+					className={`${selectClass} w-40 sm:w-44`}
+				>
+					<option value={ALL_VENDORS_KEY}>{t('allVendors')}</option>
+					{modelsByVendor.map(([key, items]) => (
+						<option key={key} value={key}>
+							{getModelVendorLabel(key)} ({items.length})
+						</option>
+					))}
+				</select>
+				<select
+					aria-label={t('lifecycle')}
+					value={selectedLifecycle}
+					onChange={(event) =>
+						onSelectLifecycle(event.target.value as ModelLifecycleFilter)
+					}
+					className={selectClass}
+				>
+					<option value="all">{t('allLifecycles')}</option>
+					<option value="active">{t('lifecycleActive')}</option>
+					<option value="retired">{t('lifecycleRetired')}</option>
+				</select>
+				<span className="text-xs tabular-nums text-gray-500" aria-live="polite">
+					{c('showing', { filtered: filteredCount, total: modelCount })}
+				</span>
+				<div className="ml-auto [&>div>span]:sr-only">
+					<CatalogViewToggle value={view} onChange={onViewChange} />
+				</div>
+			</div>
+			<div
+				className="flex flex-wrap items-center gap-1 border-b border-gray-200 pb-3"
+				role="group"
+				aria-label={t('kind')}
+			>
+				{kinds.map((kind) => (
+					<button
+						type="button"
+						key={kind.key}
+						aria-pressed={selectedKind === kind.key}
+						onClick={() => onSelectKind(kind.key as ModelListKindFilter)}
+						className={`inline-flex min-h-9 items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors ${
+							selectedKind === kind.key
+								? 'bg-gray-950 font-medium text-white'
+								: 'text-gray-600 hover:bg-gray-100 hover:text-gray-950'
+						}`}
+					>
+						{kind.label}
+						<span
+							className={`font-mono tabular-nums ${
+								selectedKind === kind.key ? 'text-white/70' : 'text-gray-400'
+							}`}
+						>
+							{kind.count}
+						</span>
+					</button>
+				))}
+				{hasActiveFilter && (
 					<button
 						type="button"
 						onClick={onClearFilter}
-						className="shrink-0 rounded text-xs font-medium text-slate-500 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-1"
+						className="ml-auto rounded-lg px-3 py-2 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-950"
 					>
-						{tFilter('clear')}
+						{f('clear')}
 					</button>
-				) : null}
+				)}
 			</div>
 		</section>
 	);

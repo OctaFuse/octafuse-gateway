@@ -1,4 +1,3 @@
-import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import type { ReactNode } from 'react';
 
 /**
@@ -87,18 +86,12 @@ export function FilterSelect({
 				<select
 					value={value}
 					onChange={(event) => onChange(event.target.value)}
-					className={`block h-6 ${widthClass} min-w-0 cursor-pointer appearance-none truncate rounded-md pl-2.5 pr-7 text-xs outline-none transition focus-visible:ring-2 focus-visible:ring-gray-500 ${
+					className={`block h-6 ${widthClass} min-w-0 cursor-pointer truncate rounded-md pl-2.5 text-xs outline-none transition focus-visible:ring-2 focus-visible:ring-gray-500 ${
 						isActive ? ACTIVE_CLASS : IDLE_CLASS
 					}`}
 				>
 					{children}
 				</select>
-				<ChevronDownIcon
-					className={`pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2 ${
-						isActive ? 'text-gray-800' : 'text-slate-400'
-					}`}
-					aria-hidden
-				/>
 			</div>
 		</label>
 	);

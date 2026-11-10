@@ -142,7 +142,7 @@ function RouteModalContent(props: RouteModalProps) {
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-2 sm:p-4"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
 			onMouseDown={(event) => {
 				if (event.target === event.currentTarget && !busy) onClose();
 			}}
@@ -153,7 +153,7 @@ function RouteModalContent(props: RouteModalProps) {
 				aria-modal="true"
 				aria-labelledby="route-modal-title"
 				aria-describedby={modelLabel ? 'route-modal-context' : undefined}
-				className="flex h-[min(920px,94dvh)] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-panel ring-1 ring-black/5"
+				className="flex h-[min(820px,94dvh)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel ring-1 ring-black/5"
 				onKeyDown={(event) => {
 					if (event.key === 'Escape' && !busy) {
 						event.stopPropagation();
@@ -276,7 +276,7 @@ function RouteModalContent(props: RouteModalProps) {
 				) : null}
 				<div
 					ref={scrollRef}
-					className={`min-h-0 flex-1 overscroll-contain border-t border-gray-200 bg-slate-100/80 px-5 py-4 sm:px-6 ${
+					className={`min-h-0 flex-1 overscroll-contain border-t border-gray-200 bg-gray-50 px-5 py-4 sm:px-6 ${
 						activeTab === 'test' ? 'overflow-hidden' : 'overflow-y-auto'
 					}`}
 				>

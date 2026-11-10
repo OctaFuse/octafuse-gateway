@@ -48,9 +48,9 @@ export const LS_TOOL_ID = 'octafuse.simulator.toolId';
 export const KEYS_PAGE_SIZE = 200;
 
 export const inputClass =
-	'w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 bg-white';
+	'min-h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100';
 export const labelClass = 'block text-xs font-medium text-gray-500 normal-case tracking-normal mb-1';
-export const panelClass = 'rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm space-y-3';
+export const panelClass = 'rounded-xl border border-gray-200 bg-white p-4 space-y-4';
 export const codeBlockClass =
 	'p-3 text-xs overflow-x-auto whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-md font-mono text-gray-900';
 
@@ -121,7 +121,7 @@ export function bodyTemplateForSelection(
 	providerModelName?: string | null,
 	llmOperation: OpenaiLlmOperation = 'chat',
 	adapter?: string | null,
-	modelId?: string | null,
+	modelId?: string | null
 ): string {
 	if (toolId) {
 		return bodyTemplateForTool(toolId);
@@ -145,14 +145,17 @@ export function bodyTemplateForSelection(
 		if (realtimeOperation && isElevenLabsRealtimeOperation(realtimeOperation)) {
 			return buildElevenLabsRealtimeTemplate(realtimeOperation);
 		}
-		return audioOperation === 'speech' ? ELEVENLABS_SPEECH_BODY_TEMPLATE : ELEVENLABS_TRANSCRIPTIONS_BODY_TEMPLATE;
+		return audioOperation === 'speech'
+			? ELEVENLABS_SPEECH_BODY_TEMPLATE
+			: ELEVENLABS_TRANSCRIPTIONS_BODY_TEMPLATE;
 	}
 	if (audioOperation && protocol === 'dashscope') {
 		if (realtimeOperation === 'audio.speech' || realtimeOperation === 'audio.speech.stream') {
 			return buildDashScopeNativeSpeechBodyTemplate(providerModelName);
 		}
 		if (realtimeOperation === 'audio.speech.multimodal') return DASHSCOPE_MULTIMODAL_SPEECH_BODY_TEMPLATE;
-		if (realtimeOperation === 'audio.transcriptions.async') return DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE;
+		if (realtimeOperation === 'audio.transcriptions.async')
+			return DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE;
 		if (audioOperation === 'speech') {
 			return buildDashScopeRealtimeTtsTemplate(providerModelName);
 		}
@@ -160,9 +163,7 @@ export function bodyTemplateForSelection(
 			return DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE;
 		}
 		return buildDashScopeRealtimeAsrTemplate(
-			realtimeOperation && isDashScopeRealtimeOperation(realtimeOperation)
-				? realtimeOperation
-				: undefined,
+			realtimeOperation && isDashScopeRealtimeOperation(realtimeOperation) ? realtimeOperation : undefined
 		);
 	}
 	if (
@@ -192,10 +193,10 @@ export function listDashScopeRealtimeOperations(
 	routes: RouteListRow[],
 	modelId: string,
 	routeGroup: string,
-	audioOperation: AudioOperation,
+	audioOperation: AudioOperation
 ): readonly DashScopeRealtimeOperation[] {
 	const allowed = new Set(
-		DASHSCOPE_REALTIME_OPERATIONS.filter((operation) => operation.startsWith(`audio.${audioOperation}.`)),
+		DASHSCOPE_REALTIME_OPERATIONS.filter((operation) => operation.startsWith(`audio.${audioOperation}.`))
 	);
 	const found = new Set<DashScopeRealtimeOperation>();
 	for (const route of routes) {
@@ -254,10 +255,11 @@ export function listElevenLabsAudioClientOperations(
 	routes: RouteListRow[],
 	modelId: string,
 	routeGroup: string,
-	audioOperation: AudioOperation,
+	audioOperation: AudioOperation
 ): readonly string[] {
 	const httpOperation = audioOperation === 'speech' ? 'audio.speech' : 'audio.transcriptions';
-	const realtimeOperation = audioOperation === 'speech' ? 'audio.speech.realtime' : 'audio.transcriptions.realtime';
+	const realtimeOperation =
+		audioOperation === 'speech' ? 'audio.speech.realtime' : 'audio.transcriptions.realtime';
 	const found: string[] = [];
 	for (const operation of [httpOperation, realtimeOperation]) {
 		if (filterMatchingActiveRoutes(routes, modelId, routeGroup, 'elevenlabs', operation).length > 0) {
@@ -272,7 +274,7 @@ export function listDashScopeAudioClientOperations(
 	routes: RouteListRow[],
 	modelId: string,
 	routeGroup: string,
-	audioOperation: AudioOperation,
+	audioOperation: AudioOperation
 ): readonly string[] {
 	const realtime = listDashScopeRealtimeOperations(routes, modelId, routeGroup, audioOperation);
 	const prefix = audioOperation === 'speech' ? 'audio.speech' : 'audio.transcriptions';
@@ -348,25 +350,34 @@ export function isBodyDirty(
 	providerModelName?: string | null,
 	llmOperation: OpenaiLlmOperation = 'chat',
 	adapter?: string | null,
-	modelId?: string | null,
+	modelId?: string | null
 ): boolean {
-	return (
-		normalizeBodyWhitespace(bodyText) !==
-		normalizeBodyWhitespace(
-			bodyTemplateForSelection(
-				protocol,
-				isImageModel,
-				imageOperation,
-				audioOperation,
-				toolId,
-				realtimeOperation,
-				providerModelName,
-				llmOperation,
-				adapter,
-				modelId,
-			),
-		)
+	const template = bodyTemplateForSelection(
+		protocol,
+		isImageModel,
+		imageOperation,
+		audioOperation,
+		toolId,
+		realtimeOperation,
+		providerModelName,
+		llmOperation,
+		adapter,
+		modelId
 	);
+	const comparable = (text: string) => {
+		if (protocol === 'dashscope' && realtimeOperation && isDashScopeRealtimeOperation(realtimeOperation)) {
+			try {
+				const body = JSON.parse(text);
+				if (body?.header && typeof body.header === 'object' && !Array.isArray(body.header))
+					delete body.header.task_id;
+				return JSON.stringify(body);
+			} catch {
+				/* Invalid drafts still differ from the valid template. */
+			}
+		}
+		return normalizeBodyWhitespace(text);
+	};
+	return comparable(bodyText) !== comparable(template);
 }
 
 /** Effective route_group for matching: empty / default → routes with empty or "default" group. */
@@ -436,7 +447,7 @@ function surfaceHasOperation(operations: Set<string>, ...wanted: string[]): bool
 export function listSupportedClientSurfaces(
 	routes: RouteListRow[],
 	modelId: string,
-	routeGroup: string,
+	routeGroup: string
 ): SimulatorClientSurfaceOptions {
 	if (!modelId) return EMPTY_CLIENT_SURFACES;
 
@@ -459,7 +470,7 @@ export function listSupportedClientSurfaces(
 							request_operation: '*',
 							status: 'active',
 						},
-					];
+				  ];
 		for (const surface of entries) {
 			if (surface.status === 'disabled') continue;
 			const protocol = String(surface.request_protocol ?? route.upstream_protocol ?? '')
@@ -468,7 +479,7 @@ export function listSupportedClientSurfaces(
 			if (!isSimulatorProtocol(protocol)) continue;
 			const operation = canonicalizeRequestOperation(
 				protocol,
-				String(surface.request_operation ?? '*').trim() || '*',
+				String(surface.request_operation ?? '*').trim() || '*'
 			);
 			const bucket = operationsByProtocol.get(protocol) ?? new Set<string>();
 			bucket.add(operation);
@@ -487,7 +498,7 @@ export function listSupportedClientSurfaces(
 		geminiOps,
 		'models.generate',
 		'generateContent',
-		'streamGenerateContent',
+		'streamGenerateContent'
 	)
 		? ['generateContent', 'streamGenerateContent']
 		: [];
@@ -504,7 +515,7 @@ export function filterMatchingActiveRoutes(
 	modelId: string,
 	routeGroup: string,
 	requestProtocol?: string,
-	requestOperation?: string,
+	requestOperation?: string
 ): RouteListRow[] {
 	if (!modelId) return [];
 	const matchesSurface = (route: RouteListRow): boolean => {
@@ -520,7 +531,7 @@ export function filterMatchingActiveRoutes(
 					(surface) =>
 						surface.status !== 'disabled' &&
 						surface.request_protocol === requestProtocol &&
-						(surface.request_operation === requestOperation || surface.request_operation === '*'),
+						(surface.request_operation === requestOperation || surface.request_operation === '*')
 				);
 				if (!surfaceHit) return false;
 			} catch {
@@ -545,7 +556,7 @@ export function filterMatchingActiveRoutes(
 				r.model_id === modelId &&
 				String(r.status).toLowerCase() === 'active' &&
 				routeGroupMatchesSelection(r.route_group, routeGroup) &&
-				matchesSurface(r),
+				matchesSurface(r)
 		)
 		.sort((a, b) => b.priority - a.priority || a.id.localeCompare(b.id));
 }
@@ -582,7 +593,7 @@ export function buildRequestLogsHref(opts: {
 	if (opts.apiKeyId) sp.set('api_key_id', opts.apiKeyId);
 	if (opts.modelId) sp.set('model_id', opts.modelId);
 	const rg = opts.routeGroup?.trim();
-	if (rg && rg !== 'default') sp.set('route_group', rg);
+	if (rg) sp.set('route_group', rg);
 	if (opts.protocol) sp.set('protocol', opts.protocol);
 	const q = sp.toString();
 	return q ? `/gateway/request-logs?${q}` : '/gateway/request-logs';
@@ -602,7 +613,7 @@ export function listGatewayTools(): readonly GatewayToolDefinition[] {
 }
 
 export function tryParseProxyBaseUrl(
-	raw: string,
+	raw: string
 ): { ok: true; base: string } | { ok: false; reason: 'empty' | 'invalid' } {
 	const trimmed = raw.trim();
 	if (!trimmed) return { ok: false, reason: 'empty' };

@@ -62,6 +62,7 @@ import { PROVIDER_ENDPOINT_FIELDS } from "../provider-endpoint-fields";
 
 type ProviderModalProps = {
 	open: boolean;
+	initialTab?: "basic" | "routes";
 	editingProvider: GatewayProvider | null;
 	duplicateSourceId: string | null;
 	formData: ProviderFormData;
@@ -483,6 +484,7 @@ function ProtocolFields({
 export function ProviderModal(props: ProviderModalProps) {
 	const {
 		open,
+		initialTab = "basic",
 		editingProvider,
 		duplicateSourceId,
 		formData,
@@ -575,12 +577,12 @@ export function ProviderModal(props: ProviderModalProps) {
 	}, [formData.kind, locale]);
 
 	useEffect(() => {
-		setActiveTab("basic");
+		setActiveTab(editingProvider?.id ? initialTab : "basic");
 		setShowEndpointsJson(false);
 		setShowApiKey(false);
 		setApiKeyFocused(false);
 		setApiKeyCopied(false);
-	}, [open, editingProvider?.id, duplicateSourceId]);
+	}, [open, editingProvider?.id, duplicateSourceId, initialTab]);
 
 	useEffect(() => {
 		if (!open) return;
@@ -632,7 +634,7 @@ export function ProviderModal(props: ProviderModalProps) {
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-2 sm:p-6"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
 			onMouseDown={(e) => {
 				if (e.target === e.currentTarget && !busy) {
 					onClose();
@@ -679,7 +681,7 @@ export function ProviderModal(props: ProviderModalProps) {
 						first?.focus();
 					}
 				}}
-				className="flex h-[min(760px,90dvh)] max-h-[calc(100dvh-1rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+				className="flex max-h-[min(720px,90dvh)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby={titleId}
@@ -769,7 +771,7 @@ export function ProviderModal(props: ProviderModalProps) {
 				</div>
 				<div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-6 sm:px-7">
 					{saveError && (
-						<div className="mb-4 shrink-0 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+						<div role="alert" className="mb-4 shrink-0 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">
 							{saveError}
 						</div>
 					)}
@@ -782,8 +784,8 @@ export function ProviderModal(props: ProviderModalProps) {
 							id={`${tabsId}-basic-panel`}
 							aria-labelledby={`${tabsId}-basic`}
 						>
-							<div className="grid gap-8 md:h-full md:min-h-0 md:grid-cols-[1fr_0.9fr]">
-								<div className="min-w-0 space-y-5 md:min-h-0 md:overflow-y-auto md:overscroll-contain md:pr-1">
+							<div className="grid items-start gap-6 md:grid-cols-[1fr_0.9fr]">
+								<div className="min-w-0 space-y-5">
 									<div>
 										<label
 											htmlFor={`${tabsId}-kind`}
@@ -974,15 +976,15 @@ export function ProviderModal(props: ProviderModalProps) {
 										</p>
 									</div>
 								</div>
-								<div className="flex min-w-0 flex-col gap-5 md:h-full md:min-h-0">
+								<div className="flex min-w-0 flex-col gap-5">
 									{catalogIntro ? (
-										<div className="flex flex-col rounded-xl border border-gray-200 bg-gray-50/40 p-4 md:min-h-0 md:flex-1">
+										<div className="rounded-xl bg-gray-50 p-4">
 											<h3 className="shrink-0 text-xs font-medium text-gray-500">
 												{t("catalogIntro")}
 											</h3>
 											<p
 												tabIndex={0}
-												className="mt-2 max-h-40 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words text-sm leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-gray-200 md:min-h-0 md:max-h-none md:flex-1"
+												className="mt-2 max-h-40 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words text-sm leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-gray-200 md:max-h-32"
 											>
 												{catalogIntro}
 											</p>
@@ -1049,7 +1051,7 @@ export function ProviderModal(props: ProviderModalProps) {
 															: "text-gray-600 hover:bg-white/70 hover:text-gray-900"
 													}`}
 												>
-													<span className="h-4 w-4 shrink-0">
+													<span className="h-4 w-4 shrink-0" aria-hidden>
 														<ProviderProtocolIcon protocol={key} />
 													</span>
 													{t(labelKey)}
@@ -1117,7 +1119,7 @@ export function ProviderModal(props: ProviderModalProps) {
 								deleteButton
 							))}
 					</div>
-					<div className="ml-auto flex gap-2">
+					<div className="ml-auto flex flex-wrap justify-end gap-2">
 						<button
 							type="button"
 							onClick={() => {

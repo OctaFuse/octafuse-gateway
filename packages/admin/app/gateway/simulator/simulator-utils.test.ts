@@ -374,7 +374,7 @@ describe("simulator-utils", () => {
 		);
 		assert.equal(
 			buildRequestLogsHref({ routeGroup: "default" }),
-			"/gateway/request-logs"
+			"/gateway/request-logs?route_group=default"
 		);
 	});
 
@@ -707,4 +707,17 @@ describe("simulator-utils", () => {
 			"duration: 4s"
 		);
 	});
+});
+
+
+describe('realtime template identity', () => {
+ it('ignores generated task ids while retaining meaningful request edits', () => {
+  const operation = 'audio.transcriptions.realtime.inference';
+  const template = bodyTemplateForSelection('dashscope', false, 'generations', 'transcriptions', undefined, operation);
+  const body = JSON.parse(template);
+  body.header.task_id = 'another-generated-task';
+  assert.equal(isBodyDirty(JSON.stringify(body), 'dashscope', false, 'generations', 'transcriptions', undefined, operation), false);
+  body.payload.parameters.sample_rate = 8000;
+  assert.equal(isBodyDirty(JSON.stringify(body), 'dashscope', false, 'generations', 'transcriptions', undefined, operation), true);
+ });
 });

@@ -48,6 +48,7 @@ import { ModelPricingJsonPreview } from './model-pricing-json-preview';
 
 export type ModelModalProps = {
 	open: boolean;
+	initialTab?: Tab;
 	editingModel: ModelListItem | null;
 	duplicateSourceModelId: string | null;
 	formData: ModelFormData;
@@ -111,6 +112,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 export function ModelModal(props: ModelModalProps) {
 	const {
 		open,
+		initialTab = 'basic',
 		editingModel,
 		duplicateSourceModelId,
 		formData,
@@ -159,15 +161,17 @@ export function ModelModal(props: ModelModalProps) {
 			? tCommon('saving')
 			: tCommon('deleting')
 		: undefined;
-	const sessionKey = `${open}:${editingModel?.id ?? 'new'}:${
+	const sessionKey = `${open}:${initialTab}:${editingModel?.id ?? 'new'}:${
 		duplicateSourceModelId ?? ''
 	}`;
 	const [session, setSession] = useState(sessionKey);
-	const [activeTab, setActiveTab] = useState<Tab>('basic');
+	const [activeTab, setActiveTab] = useState<Tab>(
+		editingModel ? initialTab : 'basic'
+	);
 	const [showPricingJson, setShowPricingJson] = useState(false);
 	if (session !== sessionKey) {
 		setSession(sessionKey);
-		setActiveTab('basic');
+		setActiveTab(editingModel ? initialTab : 'basic');
 		setShowPricingJson(false);
 	}
 	const isImageModel = formKind === 'image';
@@ -323,7 +327,7 @@ export function ModelModal(props: ModelModalProps) {
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-2 sm:p-6"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
 			onMouseDown={(event) => {
 				if (event.target === event.currentTarget && !busy) onClose();
 			}}
@@ -335,7 +339,7 @@ export function ModelModal(props: ModelModalProps) {
 				aria-labelledby={`${id}-title`}
 				tabIndex={-1}
 				onKeyDown={handleKeys}
-				className="flex h-[min(760px,90dvh)] max-h-[calc(100dvh-1rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+				className="flex max-h-[min(800px,90dvh)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 			>
 				<header className="flex shrink-0 items-start justify-between gap-4 px-5 pb-5 pt-6 sm:px-7">
 					<div className="min-w-0">
@@ -428,14 +432,12 @@ export function ModelModal(props: ModelModalProps) {
 					ref={contentRef}
 					className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
 				>
-					<fieldset disabled={busy} className="m-0 h-full min-w-0 border-0 p-0">
+					<fieldset disabled={busy} className="m-0 min-w-0 border-0 p-0">
 						<section
 							id={`${id}-${activeTab}-panel`}
 							role="tabpanel"
 							aria-labelledby={`${id}-${activeTab}-tab`}
-							className={`min-h-full px-5 py-6 sm:px-7 ${
-								activeTab === 'basic' ? 'md:h-full md:min-h-0' : ''
-							} ${
+							className={`px-5 py-6 sm:px-7 ${
 								activeTab === 'metadata' ||
 								(activeTab === 'pricing' && showPricingJson)
 									? 'flex flex-col'
@@ -443,8 +445,8 @@ export function ModelModal(props: ModelModalProps) {
 							}`}
 						>
 							{activeTab === 'basic' ? (
-								<div className="grid min-h-full gap-7 md:h-full md:min-h-0 md:grid-cols-[1.1fr_1fr]">
-									<div className="min-w-0 space-y-3 md:min-h-0 md:overflow-y-auto md:overscroll-contain md:pr-1">
+								<div className="grid items-start gap-6 md:grid-cols-[1.1fr_1fr]">
+									<div className="min-w-0 space-y-4">
 										<div className="flex items-start gap-3">
 											<div className="min-w-0 flex-1">
 												<div className="mb-1.5 flex items-center gap-1.5">
@@ -744,15 +746,15 @@ export function ModelModal(props: ModelModalProps) {
 											</div>
 										</div>
 									</div>
-									<div className="flex min-w-0 flex-col gap-5 md:h-full md:min-h-0">
+									<div className="flex min-w-0 flex-col gap-5">
 										{intro ? (
-											<div className="flex flex-col rounded-xl border border-gray-200 bg-gray-50/40 p-4 md:min-h-0 md:flex-1">
+											<div className="rounded-xl bg-gray-50 p-4">
 												<h3 className="shrink-0 text-xs font-medium text-gray-500">
 													{t('catalogIntro')}
 												</h3>
 												<p
 													tabIndex={0}
-													className="mt-2 max-h-40 md:min-h-0 md:max-h-none md:flex-1 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words text-sm leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-gray-200"
+													className="mt-2 max-h-56 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words text-sm leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-gray-200"
 												>
 													{intro}
 												</p>
@@ -850,7 +852,7 @@ export function ModelModal(props: ModelModalProps) {
 							)
 						) : null}
 					</div>
-					<div className="ml-auto flex gap-2">
+					<div className="ml-auto flex flex-wrap justify-end gap-2">
 						<button
 							type="button"
 							onClick={onClose}

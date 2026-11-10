@@ -1,5 +1,6 @@
 'use client';
 
+import { AdminInspector } from '@/components/admin-inspector';
 import { useMemo } from 'react';
 import { PaperAirplaneIcon, StopIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
@@ -31,6 +32,7 @@ import { LlmRequestEditor } from '@/components/model-test/llm-request-editor';
 type Props = {
 	llm: boolean;
 	onApplyLlmBody: (text: string) => void;
+	onResetTemplate: () => void;
 	bodyText: string;
 	onBodyTextChange: (v: string) => void;
 	bodyDirtyHint: boolean;
@@ -75,6 +77,7 @@ type Props = {
 export function PlaygroundRequestPanel({
 	llm,
 	onApplyLlmBody,
+	onResetTemplate,
 	bodyText,
 	onBodyTextChange,
 	bodyDirtyHint,
@@ -203,6 +206,7 @@ export function PlaygroundRequestPanel({
 	if (llm)
 		return (
 			<LlmRequestEditor
+				previewInDialog
 				family={llmFamily}
 				modelHint={`${selected?.model_id ?? ''} ${selected?.provider_model_name ?? ''}`.toLowerCase()}
 				bodyText={bodyText}
@@ -222,26 +226,64 @@ export function PlaygroundRequestPanel({
 				url={requestTargetUrl}
 				actualBody={selected ? actualBodyJson : tCommon('selectRouteFirst')}
 				sent={Boolean(lastSentWireBody)}
-				headers={selected ? (
-					<div className="space-y-1 font-mono text-xs">
-						{routeHeaderRows.map((row) => (
-							<p
-								key={row.name}
-								className={row.source === 'custom_params' ? 'break-all text-amber-800' : 'break-all'}
-							>
-								{row.name}: {row.value}
-							</p>
-						))}
-					</div>
-				) : null}
+				headers={
+					selected ? (
+						<div className="space-y-1 font-mono text-xs">
+							{routeHeaderRows.map((row) => (
+								<p
+									key={row.name}
+									className={row.source === 'custom_params' ? 'break-all text-amber-800' : 'break-all'}
+								>
+									{row.name}: {row.value}
+								</p>
+							))}
+						</div>
+					) : null
+				}
 			/>
 		);
 
 	return (
-		<section className="flex min-h-0 flex-1 flex-col space-y-3 overflow-y-auto rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm">
+		<section className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto rounded-xl border border-gray-200 bg-white p-4">
 			<div className="flex flex-wrap items-center justify-between gap-2">
 				<h2 className="text-sm font-medium text-gray-900">{t('requestBody')}</h2>
 				<div className="flex flex-wrap items-center gap-2">
+					<AdminInspector
+						label={t('actualRequest')}
+						hint={lastSentWireBody ? t('sentBodySourceSent') : t('sentBodySourcePreview')}
+						disabled={!selected}
+					>
+						<p className="break-all font-mono text-xs text-gray-500">
+							{selectedUsesRealtime ? 'WebSocket' : 'POST'} {requestTargetUrl}
+						</p>
+						<div>
+							<h3 className="mb-2 text-xs font-medium text-gray-600" title={headerHint}>
+								{t('sentHeaders')}
+							</h3>
+							<div className="space-y-2 rounded-lg bg-gray-50 p-4">
+								{routeHeaderRows.length ? (
+									routeHeaderRows.map((row) => (
+										<p
+											key={row.name}
+											className={`break-all font-mono text-xs ${
+												row.source === 'custom_params' ? 'text-amber-800' : 'text-gray-600'
+											}`}
+										>
+											{row.name}: {row.value}
+										</p>
+									))
+								) : (
+									<p className="text-xs text-gray-400">{t('sentHeadersEmpty')}</p>
+								)}
+							</div>
+						</div>
+						<div>
+							<h3 className="mb-2 text-xs font-medium text-gray-600" title={actualBodyHint}>
+								{t('sentBody')}
+							</h3>
+							<pre className={`${codeBlockClass} leading-6`}>{actualBodyJson ?? '—'}</pre>
+						</div>
+					</AdminInspector>
 					{sending ? (
 						<button
 							type="button"
@@ -318,7 +360,9 @@ export function PlaygroundRequestPanel({
 								? 'audioSpeechMiniMaxOpenAiHint'
 								: selected?.upstream_protocol === 'minimax' && !selectedIsAudioTranscription
 								? 'audioSpeechMiniMaxHint'
-								: selected?.adapter === 'passthrough' && selectedAudioUsesDashScope && !selectedIsAudioTranscription
+								: selected?.adapter === 'passthrough' &&
+								  selectedAudioUsesDashScope &&
+								  !selectedIsAudioTranscription
 								? 'audioSpeechPassthroughHint'
 								: selectedAudioUsesDashScope
 								? selectedIsAudioTranscription
@@ -412,7 +456,9 @@ export function PlaygroundRequestPanel({
 						<p className="text-xs text-gray-500">{t('imageGeminiHint')}</p>
 					) : selectedImageUsesDashScope ? (
 						<p className="text-xs text-gray-500">
-							{t(selected?.adapter === 'passthrough' ? 'imageDashScopePassthroughHint' : 'imageDashScopeHint')}
+							{t(
+								selected?.adapter === 'passthrough' ? 'imageDashScopePassthroughHint' : 'imageDashScopeHint'
+							)}
 						</p>
 					) : (
 						<>
@@ -519,84 +565,30 @@ export function PlaygroundRequestPanel({
 				</fieldset>
 			) : null}
 
-			<div className="flex min-h-0 flex-1 flex-col gap-3">
-				<div className="shrink-0">
-					<div className="mb-1 flex items-center justify-between gap-2">
-						<label className="text-xs font-medium normal-case tracking-normal text-gray-500" title={headerHint}>
-							{t('sentHeaders')}
-						</label>
-						{lastSentWireBody ? (
-							<span className="text-xs font-medium text-emerald-700">{t('sentBodySourceSent')}</span>
-						) : mergedPreview.status === 'preview' ? (
-							<span className="text-xs font-medium text-slate-500">{t('sentBodySourcePreview')}</span>
-						) : null}
-					</div>
-					<div className={`${codeBlockClass} max-h-36 overflow-y-auto p-0`}>
-						{routeHeaderRows.length === 0 ? (
-							<p className="px-3 py-2 text-gray-400">{t('sentHeadersEmpty')}</p>
-						) : (
-							<ul className="divide-y divide-gray-100">
-								{routeHeaderRows.map((row) => {
-									const fromCustom = row.source === 'custom_params';
-									return (
-										<li
-											key={`${row.source}:${row.name}`}
-											className={`grid grid-cols-1 gap-0.5 px-3 py-1.5 sm:grid-cols-[minmax(8rem,16rem)_minmax(0,1fr)_auto] sm:items-baseline sm:gap-3 ${
-												fromCustom ? 'bg-amber-50' : ''
-											}`}
-										>
-											<span
-												className="truncate font-mono text-xs font-medium text-gray-800"
-												title={row.name}
-											>
-												{row.name}
-											</span>
-											<span className="min-w-0 break-all font-mono text-xs text-gray-700" title={row.value}>
-												{row.value}
-											</span>
-											<span
-												className={`w-fit shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${
-													fromCustom ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-600'
-												}`}
-											>
-												{fromCustom ? t('sentHeadersSourceCustomParams') : t('sentHeadersSourceProvider')}
-											</span>
-										</li>
-									);
-								})}
-							</ul>
-						)}
-					</div>
+			<div className="flex min-h-0 flex-1 flex-col gap-2">
+				<div className="flex items-center justify-between gap-2">
+					<label htmlFor="playground-media-body" className={labelClass}>
+						{t('inputBody')}
+					</label>
+					{llmSampleSwitcher}
+					<button
+						type="button"
+						disabled={sending || !selected}
+						onClick={onResetTemplate}
+						className="shrink-0 rounded-lg px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-100 disabled:opacity-50"
+					>
+						{t('applyTemplate')}
+					</button>
 				</div>
-
-				<div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-2 xl:items-stretch">
-					<div className="flex min-h-0 min-w-0 flex-col">
-						<div className="mb-1 flex items-center justify-between gap-2">
-							<label className="text-xs font-medium normal-case tracking-normal text-gray-500">
-								{t('inputBody')}
-							</label>
-							{llmSampleSwitcher}
-						</div>
-						<textarea
-							value={bodyText}
-							onChange={(e) => onBodyTextChange(e.target.value)}
-							rows={12}
-							className={`${inputClass} min-h-[180px] flex-1 font-mono text-sm`}
-							spellCheck={false}
-						/>
-					</div>
-					<div className="flex min-h-0 min-w-0 flex-col">
-						<label
-							className="mb-1 text-xs font-medium normal-case tracking-normal text-gray-500"
-							title={actualBodyHint}
-						>
-							{t('sentBody')}
-						</label>
-						<pre className={`${codeBlockClass} min-h-[180px] flex-1 overflow-y-auto`}>
-							{actualBodyJson ?? '—'}
-						</pre>
-					</div>
-				</div>
+				<textarea
+					id="playground-media-body"
+					value={bodyText}
+					onChange={(event) => onBodyTextChange(event.target.value)}
+					rows={12}
+					disabled={sending}
+					spellCheck={false}
+					className={`${inputClass} min-h-[280px] flex-1 resize-y font-mono text-xs leading-6 xl:resize-none`}
+				/>
 			</div>
 
 			{bodyError ? (

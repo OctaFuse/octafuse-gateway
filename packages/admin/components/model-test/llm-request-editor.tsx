@@ -1,4 +1,5 @@
 'use client';
+import { AdminInspector } from '@/components/admin-inspector';
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { PaperAirplaneIcon, StopIcon } from '@heroicons/react/24/outline';
@@ -32,6 +33,7 @@ export function LlmRequestEditor({
 	actualBody,
 	headers,
 	sent,
+	previewInDialog = false,
 }: {
 	family: PlaygroundLlmFamily | null;
 	modelHint: string;
@@ -54,6 +56,7 @@ export function LlmRequestEditor({
 	actualBody: string | null;
 	headers: ReactNode;
 	sent: boolean;
+	previewInDialog?: boolean;
 }) {
 	const t = useTranslations('modelTest');
 	const common = useTranslations('common');
@@ -64,26 +67,48 @@ export function LlmRequestEditor({
 	const editorHint = error || notice || (url ? blockedHint : null);
 	return (
 		<section
-			className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+			className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white"
 			aria-label={t('request')}
 		>
 			<header className="flex shrink-0 items-center justify-between gap-2 border-b border-gray-100 px-4 py-2.5">
 				<h2 className="text-sm font-medium text-gray-900">{t('request')}</h2>
-				<button
-					type="button"
-					onClick={sending ? onStop : onSend}
-					disabled={!sending && !canSend}
-					title={blockedHint ?? undefined}
-					className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 ${
-						sending ? 'bg-amber-600' : 'bg-gray-950 hover:bg-gray-800'
-					}`}
-				>
-					{sending ? <StopIcon className="h-4 w-4" /> : <PaperAirplaneIcon className="h-4 w-4" />}
-					{sending ? common('stop') : common('send')}
-				</button>
+				<div className="flex items-center gap-2">
+					{previewInDialog && (
+						<AdminInspector label={t('actualRequest')} hint={sent ? t('sent') : t('preview')} disabled={!url}>
+							<p className="break-all font-mono text-xs text-gray-500">POST {url}</p>
+							{headers && (
+								<details className="text-xs text-gray-600">
+									<summary className="cursor-pointer">{t('headers')}</summary>
+									<div className="mt-3">{headers}</div>
+								</details>
+							)}
+							<pre className="whitespace-pre-wrap break-words rounded-lg bg-gray-50 p-4 font-mono text-xs leading-6 text-gray-700">
+								{actualBody ?? '—'}
+							</pre>
+						</AdminInspector>
+					)}
+					<button
+						type="button"
+						onClick={sending ? onStop : onSend}
+						disabled={!sending && !canSend}
+						title={blockedHint ?? undefined}
+						className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 ${
+							sending ? 'bg-amber-600' : 'bg-gray-950 hover:bg-gray-800'
+						}`}
+					>
+						{sending ? <StopIcon className="h-4 w-4" /> : <PaperAirplaneIcon className="h-4 w-4" />}
+						{sending ? common('stop') : common('send')}
+					</button>
+				</div>
 			</header>
-			<div className="grid min-h-0 flex-1 grid-rows-[minmax(0,2fr)_minmax(0,1fr)]">
-				<div className="flex min-h-0 flex-col gap-2 p-3">
+			<div
+				className={
+					previewInDialog
+						? 'flex min-h-0 flex-1 flex-col'
+						: 'grid min-h-0 flex-1 grid-rows-[minmax(0,2fr)_minmax(0,1fr)]'
+				}
+			>
+				<div className={previewInDialog ? "flex min-h-0 flex-1 flex-col gap-3 p-4" : "flex min-h-0 flex-col gap-2 p-3"}>
 					{controls ? <div className="shrink-0">{controls}</div> : null}
 					<p className="shrink-0 truncate font-mono text-xs text-gray-500" title={url ?? undefined}>
 						{url ? `POST ${url}` : blockedHint || '—'}
@@ -103,8 +128,8 @@ export function LlmRequestEditor({
 												e.target.value as PlaygroundLlmSampleId,
 												modelHint,
 												stream,
-												modelValue,
-											),
+												modelValue
+											)
 										)
 									}
 									className="rounded-md border border-gray-200 bg-white px-2 py-1.5 text-gray-800"
@@ -143,7 +168,7 @@ export function LlmRequestEditor({
 						value={bodyText}
 						disabled={sending}
 						onChange={(e) => onChange(e.target.value)}
-						className="min-h-0 w-full flex-1 resize-none overflow-auto overscroll-contain rounded-lg border border-gray-200 bg-slate-50/60 p-3 font-mono text-xs leading-6 text-gray-800 outline-none focus:border-gray-500"
+						className={`${previewInDialog ? 'min-h-[280px] xl:min-h-0' : 'min-h-0'} w-full flex-1 resize-none overflow-auto overscroll-contain rounded-lg border border-gray-200 bg-slate-50/60 p-3 font-mono text-xs leading-6 text-gray-800 outline-none focus:border-gray-500`}
 					/>
 					{editorHint ? (
 						<p
@@ -157,27 +182,29 @@ export function LlmRequestEditor({
 						</p>
 					) : null}
 				</div>
-				<section className="flex min-h-0 flex-col border-t border-gray-200" aria-label={t('actualRequest')}>
-					<header className="flex shrink-0 items-center justify-between gap-2 bg-slate-50 px-4 py-2.5">
-						<h3 className="text-xs font-medium text-gray-700">{t('actualRequest')}</h3>
-						<span className="text-xs text-gray-400">{sent ? t('sent') : t('preview')}</span>
-					</header>
-					<div
-						tabIndex={0}
-						aria-label={t('actualRequest')}
-						className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
-					>
-						{headers ? (
-							<details className="mb-2 text-xs text-gray-500">
-								<summary className="cursor-pointer">{t('headers')}</summary>
-								<div className="mt-2">{headers}</div>
-							</details>
-						) : null}
-						<pre className="whitespace-pre-wrap break-words font-mono text-xs leading-6 text-gray-700">
-							{actualBody ?? '—'}
-						</pre>
-					</div>
-				</section>
+				{!previewInDialog && (
+					<section className="flex min-h-0 flex-col border-t border-gray-200" aria-label={t('actualRequest')}>
+						<header className="flex shrink-0 items-center justify-between gap-2 bg-slate-50 px-4 py-2.5">
+							<h3 className="text-xs font-medium text-gray-700">{t('actualRequest')}</h3>
+							<span className="text-xs text-gray-400">{sent ? t('sent') : t('preview')}</span>
+						</header>
+						<div
+							tabIndex={0}
+							aria-label={t('actualRequest')}
+							className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
+						>
+							{headers ? (
+								<details className="mb-2 text-xs text-gray-500">
+									<summary className="cursor-pointer">{t('headers')}</summary>
+									<div className="mt-2">{headers}</div>
+								</details>
+							) : null}
+							<pre className="whitespace-pre-wrap break-words font-mono text-xs leading-6 text-gray-700">
+								{actualBody ?? '—'}
+							</pre>
+						</div>
+					</section>
+				)}
 			</div>
 		</section>
 	);

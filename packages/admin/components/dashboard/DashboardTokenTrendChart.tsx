@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { ChartBarIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import {
 	Area,
@@ -24,9 +25,10 @@ export type DashboardTokenTrendChartProps = {
 	granularity: 'hour' | 'day';
 	billingCurrency: string;
 	businessTimezone: string;
+	onExplore?: () => void;
 };
 
-export function DashboardTokenTrendChart({ timeseries, granularity, billingCurrency, businessTimezone }: DashboardTokenTrendChartProps) {
+export function DashboardTokenTrendChart({ timeseries, granularity, billingCurrency, businessTimezone, onExplore }: DashboardTokenTrendChartProps) {
 	const t = useTranslations('dashboard');
 	const [view, setView] = useState<TrendView>('requests');
 
@@ -54,18 +56,19 @@ export function DashboardTokenTrendChart({ timeseries, granularity, billingCurre
 	const tabs: TrendView[] = ['requests', 'tokens', 'cost', 'latency'];
 
 	return (
-		<div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+		<div className="flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<h2 className="text-base font-medium text-gray-950">{t('trafficTrend')}</h2>
+					<h2 className="flex items-center gap-2 text-sm font-medium text-gray-950"><ChartBarIcon className="h-4 w-4 text-gray-500" aria-hidden />{t('trafficTrend')}</h2>
 					<p className="mt-1 text-xs text-gray-500">{t(`trendHints.${view}`)}</p>
 				</div>
-				<div className="inline-flex max-w-full overflow-x-auto rounded-xl bg-gray-100 p-1">
+				<div role="group" aria-label={t('trafficTrend')} className="inline-flex max-w-full overflow-x-auto rounded-lg bg-gray-100 p-1">
 					{tabs.map((tab) => (
 						<button
 							key={tab}
 							type="button"
 							onClick={() => setView(tab)}
+							aria-pressed={view === tab}
 							className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition ${view === tab ? 'bg-white text-gray-950 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
 						>
 							{t(`trendTabs.${tab}`)}
@@ -75,9 +78,15 @@ export function DashboardTokenTrendChart({ timeseries, granularity, billingCurre
 			</div>
 
 			{chartData.length === 0 ? (
-				<div className="py-16 text-center text-sm text-gray-500">{t('noChartData')}</div>
+				<div className="flex min-h-64 flex-1 flex-col items-center justify-center gap-3 py-8 text-center">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><ChartBarIcon className="h-5 w-5" aria-hidden /></span>
+          <p className="text-sm text-gray-600">{t('noChartData')}</p>
+          {onExplore && <button type="button" className="rounded-lg px-3 py-2 text-xs text-blue-700 hover:bg-blue-50" onClick={onExplore}>{t('exploreWeek')}</button>}
+        </div>
 			) : (
-				<div className="mt-5 h-72">
+				<div className="mt-5 flex flex-1 flex-col">
+          {view === 'tokens' && <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">{[{ label: t('inputTokens'), color: '#2563eb' }, { label: t('outputTokens'), color: '#0d9488' }, { label: t('cacheReadTokens'), color: '#d97706' }].map(item => <span key={item.label} className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: item.color }} aria-hidden />{item.label}</span>)}</div>}
+          <div className="h-64 min-h-64 flex-1 sm:h-72 sm:min-h-72">
 					<ResponsiveContainer width="100%" height="100%">
 						<ComposedChart key={view} data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
 							<defs>
@@ -105,6 +114,7 @@ export function DashboardTokenTrendChart({ timeseries, granularity, billingCurre
 							{view === 'tokens' ? <Line isAnimationActive={false} type="monotone" dataKey="cache_read_tokens" name={t('cacheReadTokens')} stroke="#d97706" dot={false} strokeWidth={2} /> : null}
 						</ComposedChart>
 					</ResponsiveContainer>
+          </div>
 				</div>
 			)}
 		</div>

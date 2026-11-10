@@ -1,9 +1,8 @@
 'use client';
 
-import { FilterDisclosure } from '@/components/FilterDisclosure';
-import { FilterGroup, FilterRow, FilterSegmented, FilterSelect } from '../../components/filter-controls';
+import { RouteOptionsDialog } from './route-options-dialog';
 
-import { MagnifyingGlassIcon, XMarkIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import type { GatewayProvider } from '@/lib/types';
 import { useLocale, useTranslations } from 'next-intl';
 import { liveProviderPickerLabel, type ProviderKindFilterOption } from '@/lib/provider-kind';
@@ -35,7 +34,6 @@ type Props = {
 	onClearAllFilters: () => void;
 };
 
-
 export function RouteFilterSidebar(props: Props) {
 	const t = useTranslations('filter');
 	const tw = useTranslations('routes.workspace');
@@ -43,52 +41,195 @@ export function RouteFilterSidebar(props: Props) {
 	const tk = useTranslations('providers.kind');
 	const locale = useLocale();
 	const filters = [
-		{ key: 'vendor', label: t('vendor'), value: props.filterVendor, onChange: props.onFilterVendorChange,
-			options: props.vendorFilterOptions.map(o => ({ value: o.key, label: o.label, count: o.count })) },
-		{ key: 'providerType', label: t('providerType'), value: props.filterProviderKind, onChange: props.onFilterProviderKindChange,
-			options: props.providerKindFilterOptions.map(o => ({ value: o.key, label: o.label, count: o.count })) },
-		{ key: 'provider', label: t('provider'), value: props.filterProviderId, onChange: props.onFilterProviderIdChange,
-			options: props.providers.map(p => ({ value: p.id, label: liveProviderPickerLabel(p, locale, tk('custom'), p.id), count: props.providerRouteCounts.get(p.id) ?? 0 })) },
-		{ key: 'routeGroup', label: t('routeGroup'), value: props.filterRouteGroup, onChange: props.onFilterRouteGroupChange,
-			options: props.routeGroupFilterOptions.map(value => ({ value, label: value, count: props.routeGroupCounts.get(value) ?? 0 })) },
+		{
+			key: 'vendor',
+			label: t('vendor'),
+			value: props.filterVendor,
+			onChange: props.onFilterVendorChange,
+			options: props.vendorFilterOptions.map((o) => ({ value: o.key, label: o.label, count: o.count })),
+		},
+		{
+			key: 'providerType',
+			label: t('providerType'),
+			value: props.filterProviderKind,
+			onChange: props.onFilterProviderKindChange,
+			options: props.providerKindFilterOptions.map((o) => ({ value: o.key, label: o.label, count: o.count })),
+		},
+		{
+			key: 'provider',
+			label: t('provider'),
+			value: props.filterProviderId,
+			onChange: props.onFilterProviderIdChange,
+			options: props.providers.map((p) => ({
+				value: p.id,
+				label: liveProviderPickerLabel(p, locale, tk('custom'), p.id),
+				count: props.providerRouteCounts.get(p.id) ?? 0,
+			})),
+		},
+		{
+			key: 'routeGroup',
+			label: t('routeGroup'),
+			value: props.filterRouteGroup,
+			onChange: props.onFilterRouteGroupChange,
+			options: props.routeGroupFilterOptions.map((value) => ({
+				value,
+				label: value,
+				count: props.routeGroupCounts.get(value) ?? 0,
+			})),
+		},
 	];
-	const segments = [
-		{ key: 'status', label: t('status'), value: props.filterStatus, onChange: props.onFilterStatusChange,
-			options: [ { value: '', label: t('all'), count: props.statusCounts.all }, { value: 'active', label: tc('active'), count: props.statusCounts.active }, { value: 'inactive', label: tc('inactive'), count: props.statusCounts.inactive } ] },
-		{ key: 'kind', label: t('kind'), value: props.filterKind, onChange: (value: string) => props.onFilterKindChange(value as RouteKindFilter),
-			options: [ { value: 'all', label: t('all'), count: props.kindCounts.all }, { value: 'llm', label: t('kindLlm'), count: props.kindCounts.llm }, { value: 'image', label: t('kindImage'), count: props.kindCounts.image }, { value: 'asr', label: t('kindAsr'), count: props.kindCounts.asr }, { value: 'tts', label: t('kindTts'), count: props.kindCounts.tts }, { value: 'embedding', label: t('kindEmbedding'), count: props.kindCounts.embedding } ] },
+	const kindOptions = [
+		{ value: 'all', label: t('all'), count: props.kindCounts.all },
+		{ value: 'llm', label: t('kindLlm'), count: props.kindCounts.llm },
+		{ value: 'image', label: t('kindImage'), count: props.kindCounts.image },
+		{ value: 'asr', label: t('kindAsr'), count: props.kindCounts.asr },
+		{ value: 'tts', label: t('kindTts'), count: props.kindCounts.tts },
+		{ value: 'embedding', label: t('kindEmbedding'), count: props.kindCounts.embedding },
 	];
-	const active = [
-		...filters.filter(f => f.value).map(f => ({ key: f.key, label: `${f.label}: ${f.options.find(o => o.value === f.value)?.label ?? f.value}`, clear: () => f.onChange('') })),
-		...segments.filter(f => f.value && f.value !== 'all').map(f => ({ key: f.key, label: `${f.label}: ${f.options.find(o => o.value === f.value)?.label ?? f.value}`, clear: () => f.onChange(f.key === 'kind' ? 'all' : '') })),
-		...(props.searchQuery ? [{ key: 'search', label: props.searchQuery, clear: () => props.onSearchChange('') }] : []),
-	];
+	const hasActiveFilters = Boolean(props.searchQuery || props.filterStatus || props.filterKind !== 'all' || filters.some(filter => filter.value));
+	const selectClass =
+		'h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100';
+	const renderFilter = (filter: (typeof filters)[number], expanded = false) => (
+		<label
+			key={filter.key}
+			className={
+				expanded
+					? 'block min-w-0'
+					: `min-w-0 ${filter.key === 'provider' ? 'hidden w-48 sm:block' : 'hidden w-36 sm:block'}`
+			}
+		>
+			<span className={expanded ? 'mb-1.5 block text-xs font-medium text-gray-600' : 'sr-only'}>
+				{filter.label}
+			</span>
+			<select
+				aria-label={filter.label}
+				value={filter.value}
+				onChange={(event) => filter.onChange(event.target.value)}
+				className={selectClass}
+			>
+				<option value="">
+					{tw(
+						(
+							{
+								vendor: 'allVendors',
+								providerType: 'allProviderKinds',
+								provider: 'allProviders',
+								routeGroup: 'allRouteGroups',
+							} as Record<string, string>
+						)[filter.key]
+					)}
+				</option>
+				{filter.value && !filter.options.some((option) => option.value === filter.value) && (
+					<option value={filter.value}>{filter.value}</option>
+				)}
+				{filter.options.map((option) => (
+					<option key={option.value} value={option.value}>
+						{option.label} ({option.count})
+					</option>
+				))}
+			</select>
+		</label>
+	);
+	const advancedCount = filters.filter(
+		(filter) => filter.value && ['vendor', 'providerType'].includes(filter.key)
+	).length;
+	const mobileCount = filters.filter((filter) => filter.value).length;
 	return (
-		<section className="mb-5 rounded-xl border border-slate-200 bg-white" aria-label={t('title')}>
-			<div className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-4 py-3">
-				<AdjustmentsHorizontalIcon className="h-4 w-4 text-slate-400" aria-hidden />
-				<h2 className="text-sm font-medium text-slate-800">{t('title')}</h2>
-				<div className="relative ml-auto w-full sm:w-80">
-					<MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" aria-hidden />
-					<input type="search" value={props.searchQuery} onChange={e => props.onSearchChange(e.target.value)} placeholder={tw('searchPlaceholder')} aria-label={tw('searchPlaceholder')} className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs text-slate-800 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100" />
+		<section className="mb-5 space-y-4" aria-label={t('title')}>
+			<div className="flex flex-wrap items-center gap-3">
+				<div className="relative min-w-0 flex-1 basis-64 sm:max-w-sm">
+					<MagnifyingGlassIcon
+						className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+						aria-hidden
+					/>
+					<input
+						type="search"
+						value={props.searchQuery}
+						onChange={(event) => props.onSearchChange(event.target.value)}
+						placeholder={tw('searchPlaceholder')}
+						aria-label={tw('searchPlaceholder')}
+						className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-9 text-sm placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
+					/>
+					{props.searchQuery && (
+						<button
+							type="button"
+							aria-label={tw('clearSearch')}
+							onClick={() => props.onSearchChange('')}
+							className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100"
+						>
+							<XMarkIcon className="h-4 w-4" aria-hidden />
+						</button>
+					)}
+				</div>
+				<select
+					aria-label={t('status')}
+					value={props.filterStatus}
+					onChange={(event) => props.onFilterStatusChange(event.target.value)}
+					className={`${selectClass} !w-auto`}
+				>
+					<option value="">
+						{tw('allStatuses')} ({props.statusCounts.all})
+					</option>
+					<option value="active">
+						{tc('active')} ({props.statusCounts.active})
+					</option>
+					<option value="inactive">
+						{tc('inactive')} ({props.statusCounts.inactive})
+					</option>
+				</select>
+				{filters
+					.filter((filter) => ['provider', 'routeGroup'].includes(filter.key))
+					.map((filter) => renderFilter(filter))}
+				<div className="hidden sm:block">
+					<RouteOptionsDialog label={tw('moreFilters')} activeCount={advancedCount}>
+						{filters
+							.filter((filter) => ['vendor', 'providerType'].includes(filter.key))
+							.map((filter) => renderFilter(filter, true))}
+					</RouteOptionsDialog>
+				</div>
+				<div className="sm:hidden">
+					<RouteOptionsDialog label={tw('moreFilters')} activeCount={mobileCount}>
+						{filters.map((filter) => renderFilter(filter, true))}
+					</RouteOptionsDialog>
 				</div>
 			</div>
-			<FilterDisclosure className="px-4 py-3" activeCount={active.length - Number(Boolean(props.searchQuery))}>
-				<FilterRow>
-					{segments.map(segment => <FilterSegmented key={segment.key} label={segment.label} value={segment.value} options={segment.options} onChange={segment.onChange} />)}
-					<FilterGroup>
-						{filters.map(filter => <FilterSelect key={filter.key} label={filter.label} value={filter.value} onChange={filter.onChange}>
-							<option value="">{t('all')}</option>
-							{filter.value && !filter.options.some(o => o.value === filter.value) ? <option value={filter.value}>{filter.value}</option> : null}
-							{filter.options.map(option => <option key={option.value} value={option.value}>{option.label} ({option.count})</option>)}
-						</FilterSelect>)}
-					</FilterGroup>
-				</FilterRow>
-			</FilterDisclosure>
-			{active.length > 0 ? <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 bg-slate-50/50 px-4 py-2">
-				{active.map(item => <button key={item.key} type="button" onClick={item.clear} aria-label={tw('removeFilter', {filter: item.label})} className="inline-flex max-w-full items-center gap-1.5 rounded-md bg-gray-50 px-2 py-1 text-xs text-gray-800 hover:bg-gray-100 focus-visible:outline-gray-500"><span className="truncate">{item.label}</span><XMarkIcon className="h-3 w-3 shrink-0" aria-hidden /></button>)}
-				<button type="button" onClick={props.onClearAllFilters} className="ml-auto text-xs font-medium text-slate-500 hover:text-gray-800">{tc('clearAllFilters')}</button>
-			</div> : null}
+			<div
+				className="flex flex-wrap items-center gap-1 border-b border-gray-200 pb-3"
+				role="group"
+				aria-label={t('kind')}
+			>
+				{kindOptions.map((option) => (
+					<button
+						key={option.value}
+						type="button"
+						aria-pressed={props.filterKind === option.value}
+						onClick={() => props.onFilterKindChange(option.value as RouteKindFilter)}
+						className={`inline-flex min-h-9 items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors ${
+							props.filterKind === option.value
+								? 'bg-gray-950 font-medium text-white'
+								: 'text-gray-600 hover:bg-gray-100 hover:text-gray-950'
+						}`}
+					>
+						{option.label}
+						<span
+							className={`font-mono tabular-nums ${
+								props.filterKind === option.value ? 'text-white/70' : 'text-gray-400'
+							}`}
+						>
+							{option.count}
+						</span>
+					</button>
+				))}
+				{hasActiveFilters && (
+					<button
+						type="button"
+						onClick={props.onClearAllFilters}
+						className="ml-auto rounded-lg px-3 py-2 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-950"
+					>
+						{tc('clearAllFilters')}
+					</button>
+				)}
+			</div>
 		</section>
 	);
 }

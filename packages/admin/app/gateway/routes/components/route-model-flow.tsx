@@ -12,12 +12,7 @@ import {
 	PowerIcon,
 	ScaleIcon,
 } from '@heroicons/react/24/outline';
-import {
-	isAudioModel,
-	isAudioSpeechModel,
-	isEmbeddingModel,
-	isImageGenerationModel,
-} from '@octafuse/core/db/model-modalities';
+import { routeModelBillingLabel } from '../route-model-summary';
 import { providerAccountIdentity, providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provider-kind';
 import { useLocale, useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
@@ -961,27 +956,16 @@ export function RouteModelFlow(props: Props) {
 	} = props;
 	const t = useTranslations('routes.card');
 	const tFlow = useTranslations('routes.flow');
-	const tModelsCard = useTranslations('models.card');
-	const isImage = meta ? isImageGenerationModel(meta) : false;
-	const isAudio = meta ? isAudioModel(meta) : false;
-	const isAudioSpeech = meta ? isAudioSpeechModel(meta) : false;
-	const isEmbedding = meta ? isEmbeddingModel(meta) : false;
-	const context = formatCompactTokens(meta?.context_window);
-	const maxOutput = formatCompactTokens(meta?.max_tokens);
-	// ASR 与 TTS 同属 Audio；必须按计费能力区分，避免 TTS 被标成按秒转写。
-	const stats = isAudio
-		? t(isAudioSpeech ? 'audioSpeechModelHint' : 'audioModelHint')
-		: isImage
-			? t('imageModelHint')
-			: isEmbedding
-				? t('embeddingModelHint')
-				: t('contextLine', { context, max: maxOutput });
+	const billingLabel = meta ? routeModelBillingLabel(meta) : null;
+	const stats = billingLabel
+		? t(`modelBilling.${billingLabel}`)
+		: t('contextLine', { context: formatCompactTokens(meta?.context_window), max: formatCompactTokens(meta?.max_tokens) });
 	const tags = parseModelTagsList(meta);
 	const sections = splitRoutesByProtocolAndRouteGroup(card.groupRoutes);
 	const surfaceGroups = groupSectionsByRequestSurface(sections);
 
 	return (
-		<article className={`${density === 'list' ? 'route-flow-list-layout route-model-list-layout ' : ''}overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm`}>
+		<article className={`${density === 'list' ? 'route-flow-list-layout route-model-list-layout ' : ''}overflow-hidden rounded-xl border border-gray-200 bg-white`}>
 			<header className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2.5 sm:px-5">
 				<div className="min-w-0 flex-1">
 					<div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -1015,11 +999,11 @@ export function RouteModelFlow(props: Props) {
 						<span className="min-w-0 font-mono text-xs text-gray-500 [overflow-wrap:anywhere]">{card.model_id}</span>
 						<span className="text-gray-300">·</span>
 						<span className="text-xs text-gray-500">{stats}</span>
-						{tags.length ? tags.slice(0, 4).map((tag) => (
+						{tags.slice(0, 4).map((tag) => (
 							<span key={tag} className={`rounded px-1.5 py-0.5 text-xs font-medium ${tagBadgeClass(tag)}`}>
 								{tag}
 							</span>
-						)) : <span className="text-xs text-gray-400">{tModelsCard('noTags')}</span>}
+						))}
 					</div>
 				</div>
 				<div className="flex shrink-0 flex-col items-end gap-1">
@@ -1037,7 +1021,7 @@ export function RouteModelFlow(props: Props) {
 				</div>
 			</header>
 
-			<div className={`${density === 'list' ? 'route-model-list-surfaces' : 'divide-y divide-slate-300/80'} bg-slate-200/80 px-3 py-3 sm:px-4`}>
+			<div className={`${density === 'list' ? 'route-model-list-surfaces' : 'divide-y divide-slate-300/80'} bg-gray-50 px-3 py-3 sm:px-4`}>
 				{surfaceGroups.length ? surfaceGroups.map((surface) => (
 					<FlowSection
 						key={surface.key}

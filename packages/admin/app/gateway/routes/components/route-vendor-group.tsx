@@ -88,7 +88,7 @@ export function RouteVendorGroup(props: Props) {
 							<h3 className="truncate text-sm font-medium text-gray-900">
 								{getModelVendorLabel(vendor)}
 							</h3>
-							<p className="text-xs text-gray-500">{t('label')}</p>
+
 						</div>
 					</div>
 					<span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium tabular-nums text-gray-600 ring-1 ring-inset ring-gray-200">

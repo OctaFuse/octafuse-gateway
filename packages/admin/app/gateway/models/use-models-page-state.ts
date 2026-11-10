@@ -26,7 +26,10 @@ import {
 	type ImagePricingDraftState,
 	type PricingTierDraftRow,
 } from '@/lib/pricing-tiers-draft';
-import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
+import {
+	getModelVendorLabel,
+	normalizeModelVendorInput,
+} from '@/lib/model-vendor';
 import { useFeedback } from '@/components/feedback';
 import { emptyModelKindCounts } from '@/lib/invoke-kind';
 import type { ModelSyncReport } from '@/lib/model-sync-diff';
@@ -45,6 +48,8 @@ import {
 	formatMetadataForEditor,
 	groupModelsByVendor,
 	parseVendorFilterParam,
+	modelMatchesSearch,
+	parseMetadataForSave,
 } from './model-utils';
 import {
 	ALL_VENDORS_KEY,
@@ -81,53 +86,68 @@ export function useModelsPageState() {
 	const editLoadGenRef = useRef(0);
 	const [rawModels, setModels] = useState<ModelListItem[]>([]);
 	/** 管理员手动「检查官方更新」的结果；null = 还没检查过。 */
-	const [officialReport, setOfficialReport] = useState<ModelSyncReport | null>(null);
+	const [officialReport, setOfficialReport] = useState<ModelSyncReport | null>(
+		null
+	);
 	// 差异只在手动检查后才有；把结果合并到卡片，供更新图标使用。
 	const models = useMemo(() => {
 		if (!officialReport) return rawModels;
 		const counts = new Map<string, number>();
 		for (const group of officialReport.groups) {
-			for (const entry of group.models) counts.set(entry.model_id, entry.fields.length);
+			for (const entry of group.models)
+				counts.set(entry.model_id, entry.fields.length);
 		}
-		return rawModels.map((model) => ({ ...model, official_update_count: counts.get(model.id) ?? 0 }));
+		return rawModels.map((model) => ({
+			...model,
+			official_update_count: counts.get(model.id) ?? 0,
+		}));
 	}, [rawModels, officialReport]);
 
+	const [modelSearch, setModelSearch] = useState('');
 	const [selectedVendor, setSelectedVendor] = useState(ALL_VENDORS_KEY);
-	const [selectedKind, setSelectedKind] = useState<ModelListKindFilter>(DEFAULT_MODEL_LIST_KIND_FILTER);
-	const [selectedLifecycle, setSelectedLifecycle] = useState<ModelLifecycleFilter>(
-		DEFAULT_MODEL_LIFECYCLE_FILTER
+	const [selectedKind, setSelectedKind] = useState<ModelListKindFilter>(
+		DEFAULT_MODEL_LIST_KIND_FILTER
 	);
+	const [selectedLifecycle, setSelectedLifecycle] =
+		useState<ModelLifecycleFilter>(DEFAULT_MODEL_LIFECYCLE_FILTER);
 	const [isLoading, setIsLoading] = useState(true);
 	const [showModal, setShowModal] = useState(false);
 	const [editingModel, setEditingModel] = useState<ModelListItem | null>(null);
-	const [duplicateSourceModelId, setDuplicateSourceModelId] = useState<string | null>(null);
+	const [duplicateSourceModelId, setDuplicateSourceModelId] = useState<
+		string | null
+	>(null);
 	const [formData, setFormData] = useState<ModelFormData>(EMPTY_MODEL_FORM);
 	const [formKind, setFormKind] = useState<ModelFormKind>('llm');
-	const [pricingTierRows, setPricingTierRows] = useState<PricingTierDraftRow[]>([]);
-	const [catalogScheduleWindows, setCatalogScheduleWindows] = useState<CatalogScheduleFormWindow[]>(
+	const [pricingTierRows, setPricingTierRows] = useState<PricingTierDraftRow[]>(
 		[]
 	);
-	const [imageBillingMode, setImageBillingMode] = useState<ImageBillingModeDraft>('token');
-	const [imagePerImageDraft, setImagePerImageDraft] = useState<ImagePerImageDraft>(
-		createDefaultImagePerImageDraft()
-	);
-	const [audioPricingDraft, setAudioPricingDraft] = useState<AudioPricingDraftState>(
-		createDefaultAudioPricingDraft()
-	);
+	const [catalogScheduleWindows, setCatalogScheduleWindows] = useState<
+		CatalogScheduleFormWindow[]
+	>([]);
+	const [imageBillingMode, setImageBillingMode] =
+		useState<ImageBillingModeDraft>('token');
+	const [imagePerImageDraft, setImagePerImageDraft] =
+		useState<ImagePerImageDraft>(createDefaultImagePerImageDraft());
+	const [audioPricingDraft, setAudioPricingDraft] =
+		useState<AudioPricingDraftState>(createDefaultAudioPricingDraft());
 	const [tagInput, setTagInput] = useState('');
 	const [saveError, setSaveError] = useState('');
 	const [isSaving, setIsSaving] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [showImportCatalogModal, setShowImportCatalogModal] = useState(false);
-	const [importCatalogRows, setImportCatalogRows] = useState<PresetCatalogRow[]>([]);
+	const [importCatalogRows, setImportCatalogRows] = useState<
+		PresetCatalogRow[]
+	>([]);
 	const [importCatalogLoading, setImportCatalogLoading] = useState(false);
 	const [importCatalogError, setImportCatalogError] = useState('');
-	const [importSelected, setImportSelected] = useState<Record<string, boolean>>({});
-	const [importCatalogSearch, setImportCatalogSearch] = useState('');
-	const [importCatalogKind, setImportCatalogKind] = useState<ModelKindFilter>(DEFAULT_KIND_FILTER);
-	const [importCatalogLifecycle, setImportCatalogLifecycle] = useState<ModelLifecycleFilter>(
-		DEFAULT_IMPORT_LIFECYCLE_FILTER
+	const [importSelected, setImportSelected] = useState<Record<string, boolean>>(
+		{}
 	);
+	const [importCatalogSearch, setImportCatalogSearch] = useState('');
+	const [importCatalogKind, setImportCatalogKind] =
+		useState<ModelKindFilter>(DEFAULT_KIND_FILTER);
+	const [importCatalogLifecycle, setImportCatalogLifecycle] =
+		useState<ModelLifecycleFilter>(DEFAULT_IMPORT_LIFECYCLE_FILTER);
 	const [importSubmitting, setImportSubmitting] = useState(false);
 	const { currency: billingCurrency } = useBillingCurrency();
 
@@ -136,7 +156,10 @@ export function useModelsPageState() {
 		[importSelected]
 	);
 
-	const existingModelIds = useMemo(() => new Set(models.map((m) => m.id)), [models]);
+	const existingModelIds = useMemo(
+		() => new Set(models.map((m) => m.id)),
+		[models]
+	);
 
 	const importableCatalogCount = useMemo(
 		() => importCatalogRows.filter((r) => !existingModelIds.has(r.id)).length,
@@ -144,14 +167,21 @@ export function useModelsPageState() {
 	);
 
 	const lifecycleScopedImportRows = useMemo(
-		() => importCatalogRows.filter((row) => modelLifecycleMatchesFilter(row.retired, importCatalogLifecycle)),
+		() =>
+			importCatalogRows.filter((row) =>
+				modelLifecycleMatchesFilter(row.retired, importCatalogLifecycle)
+			),
 		[importCatalogRows, importCatalogLifecycle]
 	);
 
 	const importCatalogLifecycleCounts = useMemo(() => {
 		const counts = { all: importCatalogRows.length, active: 0, retired: 0 };
 		for (const row of importCatalogRows) {
-			counts[modelLifecycleMatchesFilter(row.retired, 'retired') ? 'retired' : 'active'] += 1;
+			counts[
+				modelLifecycleMatchesFilter(row.retired, 'retired')
+					? 'retired'
+					: 'active'
+			] += 1;
 		}
 		return counts;
 	}, [importCatalogRows]);
@@ -179,26 +209,40 @@ export function useModelsPageState() {
 			]
 				.join(' ')
 				.toLowerCase();
-			return id.includes(query) || name.includes(query) || vendor.includes(query) || description.includes(query);
+			return (
+				id.includes(query) ||
+				name.includes(query) ||
+				vendor.includes(query) ||
+				description.includes(query)
+			);
 		});
 	}, [importCatalogSearch, importCatalogKind, lifecycleScopedImportRows]);
 
 	const lifecycleFilteredModels = useMemo(
-		() => models.filter((m) => modelLifecycleMatchesFilter(m.retired_at, selectedLifecycle)),
+		() =>
+			models.filter((m) =>
+				modelLifecycleMatchesFilter(m.retired_at, selectedLifecycle)
+			),
 		[models, selectedLifecycle]
 	);
 
 	const lifecycleCounts = useMemo(() => {
 		const counts = { active: 0, retired: 0 };
 		for (const m of models) {
-			counts[modelLifecycleMatchesFilter(m.retired_at, 'retired') ? 'retired' : 'active'] += 1;
+			counts[
+				modelLifecycleMatchesFilter(m.retired_at, 'retired')
+					? 'retired'
+					: 'active'
+			] += 1;
 		}
 		return counts;
 	}, [models]);
 
 	const kindFilteredModels = useMemo(() => {
 		if (selectedKind === 'all') return lifecycleFilteredModels;
-		return lifecycleFilteredModels.filter((m) => resolveModelKind(m) === selectedKind);
+		return lifecycleFilteredModels.filter(
+			(m) => resolveModelKind(m) === selectedKind
+		);
 	}, [lifecycleFilteredModels, selectedKind]);
 
 	const modelsByVendor = useMemo(
@@ -206,7 +250,10 @@ export function useModelsPageState() {
 		[kindFilteredModels]
 	);
 
-	const vendorKeys = useMemo(() => modelsByVendor.map(([key]) => key), [modelsByVendor]);
+	const vendorKeys = useMemo(
+		() => modelsByVendor.map(([key]) => key),
+		[modelsByVendor]
+	);
 
 	const kindCounts = useMemo(() => {
 		const counts = emptyModelKindCounts();
@@ -216,25 +263,23 @@ export function useModelsPageState() {
 
 	const selectedVendorItems = useMemo(() => {
 		if (selectedVendor === ALL_VENDORS_KEY) {
-			return modelsByVendor.flatMap(([, items]) => items);
+			return modelsByVendor
+				.flatMap(([, items]) => items)
+				.filter((model) => modelMatchesSearch(model, modelSearch));
 		}
 		const entry = modelsByVendor.find(([key]) => key === selectedVendor);
-		return entry?.[1] ?? [];
-	}, [modelsByVendor, selectedVendor]);
+		return (entry?.[1] ?? []).filter((model) =>
+			modelMatchesSearch(model, modelSearch)
+		);
+	}, [modelsByVendor, selectedVendor, modelSearch]);
 
 	useEffect(() => {
-		const vendorParam = searchParams.get('vendor');
-		if (vendorParam !== null) {
-			setSelectedVendor(parseVendorFilterParam(vendorParam));
-		}
-		const kindParam = searchParams.get('kind');
-		if (kindParam !== null) {
-			setSelectedKind(parseModelListKindFilterParam(kindParam));
-		}
-		const lifecycleParam = searchParams.get('lifecycle');
-		if (lifecycleParam !== null) {
-			setSelectedLifecycle(parseModelLifecycleFilterParam(lifecycleParam));
-		}
+		setModelSearch(searchParams.get('q') ?? '');
+		setSelectedVendor(parseVendorFilterParam(searchParams.get('vendor')));
+		setSelectedKind(parseModelListKindFilterParam(searchParams.get('kind')));
+		setSelectedLifecycle(
+			parseModelLifecycleFilterParam(searchParams.get('lifecycle'))
+		);
 	}, [searchParams]);
 
 	useEffect(() => {
@@ -254,11 +299,16 @@ export function useModelsPageState() {
 
 	useReplaceListPageQuery(() => {
 		const params = new URLSearchParams();
+		if (modelSearch.trim()) params.set('q', modelSearch);
+		const editId = searchParams.get('edit');
+		if (editId && editDeepLinkHandledRef.current !== editId)
+			params.set('edit', editId);
 		if (selectedVendor) params.set('vendor', selectedVendor);
 		params.set('kind', selectedKind);
-		if (selectedLifecycle !== DEFAULT_MODEL_LIFECYCLE_FILTER) params.set('lifecycle', selectedLifecycle);
+		if (selectedLifecycle !== DEFAULT_MODEL_LIFECYCLE_FILTER)
+			params.set('lifecycle', selectedLifecycle);
 		return params;
-	}, [selectedVendor, selectedKind, selectedLifecycle]);
+	}, [selectedVendor, selectedKind, selectedLifecycle, modelSearch]);
 
 	/** 不切换整页 loading 的静默刷新（同步面板应用后用，避免面板被卸载）。 */
 	const reloadModelsQuietly = useCallback(async () => {
@@ -310,7 +360,9 @@ export function useModelsPageState() {
 			setImportSelected({});
 		} catch (e) {
 			console.error('Load import catalog error:', e);
-			setImportCatalogError(e instanceof Error ? e.message : 'Failed to load catalog');
+			setImportCatalogError(
+				e instanceof Error ? e.message : 'Failed to load catalog'
+			);
 			setImportCatalogRows([]);
 		} finally {
 			setImportCatalogLoading(false);
@@ -323,13 +375,18 @@ export function useModelsPageState() {
 		setImportCatalogSearch('');
 		setImportCatalogLifecycle(DEFAULT_IMPORT_LIFECYCLE_FILTER);
 		// 导入表格按单一类型显示对应计费列；模型目录选“全部”时从 LLM 目录开始。
-		setImportCatalogKind(selectedKind === 'all' ? DEFAULT_KIND_FILTER : selectedKind);
+		setImportCatalogKind(
+			selectedKind === 'all' ? DEFAULT_KIND_FILTER : selectedKind
+		);
 		setImportSelected({});
 		void loadImportCatalog();
 	}, [loadImportCatalog, selectedKind]);
 
 	const unpricedImportIds = useMemo(
-		() => new Set(importCatalogRows.filter((r) => !r.pricing_available).map((r) => r.id)),
+		() =>
+			new Set(
+				importCatalogRows.filter((r) => !r.pricing_available).map((r) => r.id)
+			),
 		[importCatalogRows]
 	);
 
@@ -359,7 +416,12 @@ export function useModelsPageState() {
 
 	const runImportSelectedPresets = useCallback(async () => {
 		const ids = importCatalogRows
-			.filter((r) => importSelected[r.id] && !existingModelIds.has(r.id) && r.pricing_available)
+			.filter(
+				(r) =>
+					importSelected[r.id] &&
+					!existingModelIds.has(r.id) &&
+					r.pricing_available
+			)
 			.map((r) => r.id);
 		if (ids.length === 0) {
 			notify('error', tImport('selectNone'));
@@ -373,7 +435,9 @@ export function useModelsPageState() {
 				const skipN = skipped_existing?.length ?? 0;
 				const failN = failed.length;
 				const detail = [
-					failN > 0 ? failed.map((f) => `${f.id}: ${f.message}`).join('\n') : '',
+					failN > 0
+						? failed.map((f) => `${f.id}: ${f.message}`).join('\n')
+						: '',
 					skipN > 0 && skipN <= 5 ? skipped_existing!.join(', ') : '',
 				]
 					.filter(Boolean)
@@ -382,8 +446,8 @@ export function useModelsPageState() {
 					failN > 0
 						? tImport('finishedWithFail', { created, failed: failN })
 						: skipN > 0
-							? tImport('finishedWithSkip', { created, skipped: skipN })
-							: tImport('finished', { created });
+						? tImport('finishedWithSkip', { created, skipped: skipN })
+						: tImport('finished', { created });
 				notify(failN > 0 ? 'error' : 'success', message, detail || undefined);
 				setShowImportCatalogModal(false);
 				await refreshModels();
@@ -396,18 +460,30 @@ export function useModelsPageState() {
 		} finally {
 			setImportSubmitting(false);
 		}
-	}, [existingModelIds, importCatalogRows, importSelected, notify, refreshModels, tImport]);
+	}, [
+		existingModelIds,
+		importCatalogRows,
+		importSelected,
+		notify,
+		refreshModels,
+		tImport,
+	]);
 
-	const applyImagePricingDraft = useCallback((draft: ImagePricingDraftState) => {
-		setImageBillingMode(draft.mode);
-		setPricingTierRows(draft.tiers);
-		setImagePerImageDraft(draft.perImage);
-	}, []);
+	const applyImagePricingDraft = useCallback(
+		(draft: ImagePricingDraftState) => {
+			setImageBillingMode(draft.mode);
+			setPricingTierRows(draft.tiers);
+			setImagePerImageDraft(draft.perImage);
+		},
+		[]
+	);
 
 	const fillFormFromModel = useCallback(
 		(model: ModelListItem) => {
 			const listTags = Array.isArray(model.tags) ? model.tags : [];
-			const outputMods = parseModelModalitiesJson(model.output_modalities) ?? ['text'];
+			const outputMods = parseModelModalitiesJson(model.output_modalities) ?? [
+				'text',
+			];
 			const kind: ModelFormKind = resolveModelKind({
 				input_modalities: model.input_modalities,
 				output_modalities: model.output_modalities,
@@ -421,9 +497,17 @@ export function useModelsPageState() {
 				id: model.id,
 				display_name: model.display_name || '',
 				vendor: normalizeModelVendorInput(model.vendor),
-				context_window: imageModel || audioModel ? '' : model.context_window?.toString() || '',
-				max_tokens: imageModel || audioModel || embeddingModel ? '' : model.max_tokens?.toString() || '4096',
-				input_modalities: parseModelModalitiesJson(model.input_modalities) ?? ['text'],
+				context_window:
+					imageModel || audioModel
+						? ''
+						: model.context_window?.toString() || '',
+				max_tokens:
+					imageModel || audioModel || embeddingModel
+						? ''
+						: model.max_tokens?.toString() || '4096',
+				input_modalities: parseModelModalitiesJson(model.input_modalities) ?? [
+					'text',
+				],
 				output_modalities: outputMods,
 				released_at: model.released_at ?? '',
 				tags: listTags,
@@ -431,26 +515,35 @@ export function useModelsPageState() {
 				metadata: formatMetadataForEditor(model.metadata),
 			});
 			if (audioModel) {
-				setAudioPricingDraft(profileJsonToAudioDraftState(model.pricing_profile));
+				setAudioPricingDraft(
+					profileJsonToAudioDraftState(model.pricing_profile)
+				);
 				setPricingTierRows([]);
 			} else {
 				applyImagePricingDraft(profileJsonToDraftState(model.pricing_profile));
 			}
-			setCatalogScheduleWindows(profileJsonToCatalogScheduleDraft(model.pricing_profile));
+			setCatalogScheduleWindows(
+				profileJsonToCatalogScheduleDraft(model.pricing_profile)
+			);
 		},
 		[applyImagePricingDraft]
 	);
 
-	const handleImageBillingModeChange = useCallback((mode: ImageBillingModeDraft) => {
-		setImageBillingMode(mode);
-		if (mode === 'per_image') {
-			setPricingTierRows([]);
-			return;
-		}
-		setPricingTierRows((rows) =>
-			draftRowsHaveImageTokenPrices(rows) ? rows : [createDefaultImageTokenTierRow()]
-		);
-	}, []);
+	const handleImageBillingModeChange = useCallback(
+		(mode: ImageBillingModeDraft) => {
+			setImageBillingMode(mode);
+			if (mode === 'per_image') {
+				setPricingTierRows([]);
+				return;
+			}
+			setPricingTierRows((rows) =>
+				draftRowsHaveImageTokenPrices(rows)
+					? rows
+					: [createDefaultImageTokenTierRow()]
+			);
+		},
+		[]
+	);
 
 	const handleCreate = useCallback(
 		(presetVendorKey?: string, kind: ModelFormKind = 'llm') => {
@@ -459,7 +552,9 @@ export function useModelsPageState() {
 			setDuplicateSourceModelId(null);
 			setFormKind(kind);
 			const vendor =
-				presetVendorKey !== undefined ? presetVendorKey : EMPTY_MODEL_FORM.vendor;
+				presetVendorKey !== undefined
+					? presetVendorKey
+					: EMPTY_MODEL_FORM.vendor;
 			if (kind === 'image') {
 				setFormData({
 					...EMPTY_IMAGE_MODEL_FORM,
@@ -482,7 +577,9 @@ export function useModelsPageState() {
 					vendor,
 				});
 				setAudioPricingDraft(
-					kind === 'tts' ? createDefaultAudioCharacterPricingDraft() : createDefaultAudioPricingDraft()
+					kind === 'tts'
+						? createDefaultAudioCharacterPricingDraft()
+						: createDefaultAudioPricingDraft()
 				);
 				setPricingTierRows([]);
 			} else {
@@ -519,7 +616,9 @@ export function useModelsPageState() {
 					setPricingTierRows([]);
 				} else {
 					setPricingTierRows((rows) =>
-						draftRowsHaveImageTokenPrices(rows) ? rows : [createDefaultImageTokenTierRow()]
+						draftRowsHaveImageTokenPrices(rows)
+							? rows
+							: [createDefaultImageTokenTierRow()]
 					);
 				}
 				return mode;
@@ -534,7 +633,9 @@ export function useModelsPageState() {
 				max_tokens: '',
 			}));
 			setPricingTierRows((rows) =>
-				rows.length === 0 || draftRowsLookLikeImageOnly(rows) ? [createDefaultEmbeddingTierRow()] : rows
+				rows.length === 0 || draftRowsLookLikeImageOnly(rows)
+					? [createDefaultEmbeddingTierRow()]
+					: rows
 			);
 			return;
 		}
@@ -548,14 +649,17 @@ export function useModelsPageState() {
 				max_tokens: '',
 			}));
 			setAudioPricingDraft((prev) => {
-				if (prev.mode === 'per_character') return createDefaultAudioPricingDraft();
+				if (prev.mode === 'per_character')
+					return createDefaultAudioPricingDraft();
 				if (prev.mode === 'token') {
 					const hasTier = prev.tiers.some(
 						(r) => r.input_price.trim() !== '' || r.output_price.trim() !== ''
 					);
 					return hasTier ? prev : createDefaultAudioTokenPricingDraft();
 				}
-				return prev.price_per_second.trim() !== '' ? prev : createDefaultAudioPricingDraft();
+				return prev.price_per_second.trim() !== ''
+					? prev
+					: createDefaultAudioPricingDraft();
 			});
 			setPricingTierRows([]);
 			return;
@@ -578,7 +682,9 @@ export function useModelsPageState() {
 			return;
 		}
 		setFormData((prev) => {
-			const withoutImage = prev.output_modalities.filter((m) => m !== 'image' && m !== 'embedding');
+			const withoutImage = prev.output_modalities.filter(
+				(m) => m !== 'image' && m !== 'embedding'
+			);
 			const input = prev.input_modalities.includes('text')
 				? prev.input_modalities
 				: ['text', ...prev.input_modalities.filter((m) => m !== 'audio')];
@@ -625,7 +731,9 @@ export function useModelsPageState() {
 		setDuplicateSourceModelId(sourceId);
 		setEditingModel(null);
 		setFormData((current) =>
-			modelFormForDuplicate(current, (name) => tModal('copyDisplayName', { name }))
+			modelFormForDuplicate(current, (name) =>
+				tModal('copyDisplayName', { name })
+			)
 		);
 		setPricingTierRows((rows) => structuredClone(rows));
 		setCatalogScheduleWindows((windows) => structuredClone(windows));
@@ -708,7 +816,10 @@ export function useModelsPageState() {
 	}, [formData, tagInput]);
 
 	const handleRemoveTag = useCallback((tag: string) => {
-		setFormData((prev) => ({ ...prev, tags: prev.tags.filter((x) => x !== tag) }));
+		setFormData((prev) => ({
+			...prev,
+			tags: prev.tags.filter((x) => x !== tag),
+		}));
 	}, []);
 
 	const toggleFormModality = useCallback(
@@ -721,7 +832,9 @@ export function useModelsPageState() {
 						: { ...prev, output_modalities: ['embedding'], max_tokens: '' };
 				}
 				const current =
-					kind === 'output_modalities' ? prev[kind].filter((m) => m !== 'embedding') : prev[kind];
+					kind === 'output_modalities'
+						? prev[kind].filter((m) => m !== 'embedding')
+						: prev[kind];
 				const next = current.includes(modality)
 					? current.filter((m) => m !== modality)
 					: [...current, modality];
@@ -752,12 +865,15 @@ export function useModelsPageState() {
 					prev.output_modalities.includes('image')
 				) {
 					setPricingTierRows((rows) =>
-						draftRowsLookLikeImageOnly(rows) ? [createDefaultNewModelTierRow()] : rows
+						draftRowsLookLikeImageOnly(rows)
+							? [createDefaultNewModelTierRow()]
+							: rows
 					);
 					return {
 						...prev,
 						[kind]: nextList,
-						max_tokens: prev.max_tokens.trim() !== '' ? prev.max_tokens : '8192',
+						max_tokens:
+							prev.max_tokens.trim() !== '' ? prev.max_tokens : '8192',
 					};
 				}
 				return { ...prev, [kind]: nextList };
@@ -767,6 +883,14 @@ export function useModelsPageState() {
 	);
 
 	const handleSave = useCallback(async () => {
+		if (!formData.id.trim()) {
+			setSaveError(tModal('modelIdRequiredError'));
+			return;
+		}
+		if (!parseMetadataForSave(formData.metadata).ok) {
+			setSaveError(tModal('invalidMetadata'));
+			return;
+		}
 		setSaveError('');
 		setIsSaving(true);
 		try {
@@ -778,7 +902,7 @@ export function useModelsPageState() {
 							mode: imageBillingMode,
 							tiers: pricingTierRows,
 							perImage: imagePerImageDraft,
-						}
+					  }
 					: null;
 			const audioDraft = isAudio ? audioPricingDraft : null;
 			const result = await saveModel(
@@ -799,7 +923,7 @@ export function useModelsPageState() {
 			}
 		} catch (error) {
 			console.error('Save error:', error);
-			setSaveError('Save failed, please try again');
+			setSaveError(tCommon('saveFailed'));
 		} finally {
 			setIsSaving(false);
 		}
@@ -813,6 +937,8 @@ export function useModelsPageState() {
 		imagePerImageDraft,
 		pricingTierRows,
 		refreshModels,
+		tModal,
+		tCommon,
 	]);
 
 	const closeModal = useCallback(() => {
@@ -821,16 +947,22 @@ export function useModelsPageState() {
 	}, [isDeleting, isSaving]);
 
 	const clearFilters = useCallback(() => {
+		setModelSearch('');
 		setSelectedVendor(ALL_VENDORS_KEY);
 		setSelectedKind(DEFAULT_MODEL_LIST_KIND_FILTER);
 		setSelectedLifecycle(DEFAULT_MODEL_LIFECYCLE_FILTER);
 	}, []);
 
 	const isAllVendors = selectedVendor === ALL_VENDORS_KEY;
-	const activeVendorKey = isAllVendors ? (vendorKeys[0] ?? 'other') : selectedVendor || vendorKeys[0] || 'other';
-	const activeVendorTitle = isAllVendors ? tCatalog('allVendors') : getModelVendorLabel(activeVendorKey);
+	const activeVendorKey = isAllVendors
+		? vendorKeys[0] ?? 'other'
+		: selectedVendor || vendorKeys[0] || 'other';
+	const activeVendorTitle = isAllVendors
+		? tCatalog('allVendors')
+		: getModelVendorLabel(activeVendorKey);
 	const hasVendorFilter = !isAllVendors;
 	const hasActiveFilter =
+		Boolean(modelSearch.trim()) ||
 		hasVendorFilter ||
 		selectedKind !== DEFAULT_MODEL_LIST_KIND_FILTER ||
 		selectedLifecycle !== DEFAULT_MODEL_LIFECYCLE_FILTER;
@@ -838,6 +970,8 @@ export function useModelsPageState() {
 	return {
 		isLoading,
 		models,
+		modelSearch,
+		setModelSearch,
 		selectedVendor,
 		setSelectedVendor,
 		selectedKind,

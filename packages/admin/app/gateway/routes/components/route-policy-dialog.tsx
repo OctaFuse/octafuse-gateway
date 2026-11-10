@@ -1,5 +1,7 @@
 'use client';
 
+import { useAdminDialog } from '@/components/use-admin-dialog';
+
 import { ROUTE_STRATEGY_NAMES } from '@octafuse/core/db/model-route-policy';
 import { useTranslations } from 'next-intl';
 import {
@@ -25,6 +27,7 @@ export function RoutePolicyDialog(props: Props) {
 	const { dialog, form, error, saving, onClose, onFormChange, onSave } = props;
 	const t = useTranslations('routes.strategy');
 	const tCommon = useTranslations('common');
+	const dialogRef = useAdminDialog(true, saving, onClose);
 	const isTierMode = dialog.priority !== undefined;
 	const capabilities = dialog.poolId || isTierMode ? [] : CAPABILITIES_BY_PROTOCOL[dialog.protocol] ?? [];
 	const tierInheritStrategy = form.protocolStrategy || dialog.inheritedStrategy;
@@ -46,13 +49,15 @@ export function RoutePolicyDialog(props: Props) {
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
 			onMouseDown={(event) => {
 				if (event.target === event.currentTarget && !saving) onClose();
 			}}
 		>
 			<div
-				className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-panel ring-1 ring-black/5"
+				className="flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none ring-1 ring-black/5"
+				ref={dialogRef}
+				tabIndex={-1}
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="route-policy-dialog-title"
@@ -145,7 +150,7 @@ export function RoutePolicyDialog(props: Props) {
 							<div className="mb-1">
 								<p className="mt-0.5 text-xs text-gray-500">{t('tierLevelHint')}</p>
 							</div>
-							<RouteStrategyPicker
+							<RouteStrategyPicker compact
 								value={form.tierStrategy}
 								onChange={(next) => onFormChange({ ...form, tierStrategy: next })}
 								allowInherit
@@ -160,7 +165,7 @@ export function RoutePolicyDialog(props: Props) {
 								<h3 className="text-sm font-medium text-gray-900">{t('guideTitle')}</h3>
 								<p className="mt-0.5 text-xs text-gray-500">{t('guideHint')}</p>
 							</div>
-							<RouteStrategyPicker
+							<RouteStrategyPicker compact
 								value={form.protocolStrategy}
 								onChange={(next) => onFormChange({ ...form, protocolStrategy: next })}
 								allowInherit

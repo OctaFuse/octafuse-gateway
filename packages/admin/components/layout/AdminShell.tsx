@@ -56,13 +56,16 @@ export default function AdminShell({ children }: { children: ReactNode }) {
             <span className="block truncate text-base font-semibold">{tBrand('wordmark')}</span>
             <span className="block truncate text-xs text-gray-400">{tBrand('sidebarSubtitle')}</span>
           </div>
-          <LocaleSwitcher variant="login" />
+          <LocaleSwitcher variant="header" />
         </header>
         <div className="hidden h-14 shrink-0 items-center gap-2 border-b border-gray-200/80 bg-white px-8 text-xs text-gray-500 lg:flex">
           {group && <span>{t(`groups.${group.groupKey}`)}</span>}
           {group && route && <ChevronRightIcon className="h-3 w-3" aria-hidden />}
           {route && <span className="font-medium text-gray-900">{t(`nav.${route.nameKey}`)}</span>}
-          <div className="ml-auto"><BrandExternalLinks variant="header" /></div>
+          <div className="ml-auto flex shrink-0 items-center gap-4">
+            <LocaleSwitcher variant="header" />
+            <BrandExternalLinks variant="header" />
+          </div>
         </div>
         <MaintenanceBanner />
         <main className="admin-workspace min-h-0 min-w-0 flex-1 overflow-auto bg-gray-50">

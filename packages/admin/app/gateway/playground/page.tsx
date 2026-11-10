@@ -1,9 +1,12 @@
 'use client';
 
+import { AdminPageTitle } from '@/components/admin-page-title';
+
 /**
  * Playground：选定单条 model_route，编辑 JSON 请求体，直连上游验证连通性（不计费、不入库）。
  */
 import { PricingInfoHint } from '@/components/PricingInfoHint';
+import { BeakerIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';
 import { PlaygroundRequestPanel } from './components/playground-request-panel';
@@ -22,7 +25,9 @@ function PlaygroundPageInner() {
 	const tCommon = useTranslations('common');
 	const s = usePlaygroundPageState();
 	const tools = usePlaygroundToolsState(s.initialToolId, s.initialProvider);
-	const llm = s.selected ? !s.selectedIsImage && !s.selectedIsAudio && !s.selectedIsEmbedding : s.filterKind === 'llm';
+	const llm = s.selected
+		? !s.selectedIsImage && !s.selectedIsAudio && !s.selectedIsEmbedding
+		: s.filterKind === 'llm';
 
 	if (s.loadingRoutes && s.playgroundMode === 'routes') {
 		return (
@@ -33,25 +38,21 @@ function PlaygroundPageInner() {
 	}
 
 	return (
-		<div className="flex min-h-0 min-w-0 flex-col overflow-x-hidden bg-gray-50 p-4 sm:p-6 lg:p-8 xl:h-dvh xl:overflow-hidden">
-			<div className="mb-4 shrink-0 sm:mb-5">
-				<h1 className="text-2xl font-medium text-gray-900 sm:text-[28px]">{t('title')}</h1>
-				<p className="mt-1 max-w-3xl text-sm text-gray-500">
-					{s.playgroundMode === 'tools'
-						? t('toolsSubtitle', { product: tBrand('product') })
-						: t('subtitle', { product: tBrand('product') })}
-					<span className="text-gray-400"> · </span>
-					{t('usageNote')} <PricingInfoHint kind="playground" align="start" />
-				</p>
-				<div
-					className="mt-4 inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5"
-					role="group"
-					aria-label={t('mode')}
-				>
+		<div className="flex min-h-0 min-w-0 flex-col overflow-x-hidden bg-gray-50 p-4 sm:p-6 lg:p-8 xl:h-full xl:overflow-hidden">
+			<div className="mb-6 flex shrink-0 flex-wrap items-start justify-between gap-4">
+				<div className="min-w-0">
+					<AdminPageTitle>{t('title')}</AdminPageTitle>
+					<p className="mt-1 max-w-3xl text-sm text-gray-500">
+						{s.playgroundMode === 'tools'
+							? t('toolsSubtitle', { product: tBrand('product') })
+							: t('subtitle', { product: tBrand('product') })}
+					</p>
+				</div>
+				<div className="inline-flex shrink-0 rounded-lg bg-gray-100 p-1" role="group" aria-label={t('mode')}>
 					{(
 						[
-							{ id: 'routes' as const, label: t('modeRoutes') },
-							{ id: 'tools' as const, label: t('modeTools') },
+							{ id: 'routes' as const, label: t('modeRoutes'), icon: BeakerIcon },
+							{ id: 'tools' as const, label: t('modeTools'), icon: WrenchScrewdriverIcon },
 						] as const
 					).map((opt) => {
 						const active = s.playgroundMode === opt.id;
@@ -59,19 +60,24 @@ function PlaygroundPageInner() {
 							<button
 								key={opt.id}
 								type="button"
+								disabled={s.sending || tools.sending}
 								onClick={() => s.setPlaygroundMode(opt.id)}
-								className={
-									active
-										? 'rounded px-3 py-1.5 text-sm font-medium bg-white text-gray-900 shadow-sm'
-										: 'rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900'
-								}
+								aria-pressed={active}
+								className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium ${
+									active ? 'bg-white text-gray-950 shadow-sm' : 'text-gray-500 hover:text-gray-950'
+								}`}
 							>
+								<opt.icon className="h-4 w-4" aria-hidden />
 								{opt.label}
 							</button>
 						);
 					})}
 				</div>
 			</div>
+			<p className="mb-4 flex shrink-0 items-center gap-1.5 text-xs text-gray-500">
+				{t('usageNote')}
+				<PricingInfoHint kind="playground" align="start" />
+			</p>
 
 			{s.playgroundMode === 'routes' && s.loadError ? (
 				<div className="mb-4 max-w-3xl rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">
@@ -79,13 +85,14 @@ function PlaygroundPageInner() {
 				</div>
 			) : null}
 
-			<div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 shadow-sm ring-1 ring-black/[0.02]">
-				<div className="flex min-h-0 min-w-0 flex-1 flex-col xl:flex-row xl:items-stretch">
-					<aside className="flex w-full min-w-0 shrink-0 flex-col border-b border-gray-200/80 bg-slate-50/80 p-4 xl:min-h-0 xl:w-[360px] 2xl:w-[380px] xl:overflow-hidden xl:border-b-0 xl:border-r">
+			<div className="flex min-h-0 flex-1 flex-col">
+				<div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 xl:flex-row xl:items-stretch">
+					<aside className="flex w-full min-w-0 shrink-0 flex-col xl:min-h-0 xl:w-72 2xl:w-80 xl:overflow-hidden">
 						{s.playgroundMode === 'tools' ? (
 							<PlaygroundToolsSetup state={tools} />
 						) : (
 							<PlaygroundSetupPanel
+								disabled={s.sending}
 								filterKind={s.filterKind}
 								onFilterKindChange={s.onFilterKindChange}
 								kindCounts={s.kindCounts}
@@ -107,20 +114,15 @@ function PlaygroundPageInner() {
 						)}
 					</aside>
 
-					<section className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto bg-slate-100/70 p-4 sm:p-5 xl:overflow-hidden">
+					<section className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 xl:overflow-hidden">
 						{s.playgroundMode === 'tools' ? (
 							<PlaygroundToolsWorkspace state={tools} />
 						) : (
-							<div
-								className={
-									llm
-										? 'grid min-h-0 flex-1 auto-rows-[650px] grid-cols-1 gap-4 xl:grid-cols-2 xl:grid-rows-[minmax(0,1fr)]'
-										: 'flex min-h-0 flex-1 flex-col gap-4'
-								}
-							>
+							<div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-2 xl:grid-rows-[minmax(0,1fr)]">
 								<PlaygroundRequestPanel
 									llm={llm}
 									onApplyLlmBody={s.applyLlmBody}
+									onResetTemplate={s.applyCurrentTemplate}
 									bodyText={s.bodyText}
 									onBodyTextChange={s.setBodyText}
 									bodyDirtyHint={s.bodyDirtyHint}

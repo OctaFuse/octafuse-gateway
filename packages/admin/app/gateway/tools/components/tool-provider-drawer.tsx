@@ -11,7 +11,7 @@ import {
 	type RefObject,
 	type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ArrowTopRightOnSquareIcon, BeakerIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 
@@ -27,6 +27,7 @@ type Props = {
 	docsLabel?: string;
 	playgroundHref?: string | null;
 	playgroundLabel?: string;
+	playgroundHint?: string;
 	/** 保存中禁止遮罩/Escape 关闭 */
 	busy?: boolean;
 	/** 目录详情需要更宽的面板 */
@@ -37,7 +38,7 @@ type Props = {
 };
 
 const FOCUSABLE =
-	'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+	'summary, a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function ToolProviderDrawer({
 	open,
@@ -50,6 +51,7 @@ export function ToolProviderDrawer({
 	docsLabel,
 	playgroundHref,
 	playgroundLabel,
+	playgroundHint,
 	busy = false,
 	wide = false,
 	onClose,
@@ -87,7 +89,9 @@ export function ToolProviderDrawer({
 			return;
 		}
 		const onKeyDown = (e: KeyboardEvent) => {
-			if (document.querySelector('[role="alertdialog"]')) return;
+			if (e.defaultPrevented || document.querySelector('[role="alertdialog"]')) return;
+			const dialogs = Array.from(document.querySelectorAll('[role="dialog"]'));
+			if (dialogs.at(-1) !== panelRef.current) return;
 			if (e.key === 'Escape' && !busy) {
 				e.preventDefault();
 				onClose();
@@ -109,10 +113,13 @@ export function ToolProviderDrawer({
 		}
 		const first = nodes[0]!;
 		const last = nodes[nodes.length - 1]!;
-		if (e.shiftKey && document.activeElement === first) {
+		if (e.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current)) {
 			e.preventDefault();
 			last.focus();
-		} else if (!e.shiftKey && document.activeElement === last) {
+		} else if (
+			!e.shiftKey &&
+			(document.activeElement === last || document.activeElement === panelRef.current)
+		) {
 			e.preventDefault();
 			first.focus();
 		}
@@ -123,9 +130,9 @@ export function ToolProviderDrawer({
 	}
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
+		<div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6" role="presentation">
 			<div
-				className="absolute inset-0 bg-black/50"
+				className="absolute inset-0 bg-gray-950/35"
 				onMouseDown={(e) => {
 					if (e.target === e.currentTarget && !busy) {
 						e.preventDefault();
@@ -137,33 +144,40 @@ export function ToolProviderDrawer({
 			<div
 				ref={panelRef}
 				role="dialog"
+				tabIndex={-1}
 				aria-modal="true"
 				aria-labelledby={titleId}
 				aria-busy={busy}
 				onKeyDown={onPanelKeyDown}
-				className={`relative flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-lg bg-white shadow-panel ${
-					wide ? 'max-w-5xl' : 'max-w-[760px]'
+				className={`relative flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl outline-none ${
+					wide ? 'max-w-5xl' : 'max-w-[720px]'
 				}`}
 			>
-				<div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-5 py-3 sm:px-6">
+				<div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 px-5 py-5 sm:px-6">
 					<div className="min-w-0 flex-1">
-						<h2 id={titleId} className="break-words text-xl font-semibold text-gray-900">
+						<h2 id={titleId} className="break-words text-lg font-medium text-gray-900">
 							{title}
 						</h2>
 						{subtitle ? <p className="mt-1 text-sm text-gray-500">{subtitle}</p> : null}
-						<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+						<div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
 							{docsHref && docsLabel ? (
 								<a
 									href={docsHref}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="text-xs font-medium text-gray-800 hover:underline"
+									className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900"
 								>
+									<ArrowTopRightOnSquareIcon className="h-4 w-4" aria-hidden="true" />
 									{docsLabel}
 								</a>
 							) : null}
 							{playgroundHref && playgroundLabel ? (
-								<Link href={playgroundHref} className="text-xs font-medium text-slate-700 hover:underline">
+								<Link
+									href={playgroundHref}
+									title={playgroundHint}
+									className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900"
+								>
+									<BeakerIcon className="h-4 w-4" aria-hidden="true" />
 									{playgroundLabel}
 								</Link>
 							) : null}
@@ -186,8 +200,8 @@ export function ToolProviderDrawer({
 					</div>
 				) : null}
 				{navigation}
-				<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6">{children}</div>
-				<div className="shrink-0 border-t border-gray-200 bg-gray-50 px-5 py-3 sm:px-6">{footer}</div>
+				<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 sm:px-6">{children}</div>
+				<div className="shrink-0 border-t border-gray-100 bg-gray-50/60 px-5 py-4 sm:px-6">{footer}</div>
 			</div>
 		</div>
 	);

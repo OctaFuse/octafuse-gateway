@@ -2,7 +2,7 @@
 import { useTranslations } from 'next-intl';
 import type { ServerForm } from '../mcp-types';
 const INPUT =
-	'mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100 read-only:bg-gray-50 read-only:text-gray-500';
+	'mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100 read-only:bg-gray-50 read-only:text-gray-500';
 export function McpAdvancedSettings({
 	form,
 	onChange,

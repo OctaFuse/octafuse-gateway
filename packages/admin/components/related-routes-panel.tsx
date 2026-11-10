@@ -331,7 +331,7 @@ export function RelatedRoutesPanel({
 													</span>
 												) : (
 													<Link
-														href={`/gateway/routes?model_id=${encodeURIComponent(
+														href={`/gateway/routes?q=${encodeURIComponent(
 															route.model_id
 														)}`}
 														aria-disabled={disabled}

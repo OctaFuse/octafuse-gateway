@@ -1,5 +1,7 @@
 'use client';
 
+import { useAdminDialog } from '@/components/use-admin-dialog';
+
 import {
 	MAX_STICKY_IDLE_TTL_SECONDS,
 	MIN_STICKY_IDLE_TTL_SECONDS,
@@ -78,6 +80,7 @@ export function ProviderStickyDialog(props: Props) {
 	const [submittedQuery, setSubmittedQuery] = useState('');
 	const [listBusy, setListBusy] = useState(false);
 	const busy = saving || actionBusy || listBusy;
+	const dialogRef = useAdminDialog(true, busy, onClose);
 	const hasChanges =
 		form.enabled !== dialog.enabled || form.idleTtlSeconds !== dialog.idleTtlSeconds;
 
@@ -270,13 +273,15 @@ export function ProviderStickyDialog(props: Props) {
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
 			onMouseDown={(event) => {
 				if (event.target === event.currentTarget && !busy) onClose();
 			}}
 		>
 			<div
-				className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-panel ring-1 ring-black/5"
+				className="flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none ring-1 ring-black/5"
+				ref={dialogRef}
+				tabIndex={-1}
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="provider-sticky-dialog-title"
