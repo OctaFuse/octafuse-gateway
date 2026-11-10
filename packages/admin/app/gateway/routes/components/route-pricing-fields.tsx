@@ -2,7 +2,7 @@
 
 import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { useMemo, useState } from 'react';
-import { CodeBracketIcon } from '@heroicons/react/24/outline';
+import { CodeBracketIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
 import { getUserChargedCatalogTierRows } from '@/lib/pricing-ui';
@@ -179,7 +179,7 @@ export function RoutePricingFields({
 							: undefined
 					}
 				/>
-				<RouteEditorSection
+				<RouteEditorSection icon={CurrencyDollarIcon}
 					className="lg:sticky lg:top-0"
 					title={t('standardCatalog')}
 					action={<PricingInfoHint kind="catalog" />}

@@ -1,6 +1,6 @@
 'use client';
 
-import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, CodeBracketIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { editorInputClass, editorPanelClass, RouteEditorSectionHeader } from './route-editor-ui';
 import type { RouteModalProps } from './route-modal-types';
@@ -12,7 +12,7 @@ export function RouteRequestFields({ formData, onFormChange }: Props) {
 	return (
 		<div id="route-custom-params" className="grid min-h-full items-stretch gap-4 lg:h-full lg:min-h-0 lg:grid-cols-2">
 			<section className={`${editorPanelClass} flex flex-col overflow-hidden lg:min-h-0`}>
-				<RouteEditorSectionHeader
+				<RouteEditorSectionHeader icon={CodeBracketIcon}
 					title={t('customHeaders')}
 					description={t('editor.headersDescription')}
 					className="min-h-20 shrink-0"
@@ -116,7 +116,7 @@ export function RouteRequestFields({ formData, onFormChange }: Props) {
 				/>
 			</section>
 			<section className={`${editorPanelClass} flex flex-col overflow-hidden lg:min-h-0`}>
-				<RouteEditorSectionHeader
+				<RouteEditorSectionHeader icon={DocumentTextIcon}
 					title={t('customBody')}
 					description={t('editor.bodyDescription')}
 					className="min-h-20 shrink-0"

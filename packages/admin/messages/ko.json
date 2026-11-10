@@ -1117,6 +1117,8 @@
 		"empty": "모델 또는 Route가 없습니다",
 		"emptyFilteredPrefix": "필터를 조정하거나",
 		"workspace": {
+			"coverageTitle": "사용 가능한 구성",
+			"coverageHint": "라우트와 공급자가 모두 활성화되어 있습니다. 현재 필터 범위의 구성 상태이며 실시간 상태는 아닙니다.",
 			"searchPlaceholder": "모델, 업스트림 모델 또는 공급자 검색…",
 			"removeFilter": "필터 제거: {filter}",
 			"densityList": "목록",

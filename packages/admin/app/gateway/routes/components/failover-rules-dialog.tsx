@@ -1,6 +1,7 @@
 'use client';
 
 import { useAdminDialog } from '@/components/use-admin-dialog';
+import { ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 import { useTranslations } from 'next-intl';
 
@@ -35,7 +36,7 @@ export function FailoverRulesDialog({ open, onClose }: Props) {
 			}}
 		>
 			<div
-				className="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none ring-1 ring-black/5"
+				className="route-design-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none ring-1 ring-black/5"
 				ref={dialogRef}
 				tabIndex={-1}
 				role="dialog"
@@ -44,7 +45,8 @@ export function FailoverRulesDialog({ open, onClose }: Props) {
 			>
 				<div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-3.5">
 					<div>
-						<h2 id="failover-rules-dialog-title" className="text-base font-medium text-gray-900">
+						<h2 id="failover-rules-dialog-title" className="flex items-center gap-2 text-base font-medium text-gray-900">
+                                <span className="route-dialog-symbol" aria-hidden><ArrowPathIcon className="h-4 w-4" /></span>
 							{t('title')}
 						</h2>
 						<p className="mt-1 text-xs text-amber-700">{t('readonlyHint')}</p>
@@ -55,9 +57,7 @@ export function FailoverRulesDialog({ open, onClose }: Props) {
 						className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 						aria-label={tCommon('close')}
 					>
-						<span className="block text-xl leading-none" aria-hidden>
-							×
-						</span>
+						<XMarkIcon className="h-4 w-4" aria-hidden />
 					</button>
 				</div>
 				<div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">

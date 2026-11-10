@@ -1117,6 +1117,8 @@
 		"empty": "モデルまたは Route が見つかりません",
 		"emptyFilteredPrefix": "フィルターを調整するか、",
 		"workspace": {
+			"coverageTitle": "利用可能な設定",
+			"coverageHint": "ルートとプロバイダーの両方が有効です。現在のフィルター内の設定状態であり、リアルタイムの稼働状況ではありません。",
 			"searchPlaceholder": "モデル・上流モデル・プロバイダーを検索…",
 			"removeFilter": "フィルターを解除：{filter}",
 			"densityList": "リスト",

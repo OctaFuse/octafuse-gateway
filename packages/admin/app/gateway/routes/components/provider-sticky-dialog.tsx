@@ -1,6 +1,7 @@
 'use client';
 
 import { useAdminDialog } from '@/components/use-admin-dialog';
+import { LinkIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 import {
 	MAX_STICKY_IDLE_TTL_SECONDS,
@@ -279,7 +280,7 @@ export function ProviderStickyDialog(props: Props) {
 			}}
 		>
 			<div
-				className="flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none ring-1 ring-black/5"
+				className="route-design-dialog flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none ring-1 ring-black/5"
 				ref={dialogRef}
 				tabIndex={-1}
 				role="dialog"
@@ -291,8 +292,9 @@ export function ProviderStickyDialog(props: Props) {
 						<div className="flex flex-wrap items-center gap-2">
 							<h2
 								id="provider-sticky-dialog-title"
-								className="text-base font-medium text-gray-900"
+								className="flex items-center gap-2 text-base font-medium text-gray-900"
 							>
+                                <span className="route-dialog-symbol" aria-hidden><LinkIcon className="h-4 w-4" /></span>
 								{t('title')}
 							</h2>
 							<span
@@ -317,9 +319,7 @@ export function ProviderStickyDialog(props: Props) {
 						className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus-visible:ring-2 focus-visible:ring-gray-500 disabled:opacity-50"
 						aria-label={tCommon('close')}
 					>
-						<span className="block text-xl leading-none" aria-hidden>
-							×
-						</span>
+						<XMarkIcon className="h-4 w-4" aria-hidden />
 					</button>
 				</div>
 

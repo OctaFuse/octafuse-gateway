@@ -153,7 +153,7 @@ function RouteModalContent(props: RouteModalProps) {
 				aria-modal="true"
 				aria-labelledby="route-modal-title"
 				aria-describedby={modelLabel ? 'route-modal-context' : undefined}
-				className="flex h-[min(820px,94dvh)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel ring-1 ring-black/5"
+				className="route-design-dialog route-editor-dialog flex h-[min(820px,94dvh)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel ring-1 ring-black/5"
 				onKeyDown={(event) => {
 					if (event.key === 'Escape' && !busy) {
 						event.stopPropagation();
@@ -184,7 +184,7 @@ function RouteModalContent(props: RouteModalProps) {
 								id="route-modal-title"
 								className="flex min-w-0 items-baseline gap-3 text-lg font-medium text-gray-900"
 							>
-								<span className="shrink-0">{editingRoute ? t('editTitle') : t('newTitle')}</span>
+								<span className="route-dialog-symbol" aria-hidden><ArrowsRightLeftIcon className="h-5 w-5" /></span><span className="shrink-0">{editingRoute ? t('editTitle') : t('newTitle')}</span>
 								{modelLabel ? (
 									<span
 										className="min-w-0 truncate border-l border-gray-200 pl-3 text-sm font-normal text-gray-500"

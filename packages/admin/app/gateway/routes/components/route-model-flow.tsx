@@ -3,6 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
 	ArrowDownIcon,
+	ArrowRightEndOnRectangleIcon,
+	ChatBubbleLeftRightIcon,
+	PhotoIcon,
+	MicrophoneIcon,
+	SpeakerWaveIcon,
+	CircleStackIcon,
 	ArrowsUpDownIcon,
 	CheckCircleIcon,
 	CheckIcon,
@@ -147,7 +153,6 @@ function RouteTarget({
 					{t(side === 'headers' ? 'paramsHeaders' : 'paramsBody')}
 				</button>
 			))}
-			{listView && !params.headers && !params.body ? <span className="text-xs text-slate-400">—</span> : null}
 		</div>
 	);
 
@@ -159,15 +164,16 @@ function RouteTarget({
 				onClick={() => onToggleStatus(route)}
 				disabled={togglingId === route.id}
 				aria-pressed={enabled}
-				className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-wait disabled:opacity-50 ${available ? 'bg-emerald-600 text-white hover:bg-emerald-700' : enabled ? 'bg-white text-slate-600 ring-1 ring-inset ring-slate-300 hover:bg-slate-200' : 'bg-slate-600 text-white hover:bg-slate-700'}`}
+				className={`inline-flex items-center gap-1 rounded font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-wait disabled:opacity-50 ${listView ? `route-provider-status-toggle ${available ? 'text-emerald-700 hover:bg-emerald-50' : 'text-slate-500 hover:bg-slate-200/70'}` : `px-1.5 py-0.5 ${available ? 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200/70 hover:bg-emerald-100' : enabled ? 'bg-white text-slate-600 ring-1 ring-inset ring-slate-300 hover:bg-slate-200' : 'bg-gray-100 text-gray-500 ring-1 ring-inset ring-gray-200 hover:bg-gray-200'}`}`}
 				title={`${availabilityHint} · ${enabled ? tList('routeEnabled') : tList('routeDisabled')}`}
 				aria-label={enabled ? tList('routeEnabled') : tList('routeDisabled')}
 			>
-				{available ? <CheckCircleIcon className="h-3 w-3" aria-hidden /> : <PowerIcon className="h-3 w-3" aria-hidden />}
+				{available ? listView ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden /> : <CheckCircleIcon className="h-3 w-3" aria-hidden /> : <PowerIcon className="h-3 w-3 shrink-0" aria-hidden />}
 				{available ? t('availableShort') : enabled ? t('enabledShort') : t('disabledShort')}
 			</button>
 			{providerDisabled ? (
-				<span className="rounded border border-amber-300 bg-amber-50 px-1 py-0.5 text-center text-xs font-medium leading-3 text-amber-800" title={t('availabilityProviderDisabledTooltip')}>
+				<span className={listView ? 'route-provider-status-reason inline-flex items-center gap-1 text-xs text-amber-700' : 'rounded border border-amber-300 bg-amber-50 px-1 py-0.5 text-center text-xs font-medium leading-3 text-amber-800'} title={t('availabilityProviderDisabledTooltip')}>
+					{listView ? <span aria-hidden className="text-slate-300">·</span> : null}
 					{t('providerDisabled')}
 				</span>
 			) : null}
@@ -202,7 +208,7 @@ function RouteTarget({
 		<div
 			role="listitem"
 			data-available={available}
-			className={`relative ${listView ? 'route-provider-list-grid w-full min-w-0 border-y border-slate-200 first:border-t-0 last:border-b-0 gap-x-3 gap-y-2 px-3 py-2.5' : 'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border transition'} ${
+			className={`route-provider-target relative ${listView ? 'route-provider-list-grid w-full min-w-0 border-y border-slate-200 first:border-t-0 last:border-b-0 gap-x-3 gap-y-2 px-3 py-2.5' : 'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border transition'} ${
 				available
 					? listView ? 'bg-white hover:bg-emerald-50/40' : 'border-emerald-200 bg-white shadow-[0_2px_6px_-2px_rgba(15,23,42,0.14)] hover:border-emerald-300 hover:shadow-panel'
 					: listView ? 'bg-slate-100 hover:bg-slate-200/60' : 'border-dashed border-slate-300 bg-slate-100 hover:border-slate-400'
@@ -213,23 +219,29 @@ function RouteTarget({
 				<div className={listView ? 'route-provider-list-summary' : 'contents'}>
 					<div className={`flex min-w-0 items-center ${listView ? 'route-provider-list-identity gap-2' : 'gap-2.5'}`}>
 						<VendorIcon vendor={provider?.vendor_key} iconKey={provider?.icon_key} size="compact" className={available ? '' : 'opacity-60 grayscale'} />
-						<div className="flex min-w-0 flex-1 items-center gap-2">
+						<div className={listView ? 'min-w-0 flex-1' : 'flex min-w-0 flex-1 items-center gap-2'}>
 
 							<button
 								type="button"
 								onClick={() => onEdit(route)}
-								className="group min-w-0 flex-1 rounded text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
+								className={`group min-w-0 rounded text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${listView ? 'block w-full' : 'flex-1'}`}
 								title={t('editRoute')}
 							>
 								<span className="flex items-center gap-1.5">
-									<span className={`${listView ? 'route-provider-list-name ' : ''}min-w-0 truncate text-xs font-medium group-hover:text-gray-800 ${available ? 'text-slate-900' : 'text-slate-600'}`} title={providerName}>{providerName}</span>
+									<span className={`${listView ? 'route-provider-list-name ' : 'route-provider-card-name '}min-w-0 truncate text-xs font-medium group-hover:text-gray-800 ${available ? 'text-slate-900' : 'text-slate-600'}`} title={providerName}>{providerName}</span>
 								</span>
-								{showKind ? (
+								{showKind && !listView ? (
 									<span className="mt-0.5 block truncate text-xs leading-4 text-slate-500" title={kindLabel ?? undefined}>
 										{showKind ? kindLabel : null}
 									</span>
 								) : null}
 							</button>
+							{listView ? (
+								<div className="route-provider-list-secondary mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5">
+									{showKind ? <span className="min-w-0 truncate text-slate-500" title={kindLabel ?? undefined}>{kindLabel}</span> : null}
+									{statusBadges}
+								</div>
+							) : null}
 							{!listView ? (
 								<div className="flex shrink-0 items-center gap-1.5">
 									<span
@@ -245,7 +257,6 @@ function RouteTarget({
 							) : null}
 						</div>
 					</div>
-					{listView ? statusBadges : null}
 				</div>
 				{!listView ? upstreamModel : null}
 				{listView ? <div className="route-provider-list-model min-w-0">{upstreamModel}</div> : null}
@@ -258,13 +269,13 @@ function RouteTarget({
 						</span>
 					) : null}
 					{!listView && (params.headers || params.body) ? paramsBadges : null}
-					{listView ? (
+					{listView && stickyEnabled ? (
 						<div className="route-provider-list-sticky flex min-w-0 items-center justify-center gap-1">
 							<span className="route-provider-mobile-label text-xs text-slate-500">{t('listStickyUsers')}</span>
 							{stickyUsage}
 						</div>
 					) : null}
-					{listView ? paramsBadges : null}
+					{listView && (params.headers || params.body) ? paramsBadges : null}
 				</div>
 			</div>
 			<RouteTargetPricing muted={!available} compact={listView} priceOverride={route.price_override} onEdit={() => onEdit(route, 'pricing')} />
@@ -393,7 +404,7 @@ export function RouteGroupInfo({
 	const copied = copiedModelId === requestedModelId;
 
 	return (
-		<div className={`route-group-info relative w-full min-w-0 ${centered ? 'grid grid-rows-2' : ''}`} aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}>
+		<div data-default-group={isDefaultGroup} className={`route-group-node route-group-info relative w-full min-w-0 ${centered ? 'grid grid-rows-2' : ''}`} aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}>
 			<div className={`route-group-label flex min-w-0 gap-1.5 ${centered ? 'items-end pb-2' : 'h-8 items-start pt-1'}`}>
 				<span className={`shrink-0 text-xs font-medium ${isDefaultGroup ? 'text-sky-700' : 'text-violet-700'}`}>{t('routeGroup')}</span>
 				<span className={`min-w-0 truncate text-xs font-medium ${isDefaultGroup ? 'text-sky-900' : 'text-violet-900'}`} title={routeGroup}>{routeGroup}</span>
@@ -462,9 +473,10 @@ export function RequestSurfaceNode({
 	}
 
 	return (
-		<div className="w-full min-w-0 rounded-lg border border-gray-200 bg-gray-50/75 px-3 py-2.5 shadow-sm">
+		<div className="route-entry-node w-full min-w-0 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-3">
 			<div className="flex items-center justify-between gap-2">
-				<span className="text-xs font-medium normal-case tracking-normal text-gray-800">
+				<span className="inline-flex items-center gap-1.5 text-xs font-medium normal-case tracking-normal text-blue-800">
+					<ArrowRightEndOnRectangleIcon className="h-4 w-4" aria-hidden />
 					{t('requestNode')}
 				</span>
 				<div className="ml-auto flex shrink-0 items-center gap-1.5">
@@ -579,7 +591,7 @@ function PriorityTierPanel({
 
 	return (
 		<div className="w-full min-w-0">
-			<div className={isList ? `flex min-w-0 flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2 ${layerIndex > 0 ? 'border-t border-t-slate-200' : ''}` : 'mb-3 flex min-w-0 flex-wrap items-center gap-2 px-0.5 py-1'}>
+			<div className={isList ? `route-priority-heading flex min-w-0 flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2 ${layerIndex > 0 ? 'border-t border-t-slate-200' : ''}` : 'route-priority-heading mb-3 flex min-w-0 flex-wrap items-center gap-2 px-0.5 py-1'}>
 				<span
 					className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 text-gray-900"
 					title={t('badgePriorityTooltip', { value: priority })}
@@ -725,8 +737,8 @@ export function UpstreamPoolPanel({
 			<div
 				className={
 					isList
-						? 'route-provider-list flex min-w-0 flex-col items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_3px_10px_-2px_rgba(15,23,42,0.22)]'
-						: `route-provider-card-group flex min-w-0 flex-col gap-5 rounded-xl border border-slate-300/70 border-l-[3px] p-3 sm:p-4 ${section.group === 'default' ? 'border-l-sky-300' : 'border-l-violet-300'}`
+						? 'route-upstream-pool route-provider-list flex min-w-0 flex-col items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_3px_10px_-2px_rgba(15,23,42,0.22)]'
+						: `route-upstream-pool route-provider-card-group flex min-w-0 flex-col gap-5 rounded-xl border border-slate-300/70 border-l-[3px] p-3 sm:p-4 ${section.group === 'default' ? 'border-l-sky-300' : 'border-l-violet-300'}`
 				}
 				role="group"
 				data-route-group={section.group}
@@ -805,7 +817,7 @@ function FlowBranch({
 				className={`absolute left-0 hidden h-px w-4 bg-gray-300 xl:block ${singleGroup ? 'top-1/2' : 'top-14'}`}
 				aria-hidden
 			/>
-			<div className={`route-flow-branch-layout grid min-w-0 gap-y-3 xl:grid-cols-[minmax(180px,240px)_minmax(0,1fr)] ${singleGroup ? 'xl:items-center' : 'xl:items-start'}`}>
+			<div className={`route-flow-branch-layout grid min-w-0 gap-y-3 xl:grid-cols-[minmax(160px,200px)_minmax(0,1fr)] ${singleGroup ? 'xl:items-center' : 'xl:items-start'}`}>
 				<div className={`route-flow-group relative flex min-w-0 flex-col xl:pr-8 ${singleGroup ? '' : 'mt-3'}`}>
 					<RouteGroupInfo
 						centered={singleGroup}
@@ -894,7 +906,7 @@ function FlowSection({
 
 	return (
 		<div className="px-3 sm:px-4">
-			<div className="xl:grid xl:grid-cols-[minmax(160px,210px)_minmax(0,1fr)]">
+			<div className="xl:grid xl:grid-cols-[minmax(152px,184px)_minmax(0,1fr)]">
 				<div className="route-flow-entry relative flex min-w-0 flex-col justify-center py-3 xl:pr-8">
 					<RequestSurfaceNode surface={surface} modelId={card.model_id} />
 					<FlowConnectorAdd
@@ -957,6 +969,7 @@ export function RouteModelFlow(props: Props) {
 	const t = useTranslations('routes.card');
 	const tFlow = useTranslations('routes.flow');
 	const billingLabel = meta ? routeModelBillingLabel(meta) : null;
+	const ModelIcon = billingLabel?.startsWith('image') ? PhotoIcon : billingLabel?.startsWith('asr') ? MicrophoneIcon : billingLabel?.startsWith('tts') ? SpeakerWaveIcon : billingLabel === 'embedding' ? CircleStackIcon : ChatBubbleLeftRightIcon;
 	const stats = billingLabel
 		? t(`modelBilling.${billingLabel}`)
 		: t('contextLine', { context: formatCompactTokens(meta?.context_window), max: formatCompactTokens(meta?.max_tokens) });
@@ -965,14 +978,15 @@ export function RouteModelFlow(props: Props) {
 	const surfaceGroups = groupSectionsByRequestSurface(sections);
 
 	return (
-		<article className={`${density === 'list' ? 'route-flow-list-layout route-model-list-layout ' : ''}overflow-hidden rounded-xl border border-gray-200 bg-white`}>
-			<header className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2.5 sm:px-5">
+		<article className={`route-model-panel ${density === 'list' ? 'route-flow-list-layout route-model-list-layout ' : ''}overflow-hidden rounded-xl border border-gray-200 bg-white`}>
+			<header className="route-model-heading flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 bg-white px-4 py-4 sm:px-5">
 				<div className="min-w-0 flex-1">
 					<div className="flex min-w-0 flex-wrap items-center gap-2">
+						<span className="route-model-symbol" aria-hidden><ModelIcon className="h-4 w-4" /></span>
 						<button
 							type="button"
 							onClick={() => onEditModel(card.model_id)}
-							className="truncate text-left text-sm font-medium text-gray-900 underline-offset-2 hover:text-gray-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
+							className="route-model-name truncate text-left text-base font-medium text-gray-900 underline-offset-2 hover:text-gray-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 						>
 							{card.title}
 						</button>
@@ -1021,7 +1035,7 @@ export function RouteModelFlow(props: Props) {
 				</div>
 			</header>
 
-			<div className={`${density === 'list' ? 'route-model-list-surfaces' : 'divide-y divide-slate-300/80'} bg-gray-50 px-3 py-3 sm:px-4`}>
+			<div className={`route-model-surfaces ${density === 'list' ? 'route-model-list-surfaces' : 'divide-y divide-slate-300/80'} bg-gray-50 px-3 py-3 sm:px-4`}>
 				{surfaceGroups.length ? surfaceGroups.map((surface) => (
 					<FlowSection
 						key={surface.key}

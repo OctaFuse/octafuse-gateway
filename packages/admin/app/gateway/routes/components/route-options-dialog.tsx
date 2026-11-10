@@ -52,10 +52,10 @@ export function RouteOptionsDialog({
 						role="dialog"
 						aria-modal="true"
 						aria-labelledby={id}
-						className="flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+						className="route-design-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 					>
 						<header className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
-							<h2 id={id} className="text-base font-medium text-gray-950">
+							<h2 id={id} className="flex items-center gap-2 text-base font-medium text-gray-950"><span className="route-dialog-symbol" aria-hidden><AdjustmentsHorizontalIcon className="h-4 w-4" /></span>
 								{label}
 							</h2>
 							<button

@@ -1117,6 +1117,8 @@
 		"empty": "No models or routes found",
 		"emptyFilteredPrefix": "Try adjusting filters or",
 		"workspace": {
+			"coverageTitle": "Ready routes",
+			"coverageHint": "Both route and provider are enabled. Configuration status within the current filters, not live health.",
 			"searchPlaceholder": "Search model, upstream model or provider…",
 			"removeFilter": "Remove filter: {filter}",
 			"densityList": "List",

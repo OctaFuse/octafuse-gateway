@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { CalendarDaysIcon, ChevronDownIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { BanknotesIcon, CalendarDaysIcon, ChevronDownIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useNow, useTranslations } from 'next-intl';
 import {
 	ISO_WEEKDAYS,
@@ -93,7 +93,7 @@ export function RouteBillingFactors({
 	const entries = [null, ...rows];
 
 	return (
-		<RouteEditorSection
+		<RouteEditorSection icon={BanknotesIcon}
 			title={t('editor.billingFactors')}
 			description={t('editor.billingFactorsHint')}
 			action={
@@ -131,7 +131,7 @@ export function RouteBillingFactors({
 			>
 				<span>{t('editor.period')}</span>
 				{labels.map((label, index) => (
-					<span key={label} className="flex items-center gap-1">
+					<span key={label} data-factor-type={['provider_factor', 'charged_factor', 'metered_factor'][index]} className="route-factor-heading flex items-center gap-1">
 						{label}
 						{help(index)}
 					</span>
@@ -197,7 +197,7 @@ export function RouteBillingFactors({
 									</p>
 								</div>
 								{(['provider_factor', 'charged_factor', 'metered_factor'] as const).map((key, i) => (
-									<div key={key} className="min-w-0">
+									<div key={key} data-factor-type={key} className="route-factor-field min-w-0">
 										<div className="mb-2 flex items-center gap-1 text-xs text-slate-500 sm:hidden">
 											<label htmlFor={`route-${position}-${key}`}>{labels[i]}</label>
 											{help(i)}

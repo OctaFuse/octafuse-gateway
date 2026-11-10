@@ -1117,6 +1117,8 @@
 		"empty": "未找到模型或路由",
 		"emptyFilteredPrefix": "请尝试调整筛选或",
 		"workspace": {
+			"coverageTitle": "配置可用",
+			"coverageHint": "路由和供应商均已启用；此处展示当前筛选范围的配置状态，不代表实时健康",
 			"searchPlaceholder": "搜索模型、上游模型或供应商…",
 			"removeFilter": "移除筛选：{filter}",
 			"densityList": "列表",

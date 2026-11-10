@@ -100,7 +100,7 @@ function CatalogModelNode({
 	const tCard = useTranslations('routes.card');
 
 	return (
-		<div className="w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+		<div className="route-catalog-model-node w-full min-w-0 rounded-xl border border-gray-200 bg-white px-3 py-3">
 			<div className="flex min-w-0 items-center gap-1">
 				<button
 					type="button"
@@ -458,7 +458,7 @@ function SurfaceCatalogSection({
 	const [collapsed, setCollapsed] = useState(false);
 	const routeCount = surface.models.reduce((sum, model) => sum + model.sections.reduce((n, section) => n + section.routes.length, 0), 0);
 	return (
-		<article className={`${density === 'list' ? 'route-flow-list-layout ' : ''}overflow-hidden rounded-xl border border-slate-200 bg-white`}>
+		<article className={`route-surface-section ${density === 'list' ? 'route-flow-list-layout ' : ''}overflow-hidden rounded-xl border border-slate-200 bg-white`}>
 			<button type="button" onClick={() => setCollapsed(value => !value)} aria-expanded={!collapsed} className="flex w-full flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 focus-visible:outline-gray-500">
 				<ChevronDownIcon className={`h-4 w-4 text-slate-400 transition-transform ${collapsed ? '-rotate-90' : ''}`} aria-hidden />
 				<span className="text-xs font-medium text-slate-800">{surface.protocolLabel}</span>
@@ -469,7 +469,7 @@ function SurfaceCatalogSection({
 				<div className="hidden grid-cols-[210px_220px_200px_minmax(0,1fr)] gap-0 border-b border-slate-100 bg-slate-50/70 px-4 py-2 text-xs font-medium normal-case tracking-normal text-slate-400 2xl:grid">
 					{['catalogColumnSurface', 'catalogColumnModel', 'catalogColumnGroup', 'catalogColumnProvider'].map(key => <span key={key}>{t(key)}</span>)}
 				</div>
-			<div className="bg-slate-200/80 px-3 sm:px-4">
+			<div className="route-surface-canvas bg-gray-50 px-3 sm:px-4">
 				<div className="xl:grid xl:grid-cols-[minmax(160px,210px)_minmax(0,1fr)]">
 					<div className="relative flex min-w-0 flex-col justify-center py-3 xl:pr-4">
 						<RequestSurfaceNode surface={surface} />

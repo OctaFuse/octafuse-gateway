@@ -1,6 +1,7 @@
 'use client';
 
 import { AdminPageTitle } from '@/components/admin-page-title';
+import './routes-workspace.css';
 
 /**
  * 模型路由：`model_routes` CRUD、协议与 route_group、URL 查询参数驱动列表筛选（`useSearchParams` + Suspense）。
@@ -19,7 +20,7 @@ import { RouteVendorGroup } from './components/route-vendor-group';
 import { useCatalogView } from '../components/use-catalog-view';
 import { RouteWorkspaceHeader } from './components/route-workspace-header';
 import { RouteSurfaceCatalog, UnroutedModelsPanel } from './components/route-surface-catalog';
-import { buildRouteSurfaceCatalog } from './route-utils';
+import { isRouteConfigurationAvailable, buildRouteSurfaceCatalog } from './route-utils';
 import {
 	readStickyRefreshInterval,
 	subscribeStickyRefreshInterval,
@@ -99,6 +100,8 @@ function RoutesContent() {
 		return { vendorGroups, unrouted };
 	}, [state.routeCardVendorGroups, state.routeCards]);
 
+	const availableRouteCount = state.routeCards.reduce((count, card) => count + card.groupRoutes.filter(route => isRouteConfigurationAvailable(route, state.providerMeta.get(route.provider_id))).length, 0);
+
 	if (state.isLoading) {
 		return (
 			<div className="flex min-h-full items-center justify-center bg-gray-50">
@@ -108,7 +111,7 @@ function RoutesContent() {
 	}
 
 	return (
-		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-50 p-4 pb-6 sm:p-6 lg:p-8">
+		<div className="routes-design-workspace min-h-full min-w-0 overflow-x-hidden bg-gray-50 p-4 pb-6 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<AdminPageTitle>{t('title')}</AdminPageTitle>
@@ -147,6 +150,7 @@ function RoutesContent() {
 				<RouteWorkspaceHeader
 					visibleModelCount={state.visibleModelCount}
 					visibleRouteCount={state.visibleRouteCount}
+					availableRouteCount={availableRouteCount}
 					density={density}
 					onDensityChange={setDensity}
 					view={workspaceView}
