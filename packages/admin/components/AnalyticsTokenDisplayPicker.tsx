@@ -3,8 +3,7 @@
 import { useTranslations } from 'next-intl';
 import type { TokenDisplayMode } from '@/lib/format-token-count';
 
-const btnBase =
-	'px-2 py-1 text-xs font-medium rounded border transition-colors shrink-0';
+const btnBase = 'px-2 py-1 text-xs font-medium rounded border transition-colors shrink-0';
 const btnIdle = 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100';
 const btnOn = 'border-gray-300 bg-white text-gray-900 shadow-sm';
 
@@ -25,10 +24,15 @@ export function AnalyticsTokenDisplayPicker({
 	const displayLabel = label ?? t('label');
 	return (
 		<div className={`shrink-0 ${className}`}>
-			{displayLabel ? <label className="block text-sm text-gray-500 mb-1">{displayLabel}</label> : null}
-			<div className="inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+			{displayLabel ? <p className="mb-1 text-xs text-gray-500">{displayLabel}</p> : null}
+			<div
+				role="group"
+				aria-label={t('label')}
+				className="inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 p-0.5"
+			>
 				<button
 					type="button"
+					aria-pressed={value === 'compact'}
 					onClick={() => onChange('compact')}
 					className={`${btnBase} ${value === 'compact' ? btnOn : btnIdle}`}
 				>
@@ -36,6 +40,7 @@ export function AnalyticsTokenDisplayPicker({
 				</button>
 				<button
 					type="button"
+					aria-pressed={value === 'numeric'}
 					onClick={() => onChange('numeric')}
 					className={`${btnBase} ${value === 'numeric' ? btnOn : btnIdle}`}
 				>

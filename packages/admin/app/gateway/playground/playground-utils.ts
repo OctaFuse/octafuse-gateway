@@ -52,10 +52,15 @@ export {
 	type PlaygroundLlmSampleId,
 } from '@/lib/playground/samples';
 
+/** Start from the selected upstream operation, so an edits route cannot silently become generation. */
+export function defaultImageOperationForRoute(route: Pick<RouteListRow, 'upstream_protocol' | 'upstream_operation'>): ImageOperation {
+	return normalizeProtocol(route.upstream_protocol) === 'openai' && route.upstream_operation === 'images.edits' ? 'edits' : 'generations';
+}
+
 export const inputClass =
-	'w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white';
-export const labelClass = 'block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1';
-export const panelClass = 'rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm space-y-3';
+	'min-h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100';
+export const labelClass = 'block text-xs font-medium text-gray-500 normal-case tracking-normal mb-1';
+export const panelClass = 'admin-editor-panel rounded-xl border border-gray-200 bg-white p-4 space-y-4';
 export const codeBlockClass =
 	'p-3 text-xs overflow-x-auto whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded-md font-mono text-gray-900';
 export const routeJsonPreClass = `${codeBlockClass} max-h-40 overflow-y-auto`;

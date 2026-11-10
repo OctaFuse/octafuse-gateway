@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { CheckIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { readApiJson } from '@/lib/api-json';
@@ -22,12 +22,11 @@ import {
 import { McpDialog } from './mcp-dialog';
 
 const INPUT =
-	'mt-1.5 block w-full min-w-0 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
+	'mt-1.5 block w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100';
 const BUTTON =
 	'inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50';
 const CODE =
 	'overflow-auto whitespace-pre rounded-lg bg-slate-950 p-4 font-mono text-xs leading-6 text-slate-100';
-
 
 export type McpConnectAuth = 'key' | 'oauth';
 
@@ -44,6 +43,8 @@ export function McpConnectGuideModal({
 }) {
 	const t = useTranslations('mcp.connectGuide');
 	const common = useTranslations('common');
+	const ui = useTranslations('mcp.ui');
+	const guideId = useId();
 	const [baseUrl, setBaseUrl] = useState(readSavedMcpProxyUrl);
 	const [slug, setSlug] = useState(initialSlug);
 	const [auth, setAuth] = useState<McpConnectAuth>(initialAuth);
@@ -60,7 +61,9 @@ export function McpConnectGuideModal({
 				const data = await readApiJson<SystemConfigRow[]>(response);
 				if (cancelled) return;
 				const rows = data.success && Array.isArray(data.data) ? data.data : [];
-				setOauthServer(rows.find((row) => row.key === MCP_OAUTH_AUTHORIZATION_SERVER_KEY)?.value?.trim() ?? '');
+				setOauthServer(
+					rows.find((row) => row.key === MCP_OAUTH_AUTHORIZATION_SERVER_KEY)?.value?.trim() ?? ''
+				);
 			} catch {
 				// The status banner is a hint; leave it hidden when the config cannot be read.
 			}
@@ -123,10 +126,10 @@ export function McpConnectGuideModal({
 						{copied === 'ok'
 							? t('copied')
 							: copied === 'failed'
-								? t('copyFailed')
-								: oauthMode
-									? t('oauthSafeHint')
-									: t('safeHint')}
+							? t('copyFailed')
+							: oauthMode
+							? t('oauthSafeHint')
+							: t('safeHint')}
 					</p>
 					<button type="button" onClick={onClose} className={BUTTON}>
 						{common('close')}
@@ -135,12 +138,25 @@ export function McpConnectGuideModal({
 			}
 		>
 			<div className="space-y-5">
-				<div role="radiogroup" aria-label={t('authMode')} className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+				<div
+					role="radiogroup"
+					aria-label={t('authMode')}
+					className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5"
+				>
 					{(['key', 'oauth'] as const).map((id) => (
 						<button
 							key={id}
 							type="button"
 							role="radio"
+							id={`${guideId}-auth-${id}`}
+							tabIndex={auth === id ? 0 : -1}
+							onKeyDown={(event) => {
+								if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(event.key)) return;
+								event.preventDefault();
+								const next = id === 'key' ? 'oauth' : 'key';
+								changeAuth(next);
+								document.getElementById(`${guideId}-auth-${next}`)?.focus();
+							}}
 							aria-checked={auth === id}
 							onClick={() => changeAuth(id)}
 							className={`rounded-md px-3 py-1.5 text-sm font-medium ${
@@ -177,7 +193,9 @@ export function McpConnectGuideModal({
 							className={INPUT}
 						/>
 						<span
-							className={`mt-1.5 block text-xs font-normal leading-5 ${urlInvalid ? 'text-red-600' : 'text-gray-500'}`}
+							className={`mt-1.5 block text-xs font-normal leading-5 ${
+								urlInvalid ? 'text-red-600' : 'text-gray-500'
+							}`}
 						>
 							{urlInvalid ? t('proxyInvalid') : t('proxyHint')}
 						</span>
@@ -192,9 +210,7 @@ export function McpConnectGuideModal({
 								</option>
 							))}
 						</select>
-						<span className="mt-1.5 block text-xs font-normal leading-5 text-gray-500">
-							{t('scopeHint')}
-						</span>
+						<span className="mt-1.5 block text-xs font-normal leading-5 text-gray-500">{t('scopeHint')}</span>
 					</label>
 				</div>
 
@@ -204,12 +220,37 @@ export function McpConnectGuideModal({
 				</div>
 
 				<div>
-					<div role="tablist" aria-label={t('clients')} className="flex flex-wrap gap-1 border-b border-gray-200">
+					<div
+						role="tablist"
+						aria-label={t('clients')}
+						className="flex flex-wrap gap-1 border-b border-gray-200"
+					>
 						{clients.map((id) => (
 							<button
 								key={id}
 								type="button"
 								role="tab"
+								id={`${guideId}-client-${id}`}
+								aria-controls={`${guideId}-snippet`}
+								tabIndex={active.client === id ? 0 : -1}
+								onKeyDown={(event) => {
+									const index = clients.indexOf(id);
+									const next =
+										event.key === 'Home'
+											? 0
+											: event.key === 'End'
+											? clients.length - 1
+											: event.key === 'ArrowRight'
+											? (index + 1) % clients.length
+											: event.key === 'ArrowLeft'
+											? (index + clients.length - 1) % clients.length
+											: null;
+									if (next == null) return;
+									event.preventDefault();
+									setClient(clients[next]);
+									setCopied(null);
+									document.getElementById(`${guideId}-client-${clients[next]}`)?.focus();
+								}}
 								aria-selected={active.client === id}
 								onClick={() => {
 									setClient(id);
@@ -225,14 +266,19 @@ export function McpConnectGuideModal({
 							</button>
 						))}
 					</div>
-					<div className="mt-4 space-y-3">
+					<div
+						id={`${guideId}-snippet`}
+						role="tabpanel"
+						aria-labelledby={`${guideId}-client-${active.client}`}
+						className="mt-4 space-y-3"
+					>
 						<div className="flex flex-wrap items-center justify-between gap-2">
 							<p className="text-sm text-gray-600">
 								{active.target === 'terminal'
 									? t('runInTerminal')
 									: active.target === 'ui'
-										? t('openInUi')
-										: t('saveTo', { path: active.target })}
+									? t('openInUi')
+									: t('saveTo', { path: active.target })}
 							</p>
 							<button type="button" onClick={() => void copy()} className={BUTTON}>
 								{copied === 'ok' ? (
@@ -254,20 +300,23 @@ export function McpConnectGuideModal({
 					</div>
 				</div>
 
-				<ul className="list-disc space-y-1 pl-5 text-xs leading-5 text-gray-500">
-					{oauthMode ? (
-						<>
-							<li>{t('oauthTipScope')}</li>
-							<li>{t('oauthTipBoth')}</li>
-							<li>{t('oauthTipPublic')}</li>
-						</>
-					) : (
-						<li>{t('tipKey', { placeholder: MCP_KEY_PLACEHOLDER })}</li>
-					)}
-					<li>{t('tipTools', { pattern: '{slug}__{name}' })}</li>
-					<li>{t('tipEnable')}</li>
-					<li>{t('tipTransport')}</li>
-				</ul>
+				<details className="text-xs text-gray-500">
+					<summary className="cursor-pointer">{ui('connectionNotes')}</summary>
+					<ul className="mt-3 list-disc space-y-1 pl-5 leading-5">
+						{oauthMode ? (
+							<>
+								<li>{t('oauthTipScope')}</li>
+								<li>{t('oauthTipBoth')}</li>
+								<li>{t('oauthTipPublic')}</li>
+							</>
+						) : (
+							<li>{t('tipKey', { placeholder: MCP_KEY_PLACEHOLDER })}</li>
+						)}
+						<li>{t('tipTools', { pattern: '{slug}__{name}' })}</li>
+						<li>{t('tipEnable')}</li>
+						<li>{t('tipTransport')}</li>
+					</ul>
+				</details>
 			</div>
 		</McpDialog>
 	);

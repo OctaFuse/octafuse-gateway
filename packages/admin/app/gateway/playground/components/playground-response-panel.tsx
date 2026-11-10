@@ -1,7 +1,8 @@
 'use client';
+import { AdminContentMark } from '@/components/admin-content-mark';
 
 import { useState, type RefObject } from 'react';
-import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { QuestionMarkCircleIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { ImageGenerationsPreview } from '@/components/image-generations-preview';
 import type { ImagePreviewItem } from '@/lib/image-generations';
@@ -9,7 +10,6 @@ import type { ObservationTag } from '@/lib/playground/response-observations';
 import type { ResponseMeta, ResponseTab } from '../types';
 import { LlmResponseContent } from '@/components/model-test/llm-response-content';
 import type { ResponsePreview } from '@/lib/playground/response-preview';
-
 
 type ObservationHelpTone = ObservationTag['tone'];
 
@@ -112,12 +112,16 @@ export function PlaygroundResponsePanel({
 	const isAudioResponse = Boolean(audioPreviewUrl);
 
 	return (
-		<section className="flex min-h-0 flex-1 flex-col space-y-2 overflow-hidden rounded-xl border border-gray-200/80 bg-white p-3 shadow-sm">
-			<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-				<h2 className="shrink-0 text-sm font-semibold text-gray-900">{t('response')}</h2>
+		<section className="admin-editor-panel admin-content-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
+			<div className="admin-editor-heading flex min-h-[57px] shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-gray-100 px-4 py-2.5">
+				<h2 className="flex items-center gap-2 shrink-0 text-sm font-medium text-gray-900"><AdminContentMark icon={ArrowDownTrayIcon} compact />{t('response')}</h2>
 				{responseMeta ? (
 					<div className="flex min-w-0 flex-wrap items-center justify-end gap-2 text-xs">
-						<span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-800">
+						<span
+							className={`inline-flex items-center rounded-md px-2 py-1 font-medium tabular-nums ${
+								responseMeta.status >= 400 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
+							}`}
+						>
 							HTTP {responseMeta.status}
 						</span>
 						{responseMeta.latencyMs != null ? (
@@ -138,7 +142,7 @@ export function PlaygroundResponsePanel({
 			</div>
 
 			{hasContent ? (
-				<div className="flex min-h-0 flex-1 flex-col gap-2">
+				<div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
 					{responseMeta?.upstreamUrl ? (
 						<div className="shrink-0 truncate text-xs text-gray-500" title={responseMeta.upstreamUrl}>
 							<span className="font-medium text-gray-600">{t('upstream')}</span>
@@ -157,6 +161,7 @@ export function PlaygroundResponsePanel({
 								key={id}
 								type="button"
 								onClick={() => onResponseTabChange(id)}
+								aria-pressed={responseTab === id}
 								className={`rounded-md px-3 py-1 text-xs font-medium ${
 									responseTab === id
 										? 'bg-slate-800 text-white'
@@ -181,7 +186,7 @@ export function PlaygroundResponsePanel({
 									return (
 										<span
 											key={tag.id}
-											className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${observationChipClass(
+											className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${observationChipClass(
 												tag.tone
 											)}`}
 										>
@@ -212,14 +217,14 @@ export function PlaygroundResponsePanel({
 												}`}
 											>
 												<div className="mb-2 flex items-baseline justify-between gap-2">
-													<h3 className="font-semibold text-slate-800">{t(group.titleKey)}</h3>
-													<span className="shrink-0 text-[11px] text-slate-400">{t(group.noteKey)}</span>
+													<h3 className="font-medium text-slate-800">{t(group.titleKey)}</h3>
+													<span className="shrink-0 text-xs text-slate-400">{t(group.noteKey)}</span>
 												</div>
 												<ul className="space-y-1.5">
 													{group.rows.map((row) => (
 														<li key={row.helpKey} className="flex items-start gap-2">
 															<span
-																className={`mt-0.5 inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${observationChipClass(
+																className={`mt-0.5 inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ${observationChipClass(
 																	row.tone
 																)}`}
 															>
@@ -241,7 +246,7 @@ export function PlaygroundResponsePanel({
 
 					{usageHint ? (
 						<div className="shrink-0 text-xs leading-5 text-green-800">
-							<span className="font-semibold">{t('usageDisplayOnly')}</span>
+							<span className="font-medium">{t('usageDisplayOnly')}</span>
 							{usageHint}
 						</div>
 					) : null}
@@ -266,7 +271,7 @@ export function PlaygroundResponsePanel({
 								<a
 									href={audioPreviewUrl ?? undefined}
 									download="speech-output"
-									className="inline-flex text-xs font-medium text-blue-700 hover:text-blue-900 hover:underline"
+									className="inline-flex text-xs font-medium text-gray-800 hover:text-gray-950 hover:underline"
 								>
 									{t('downloadAudio')}
 								</a>
@@ -275,7 +280,7 @@ export function PlaygroundResponsePanel({
 							<div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-slate-200">
 								{mergedReasoningDisplay ? (
 									<div className="flex min-h-0 flex-[0.4] flex-col">
-										<div className="shrink-0 border-b border-amber-100 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-900/85">
+										<div className="shrink-0 border-b border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-medium normal-case tracking-normal text-amber-900/85">
 											{t('thinking')}
 										</div>
 										<pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words bg-amber-50/60 p-3 font-mono text-sm text-gray-900">
@@ -288,7 +293,7 @@ export function PlaygroundResponsePanel({
 										mergedReasoningDisplay ? 'border-t border-slate-200' : ''
 									}`}
 								>
-									<div className="shrink-0 border-b border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+									<div className="shrink-0 border-b border-slate-100 bg-slate-50 px-3 py-1.5 text-xs font-medium normal-case tracking-normal text-slate-600">
 										{t('body')}
 									</div>
 									<pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words bg-slate-50 p-3 font-mono text-sm text-gray-900">
@@ -310,7 +315,12 @@ export function PlaygroundResponsePanel({
 					)}
 				</div>
 			) : (
-				<p className="min-h-0 flex-1 text-sm text-gray-500">{t('emptyResponseHint')}</p>
+				<div className="flex min-h-[320px] flex-1 flex-col items-center justify-center gap-4 px-6 py-12 text-center">
+					<span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400">
+						<ArrowDownTrayIcon className="h-5 w-5" aria-hidden />
+					</span>
+					<p className="max-w-64 text-xs leading-6 text-gray-500">{t('emptyResponseHint')}</p>
+				</div>
 			)}
 		</section>
 	);

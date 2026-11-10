@@ -18,12 +18,14 @@ import {
 export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
 	const t = useTranslations('mcp.oauth');
 	const tUx = useTranslations('config.ux');
+	const ui = useTranslations('mcp.ui');
 	const tCommon = useTranslations('common');
 	const [saved, setSaved] = useState('');
 	const [draft, setDraft] = useState('');
 	// 开关只是本地草稿：关闭 = 保存空值；只有点保存才写入 system_config。
 	const [enabled, setEnabled] = useState(false);
 	const [loading, setLoading] = useState(true);
+	const [loadFailed, setLoadFailed] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState('');
 	const [notice, setNotice] = useState('');
@@ -37,13 +39,16 @@ export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
 			if (data.success && Array.isArray(data.data)) {
 				const value =
 					data.data.find((row) => row.key === MCP_OAUTH_AUTHORIZATION_SERVER_KEY)?.value?.trim() ?? '';
+				setLoadFailed(false);
 				setSaved(value);
 				setDraft(value);
 				setEnabled(value !== '');
 			} else {
+				setLoadFailed(true);
 				setError(data.message || tCommon('requestFailed'));
 			}
 		} catch {
+			setLoadFailed(true);
 			setError(tCommon('requestFailed'));
 		} finally {
 			setLoading(false);
@@ -68,6 +73,7 @@ export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
 	}, [dirty]);
 
 	const save = async () => {
+		if (loadFailed || loading) return;
 		if (missing) {
 			setNotice('');
 			setError(t('required'));
@@ -113,14 +119,29 @@ export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
 	};
 
 	return (
-		<div className="mb-6">
+		<div className="h-full [&>section]:h-full">
 			<ConfigCardShell
 				id="mcp-oauth"
 				title={t('title')}
 				description={t('hint')}
 				hint={<p>{t('description')}</p>}
 				footer={
-					dirty || error ? (
+					loadFailed ? (
+						<div
+							role="alert"
+							className="flex flex-wrap items-center justify-between gap-3 text-sm text-red-700"
+						>
+							<span>{error}</span>
+							<button
+								type="button"
+								disabled={loading}
+								onClick={() => void load()}
+								className="font-medium underline disabled:opacity-40"
+							>
+								{ui('retry')}
+							</button>
+						</div>
+					) : dirty || error ? (
 						<div className="flex flex-wrap items-center justify-between gap-3">
 							<span className={`text-xs ${error ? 'text-red-600' : 'text-amber-700'}`} role="status">
 								{error || tUx('unsaved')}
@@ -134,7 +155,7 @@ export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
 										setEnabled(saved !== '');
 										setError('');
 									}}
-									className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+									className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
 								>
 									{tUx('discard')}
 								</button>
@@ -143,7 +164,7 @@ export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
 									disabled={saving || loading || !dirty || missing}
 									onClick={() => void save()}
 									aria-label={t('save')}
-									className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+									className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
 								>
 									{saving ? tCommon('saving') : tCommon('save')}
 								</button>
@@ -157,7 +178,7 @@ export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
 					role="switch"
 					aria-label={t('enable')}
 					aria-checked={enabled}
-					disabled={saving || loading}
+					disabled={saving || loading || loadFailed}
 					onClick={toggleEnabled}
 					className="inline-flex items-center gap-2.5 self-start rounded-lg py-1 text-sm text-gray-700 disabled:opacity-50"
 				>
@@ -183,27 +204,24 @@ export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
 						<input
 							id="mcp-oauth-input"
 							type="url"
-							disabled={saving || loading}
+							disabled={saving || loading || loadFailed}
 							value={draft}
 							onChange={(e) => setDraft(e.target.value)}
 							placeholder={t('placeholder')}
 							spellCheck={false}
 							autoComplete="off"
-							className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm shadow-sm"
+							className="w-full rounded-lg border border-gray-200 px-3 py-2 font-mono text-sm"
 						/>
 						{saved ? (
-							<p
-								role="status"
-								className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-800"
-							>
-								{t('statusOn', { path: `${MCP_OAUTH_PROTECTED_RESOURCE_PATH}/mcp` })}
+							<p role="status" className="mt-3 text-xs text-emerald-700">
+								{ui('oauthSaved')}
 							</p>
 						) : null}
 						<div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
 							<button
 								type="button"
 								onClick={onOpenGuide}
-								className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
+								className="font-medium text-gray-800 hover:text-gray-800 hover:underline"
 							>
 								{t('openGuide')}
 							</button>
@@ -227,6 +245,9 @@ export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
 								<li>{t('how3')}</li>
 							</ol>
 							<p className="mt-2">{t('requirement')}</p>
+							{saved ? (
+								<p className="mt-2">{t('statusOn', { path: `${MCP_OAUTH_PROTECTED_RESOURCE_PATH}/mcp` })}</p>
+							) : null}
 						</details>
 					</div>
 				) : null}

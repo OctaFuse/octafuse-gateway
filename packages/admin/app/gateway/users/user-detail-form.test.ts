@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { pickChangedUserFields } from './user-detail-form';
+import { pickChangedUserFields, buildUserCreatePayload, type UserCreateDraft } from './user-detail-form';
 
 test('profile edits do not overwrite budget and wallet usage loaded earlier', () => {
   const saved = { email: 'old@example.com', budget_spent: '2', wallet_spent: '3', wallet_granted: '10' };
@@ -26,7 +26,11 @@ test('cycle edits preserve usage unless the spent field was explicitly edited', 
     { reason: undefined, budget_period: 'monthly', budget_spent: 0, reset_budget: false }
   );
   assert.deepEqual(
-    pickChangedUserFields({ budget_period: 'monthly', budget_spent: 2 }, { ...saved, budget_period: 'monthly' }, saved),
+    pickChangedUserFields(
+      { budget_period: 'monthly', budget_spent: 2 },
+      { ...saved, budget_period: 'monthly' },
+      saved
+    ),
     { reason: undefined, budget_period: 'monthly', reset_budget: false }
   );
 });
@@ -58,9 +62,62 @@ test('zero RPM and metadata replacement survive alongside a wallet correction', 
 });
 
 test('blank metadata remains unchanged and equal multiplier drafts are omitted', () => {
-  const saved = { metadata: '{}', chargedCostFactorRows: [{ modelId: 'model', routeGroup: '*', factor: '0.5' }] };
-  const current = { metadata: '', chargedCostFactorRows: [{ modelId: 'model', routeGroup: '*', factor: '0.5' }] };
-  assert.deepEqual(pickChangedUserFields({ charged_cost_factors: { model: 0.5 }, reason: 'edit' }, current, saved), {
-    reason: 'edit',
+  const saved = {
+    metadata: '{}',
+    chargedCostFactorRows: [{ modelId: 'model', routeGroup: '*', factor: '0.5' }],
+  };
+  const current = {
+    metadata: '',
+    chargedCostFactorRows: [{ modelId: 'model', routeGroup: '*', factor: '0.5' }],
+  };
+  assert.deepEqual(
+    pickChangedUserFields({ charged_cost_factors: { model: 0.5 }, reason: 'edit' }, current, saved),
+    {
+      reason: 'edit',
+    }
+  );
+});
+
+const newUser: UserCreateDraft = {
+  email: ' person@example.com ',
+  external_system: '',
+  external_user_id: '',
+  budget_max: '',
+  budget_base: '',
+  budget_period: 'none',
+  metadata: '',
+};
+test('user creation keeps unlimited quota and server-derived reset base semantics', () => {
+  assert.deepEqual(buildUserCreatePayload(newUser), {
+    email: 'person@example.com',
+    external_system: null,
+    external_user_id: null,
+    budget_period: 'none',
+    budget_max: null,
   });
+  const result = buildUserCreatePayload({
+    ...newUser,
+    budget_max: '10.25',
+    budget_base: '0',
+    metadata: '{"plan":"trial"}',
+  });
+  assert.equal(result.budget_max, 10.25);
+  assert.equal(result.budget_base, 0);
+  assert.deepEqual(result.metadata, { plan: 'trial' });
+});
+test('user creation validates email and paired external identity', () => {
+  assert.throws(() => buildUserCreatePayload({ ...newUser, email: '' }), /emailRequired/);
+  assert.throws(() => buildUserCreatePayload({ ...newUser, email: 'not-an-email' }), /emailInvalid/);
+  assert.throws(() => buildUserCreatePayload({ ...newUser, external_system: 'app' }), /externalPair/);
+  assert.equal(
+    buildUserCreatePayload({ ...newUser, external_system: ' app ', external_user_id: ' id ' })
+      .external_user_id,
+    'id'
+  );
+});
+test('user creation rejects invalid financial values and non-object metadata before posting', () => {
+  for (const budget_max of ['Infinity', 'NaN', '12oops'])
+    assert.throws(() => buildUserCreatePayload({ ...newUser, budget_max }), /amountInvalid/);
+  for (const metadata of ['{', '[]', 'null', '4', '"plan"'])
+    assert.throws(() => buildUserCreatePayload({ ...newUser, metadata }), /metadataObject/);
 });

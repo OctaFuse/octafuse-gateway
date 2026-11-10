@@ -161,11 +161,11 @@
 		"end": "End",
 		"custom": "Custom",
 		"presets": {
-			"1h": "1h",
-			"1d": "1d",
-			"7d": "7d",
-			"14d": "14d",
-			"30d": "30d"
+			"1h": "Last 1h",
+			"1d": "Last 1d",
+			"7d": "Last 7 days",
+			"14d": "Last 14 days",
+			"30d": "Last 30 days"
 		},
 		"calendar": {
 			"today": "Today",
@@ -318,7 +318,30 @@
 			"today": "Today",
 			"this_week": "WTD",
 			"this_month": "MTD"
-		}
+		},
+		"overviewSubtitle": "Traffic, quality and cost at a glance",
+		"chooseRange": "Time range: {range}",
+		"invalidRange": "Choose a valid start time earlier than the end time",
+		"activity": "Recent activity",
+		"activityScope": "Latest records across all time, independent of the selected range",
+		"openRequest": "Open request: {model}",
+		"upstreamError": "Upstream returned an error; open the request for details",
+		"waitingForRequests": "No requests in this range",
+		"noCharges": "No charges in this range",
+		"inspectRequests": "View requests",
+		"liveSnapshot": "Live snapshot",
+		"liveScope": "Throughput is from the last 60 seconds; account and key counts are current",
+		"exploreWeek": "View the last 7 days",
+		"inspectUsage": "View requests for {name}",
+		"requestCount": "{count} requests",
+		"requestStatus": {
+			"success": "Success",
+			"error": "Failed",
+			"incomplete": "Incomplete",
+			"cancelled": "Cancelled"
+		},
+		"tokenSummary": "Token summary",
+		"cacheReadShare": "Input includes cache reads and writes · Cache read share: {rate}"
 	},
 	"filter": {
 		"title": "Filters",
@@ -373,7 +396,7 @@
 		"list": {
 			"provider": "Provider",
 			"routes": "Routes",
-			"protocols": "Protocols & capabilities",
+			"protocols": "Protocols",
 			"keyAndQuota": "API key & quota",
 			"status": "Status"
 		},
@@ -441,11 +464,13 @@
 			"officialUpdate": "Official update",
 			"officialUpdateTitle": "The official template has changed. Click to review and sync",
 			"kindOrphaned": "Type needs migration",
-			"kindOrphanedTitle": "The official template was renamed or removed. Click to migrate to a new type"
+			"kindOrphanedTitle": "The official template was renamed or removed. Click to migrate to a new type",
+			"viewRoutes": "View routes for {name}",
+			"editEndpoints": "Configure endpoints for {name}"
 		},
 		"import": {
 			"title": "Import from templates",
-			"subtitle": "Prefills common endpoints. LLM-only OpenAI templates import chat URLs; providers with Images keep a Base URL. Each import creates a new provider row.",
+			"subtitle": "Choose templates to prefill endpoints, then add your API keys after importing.",
 			"searchPlaceholder": "Search template name",
 			"clearSearch": "Clear template search",
 			"clear": "Clear",
@@ -460,7 +485,8 @@
 			"finished": "Imported {created} provider(s).",
 			"finishedWithFail": "Imported {created} provider(s). {failed} failed.",
 			"failed": "Import failed",
-			"copyFailed": "Failed to copy API key"
+			"copyFailed": "Failed to copy API key",
+			"templateDetails": "Template details"
 		},
 		"quota": {
 			"action": "Quota",
@@ -665,7 +691,10 @@
 			"backToEndpointForm": "Back to form",
 			"jsonConfigTitle": "Endpoint JSON · All protocols",
 			"jsonConfigHint": "The endpoints field submitted by the current form, including unsaved changes. Provider credentials are excluded.",
-			"jsonCopyFailed": "Automatic copy failed. The content is selected for manual copying."
+			"jsonCopyFailed": "Automatic copy failed. The content is selected for manual copying.",
+			"apiKeyRequiredError": "Enter an API key",
+			"credentialsTitle": "Account & credentials",
+			"duplicateHint": "Configuration copied. Review the name, credentials and endpoints before saving."
 		},
 		"sync": {
 			"title": "Sync with official",
@@ -733,16 +762,20 @@
 				"migrated": "Type migrated"
 			},
 			"check": {
-				"button": "Check official updates",
-				"checking": "Checking…",
+				"button": "Sync",
+				"checking": "Comparing…",
 				"neverChecked": "Not checked yet",
 				"lastCheckedUpdates": "Checked {time}: updates found",
 				"lastCheckedUpToDate": "Checked {time}: up to date",
 				"upToDate": "Checked: all providers match the official templates",
 				"foundUpdates": "{providers} providers ({kinds} types) have official updates",
-				"foundOrphans": "{count} providers need their type migrated"
+				"foundOrphans": "{count} providers need their type migrated",
+				"review": "View result",
+				"tooltip": "Sync static provider data: compare changes, then confirm to apply"
 			}
-		}
+		},
+		"overviewSubtitle": "Manage upstream accounts, API keys and protocol endpoints",
+		"allProtocols": "All protocols"
 	},
 	"models": {
 		"list": {
@@ -785,7 +818,11 @@
 			"kindImage": "Image",
 			"kindAsr": "ASR",
 			"kindTts": "TTS",
-			"kindEmbedding": "Embedding"
+			"kindEmbedding": "Embedding",
+			"searchPlaceholder": "Search model name, ID, vendor or tag",
+			"clearSearch": "Clear search",
+			"allVendors": "All vendors",
+			"allLifecycles": "All statuses"
 		},
 		"imagePricing": {
 			"enabled": "Legacy (removed)",
@@ -804,7 +841,7 @@
 		},
 		"import": {
 			"title": "Import from Static Catalog",
-			"subtitle": "Presets already in the gateway (same model id) are disabled and are never overwritten on import — delete then re-import (or edit & save) to pick up gpt-image-2 token rates. Prices use the catalog's {currency} branch (USD/CNY; see {unit}).",
+			"subtitle": "Choose models to import. Existing model IDs are preserved. Prices are shown in {currency}.",
 			"searchPlaceholder": "Search model ID or display name",
 			"clearSearch": "Clear search",
 			"clearSelection": "Clear",
@@ -826,7 +863,7 @@
 			"displayName": "Display Name",
 			"vendor": "Vendor",
 			"context": "Context",
-			"maxTokens": "Max Tokens",
+			"maxTokens": "Max output",
 			"pricing": "Pricing",
 			"alreadyInGatewayRow": "{id} already in gateway",
 			"importPresetRow": "Import preset {id}",
@@ -839,7 +876,9 @@
 			"finished": "Imported {created} model(s).",
 			"finishedWithSkip": "Imported {created} model(s). Skipped {skipped} already in the gateway.",
 			"finishedWithFail": "Imported {created} model(s). {failed} failed.",
-			"failed": "Import failed"
+			"failed": "Import failed",
+			"modelColumn": "Model",
+			"priceOrder": "Input / output"
 		},
 		"modal": {
 			"editTitle": "Edit Model",
@@ -962,7 +1001,18 @@
 				"priority": "Priority",
 				"weight": "Weight"
 			},
-			"routesBlocked": "Remove {count} associated routes first"
+			"routesBlocked": "Remove {count} associated routes first",
+			"optionalSetting": "Optional",
+			"scheduleWindowCount": "{count} windows",
+			"pricingColumns": {
+				"upto": "Input limit",
+				"input": "Input",
+				"output": "Output",
+				"cacheRead": "Cache read",
+				"cacheWrite": "Cache write"
+			},
+			"modelIdRequiredError": "Enter a model ID",
+			"invalidMetadata": "Metadata must be a valid JSON object"
 		},
 		"metadata": {
 			"title": "Metadata"
@@ -980,14 +1030,19 @@
 			"retired": "Retired",
 			"retiringSoon": "Retiring soon",
 			"retiredAt": "Retirement date: {date}",
-			"specs": "{context} · {max}",
+			"specs": "{context} context · {max} max output",
 			"editModel": "Edit {name}",
 			"pricingNoData": "—",
 			"pricingTiers": "{count} tiers",
 			"noRoutes": "No routes",
 			"officialUpdateTitle": "Official catalog has updates — click to review and sync",
 			"kindEmbedding": "Embedding",
-			"embeddingHint": "Embedding · context {context}"
+			"embeddingHint": "Embedding · context {context}",
+			"viewPricing": "View pricing for {name}",
+			"viewRoutes": "View routes for {name}",
+			"inputOutputPricing": "Input / output · million tokens",
+			"textImagePricing": "Text input / image output · million tokens",
+			"inputOnlyPricing": "Input only · million tokens"
 		},
 		"sync": {
 			"title": "Sync with official catalog",
@@ -1045,15 +1100,19 @@
 				"review": "Review and sync"
 			},
 			"check": {
-				"button": "Check official updates",
-				"checking": "Checking…",
+				"button": "Sync",
+				"checking": "Comparing…",
 				"neverChecked": "Not checked yet",
 				"lastCheckedUpdates": "Checked {time}: updates found",
 				"lastCheckedUpToDate": "Checked {time}: up to date",
 				"upToDate": "Checked: all models match the official catalog",
-				"foundUpdates": "{models} models ({vendors} vendors) have official updates"
+				"foundUpdates": "{models} models ({vendors} vendors) have official updates",
+				"review": "View result",
+				"tooltip": "Sync static model data: compare changes, then confirm to apply"
 			}
-		}
+		},
+		"overviewSubtitle": "Manage model capabilities, catalog prices and routes",
+		"emptyFilterHint": "Try another search or clear the filters"
 	},
 	"routes": {
 		"title": "Model Routes",
@@ -1061,6 +1120,8 @@
 		"empty": "No models or routes found",
 		"emptyFilteredPrefix": "Try adjusting filters or",
 		"workspace": {
+			"coverageTitle": "Ready routes",
+			"coverageHint": "Both route and provider are enabled. Configuration status within the current filters, not live health.",
 			"searchPlaceholder": "Search model, upstream model or provider…",
 			"removeFilter": "Remove filter: {filter}",
 			"densityList": "List",
@@ -1096,7 +1157,15 @@
 			"stickyRefresh10m": "Every 10 min",
 			"stickyRefreshNow": "Refresh sticky",
 			"stickyRefreshEmptyHint": "No sticky-enabled pools on this page",
-			"stickyRefreshUpdatedAgo": "Updated {ago} ago"
+			"stickyRefreshUpdatedAgo": "Updated {ago} ago",
+			"moreFilters": "More filters",
+			"clearSearch": "Clear search",
+			"allStatuses": "All statuses",
+			"allVendors": "All vendors",
+			"allProviderKinds": "All provider types",
+			"allProviders": "All providers",
+			"allRouteGroups": "All route groups",
+			"displaySettings": "Display settings"
 		},
 		"flow": {
 			"requestNode": "Surface",
@@ -1247,7 +1316,19 @@
 			"activeTotalRoutes": "{active} active / {total} total",
 			"noRoutesYet": "No routes yet",
 			"clickToAdd": "Click + to add the first route",
-			"embeddingModelHint": "Embedding · input-token pricing"
+			"embeddingModelHint": "Embedding · input-token pricing",
+			"modelBilling": {
+				"imagePerImage": "Per image",
+				"imageTokens": "Token billing",
+				"image": "Image generation",
+				"asrTokens": "Speech recognition · Tokens",
+				"asrSeconds": "Speech recognition · Seconds",
+				"asr": "Speech recognition",
+				"ttsTokens": "Speech synthesis · Tokens",
+				"ttsCharacters": "Speech synthesis · Characters",
+				"tts": "Speech synthesis",
+				"embedding": "Embeddings"
+			}
 		},
 		"protocol": {
 			"sectionTitle": "upstream_protocol: {protocol} · route_group: {group}",
@@ -1990,7 +2071,7 @@
 	},
 	"playground": {
 		"title": "Playground",
-		"subtitle": "Test connectivity and responses through a single model route, without failover.",
+		"subtitle": "Test requests and upstream responses on a single route",
 		"usageNote": "Tests are excluded from gateway user billing and request logs.",
 		"routeSection": "Route",
 		"requestBody": "Request",
@@ -2044,7 +2125,7 @@
 		"thinking": "Reasoning / Thinking",
 		"body": "Body",
 		"rawPayload": "Raw payload",
-		"emptyResponseHint": "Run Send to see upstream status, headers, and body or stream output here.",
+		"emptyResponseHint": "Send a request to inspect the upstream response",
 		"imageOpenaiOnly": "Image-generation models only work with upstream_protocol=openai, dashscope, minimax, volcengine, or gemini. Edit the route or pick a route on one of those protocols.",
 		"imageDashScopeHint": "DashScope conversion: edit OpenAI Images JSON (prompt, n, size). Playground rewrites it to multimodal-generation and always sends n (default 1). Use JSON image for image-to-image; edits is not supported. No billing or request logs.",
 		"imageDashScopePassthroughHint": "Native passthrough: the JSON is forwarded to multimodal-generation as written. Playground replaces model with the route provider model name. No billing or request logs.",
@@ -2093,12 +2174,12 @@
 		"mode": "Mode",
 		"modeRoutes": "Routes",
 		"modeTools": "Tools",
-		"toolsSubtitle": "Select a tool and provider to test the connection settings and inspect the response.",
+		"toolsSubtitle": "Test requests and results with a tool and engine",
 		"toolsSection": "Tool & engine",
-		"toolsHint": "Credentials come from system_config catalogs. Use this to verify keys before switching Active.",
+		"toolsHint": "Test tools and service engines with configured credentials",
 		"tool": "Tool",
 		"engineProvider": "Engine provider",
-		"engineProviderHint": "Not limited to the Active engine — any implemented catalog entry can be tested.",
+		"engineProviderHint": "Test any supported engine without changing the default",
 		"toolsBodyMustBeObject": "Request body must be a JSON object.",
 		"toolsNeedProvider": "Select an engine provider.",
 		"applyTemplate": "Apply template",
@@ -2184,13 +2265,14 @@
 		"realtimeWaitingElevenLabs": "WebSocket connected. Waiting for the upstream response…",
 		"realtimeClosed": "Realtime connection closed ({code}{reason}).",
 		"streamDisconnected": "The stream dropped while reading the upstream response ({cause}). Try stream: false to confirm the call, then retry streaming.",
-		"kindEmbedding": "Embedding"
+		"kindEmbedding": "Embedding",
+		"actualRequest": "Actual request"
 	},
 	"simulator": {
 		"title": "Simulator",
 		"subtitle": "Use a user API key to simulate client requests and verify authentication, routing and failover.",
 		"connection": "Connection",
-		"proxyBaseUrl": "Proxy Base URL",
+		"proxyBaseUrl": "Gateway URL",
 		"requestBody": "Request body",
 		"response": "Response",
 		"usageNote": "Normal billing and request logging apply.",
@@ -2237,7 +2319,7 @@
 		"thinkingReasoning": "Thinking / reasoning",
 		"body": "Body",
 		"rawPayload": "Raw payload",
-		"emptyResponseHint": "After you click Send, status, body, or streamed output appears here.",
+		"emptyResponseHint": "Send a request to inspect the gateway response and usage",
 		"readyNeedProxyUrl": "Enter a valid Proxy Base URL (http/https).",
 		"readyNeedModel": "Select a model.",
 		"readyNeedOpenaiForImage": "Image-generation models require protocol openai (Proxy /v1/images/generations or /v1/images/edits), dashscope (native multimodal-generation), minimax (POST /minimax/v1/image_generation), volcengine (POST /volcengine/api/v3/images/generations), or gemini (POST /v1beta/models/{model}:generateContent).",
@@ -2258,13 +2340,13 @@
 		"imagePreview": "Generated images",
 		"protocolSwitchConfirm": "Request body was edited. Switch protocol and replace it with the default template?",
 		"applyTemplate": "Reset to template",
-		"wirePreview": "Wire preview (URL / headers / body)",
+		"wirePreview": "Actual request",
 		"wirePreviewEmpty": "Complete Proxy URL, model, and API key with valid JSON to preview the request.",
 		"wireHeaders": "Headers (redacted)",
 		"wireBody": "Body",
 		"tabMerged": "Merged",
 		"tabRaw": "Raw",
-		"openRequestLogs": "Open Request Logs →",
+		"openRequestLogs": "Open Request Logs",
 		"receiving": "(Receiving…)",
 		"couldNotExtractBody": "(Could not extract body from payload)",
 		"errProxyUrlRequired": "Proxy Base URL is required",
@@ -2311,11 +2393,14 @@
 		"noRoutedModels": "No models in this kind have an active route.",
 		"modelHasRoute": "Routed",
 		"modelNoRoute": "No route",
-		"matchingRoutesSummary": "{count} matching active route(s)",
-		"matchingRoutesHint": "Read-only preview of active routes Proxy may use for this model and group. Failover still happens at request time.",
+		"matchingRoutesSummary": "Matching routes · {count}",
+		"matchingRoutesHint": "Routes matching local configuration; the gateway determines the actual route",
 		"supportedSurfacesEmpty": "No active public surface for this model and route group.",
 		"kindEmbedding": "Embedding",
-		"protocolLockedEmbedding": "Embedding routes support OpenAI POST /v1/embeddings and Gemini native :embedContent / :batchEmbedContents."
+		"protocolLockedEmbedding": "Embedding routes support OpenAI POST /v1/embeddings and Gemini native :embedContent / :batchEmbedContents.",
+		"keyFilters": "Filter keys",
+		"keyReady": "Key ready",
+		"selectedKeyOutsideFilter": "Current key · {id} (outside filter)"
 	},
 	"users": {
 		"detailUx": {
@@ -2354,13 +2439,13 @@
 				"walletSpent": "The total amount already used from Wallet. Changing it corrects the usage total. Balance is total granted minus total spent."
 			},
 			"fieldLabels": {
-				"budgetMax": "Budget Max",
-				"budgetSpent": "Budget Spent",
-				"budgetBase": "Budget Base",
-				"budgetPeriod": "Budget Period",
-				"budgetResetAt": "Budget Reset At",
-				"walletGranted": "Wallet Granted",
-				"walletSpent": "Wallet Spent"
+				"budgetMax": "Quota limit",
+				"budgetSpent": "Spent",
+				"budgetBase": "Reset base",
+				"budgetPeriod": "Reset cycle",
+				"budgetResetAt": "Next reset",
+				"walletGranted": "Total granted",
+				"walletSpent": "Total spent"
 			}
 		},
 		"title": "Users",
@@ -2437,7 +2522,7 @@
 			"rateLimitRpm": "Empty = unlimited"
 		},
 		"help": {
-			"createUser": "Creates a new gateway user. Email is required; all other fields are optional. To link this user to an account in another system, use the External identity section at the bottom.",
+			"createUser": "Enter an email to create a user. Quotas, metadata and external identity are optional.",
 			"budgetMax": "Maximum available amount in the current cycle. Leave empty for unlimited.",
 			"budgetBase": "Reference cap used when the cycle resets.",
 			"budgetSpent": "Amount already spent from the current cycle budget.",
@@ -2515,12 +2600,13 @@
 			"truncated": "Truncated to the first {count} models. Narrow the model filter and request again.",
 			"mode": "Combination mode {mode}",
 			"summary": "Current window",
-			"response": "Response"
+			"response": "Response",
+			"audioKind": "Audio (recognition and synthesis)"
 		},
 		"externalIdentity": {
 			"title": "External identity",
 			"hint": "Use these fields to link this user to an account in another system (e.g. your own SaaS, an OAuth provider). Leave both empty for an internal Gateway-only user. Both fields must be set together or both left blank.",
-			"createHint": "Use these fields to link this user to an account in another system (e.g. your own SaaS, an OAuth provider). Leave both empty for an internal Gateway-only user. When both are set, creation is idempotent on the (external system, external user ID) pair."
+			"createHint": "To link an external account, enter both the system and user ID. Reusing the same identity returns the existing user."
 		},
 		"metadata": {
 			"none": "No metadata.",
@@ -2563,6 +2649,34 @@
 			"chargedCostFactorModelRequired": "Each Charged cost factor row needs a model ID.",
 			"chargedCostFactorValueInvalid": "Each Charged cost factor must be a number ≥ 0.",
 			"chargedCostFactorDuplicate": "Duplicate model and route group in Charged cost factors."
+		},
+		"ui": {
+			"filters": "Filter users",
+			"allStatuses": "All statuses",
+			"moreFilters": "More filters",
+			"sort": "Sort by",
+			"ascending": "Ascending",
+			"descending": "Descending",
+			"access": "Access",
+			"configuration": "Configuration",
+			"manageUserKeys": "Manage keys for {user}",
+			"sortOptions": {
+				"created_at": "Created",
+				"budget_spent": "Cycle quota · Spent",
+				"budget_max": "Cycle quota · Limit",
+				"budget_base": "Cycle quota · Reset base",
+				"budget_reset_at": "Cycle quota · Reset time",
+				"wallet_granted": "Permanent quota · Granted",
+				"wallet_spent": "Permanent quota · Spent"
+			}
+		},
+		"createErrors": {
+			"emailRequired": "Email is required",
+			"emailInvalid": "Enter a valid email address",
+			"externalPair": "Set both external identity fields or leave both empty",
+			"amountInvalid": "Enter a valid quota amount",
+			"metadataObject": "Metadata must be a valid JSON object",
+			"invalid": "Check the form values"
 		}
 	},
 	"oauthAccessTokensPage": {
@@ -2646,7 +2760,7 @@
 			"afterCreation": "After creation",
 			"existingHelp1": "Enter the gateway User ID (users.id from the Users list). Prefer creating keys from a user's detail page when you are already there.",
 			"existingHelp2": "Multiple active keys per user are allowed. Budget lives on the user — edit under Users.",
-			"secretOnce": "The full sk-… secret is shown once in the banner above the list; copy it immediately.",
+			"secretOnce": "Copy the key after creation and store it securely.",
 			"metadataHelp": "metadata is optional JSON on the key (returned by GET /v1/me).",
 			"externalHelp1": "Provide External system, External user ID, and Email. The gateway will match an existing user by that pair or create one (email stored on users.email; required on first create). If the user already exists, the request email is not used to overwrite the stored email.",
 			"externalHelp2": "New users from this path start with zero budget until you set a plan on Users."
@@ -2677,7 +2791,7 @@
 			"externalUserId": "Upstream user id",
 			"userEmail": "Stored on users.email when creating via external identity",
 			"keyName": "Label shown in admin / clients",
-			"metadataJson": "Optional, e.g. {\"plan_id\":\"pro\"}",
+			"metadataJson": "Optional, e.g. '{\"plan_id\":\"pro\"}'",
 			"optionalLabel": "Optional label",
 			"rateLimitRpm": "Empty = unlimited"
 		},
@@ -2699,7 +2813,41 @@
 		"copyKey": "Copy key",
 		"copyId": "Copy ID",
 		"copySecret": "Copy secret",
-		"confirmDelete": "Permanently delete this API key?"
+		"confirmDelete": "Permanently delete this API key?",
+		"ui": {
+			"filters": "Filter API keys",
+			"moreFilters": "More filters",
+			"newestFirst": "Newest first",
+			"oldestFirst": "Oldest first",
+			"selectUser": "Select user",
+			"searchUser": "Search user email",
+			"noUsers": "No users found. Try another email or enter a user ID.",
+			"changeUser": "Change user",
+			"gatewayUser": "Gateway user",
+			"userDisabled": "Disabled",
+			"enterUserId": "Enter user ID directly",
+			"externalHint": "Match a user by external system and user ID, or create a user if none exists.",
+			"quotaHint": "Quotas belong to the user and are shared across all their keys.",
+			"userQuota": "Shared user quotas",
+			"manageQuota": "Manage user quotas",
+			"resetBase": "Reset baseline",
+			"technicalDetails": "Identifiers and usage",
+			"keyId": "Key ID",
+			"showSecret": "Show full key",
+			"hideSecret": "Hide full key",
+			"editMetadata": "View and edit key metadata",
+			"loadFailed": "Could not load data. Please retry.",
+			"deleteFailed": "Could not delete the key. Please retry.",
+			"unnamedKey": "Unnamed key"
+		},
+		"errors": {
+			"userRequired": "Select a user or enter a user ID",
+			"externalRequired": "Enter both the external system and external user ID",
+			"emailRequired": "Enter the user email",
+			"emailInvalid": "Enter a valid email address",
+			"metadata": "Metadata must be valid JSON",
+			"rpm": "Rate limit must be a non-negative integer, or blank for unlimited"
+		}
 	},
 	"requestLogs": {
 		"title": "Request Logs",
@@ -2892,6 +3040,36 @@
 			"copyFailed": "Copy failed. Try again.",
 			"yes": "Yes",
 			"no": "No"
+		},
+		"ui": {
+			"allTime": "All time",
+			"chooseRange": "Time range: {range}",
+			"presets": "Quick time ranges",
+			"invalidRange": "Check the time range. End must not precede start.",
+			"openRangeHint": "Leave either bound blank for an open-ended range",
+			"refresh": "Refresh logs",
+			"filters": "Filter request logs",
+			"allStatuses": "All statuses",
+			"allModels": "All models",
+			"moreFilters": "More filters",
+			"removeFilter": "Clear {name} filter",
+			"retry": "Retry",
+			"loadFailed": "Could not load logs. Please retry.",
+			"notInCatalog": "{value} (no longer in catalog)",
+			"notInRoutes": "{value} (no longer in routes)",
+			"upstreamLatency": "Upstream {time}",
+			"charged": "Charged",
+			"metered": "Cost",
+			"modelRoute": "Model and route",
+			"latency": "Duration",
+			"detailHint": "Select a request to inspect its flow, usage and accounting",
+			"detailTitle": "Request details",
+			"copyRequestId": "Copy request ID",
+			"timingDiagram": "Timing boundaries",
+			"chargedFactor": "Charged / catalog factor",
+			"meteredFactor": "Cost / catalog factor",
+			"profit": "Gross profit",
+			"rangeTitle": "Time range"
 		}
 	},
 	"auditLogs": {
@@ -2900,8 +3078,8 @@
 		"empty": "No audit logs match the filters.",
 		"filters": {
 			"eventType": "Event type",
-			"actor": "Actor",
-			"actorKind": "Actor identity",
+			"actor": "Actor category",
+			"actorKind": "Identity type",
 			"actorId": "Actor ID",
 			"userId": "User ID",
 			"userEmail": "User email",
@@ -3001,7 +3179,54 @@
 			"noChangeDetail": "No expandable change detail.",
 			"more": "+{count} more"
 		},
-		"userRemovedTitle": "User removed; see snapshot / change_payload"
+		"userRemovedTitle": "User removed; see snapshot / change_payload",
+		"ui": {
+			"detailTitle": "Audit details",
+			"overview": "Overview",
+			"changes": "Field changes",
+			"raw": "Raw records",
+			"copyAuditId": "Copy audit ID",
+			"copyFailed": "Could not copy. Please retry.",
+			"userUnavailable": "User unavailable",
+			"reasonText": "Operation notes",
+			"identifiers": "Linked identifiers",
+			"requestId": "Request ID",
+			"beforeSnapshot": "User snapshot before",
+			"afterSnapshot": "User snapshot after",
+			"changedFields": "Changed fields",
+			"rawHint": "Raw records preserve snapshots at the time of writing. Missing values were not recorded.",
+			"viewRequest": "View request",
+			"userActivity": "User activity",
+			"notRecorded": "Not recorded",
+			"unchanged": "Unchanged",
+			"refresh": "Refresh records",
+			"filters": "Filter audit logs",
+			"eventScope": "Event scope",
+			"changeRecords": "Change records",
+			"allEvents": "All events",
+			"customEvents": "Custom events",
+			"moreFilters": "More filters",
+			"removeFilter": "Clear {name} filter",
+			"searchEmail": "Exact user email…",
+			"retry": "Retry",
+			"loadFailed": "Could not load audit logs. Please retry.",
+			"optionsFailed": "Could not load reason options. Existing filters are retained.",
+			"eventTime": "Event · time",
+			"user": "User",
+			"changeCount": "{count} changes",
+			"defaultHint": "Per-request charges excluded by default. Select a record for full values.",
+			"detailHint": "Select a record to inspect changes and linked requests",
+			"fields": {
+				"spent": "Spent",
+				"max": "Limit",
+				"base": "Baseline",
+				"period": "Period",
+				"resetAt": "Next reset",
+				"granted": "Granted",
+				"remaining": "Balance"
+			},
+			"userArchived": "Deleted user"
+		}
 	},
 	"analytics": {
 		"modelUsage": {
@@ -3113,7 +3338,8 @@
 			"failoverShare": "Failover request share",
 			"streamSpeed": "Stream tokens/s",
 			"outcomes": "{success} successful · {errors} failed · {other} incomplete / cancelled",
-			"streamSamples": "{count} measured streams"
+			"streamSamples": "{count} measured streams",
+			"detailLabel": "Expand or collapse details"
 		},
 		"providerDimensions": {
 			"all": "All types",
@@ -3141,9 +3367,11 @@
 			"blocked": "Admin writes are blocked",
 			"allowed": "Admin writes are allowed"
 		},
-		"statusCard": { "title": "Current status" },
+		"statusCard": {
+			"title": "Current status"
+		},
 		"settingsCard": {
-			"title": "Start maintenance",
+			"title": "Maintenance settings",
 			"description": "Choose the expected duration and message. You will be asked to confirm before it starts."
 		},
 		"configured": {
@@ -3154,6 +3382,9 @@
 		},
 		"preview": "Message shown to clients",
 		"form": {
+			"durationHelp": "The estimate is shown to clients. Maintenance must still be ended manually.",
+			"impact": "Affected requests",
+			"inferenceImpact": "Inference requests return HTTP 503 during maintenance. Health checks and read-only lists remain available.",
 			"duration": "Expected duration",
 			"noDuration": "No estimate",
 			"customMinutes": "Custom (minutes)",
@@ -3164,7 +3395,7 @@
 			"messageZh": "Chinese message (zh)",
 			"messageEn": "English message (en)",
 			"blockAdmin": "Also block Admin writes",
-			"blockAdminHelp": "Recommended during data migration. Portals that call the Admin API (provisioning, top-ups) will get 503 and should retry. Integration Keys, this page and the Playground stay writable."
+			"blockAdminHelp": "Recommended during data migration. Portals that call the Admin API (provisioning, top-ups) will get 503 and should retry. Integration Keys, maintenance controls and the Playground stay writable."
 		},
 		"actions": {
 			"enable": "Enable maintenance",
@@ -3217,7 +3448,7 @@
 	},
 	"config": {
 		"title": "System config",
-		"subtitle": "Configure gateway timezone, billing, routing and error notifications. Save each section separately.",
+		"subtitle": "Configure gateway timezone, billing, routing, notifications, and maintenance. Save each section separately.",
 		"saveTimezone": "Save timezone",
 		"saveCurrency": "Save currency",
 		"saveUserChargedCostFactorMode": "Save charged factor mode",
@@ -3264,7 +3495,7 @@
 		},
 		"saveRouteStrategy": "Save route strategy",
 		"ux": {
-			"subtitle": "Configure gateway timezone, billing, routing and error notifications. Save each section separately.",
+			"subtitle": "Configure gateway timezone, billing, routing, notifications, and maintenance. Save each section separately.",
 			"timezoneHint": "Sets the calendar day used by daily quotas and usage reports.",
 			"currencyHint": "The currency used for model prices, budgets and charges.",
 			"billingModeHint": "Choose how route and user multipliers combine. Updates take effect in about 30 seconds.",
@@ -3288,7 +3519,7 @@
 		},
 		"config": {
 			"title": "REST Services",
-			"subtitle": "Connect REST tool services, configure credentials and pricing, then test and activate them.",
+			"subtitle": "Manage search, web extraction and content detection services",
 			"viewInvocations": "View invocations →",
 			"showSecrets": "Show API keys",
 			"hideSecrets": "Hide API keys",
@@ -3502,7 +3733,7 @@
 			"switchActiveBeforeClearingKey": "Switch Active to another engine that still has a key before clearing the current engine’s key, then save again to clear it."
 		},
 		"serviceList": {
-			"search": "Search service name, ID or tool type",
+			"search": "Search services or tool types",
 			"toolType": "Tool type",
 			"status": "Status",
 			"name": "Service",
@@ -3519,6 +3750,20 @@
 			"connection": "Connection",
 			"pricing": "Billing rules",
 			"credentialsRequired": "Complete the credentials to save and activate, or save the configuration first."
+		},
+		"ui": {
+			"notConfigured": "Not configured",
+			"multiplierHint": "Multiplier relative to the standard price",
+			"oneActivePerType": "One active service per tool type",
+			"invocations": "Invocations",
+			"test": "Test service",
+			"testSavedConfig": "Test the saved configuration in Playground",
+			"discard": "Revert changes",
+			"draftHint": "Changes stay on this page until saved; tests use the saved configuration",
+			"saveHint": "Save this service only; activating it replaces the active service of the same type",
+			"activationFailed": "Configuration saved, but activation failed: {message}",
+			"loadFailed": "Could not load service configuration",
+			"retry": "Reload"
 		}
 	},
 	"pricing": {
@@ -3688,7 +3933,7 @@
 		},
 		"connectGuide": {
 			"button": "Connection guide",
-			"title": "Connection guide: use MCP from an external agent",
+			"title": "Client setup guide",
 			"subtitle": "Pick a client and copy the config. Agents only need the gateway URL and a user API Key, never upstream secrets.",
 			"proxyUrl": "Proxy URL",
 			"proxyHint": "Enter the Proxy base URL; /mcp is added automatically. Shared with “Test exposed catalog”.",
@@ -3969,6 +4214,19 @@
 			"invalidStored": "Pricing is invalid or unsupported by this version. Set per-call prices before using the tool.",
 			"perCall": "Per call",
 			"factorSummary": "User multiplier ×{chargedFactor} · Supplier multiplier ×{meteredFactor}"
+		},
+		"ui": {
+			"invocations": "Invocations",
+			"connect": "Client setup",
+			"factorHint": "Multiplier relative to the standard price",
+			"perRequest": "Per call",
+			"requestUnit": "call",
+			"exposedItems": "{count} items exposed",
+			"tokenLoadFailed": "Could not load authorizations",
+			"retry": "Reload",
+			"connectionNotes": "Connection notes",
+			"tokenSummary": "Review third-party authorizations and revoke access by user or application",
+			"oauthSaved": "OAuth discovery configured"
 		}
 	},
 	"toolPricing": {
@@ -3993,5 +4251,46 @@
 		"perUnitMode": "Per-unit billing",
 		"charactersUnit": "{count} characters",
 		"requestUnit": "request"
+	},
+	"remainingUi": {
+		"effectiveFactor": "Amount divided by the standard amount for these records",
+		"allStatuses": "All statuses",
+		"loadFailed": "Could not load data",
+		"retry": "Reload",
+		"invocationDetails": "Invocation details",
+		"providerScope": "Provider scope",
+		"modelPrefix": "Service model prefix",
+		"discardTitle": "Discard unsaved changes?",
+		"discardHint": "Changes have not taken effect. Closing discards this draft",
+		"discard": "Discard changes",
+		"integrationHint": "Grant access by purpose; regenerated keys take effect only after saving",
+		"searchKeys": "Search integration name or description",
+		"allPermissions": "All admin permissions (*)",
+		"read": "Read",
+		"write": "Write",
+		"secrets": "Read credentials",
+		"execute": "Execute",
+		"configCategories": "Configuration categories",
+		"general": "General",
+		"routing": "Routing & billing",
+		"notifications": "Notifications",
+		"localizedMessages": "Customize by language (optional)",
+		"noMatches": "No matching results",
+		"resources": {
+			"users": "Users",
+			"user_keys": "User keys",
+			"providers": "Providers",
+			"models": "Models",
+			"routes": "Routes",
+			"config": "Configuration",
+			"analytics": "Analytics",
+			"logs": "Logs",
+			"playground": "Playground",
+			"mcp": "MCP services",
+			"maintenance": "Maintenance"
+		},
+		"wholeMinutes": "Enter a positive whole number of minutes",
+		"requestLogs": "Request logs",
+		"writeIncludesRead": "Write includes read for the same resource; credential access is granted separately"
 	}
 }

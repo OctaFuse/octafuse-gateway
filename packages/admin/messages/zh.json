@@ -20,7 +20,7 @@
 		"loginHeading": "Octafuse Gateway",
 		"sidebarSubtitle": "Gateway · 管理后台",
 		"github": "GitHub",
-		"docs": "Docs",
+		"docs": "文档",
 		"operatorConsole": "运营控制台"
 	},
 	"common": {
@@ -161,11 +161,11 @@
 		"end": "结束",
 		"custom": "自定义",
 		"presets": {
-			"1h": "1h",
-			"1d": "1d",
-			"7d": "7d",
-			"14d": "14d",
-			"30d": "30d"
+			"1h": "最近 1 小时",
+			"1d": "最近 1 天",
+			"7d": "最近 7 天",
+			"14d": "最近 14 天",
+			"30d": "最近 30 天"
 		},
 		"calendar": {
 			"today": "今天",
@@ -318,7 +318,30 @@
 			"today": "今天",
 			"this_week": "本周",
 			"this_month": "本月"
-		}
+		},
+		"overviewSubtitle": "网关流量、质量与费用概览",
+		"chooseRange": "时间范围：{range}",
+		"invalidRange": "请选择有效的起止时间，开始时间须早于结束时间",
+		"activity": "近期活动",
+		"activityScope": "全局最新记录，不随上方时间范围变化",
+		"openRequest": "查看请求：{model}",
+		"upstreamError": "上游返回异常，查看请求了解详情",
+		"waitingForRequests": "该时段暂无请求",
+		"noCharges": "该时段暂无计费",
+		"inspectRequests": "查看时段请求",
+		"liveSnapshot": "实时概况",
+		"liveScope": "吞吐为近 60 秒数据，账号与密钥为当前数量",
+		"exploreWeek": "查看最近 7 天",
+		"inspectUsage": "查看 {name} 的请求",
+		"requestCount": "{count} 次请求",
+		"requestStatus": {
+			"success": "成功",
+			"error": "失败",
+			"incomplete": "未完成",
+			"cancelled": "已取消"
+		},
+		"tokenSummary": "Token 汇总",
+		"cacheReadShare": "输入包含缓存读取与写入 · 缓存读取占输入 {rate}"
 	},
 	"filter": {
 		"title": "筛选",
@@ -373,7 +396,7 @@
 		"list": {
 			"provider": "供应商",
 			"routes": "关联路由",
-			"protocols": "协议与能力",
+			"protocols": "协议",
 			"keyAndQuota": "密钥与额度",
 			"status": "状态"
 		},
@@ -441,11 +464,13 @@
 			"officialUpdate": "有官方更新",
 			"officialUpdateTitle": "官方模板有更新，点击查看并同步",
 			"kindOrphaned": "类型需迁移",
-			"kindOrphanedTitle": "官方模板已改名或下线，点击迁移到新类型"
+			"kindOrphanedTitle": "官方模板已改名或下线，点击迁移到新类型",
+			"viewRoutes": "查看 {name} 的关联路由",
+			"editEndpoints": "配置 {name} 的协议端点"
 		},
 		"import": {
 			"title": "从模板导入",
-			"subtitle": "预填常见端点。仅 LLM 的 OpenAI 模板导入 chat URL；具备 Images 的保留 Base URL。每次导入会创建新的供应商行。",
+			"subtitle": "选择模板预填协议端点，导入后再补充 API Key。",
 			"searchPlaceholder": "搜索模板名称",
 			"clearSearch": "清除模板搜索",
 			"clear": "清除",
@@ -460,7 +485,8 @@
 			"finished": "已导入 {created} 个供应商。",
 			"finishedWithFail": "已导入 {created} 个供应商。{failed} 个失败。",
 			"failed": "导入失败",
-			"copyFailed": "复制 API Key 失败"
+			"copyFailed": "复制 API Key 失败",
+			"templateDetails": "模板说明"
 		},
 		"quota": {
 			"action": "查询额度",
@@ -665,7 +691,10 @@
 			"backToEndpointForm": "返回表单",
 			"jsonConfigTitle": "端点 JSON · 全部协议",
 			"jsonConfigHint": "当前表单将提交的 endpoints，包含未保存修改，不含供应商密钥字段。",
-			"jsonCopyFailed": "自动复制失败，已选中内容，可手动复制。"
+			"jsonCopyFailed": "自动复制失败，已选中内容，可手动复制。",
+			"apiKeyRequiredError": "请填写 API Key",
+			"credentialsTitle": "账号与凭证",
+			"duplicateHint": "已复制现有配置，保存前请检查名称、凭证与端点。"
 		},
 		"sync": {
 			"title": "与官方同步",
@@ -733,16 +762,20 @@
 				"migrated": "已迁移类型"
 			},
 			"check": {
-				"button": "检查官方更新",
-				"checking": "检查中…",
+				"button": "同步",
+				"checking": "比对中…",
 				"neverChecked": "尚未检查",
 				"lastCheckedUpdates": "{time} 检查：发现更新",
 				"lastCheckedUpToDate": "{time} 检查：已是最新",
 				"upToDate": "已检查：所有供应商都与官方一致",
 				"foundUpdates": "发现 {providers} 个供应商（{kinds} 个类型）有官方更新",
-				"foundOrphans": "发现 {count} 个供应商的类型需要迁移"
+				"foundOrphans": "发现 {count} 个供应商的类型需要迁移",
+				"review": "查看结果",
+				"tooltip": "同步供应商静态数据：先比对差异，确认后应用"
 			}
-		}
+		},
+		"overviewSubtitle": "管理上游账号、API 密钥与协议端点",
+		"allProtocols": "全部协议"
 	},
 	"models": {
 		"list": {
@@ -785,7 +818,11 @@
 			"kindImage": "文生图",
 			"kindAsr": "语音识别",
 			"kindTts": "语音合成",
-			"kindEmbedding": "向量"
+			"kindEmbedding": "向量",
+			"searchPlaceholder": "搜索模型名称、ID、厂商或标签",
+			"clearSearch": "清除搜索",
+			"allVendors": "全部厂商",
+			"allLifecycles": "全部状态"
 		},
 		"imagePricing": {
 			"enabled": "已移除",
@@ -804,7 +841,7 @@
 		},
 		"import": {
 			"title": "从静态目录导入",
-			"subtitle": "Gateway 中已存在的预设（相同 model id）将被禁用，导入时绝不会覆盖——更新 gpt-image-2 token 价需删除后重新导入（或打开编辑保存）。价格使用目录的 {currency} 分支（USD/CNY；参见 {unit}）。",
+			"subtitle": "选择模型导入，已有相同 ID 的模型不会被覆盖。价格以 {currency} 显示。",
 			"searchPlaceholder": "搜索 Model ID 或显示名称",
 			"clearSearch": "清除搜索",
 			"clearSelection": "清除选择",
@@ -825,8 +862,8 @@
 			"modelId": "Model ID",
 			"displayName": "显示名称",
 			"vendor": "模型厂商",
-			"context": "Context",
-			"maxTokens": "Max Tokens",
+			"context": "上下文",
+			"maxTokens": "最大输出",
 			"pricing": "定价",
 			"alreadyInGatewayRow": "{id} 已在 Gateway 中",
 			"importPresetRow": "导入预设 {id}",
@@ -839,7 +876,9 @@
 			"finished": "已导入 {created} 个模型。",
 			"finishedWithSkip": "已导入 {created} 个模型。跳过 {skipped} 个已存在的。",
 			"finishedWithFail": "已导入 {created} 个模型。{failed} 个失败。",
-			"failed": "导入失败"
+			"failed": "导入失败",
+			"modelColumn": "模型",
+			"priceOrder": "输入 / 输出"
 		},
 		"modal": {
 			"editTitle": "编辑模型",
@@ -962,7 +1001,18 @@
 				"priority": "优先级",
 				"weight": "权重"
 			},
-			"routesBlocked": "请先移除 {count} 条关联路由"
+			"routesBlocked": "请先移除 {count} 条关联路由",
+			"optionalSetting": "可选设置",
+			"scheduleWindowCount": "{count} 个时段",
+			"pricingColumns": {
+				"upto": "输入上限",
+				"input": "输入",
+				"output": "输出",
+				"cacheRead": "缓存读取",
+				"cacheWrite": "缓存写入"
+			},
+			"modelIdRequiredError": "请填写 Model ID",
+			"invalidMetadata": "元数据须为有效的 JSON 对象"
 		},
 		"metadata": {
 			"title": "元数据"
@@ -980,14 +1030,19 @@
 			"retired": "已退役",
 			"retiringSoon": "即将退役",
 			"retiredAt": "退役日期：{date}",
-			"specs": "{context} · {max}",
+			"specs": "{context} 上下文 · {max} 最大输出",
 			"editModel": "编辑 {name}",
 			"pricingNoData": "—",
 			"pricingTiers": "{count} 档",
 			"noRoutes": "未关联路由",
 			"officialUpdateTitle": "官方目录有更新，点击查看并同步",
 			"kindEmbedding": "向量",
-			"embeddingHint": "向量 · 上下文 {context}"
+			"embeddingHint": "向量 · 上下文 {context}",
+			"viewPricing": "查看 {name} 的价格配置",
+			"viewRoutes": "查看 {name} 的关联路由",
+			"inputOutputPricing": "输入 / 输出 · 百万 Token",
+			"textImagePricing": "文本输入 / 图像输出 · 百万 Token",
+			"inputOnlyPricing": "仅输入 · 百万 Token"
 		},
 		"sync": {
 			"title": "与官方目录同步",
@@ -1045,15 +1100,19 @@
 				"review": "查看并同步"
 			},
 			"check": {
-				"button": "检查官方更新",
-				"checking": "检查中…",
+				"button": "同步",
+				"checking": "比对中…",
 				"neverChecked": "尚未检查",
 				"lastCheckedUpdates": "{time} 检查：发现更新",
 				"lastCheckedUpToDate": "{time} 检查：已是最新",
 				"upToDate": "已检查：所有模型都与官方目录一致",
-				"foundUpdates": "发现 {models} 个模型（{vendors} 个厂商）有官方更新"
+				"foundUpdates": "发现 {models} 个模型（{vendors} 个厂商）有官方更新",
+				"review": "查看结果",
+				"tooltip": "同步模型静态数据：先比对差异，确认后应用"
 			}
-		}
+		},
+		"overviewSubtitle": "管理模型能力、刊例价格与关联路由",
+		"emptyFilterHint": "尝试其他关键词，或清除筛选条件"
 	},
 	"routes": {
 		"title": "模型路由",
@@ -1061,6 +1120,8 @@
 		"empty": "未找到模型或路由",
 		"emptyFilteredPrefix": "请尝试调整筛选或",
 		"workspace": {
+			"coverageTitle": "配置可用",
+			"coverageHint": "路由和供应商均已启用；此处展示当前筛选范围的配置状态，不代表实时健康",
 			"searchPlaceholder": "搜索模型、上游模型或供应商…",
 			"removeFilter": "移除筛选：{filter}",
 			"densityList": "列表",
@@ -1096,7 +1157,15 @@
 			"stickyRefresh10m": "每 10 分钟",
 			"stickyRefreshNow": "刷新 Sticky",
 			"stickyRefreshEmptyHint": "当前页面没有启用 Sticky 的路由池",
-			"stickyRefreshUpdatedAgo": "{ago} 前更新"
+			"stickyRefreshUpdatedAgo": "{ago} 前更新",
+			"moreFilters": "更多筛选",
+			"clearSearch": "清除搜索",
+			"allStatuses": "全部状态",
+			"allVendors": "全部厂商",
+			"allProviderKinds": "全部供应商类型",
+			"allProviders": "全部供应商",
+			"allRouteGroups": "全部路由组",
+			"displaySettings": "显示设置"
 		},
 		"flow": {
 			"requestNode": "请求入口",
@@ -1237,7 +1306,7 @@
 			"editModelTitle": "打开模型编辑：{title}",
 			"editModelAria": "编辑模型 {title}",
 			"contextMaxOutput": "Context：{context} · 最大输出：{max}",
-			"contextLine": "Context {context} · 最大输出 {max}",
+			"contextLine": "上下文 {context} · 最大输出 {max}",
 			"imageModelHint": "文生图模型 · token 计费",
 			"audioModelHint": "语音转写 · 按秒计费",
 			"audioSpeechModelHint": "语音合成 · 按字符计费",
@@ -1247,7 +1316,19 @@
 			"activeTotalRoutes": "{active} 条活跃 / 共 {total} 条",
 			"noRoutesYet": "暂无路由",
 			"clickToAdd": "点击 + 添加第一条路由",
-			"embeddingModelHint": "向量 · 按输入 token 计费"
+			"embeddingModelHint": "向量 · 按输入 token 计费",
+			"modelBilling": {
+				"imagePerImage": "按张计费",
+				"imageTokens": "按 Token 计费",
+				"image": "图像生成",
+				"asrTokens": "语音识别 · 按 Token",
+				"asrSeconds": "语音识别 · 按秒",
+				"asr": "语音识别",
+				"ttsTokens": "语音合成 · 按 Token",
+				"ttsCharacters": "语音合成 · 按字符",
+				"tts": "语音合成",
+				"embedding": "向量嵌入"
+			}
 		},
 		"protocol": {
 			"sectionTitle": "upstream_protocol: {protocol} · route_group: {group}",
@@ -1353,9 +1434,9 @@
 			"audioPresetHint": "选择模式后自动填充对外协议、上游能力和适配器；供应商模型名称仍需确认。",
 			"audioPresetNonRealtime": "DashScope 非实时 TTS（OpenAI 兼容）",
 			"audioPresetRealtime": "DashScope 实时 TTS（WebSocket）",
-				"audioPresetAsrFlashConvert": "Qwen-Audio flash（OpenAI 转换）",
-				"audioPresetAsrFlashPassthrough": "Qwen-Audio flash（DashScope HTTP 透传）",
-				"audioPresetAsrFiletrans": "Qwen-Audio filetrans（异步 file_url）",
+			"audioPresetAsrFlashConvert": "Qwen-Audio flash（OpenAI 转换）",
+			"audioPresetAsrFlashPassthrough": "Qwen-Audio flash（DashScope HTTP 透传）",
+			"audioPresetAsrFiletrans": "Qwen-Audio filetrans（异步 file_url）",
 			"modelRequired": "模型 *",
 			"selectModel": "选择模型",
 			"modelId": "模型 ID",
@@ -1990,7 +2071,7 @@
 	},
 	"playground": {
 		"title": "调试台",
-		"subtitle": "选择单条模型路由直连上游，检查连通性和响应；不执行故障转移。",
+		"subtitle": "选择单条路由，验证请求与上游响应",
 		"usageNote": "测试不计入网关用户账单或请求日志。",
 		"routeSection": "路由",
 		"requestBody": "请求",
@@ -2044,7 +2125,7 @@
 		"thinking": "推理 / Thinking",
 		"body": "正文",
 		"rawPayload": "原始报文",
-		"emptyResponseHint": "点击发送后，这里会显示上游状态、响应头、响应体或流式输出。",
+		"emptyResponseHint": "发送请求后，在这里查看上游响应",
 		"imageOpenaiOnly": "文生图模型仅支持 upstream_protocol=openai、dashscope、minimax、volcengine 或 gemini。请修改路由或选择对应协议的路由。",
 		"imageDashScopeHint": "DashScope 转换：请求体仍用 OpenAI Images 字段（prompt、n、size）。调试台会改写成 multimodal-generation，并始终发送 n（默认 1）。图生图用 JSON image，不支持 edits。不计费、不写请求日志。",
 		"imageDashScopePassthroughHint": "原生透传：JSON 按 multimodal-generation 原样转发。调试台会把 model 换成路由上的供应商模型名。不计费、不写请求日志。",
@@ -2093,12 +2174,12 @@
 		"mode": "模式",
 		"modeRoutes": "路由",
 		"modeTools": "Tools",
-		"toolsSubtitle": "选择工具和服务商发送测试调用，检查接入配置与返回结果。",
+		"toolsSubtitle": "选择工具与引擎，验证请求与执行结果",
 		"toolsSection": "工具与引擎",
-		"toolsHint": "凭证来自 system_config catalog。切 Active 前可在此验证密钥。",
+		"toolsHint": "使用已配置的凭证测试工具与服务引擎",
 		"tool": "工具",
 		"engineProvider": "引擎 Provider",
-		"engineProviderHint": "不限于当前 Active；可测 catalog 中已实现的任意引擎。",
+		"engineProviderHint": "可测试所有支持的引擎，不会改变默认引擎",
 		"toolsBodyMustBeObject": "请求体必须是 JSON 对象。",
 		"toolsNeedProvider": "请选择引擎 Provider。",
 		"applyTemplate": "套用模板",
@@ -2184,13 +2265,14 @@
 		"realtimeWaitingElevenLabs": "WebSocket 已连接，正在等待上游响应…",
 		"realtimeClosed": "实时连接已关闭（{code}{reason}）。",
 		"streamDisconnected": "读取上游流式响应时连接中断（{cause}）。可先把 stream 改为 false 验证，或刷新后再试。",
-		"kindEmbedding": "向量"
+		"kindEmbedding": "向量",
+		"actualRequest": "实际请求"
 	},
 	"simulator": {
 		"title": "模拟器",
 		"subtitle": "使用用户 API 密钥模拟客户端请求，验证网关鉴权、路由和故障转移。",
-		"connection": "连接",
-		"proxyBaseUrl": "Proxy Base URL",
+		"connection": "连接配置",
+		"proxyBaseUrl": "网关地址",
 		"requestBody": "请求体",
 		"response": "响应",
 		"usageNote": "请求按正常规则计费并记录日志。",
@@ -2237,7 +2319,7 @@
 		"thinkingReasoning": "Thinking / reasoning",
 		"body": "正文",
 		"rawPayload": "原始报文",
-		"emptyResponseHint": "点击发送后，这里会显示状态、响应体或流式输出。",
+		"emptyResponseHint": "发送后，在这里查看网关响应与用量",
 		"readyNeedProxyUrl": "请填写有效的 Proxy Base URL（http/https）。",
 		"readyNeedModel": "请选择模型。",
 		"readyNeedOpenaiForImage": "文生图模型须使用 openai（Proxy /v1/images/generations 或 /v1/images/edits）、dashscope（原生 multimodal-generation）、minimax（POST /minimax/v1/image_generation）、volcengine（POST /volcengine/api/v3/images/generations）或 gemini（POST /v1beta/models/{model}:generateContent）。",
@@ -2258,13 +2340,13 @@
 		"imagePreview": "生成图片",
 		"protocolSwitchConfirm": "请求体已修改。切换协议并用默认模板覆盖吗？",
 		"applyTemplate": "重置为模板",
-		"wirePreview": "请求预览（URL / Headers / Body）",
+		"wirePreview": "实际请求",
 		"wirePreviewEmpty": "填写 Proxy URL、模型、API Key 且 JSON 合法后可预览请求。",
 		"wireHeaders": "Headers（已脱敏）",
 		"wireBody": "Body",
 		"tabMerged": "合并视图",
 		"tabRaw": "原始报文",
-		"openRequestLogs": "打开请求日志 →",
+		"openRequestLogs": "打开请求日志",
 		"receiving": "（接收中…）",
 		"couldNotExtractBody": "（无法从报文提取正文）",
 		"errProxyUrlRequired": "请填写 Proxy Base URL",
@@ -2311,11 +2393,14 @@
 		"noRoutedModels": "该类型下没有已配置活跃路由的模型。",
 		"modelHasRoute": "已路由",
 		"modelNoRoute": "无路由",
-		"matchingRoutesSummary": "{count} 条匹配的活跃路由",
-		"matchingRoutesHint": "只读预览：代理服务可能用到的活跃路由。实际请求时仍会故障转移。",
+		"matchingRoutesSummary": "匹配路由 · {count}",
+		"matchingRoutesHint": "本地配置匹配的路由；实际选路以网关执行结果为准",
 		"supportedSurfacesEmpty": "当前模型和路由组没有可用的公开入口。",
 		"kindEmbedding": "向量",
-		"protocolLockedEmbedding": "向量路由支持 OpenAI POST /v1/embeddings 与 Gemini 原生 :embedContent / :batchEmbedContents。"
+		"protocolLockedEmbedding": "向量路由支持 OpenAI POST /v1/embeddings 与 Gemini 原生 :embedContent / :batchEmbedContents。",
+		"keyFilters": "筛选密钥",
+		"keyReady": "密钥已就绪",
+		"selectedKeyOutsideFilter": "当前密钥 · {id}（不在筛选结果中）"
 	},
 	"users": {
 		"detailUx": {
@@ -2354,13 +2439,13 @@
 				"walletSpent": "钱包至今累计消费的总金额。修改它可修正累计消费金额。钱包余额等于累计发放减去累计消费。"
 			},
 			"fieldLabels": {
-				"budgetMax": "Budget 上限",
-				"budgetSpent": "Budget 已消费",
-				"budgetBase": "Budget 基准额度",
-				"budgetPeriod": "Budget 周期",
-				"budgetResetAt": "Budget 重置时间",
-				"walletGranted": "Wallet 累计发放",
-				"walletSpent": "Wallet 累计消费"
+				"budgetMax": "额度上限",
+				"budgetSpent": "已消费",
+				"budgetBase": "重置基准",
+				"budgetPeriod": "重置周期",
+				"budgetResetAt": "下次重置",
+				"walletGranted": "累计发放",
+				"walletSpent": "累计消费"
 			}
 		},
 		"title": "用户",
@@ -2430,14 +2515,14 @@
 			"externalSystem": "外部系统",
 			"externalUserId": "外部用户 ID",
 			"name": "名称",
-			"metadataJson": "Metadata JSON",
+			"metadataJson": "元数据（JSON）",
 			"rateLimitRpm": "限流（RPM）"
 		},
 		"placeholders": {
 			"rateLimitRpm": "留空表示不限"
 		},
 		"help": {
-			"createUser": "创建新的 Gateway 用户。Email 为必填项；其他字段均可选。若要将此用户关联到其他系统中的账号，请使用底部的“外部身份”区域。",
+			"createUser": "填写邮箱即可创建用户，额度、元数据和外部身份可按需设置。",
 			"budgetMax": "当前周期内可用最大金额，留空表示无限制。",
 			"budgetBase": "周期重置时用于参考的上限金额。",
 			"budgetSpent": "当前周期金额中的已消费金额。",
@@ -2515,12 +2600,13 @@
 			"truncated": "结果已截断，只返回前 {count} 条。缩小模型筛选后再请求。",
 			"mode": "合成模式 {mode}",
 			"summary": "当前窗口",
-			"response": "响应"
+			"response": "响应",
+			"audioKind": "语音（识别与合成）"
 		},
 		"externalIdentity": {
 			"title": "外部身份",
 			"hint": "使用这些字段将用户关联到其他系统中的账号（例如你的 SaaS 或 OAuth 提供方）。两个字段都留空表示仅 Gateway 内部用户；若填写则必须成对填写。",
-			"createHint": "使用这些字段将用户关联到其他系统中的账号（例如你的 SaaS 或 OAuth 提供方）。两个字段都留空表示仅 Gateway 内部用户。两个字段均填写时，创建操作会按（外部系统、外部用户 ID）保持幂等。"
+			"createHint": "关联外部账号时，请同时填写系统与用户 ID。同一组外部身份重复创建会返回已有用户。"
 		},
 		"metadata": {
 			"none": "无元数据。",
@@ -2563,6 +2649,34 @@
 			"chargedCostFactorModelRequired": "每一行 Charged cost factor 都需要填写模型 ID。",
 			"chargedCostFactorValueInvalid": "Charged cost factor 必须是 ≥ 0 的数字。",
 			"chargedCostFactorDuplicate": "Charged cost factors 中存在重复的模型与路由组。"
+		},
+		"ui": {
+			"filters": "筛选用户",
+			"allStatuses": "全部状态",
+			"moreFilters": "更多筛选",
+			"sort": "排序方式",
+			"ascending": "升序",
+			"descending": "降序",
+			"access": "接入",
+			"configuration": "配置",
+			"manageUserKeys": "管理 {user} 的密钥",
+			"sortOptions": {
+				"created_at": "创建时间",
+				"budget_spent": "周期额度 · 已消费",
+				"budget_max": "周期额度 · 上限",
+				"budget_base": "周期额度 · 重置基准",
+				"budget_reset_at": "周期额度 · 重置时间",
+				"wallet_granted": "永久额度 · 累计发放",
+				"wallet_spent": "永久额度 · 已消费"
+			}
+		},
+		"createErrors": {
+			"emailRequired": "请填写邮箱",
+			"emailInvalid": "请输入有效的邮箱地址",
+			"externalPair": "外部系统与外部用户 ID 需要同时填写或同时留空",
+			"amountInvalid": "额度必须是有效数字",
+			"metadataObject": "元数据必须是有效的 JSON 对象",
+			"invalid": "请检查输入内容"
 		}
 	},
 	"oauthAccessTokensPage": {
@@ -2624,7 +2738,7 @@
 		"statusOther": "其他",
 		"totalKeys": "总计：{count} 个 Key",
 		"filters": {
-			"emailPlaceholder": "按 Email 筛选…",
+			"emailPlaceholder": "搜索用户邮箱…",
 			"userIdPlaceholder": "按 Gateway 用户 UUID 筛选…"
 		},
 		"table": {
@@ -2641,23 +2755,23 @@
 		},
 		"create": {
 			"attachLegend": "如何关联 Key",
-			"existingUser": "已有 Gateway 用户",
-			"externalIdentity": "外部身份（匹配或创建用户）",
+			"existingUser": "已有用户",
+			"externalIdentity": "外部身份",
 			"afterCreation": "创建后",
 			"existingHelp1": "输入 Gateway User ID（用户列表中的 users.id）。如果已经在用户详情页，优先从用户详情页创建 Key。",
 			"existingHelp2": "每个用户可以拥有多个活跃 Key。额度保存在用户上，请在“用户”中编辑。",
-			"secretOnce": "完整的 sk-… 密钥只会在列表上方横幅中显示一次，请立即复制。",
+			"secretOnce": "创建后请立即复制并妥善保存密钥。",
 			"metadataHelp": "metadata 是 Key 上的可选 JSON（会由 GET /v1/me 返回）。",
 			"externalHelp1": "填写外部系统、外部用户 ID 和 Email。Gateway 会按这组外部身份匹配已有用户，或创建新用户（Email 存储在 users.email；首次创建必填）。若用户已存在，请求中的 Email 不会覆盖已存储 Email。",
-			"externalHelp2": "通过此路径创建的新用户初始额度为 0，直到你在“用户”中设置计划。"
+			"externalHelp2": "新用户初始额度为 0，请在用户详情中设置。"
 		},
 		"fields": {
 			"userId": "用户 ID",
 			"externalSystem": "外部系统",
 			"externalUserId": "外部用户 ID",
-			"userEmail": "用户 Email",
+			"userEmail": "用户邮箱",
 			"keyName": "Key 名称",
-			"metadataJson": "Metadata（JSON）",
+			"metadataJson": "元数据（JSON）",
 			"name": "名称",
 			"secretKey": "Secret Key",
 			"status": "状态",
@@ -2677,7 +2791,7 @@
 			"externalUserId": "上游用户 ID",
 			"userEmail": "通过外部身份创建时会存储到 users.email",
 			"keyName": "后台 / 客户端中显示的标签",
-			"metadataJson": "可选，例如 {\"plan_id\":\"pro\"}",
+			"metadataJson": "可选，例如 '{\"plan_id\":\"pro\"}'",
 			"optionalLabel": "可选标签",
 			"rateLimitRpm": "留空表示不限"
 		},
@@ -2699,7 +2813,41 @@
 		"copyKey": "复制 Key",
 		"copyId": "复制 ID",
 		"copySecret": "复制密钥",
-		"confirmDelete": "确定要永久删除该 API Key 吗？"
+		"confirmDelete": "确定要永久删除该 API Key 吗？",
+		"ui": {
+			"filters": "筛选 API 密钥",
+			"moreFilters": "更多筛选",
+			"newestFirst": "最新创建在前",
+			"oldestFirst": "最早创建在前",
+			"selectUser": "选择用户",
+			"searchUser": "搜索用户邮箱",
+			"noUsers": "未找到用户，可调整搜索或直接输入用户 ID",
+			"changeUser": "重新选择",
+			"gatewayUser": "Gateway 用户",
+			"userDisabled": "已禁用",
+			"enterUserId": "直接输入用户 ID",
+			"externalHint": "按外部系统与用户 ID 匹配已有用户；不存在时创建用户。",
+			"quotaHint": "额度属于用户，由该用户的所有密钥共享。",
+			"userQuota": "用户共享额度",
+			"manageQuota": "管理用户额度",
+			"resetBase": "重置基准",
+			"technicalDetails": "标识与使用记录",
+			"keyId": "密钥 ID",
+			"showSecret": "显示完整密钥",
+			"hideSecret": "隐藏完整密钥",
+			"editMetadata": "查看与编辑密钥元数据",
+			"loadFailed": "加载失败，请重试",
+			"deleteFailed": "删除失败，请重试",
+			"unnamedKey": "未命名密钥"
+		},
+		"errors": {
+			"userRequired": "请选择用户或输入用户 ID",
+			"externalRequired": "请同时填写外部系统与外部用户 ID",
+			"emailRequired": "请填写用户邮箱",
+			"emailInvalid": "请输入有效的邮箱地址",
+			"metadata": "元数据必须是有效的 JSON",
+			"rpm": "限流必须是非负整数，或留空表示不限"
+		}
 	},
 	"requestLogs": {
 		"title": "请求日志",
@@ -2892,6 +3040,36 @@
 			"copyFailed": "复制失败，请重试。",
 			"yes": "是",
 			"no": "否"
+		},
+		"ui": {
+			"allTime": "所有时间",
+			"chooseRange": "时间范围：{range}",
+			"presets": "快捷时间范围",
+			"invalidRange": "请检查起止时间，结束时间不能早于开始时间",
+			"openRangeHint": "留空一端表示不限该边界",
+			"refresh": "刷新日志",
+			"filters": "筛选请求日志",
+			"allStatuses": "全部状态",
+			"allModels": "全部模型",
+			"moreFilters": "更多筛选",
+			"removeFilter": "清除{name}筛选",
+			"retry": "重试",
+			"loadFailed": "日志加载失败，请重试",
+			"notInCatalog": "{value}（已不在目录中）",
+			"notInRoutes": "{value}（已不在路由中）",
+			"upstreamLatency": "上游 {time}",
+			"charged": "计费",
+			"metered": "成本",
+			"modelRoute": "模型与路由",
+			"latency": "耗时",
+			"detailHint": "点击请求查看完整流程、用量和记账详情",
+			"detailTitle": "请求详情",
+			"copyRequestId": "复制请求 ID",
+			"timingDiagram": "时间边界示意",
+			"chargedFactor": "计费 / 目录倍率",
+			"meteredFactor": "成本 / 目录倍率",
+			"profit": "毛利",
+			"rangeTitle": "时间范围"
 		}
 	},
 	"auditLogs": {
@@ -2900,8 +3078,8 @@
 		"empty": "没有符合筛选条件的审计日志。",
 		"filters": {
 			"eventType": "事件类型",
-			"actor": "操作者",
-			"actorKind": "操作来源",
+			"actor": "操作者类别",
+			"actorKind": "身份类型",
 			"actorId": "操作主体 ID",
 			"userId": "用户 ID",
 			"userEmail": "用户 Email",
@@ -3001,7 +3179,54 @@
 			"noChangeDetail": "没有可展开的变更详情。",
 			"more": "+{count} 更多"
 		},
-		"userRemovedTitle": "用户已删除；请查看快照 / change_payload"
+		"userRemovedTitle": "用户已删除；请查看快照 / change_payload",
+		"ui": {
+			"detailTitle": "审计详情",
+			"overview": "概览",
+			"changes": "字段变更",
+			"raw": "原始记录",
+			"copyAuditId": "复制审计 ID",
+			"copyFailed": "复制失败，请重试",
+			"userUnavailable": "用户不可用",
+			"reasonText": "操作说明",
+			"identifiers": "关联标识",
+			"requestId": "请求 ID",
+			"beforeSnapshot": "变更前用户快照",
+			"afterSnapshot": "变更后用户快照",
+			"changedFields": "变更字段清单",
+			"rawHint": "原始记录保留写入时的快照；缺失值表示当时未记录。",
+			"viewRequest": "查看请求",
+			"userActivity": "用户活动",
+			"notRecorded": "未记录",
+			"unchanged": "无变动",
+			"refresh": "刷新记录",
+			"filters": "筛选审计日志",
+			"eventScope": "事件范围",
+			"changeRecords": "变更记录",
+			"allEvents": "全部事件",
+			"customEvents": "自定义事件",
+			"moreFilters": "更多筛选",
+			"removeFilter": "清除{name}筛选",
+			"searchEmail": "按用户邮箱精确筛选…",
+			"retry": "重试",
+			"loadFailed": "审计日志加载失败，请重试",
+			"optionsFailed": "事件原因选项加载失败，已有筛选仍保留。",
+			"eventTime": "事件 · 时间",
+			"user": "用户",
+			"changeCount": "{count} 项变更",
+			"defaultHint": "默认不含逐次请求扣费；点击记录查看完整前后值",
+			"detailHint": "点击记录查看完整变更与关联请求",
+			"fields": {
+				"spent": "消耗",
+				"max": "上限",
+				"base": "基准",
+				"period": "周期",
+				"resetAt": "下次重置",
+				"granted": "发放",
+				"remaining": "余额"
+			},
+			"userArchived": "用户已删除"
+		}
 	},
 	"analytics": {
 		"modelUsage": {
@@ -3113,7 +3338,8 @@
 			"failoverShare": "转移请求占比",
 			"streamSpeed": "流式 Token/秒",
 			"outcomes": "成功 {success} · 失败 {errors} · 未完成 / 取消 {other}",
-			"streamSamples": "{count} 个流式样本"
+			"streamSamples": "{count} 个流式样本",
+			"detailLabel": "展开或收起明细"
 		},
 		"providerDimensions": {
 			"all": "全部类型",
@@ -3141,9 +3367,11 @@
 			"blocked": "已拒绝后台写操作",
 			"allowed": "后台写操作可用"
 		},
-		"statusCard": { "title": "当前状态" },
+		"statusCard": {
+			"title": "当前状态"
+		},
 		"settingsCard": {
-			"title": "开启维护",
+			"title": "维护设置",
 			"description": "选择预计时长和提示文案，开启前会再次确认。"
 		},
 		"configured": {
@@ -3154,6 +3382,9 @@
 		},
 		"preview": "客户端看到的提示",
 		"form": {
+			"durationHelp": "预计时长用于客户端提示；到时后仍需手动结束维护。",
+			"impact": "影响范围",
+			"inferenceImpact": "维护期间，推理请求返回 HTTP 503；健康检查和只读列表不受影响。",
 			"duration": "预计时长",
 			"noDuration": "不预估",
 			"customMinutes": "自定义（分钟）",
@@ -3164,7 +3395,7 @@
 			"messageZh": "中文文案（zh）",
 			"messageEn": "英文文案（en）",
 			"blockAdmin": "同时拒绝后台写操作",
-			"blockAdminHelp": "数据迁移期间建议开启。调用 Admin API 的门户（开通用户、加额）会收到 503，应自行重试。集成密钥、本页和调试台仍可操作。"
+			"blockAdminHelp": "数据迁移期间建议开启。调用 Admin API 的门户（开通用户、加额）会收到 503，应自行重试。集成密钥、维护操作和调试台仍可操作。"
 		},
 		"actions": {
 			"enable": "开启维护",
@@ -3217,7 +3448,7 @@
 	},
 	"config": {
 		"title": "系统配置",
-		"subtitle": "配置网关的时区、计费、路由和错误通知，各项设置分别保存。",
+		"subtitle": "配置网关的时区、计费、路由和通知，或管理维护模式。各项设置分别保存。",
 		"saveTimezone": "保存时区",
 		"saveCurrency": "保存货币",
 		"saveUserChargedCostFactorMode": "保存用户计费倍率模式",
@@ -3264,7 +3495,7 @@
 		},
 		"saveRouteStrategy": "保存路由策略",
 		"ux": {
-			"subtitle": "配置网关的时区、计费、路由和错误通知，各项设置分别保存。",
+			"subtitle": "配置网关的时区、计费、路由和通知，或管理维护模式。各项设置分别保存。",
 			"timezoneHint": "决定每日额度与用量报表按哪个时区划分日期。",
 			"currencyHint": "模型价格、预算和计费金额统一使用的币种。",
 			"billingModeHint": "选择路由倍率与用户倍率的组合方式，修改后约 30 秒生效。",
@@ -3288,7 +3519,7 @@
 		},
 		"config": {
 			"title": "REST 服务",
-			"subtitle": "接入 REST 工具服务，配置凭据和价格，并测试、启用服务。",
+			"subtitle": "管理搜索、网页提取与内容检测服务",
 			"viewInvocations": "查看调用记录 →",
 			"showSecrets": "显示密钥",
 			"hideSecrets": "隐藏密钥",
@@ -3502,7 +3733,7 @@
 			"switchActiveBeforeClearingKey": "若要清空当前 Active 引擎的 Key，请先把 Active 切到仍有 Key 的引擎并保存，再清空旧 Key。"
 		},
 		"serviceList": {
-			"search": "搜索服务名称、标识或工具类型",
+			"search": "搜索服务或工具类型",
 			"toolType": "工具类型",
 			"status": "状态",
 			"name": "服务",
@@ -3519,6 +3750,20 @@
 			"connection": "连接设置",
 			"pricing": "计费规则",
 			"credentialsRequired": "补全凭证后可保存并启用；也可以先保存配置。"
+		},
+		"ui": {
+			"notConfigured": "待配置",
+			"multiplierHint": "相对于标准价的倍率",
+			"oneActivePerType": "每种工具仅启用一个服务",
+			"invocations": "调用记录",
+			"test": "测试服务",
+			"testSavedConfig": "在调试台测试已保存的配置",
+			"discard": "还原修改",
+			"draftHint": "修改暂存于当前页面，尚未生效；测试使用已保存的配置",
+			"saveHint": "仅保存当前服务；启用后会替换同类工具的当前服务",
+			"activationFailed": "配置已保存，启用失败：{message}",
+			"loadFailed": "未能读取服务配置，请重试",
+			"retry": "重新加载"
 		}
 	},
 	"pricing": {
@@ -3643,14 +3888,14 @@
 		"sections": {
 			"label": "MCP 管理分区",
 			"services": "服务管理",
-			"clients": "客户端接入与授权"
+			"clients": "客户端接入"
 		},
 		"clientAccess": {
 			"title": "客户端接入",
-			"description": "让外部 MCP 客户端通过 API Key 或 OAuth 2.0 连接网关。查看接入指南复制客户端配置，或测试网关对外提供的目录。"
+			"description": "复制客户端配置，或验证网关对外提供的工具目录"
 		},
 		"title": "MCP 服务",
-		"subtitle": "接入远程 MCP 服务，审核并启用工具，通过统一入口提供给客户端。",
+		"subtitle": "接入远程服务，管理工具目录、计费与客户端授权",
 		"add": "添加服务",
 		"empty": "还没有 MCP 服务。",
 		"slug": "标识",
@@ -3668,7 +3913,7 @@
 		"viewInvocations": "查看调用记录",
 		"oauth": {
 			"title": "OAuth 2.0 授权登录（可选）",
-			"hint": "给只支持 OAuth 2.0 的客户端（如 ChatGPT 连接器）用，用户不必复制 API Key。不开启也能用 API Key 接入。",
+			"hint": "让支持 OAuth 的客户端通过登录授权接入；API Key 接入不受影响",
 			"description": "为 ChatGPT 连接器等 MCP 客户端提供登录授权的门户地址（system_config.MCP_OAUTH_AUTHORIZATION_SERVER）。设置后，/mcp* 对未认证请求返回 401 + WWW-Authenticate，并公开 /.well-known/oauth-protected-resource；Gateway 自身不签发 token。须为 https（仅 localhost 允许 http）。留空即关闭。",
 			"label": "授权服务器地址",
 			"placeholder": "https://soloent.ai",
@@ -3688,7 +3933,7 @@
 		},
 		"connectGuide": {
 			"button": "接入指南",
-			"title": "接入指南：在外部 Agent 中使用 MCP",
+			"title": "客户端接入指南",
 			"subtitle": "选择客户端，复制配置即可。Agent 只需要网关地址和用户 API Key，不接触上游密钥。",
 			"proxyUrl": "Proxy 地址",
 			"proxyHint": "填写 Proxy 基础地址，会自动加上 /mcp；与“对外目录测试”共用。",
@@ -3814,7 +4059,7 @@
 		"enabledItems": "对外提供条目",
 		"syncError": "同步异常",
 		"filterServers": "服务状态筛选",
-		"searchServers": "搜索名称、标识或地址",
+		"searchServers": "搜索服务名称、标识或地址",
 		"refresh": "刷新列表",
 		"retry": "重新加载",
 		"emptyHint": "添加远程 MCP 服务，同步目录后选择要开放的工具、提示词和资源。",
@@ -3969,6 +4214,19 @@
 			"invalidStored": "计费配置无效或当前版本不支持，请重新设置按次价格。工具调用暂不可用。",
 			"perCall": "按次",
 			"factorSummary": "用户倍率 ×{chargedFactor} · 供应倍率 ×{meteredFactor}"
+		},
+		"ui": {
+			"invocations": "调用记录",
+			"connect": "客户端接入",
+			"factorHint": "相对于标准价的倍率",
+			"perRequest": "每次调用",
+			"requestUnit": "次",
+			"exposedItems": "对外提供 {count} 项",
+			"tokenLoadFailed": "未能读取授权记录，请重试",
+			"retry": "重新加载",
+			"connectionNotes": "接入注意事项",
+			"tokenSummary": "查看第三方客户端授权，按用户或应用筛选并撤销访问",
+			"oauthSaved": "已配置 OAuth 授权发现"
 		}
 	},
 	"toolPricing": {
@@ -3993,5 +4251,46 @@
 		"perUnitMode": "按单元收费",
 		"charactersUnit": "{count} 字符",
 		"requestUnit": "次"
+	},
+	"remainingUi": {
+		"effectiveFactor": "金额 ÷ 标准金额；按当前记录计算的有效倍率",
+		"allStatuses": "全部状态",
+		"loadFailed": "数据加载失败，请重试",
+		"retry": "重新加载",
+		"invocationDetails": "调用详情",
+		"providerScope": "供应商范围",
+		"modelPrefix": "服务模型前缀",
+		"discardTitle": "放弃未保存的修改？",
+		"discardHint": "修改尚未生效，关闭后将丢弃当前草稿",
+		"discard": "放弃修改",
+		"integrationHint": "按用途授权；密钥重新生成后，保存才会生效",
+		"searchKeys": "搜索集成名称或说明",
+		"allPermissions": "全部管理权限（*）",
+		"read": "读取",
+		"write": "写入",
+		"secrets": "读取凭证",
+		"execute": "执行",
+		"configCategories": "配置分类",
+		"general": "基础设置",
+		"routing": "路由与计费",
+		"notifications": "通知",
+		"localizedMessages": "按语言自定义提示（可选）",
+		"noMatches": "没有匹配的结果",
+		"resources": {
+			"users": "用户",
+			"user_keys": "用户密钥",
+			"providers": "供应商",
+			"models": "模型",
+			"routes": "路由",
+			"config": "系统配置",
+			"analytics": "用量分析",
+			"logs": "日志",
+			"playground": "调试台",
+			"mcp": "MCP 服务",
+			"maintenance": "维护模式"
+		},
+		"wholeMinutes": "请输入大于 0 的整分钟数",
+		"requestLogs": "请求日志",
+		"writeIncludesRead": "写入包含同类读取；读取凭证需要单独授权"
 	}
 }

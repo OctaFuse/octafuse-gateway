@@ -20,7 +20,7 @@
 		"loginHeading": "Octafuse Gateway",
 		"sidebarSubtitle": "Gateway · Admin",
 		"github": "GitHub",
-		"docs": "Docs",
+		"docs": "문서",
 		"operatorConsole": "운영 콘솔"
 	},
 	"common": {
@@ -161,11 +161,11 @@
 		"end": "종료",
 		"custom": "사용자 지정",
 		"presets": {
-			"1h": "1h",
-			"1d": "1d",
-			"7d": "7d",
-			"14d": "14d",
-			"30d": "30d"
+			"1h": "최근 1시간",
+			"1d": "최근 1일",
+			"7d": "최근 7일",
+			"14d": "최근 14일",
+			"30d": "최근 30일"
 		},
 		"calendar": {
 			"today": "오늘",
@@ -318,7 +318,30 @@
 			"today": "오늘",
 			"this_week": "이번 주",
 			"this_month": "이번 달"
-		}
+		},
+		"overviewSubtitle": "게이트웨이 트래픽, 품질 및 비용 개요",
+		"chooseRange": "기간: {range}",
+		"invalidRange": "시작 시간이 종료 시간보다 이른 유효한 기간을 선택하세요",
+		"activity": "최근 활동",
+		"activityScope": "선택한 기간과 관계없이 전체 기간의 최신 기록을 표시합니다",
+		"openRequest": "요청 보기: {model}",
+		"upstreamError": "업스트림 오류입니다. 요청에서 상세 내용을 확인하세요",
+		"waitingForRequests": "이 기간에 요청이 없습니다",
+		"noCharges": "이 기간에 과금이 없습니다",
+		"inspectRequests": "기간 내 요청 보기",
+		"liveSnapshot": "실시간 현황",
+		"liveScope": "처리량은 최근 60초, 계정 및 키는 현재 수량입니다",
+		"exploreWeek": "최근 7일 보기",
+		"inspectUsage": "{name} 요청 보기",
+		"requestCount": "요청 {count}건",
+		"requestStatus": {
+			"success": "성공",
+			"error": "실패",
+			"incomplete": "미완료",
+			"cancelled": "취소됨"
+		},
+		"tokenSummary": "토큰 요약",
+		"cacheReadShare": "입력에 캐시 읽기·쓰기 포함 · 캐시 읽기 비중 {rate}"
 	},
 	"filter": {
 		"title": "필터",
@@ -373,7 +396,7 @@
 		"list": {
 			"provider": "공급자",
 			"routes": "라우트",
-			"protocols": "프로토콜 및 기능",
+			"protocols": "프로토콜",
 			"keyAndQuota": "API 키 및 할당량",
 			"status": "상태"
 		},
@@ -441,11 +464,13 @@
 			"officialUpdate": "공식 업데이트",
 			"officialUpdateTitle": "공식 템플릿이 변경되었습니다. 클릭하여 확인하고 동기화",
 			"kindOrphaned": "유형 이전 필요",
-			"kindOrphanedTitle": "공식 템플릿 이름이 바뀌었거나 삭제되었습니다. 클릭하여 새 유형으로 이전"
+			"kindOrphanedTitle": "공식 템플릿 이름이 바뀌었거나 삭제되었습니다. 클릭하여 새 유형으로 이전",
+			"viewRoutes": "{name}의 연결 라우트 보기",
+			"editEndpoints": "{name}의 엔드포인트 설정"
 		},
 		"import": {
 			"title": "템플릿에서 가져오기",
-			"subtitle": "일반적인 엔드포인트를 미리 채웁니다. LLM 전용 OpenAI 템플릿은 chat URL을 가져오고, Images 기능이 있는 Provider는 Base URL을 유지합니다. 가져올 때마다 새 Provider 항목이 생성됩니다.",
+			"subtitle": "템플릿으로 엔드포인트를 미리 설정하고 가져온 후 API 키를 입력하세요.",
 			"searchPlaceholder": "템플릿 이름 검색",
 			"clearSearch": "템플릿 검색 초기화",
 			"clear": "초기화",
@@ -460,7 +485,8 @@
 			"finished": "Provider {created}개를 가져왔습니다.",
 			"finishedWithFail": "Provider {created}개를 가져왔습니다. {failed}개 실패.",
 			"failed": "가져오기에 실패했습니다",
-			"copyFailed": "API Key 복사에 실패했습니다"
+			"copyFailed": "API Key 복사에 실패했습니다",
+			"templateDetails": "템플릿 설명"
 		},
 		"quota": {
 			"action": "한도",
@@ -665,7 +691,10 @@
 			"backToEndpointForm": "양식으로 돌아가기",
 			"jsonConfigTitle": "엔드포인트 JSON · 전체 프로토콜",
 			"jsonConfigHint": "현재 양식에서 전송할 endpoints입니다. 저장하지 않은 변경 사항을 포함하며 공급자 자격 증명은 제외됩니다.",
-			"jsonCopyFailed": "자동 복사에 실패했습니다. 선택된 내용을 수동으로 복사할 수 있습니다."
+			"jsonCopyFailed": "자동 복사에 실패했습니다. 선택된 내용을 수동으로 복사할 수 있습니다.",
+			"apiKeyRequiredError": "API 키를 입력해 주세요",
+			"credentialsTitle": "계정 및 인증 정보",
+			"duplicateHint": "설정을 복사했습니다. 저장하기 전에 이름, 인증 정보 및 엔드포인트를 확인하세요."
 		},
 		"sync": {
 			"title": "공식 정보와 동기화",
@@ -733,16 +762,20 @@
 				"migrated": "유형을 이전했습니다"
 			},
 			"check": {
-				"button": "공식 업데이트 확인",
-				"checking": "확인 중…",
+				"button": "동기화",
+				"checking": "비교 중…",
 				"neverChecked": "아직 확인하지 않음",
 				"lastCheckedUpdates": "{time} 확인: 업데이트 있음",
 				"lastCheckedUpToDate": "{time} 확인: 최신 상태",
 				"upToDate": "확인 완료: 모든 공급자가 공식 템플릿과 일치합니다",
 				"foundUpdates": "공급자 {providers}개(유형 {kinds}개)에 공식 업데이트가 있습니다",
-				"foundOrphans": "공급자 {count}개는 유형 이전이 필요합니다"
+				"foundOrphans": "공급자 {count}개는 유형 이전이 필요합니다",
+				"review": "결과 보기",
+				"tooltip": "공급자 정적 데이터 동기화: 차이를 비교하고 확인 후 적용"
 			}
-		}
+		},
+		"overviewSubtitle": "업스트림 계정, API 키 및 프로토콜 엔드포인트 관리",
+		"allProtocols": "모든 프로토콜"
 	},
 	"models": {
 		"list": {
@@ -785,7 +818,11 @@
 			"kindImage": "이미지",
 			"kindAsr": "음성 인식",
 			"kindTts": "음성 합성",
-			"kindEmbedding": "임베딩"
+			"kindEmbedding": "임베딩",
+			"searchPlaceholder": "모델 이름, ID, 공급사 또는 태그 검색",
+			"clearSearch": "검색 지우기",
+			"allVendors": "모든 공급사",
+			"allLifecycles": "모든 상태"
 		},
 		"imagePricing": {
 			"enabled": "레거시 (삭제됨)",
@@ -804,7 +841,7 @@
 		},
 		"import": {
 			"title": "정적 카탈로그에서 가져오기",
-			"subtitle": "Gateway에 동일한 model id의 프리셋이 이미 있으면 가져오기 선택이 비활성화되며, 가져올 때 기존 항목을 덮어쓰지 않습니다. gpt-image-2 token 요금을 반영하려면 삭제 후 다시 가져오거나 편집 후 저장하세요. 가격은 카탈로그의 {currency} 분기(USD/CNY, {unit} 참조)를 사용합니다.",
+			"subtitle": "가져올 모델을 선택하세요. 동일한 ID의 기존 모델은 유지됩니다. 가격은 {currency}로 표시됩니다.",
 			"searchPlaceholder": "Model ID 또는 표시 이름 검색",
 			"clearSearch": "검색 초기화",
 			"clearSelection": "선택 초기화",
@@ -825,8 +862,8 @@
 			"modelId": "Model ID",
 			"displayName": "표시 이름",
 			"vendor": "Vendor",
-			"context": "Context",
-			"maxTokens": "Max Tokens",
+			"context": "컨텍스트",
+			"maxTokens": "최대 출력",
 			"pricing": "요금",
 			"alreadyInGatewayRow": "{id}은(는) 이미 Gateway에 있습니다",
 			"importPresetRow": "프리셋 {id} 가져오기",
@@ -839,7 +876,9 @@
 			"finished": "모델 {created}개를 가져왔습니다.",
 			"finishedWithSkip": "모델 {created}개를 가져왔습니다. 이미 있는 {skipped}개는 건너뛰었습니다.",
 			"finishedWithFail": "모델 {created}개를 가져왔습니다. {failed}개 실패.",
-			"failed": "가져오기에 실패했습니다"
+			"failed": "가져오기에 실패했습니다",
+			"modelColumn": "모델",
+			"priceOrder": "입력 / 출력"
 		},
 		"modal": {
 			"editTitle": "모델 편집",
@@ -962,7 +1001,18 @@
 				"priority": "우선순위",
 				"weight": "가중치"
 			},
-			"routesBlocked": "연결된 라우트 {count}개를 먼저 삭제하세요"
+			"routesBlocked": "연결된 라우트 {count}개를 먼저 삭제하세요",
+			"optionalSetting": "선택 설정",
+			"scheduleWindowCount": "{count}개 시간대",
+			"pricingColumns": {
+				"upto": "입력 상한",
+				"input": "입력",
+				"output": "출력",
+				"cacheRead": "캐시 읽기",
+				"cacheWrite": "캐시 쓰기"
+			},
+			"modelIdRequiredError": "모델 ID를 입력해 주세요",
+			"invalidMetadata": "메타데이터는 유효한 JSON 객체여야 합니다"
 		},
 		"metadata": {
 			"title": "메타데이터"
@@ -980,14 +1030,19 @@
 			"retired": "제공 종료",
 			"retiringSoon": "제공 종료 예정",
 			"retiredAt": "제공 종료일: {date}",
-			"specs": "{context} · {max}",
+			"specs": "컨텍스트 {context} · 최대 출력 {max}",
 			"editModel": "{name} 편집",
 			"pricingNoData": "—",
 			"pricingTiers": "{count}단계",
 			"noRoutes": "라우트 없음",
 			"officialUpdateTitle": "공식 카탈로그에 업데이트가 있습니다. 클릭하여 확인 및 동기화",
 			"kindEmbedding": "임베딩",
-			"embeddingHint": "임베딩 · 컨텍스트 {context}"
+			"embeddingHint": "임베딩 · 컨텍스트 {context}",
+			"viewPricing": "{name}의 가격 설정 보기",
+			"viewRoutes": "{name}의 연결 라우트 보기",
+			"inputOutputPricing": "입력 / 출력 · 백만 토큰",
+			"textImagePricing": "텍스트 입력 / 이미지 출력 · 백만 토큰",
+			"inputOnlyPricing": "입력 전용 · 백만 토큰"
 		},
 		"sync": {
 			"title": "공식 카탈로그와 동기화",
@@ -1045,15 +1100,19 @@
 				"review": "확인 및 동기화"
 			},
 			"check": {
-				"button": "공식 업데이트 확인",
-				"checking": "확인 중…",
+				"button": "동기화",
+				"checking": "비교 중…",
 				"neverChecked": "아직 확인 안 함",
 				"lastCheckedUpdates": "{time} 확인: 업데이트 있음",
 				"lastCheckedUpToDate": "{time} 확인: 최신 상태",
 				"upToDate": "확인 완료: 모든 모델이 공식 카탈로그와 일치합니다",
-				"foundUpdates": "모델 {models}개(벤더 {vendors}곳)에 공식 업데이트가 있습니다"
+				"foundUpdates": "모델 {models}개(벤더 {vendors}곳)에 공식 업데이트가 있습니다",
+				"review": "결과 보기",
+				"tooltip": "모델 정적 데이터 동기화: 차이를 비교하고 확인 후 적용"
 			}
-		}
+		},
+		"overviewSubtitle": "모델 기능, 표준 가격 및 연결 라우트 관리",
+		"emptyFilterHint": "다른 검색어를 입력하거나 필터를 지워 주세요"
 	},
 	"routes": {
 		"title": "모델 라우트",
@@ -1061,6 +1120,8 @@
 		"empty": "모델 또는 Route가 없습니다",
 		"emptyFilteredPrefix": "필터를 조정하거나",
 		"workspace": {
+			"coverageTitle": "사용 가능한 구성",
+			"coverageHint": "라우트와 공급자가 모두 활성화되어 있습니다. 현재 필터 범위의 구성 상태이며 실시간 상태는 아닙니다.",
 			"searchPlaceholder": "모델, 업스트림 모델 또는 공급자 검색…",
 			"removeFilter": "필터 제거: {filter}",
 			"densityList": "목록",
@@ -1096,7 +1157,15 @@
 			"stickyRefresh10m": "10분마다",
 			"stickyRefreshNow": "Sticky 새로고침",
 			"stickyRefreshEmptyHint": "이 페이지에 Sticky가 켜진 풀이 없습니다",
-			"stickyRefreshUpdatedAgo": "{ago} 전 업데이트"
+			"stickyRefreshUpdatedAgo": "{ago} 전 업데이트",
+			"moreFilters": "추가 필터",
+			"clearSearch": "검색 지우기",
+			"allStatuses": "모든 상태",
+			"allVendors": "모든 벤더",
+			"allProviderKinds": "모든 공급자 유형",
+			"allProviders": "모든 공급자",
+			"allRouteGroups": "모든 라우트 그룹",
+			"displaySettings": "표시 설정"
 		},
 		"flow": {
 			"requestNode": "요청 진입점",
@@ -1247,7 +1316,19 @@
 			"activeTotalRoutes": "활성 {active}개 / 전체 {total}개",
 			"noRoutesYet": "아직 Route가 없습니다",
 			"clickToAdd": "+를 클릭하여 첫 Route를 추가하세요",
-			"embeddingModelHint": "임베딩 · 입력 토큰 과금"
+			"embeddingModelHint": "임베딩 · 입력 토큰 과금",
+			"modelBilling": {
+				"imagePerImage": "이미지당 과금",
+				"imageTokens": "토큰 과금",
+				"image": "이미지 생성",
+				"asrTokens": "음성 인식 · 토큰",
+				"asrSeconds": "음성 인식 · 초",
+				"asr": "음성 인식",
+				"ttsTokens": "음성 합성 · 토큰",
+				"ttsCharacters": "음성 합성 · 문자",
+				"tts": "음성 합성",
+				"embedding": "임베딩"
+			}
 		},
 		"protocol": {
 			"sectionTitle": "upstream_protocol: {protocol} · route_group: {group}",
@@ -1990,7 +2071,7 @@
 	},
 	"playground": {
 		"title": "플레이그라운드",
-		"subtitle": "단일 모델 라우트로 업스트림에 직접 연결해 연결 상태와 응답을 확인하세요. 장애 조치는 수행하지 않습니다.",
+		"subtitle": "단일 라우트의 요청과 업스트림 응답 확인",
 		"usageNote": "테스트는 게이트웨이 사용자 과금 및 요청 로그에 포함되지 않습니다.",
 		"routeSection": "Route",
 		"requestBody": "요청",
@@ -2044,7 +2125,7 @@
 		"thinking": "Reasoning / Thinking",
 		"body": "본문",
 		"rawPayload": "원시 Payload",
-		"emptyResponseHint": "Send를 실행하면 업스트림 상태, Headers, 본문 또는 스트림 출력이 여기에 표시됩니다.",
+		"emptyResponseHint": "요청을 전송하면 여기에서 업스트림 응답을 확인할 수 있습니다",
 		"imageOpenaiOnly": "이미지 생성 모델은 upstream_protocol=openai, dashscope, minimax, volcengine 또는 gemini에서만 작동합니다. Route를 편집하거나 해당 프로토콜 Route를 선택하세요.",
 		"imageDashScopeHint": "DashScope 변환: OpenAI Images JSON(prompt, n, size)을 편집하세요. Playground가 multimodal-generation으로 다시 쓰고 n은 항상 보냅니다(기본값 1). 이미지 투 이미지는 JSON image를 사용하며 edits는 지원하지 않습니다. 청구 및 요청 로그는 없습니다.",
 		"imageDashScopePassthroughHint": "네이티브 패스스루: JSON은 multimodal-generation으로 그대로 전달됩니다. Playground가 model을 라우트의 공급자 모델 이름으로 바꿉니다. 청구 및 요청 로그는 없습니다.",
@@ -2093,12 +2174,12 @@
 		"mode": "모드",
 		"modeRoutes": "Routes",
 		"modeTools": "Tools",
-		"toolsSubtitle": "도구와 공급자를 선택해 테스트 호출을 보내고 연결 설정과 응답을 확인하세요.",
+		"toolsSubtitle": "도구와 엔진의 요청 및 실행 결과 확인",
 		"toolsSection": "도구 및 엔진",
-		"toolsHint": "자격 증명은 system_config catalog에서 읽습니다. Active 전환 전 키 검증에 사용하세요.",
+		"toolsHint": "설정된 인증 정보로 도구와 서비스 엔진 테스트",
 		"tool": "도구",
 		"engineProvider": "엔진 Provider",
-		"engineProviderHint": "Active에 제한되지 않으며, 구현된 catalog 항목을 테스트할 수 있습니다.",
+		"engineProviderHint": "기본 엔진을 변경하지 않고 지원되는 엔진을 테스트합니다",
 		"toolsBodyMustBeObject": "요청 본문은 JSON 객체여야 합니다.",
 		"toolsNeedProvider": "엔진 Provider를 선택하세요.",
 		"applyTemplate": "템플릿 적용",
@@ -2184,13 +2265,14 @@
 		"realtimeWaitingElevenLabs": "WebSocket이 연결되었습니다. 업스트림 응답을 기다리는 중…",
 		"realtimeClosed": "실시간 연결이 닫혔습니다({code}{reason}).",
 		"streamDisconnected": "업스트림 스트림을 읽는 중 연결이 끊겼습니다({cause}). stream을 false로 바꾼 뒤 확인하거나 다시 시도하세요.",
-		"kindEmbedding": "임베딩"
+		"kindEmbedding": "임베딩",
+		"actualRequest": "실제 요청"
 	},
 	"simulator": {
 		"title": "시뮬레이터",
 		"subtitle": "사용자 API 키로 클라이언트 요청을 재현하고 인증, 라우팅, 장애 조치를 검증하세요.",
-		"connection": "연결",
-		"proxyBaseUrl": "Proxy Base URL",
+		"connection": "연결 설정",
+		"proxyBaseUrl": "게이트웨이 URL",
 		"requestBody": "요청 본문",
 		"response": "응답",
 		"usageNote": "일반 요청과 동일하게 과금되고 로그가 기록됩니다.",
@@ -2237,7 +2319,7 @@
 		"thinkingReasoning": "Thinking / reasoning",
 		"body": "본문",
 		"rawPayload": "원시 Payload",
-		"emptyResponseHint": "Send를 클릭하면 상태, 본문 또는 스트림 출력이 여기에 표시됩니다.",
+		"emptyResponseHint": "요청을 전송하면 게이트웨이 응답과 사용량을 확인할 수 있습니다",
 		"readyNeedProxyUrl": "유효한 Proxy Base URL(http/https)을 입력하세요.",
 		"readyNeedModel": "모델을 선택하세요.",
 		"readyNeedOpenaiForImage": "이미지 생성 모델은 openai(Proxy /v1/images/generations 또는 /v1/images/edits), dashscope(네이티브 multimodal-generation), minimax(POST /minimax/v1/image_generation), volcengine(POST /volcengine/api/v3/images/generations) 또는 gemini(POST /v1beta/models/{model}:generateContent)가 필요합니다.",
@@ -2258,13 +2340,13 @@
 		"imagePreview": "생성된 이미지",
 		"protocolSwitchConfirm": "요청 본문이 편집되었습니다. 프로토콜을 전환하고 기본 템플릿으로 교체하시겠습니까?",
 		"applyTemplate": "템플릿으로 초기화",
-		"wirePreview": "Wire 미리보기 (URL / headers / body)",
+		"wirePreview": "실제 요청",
 		"wirePreviewEmpty": "요청을 미리 보려면 Proxy URL, 모델 및 API Key를 입력하고 유효한 JSON을 작성하세요.",
 		"wireHeaders": "Headers (민감 정보 숨김)",
 		"wireBody": "Body",
 		"tabMerged": "병합",
 		"tabRaw": "원본",
-		"openRequestLogs": "요청 로그 열기 →",
+		"openRequestLogs": "요청 로그 열기",
 		"receiving": "(수신 중…)",
 		"couldNotExtractBody": "(Payload에서 본문을 추출할 수 없음)",
 		"errProxyUrlRequired": "Proxy Base URL이 필요합니다",
@@ -2311,11 +2393,14 @@
 		"noRoutedModels": "이 종류에 활성 Route가 있는 모델이 없습니다.",
 		"modelHasRoute": "라우트 있음",
 		"modelNoRoute": "라우트 없음",
-		"matchingRoutesSummary": "일치하는 활성 Route {count}개",
-		"matchingRoutesHint": "이 모델과 그룹에 대해 Proxy가 쓸 수 있는 활성 Route의 읽기 전용 미리보기입니다. Failover는 요청 시점에 발생합니다.",
+		"matchingRoutesSummary": "일치하는 라우트 · {count}",
+		"matchingRoutesHint": "로컬 설정과 일치하는 라우트이며 실제 경로는 게이트웨이가 결정합니다",
 		"supportedSurfacesEmpty": "이 모델과 라우트 그룹에 활성 공개 Surface가 없습니다.",
 		"kindEmbedding": "임베딩",
-		"protocolLockedEmbedding": "임베딩 라우트는 OpenAI POST /v1/embeddings 와 Gemini 네이티브 :embedContent / :batchEmbedContents 를 지원합니다."
+		"protocolLockedEmbedding": "임베딩 라우트는 OpenAI POST /v1/embeddings 와 Gemini 네이티브 :embedContent / :batchEmbedContents 를 지원합니다.",
+		"keyFilters": "키 필터",
+		"keyReady": "키 준비 완료",
+		"selectedKeyOutsideFilter": "현재 키 · {id} (필터 결과 외)"
 	},
 	"users": {
 		"detailUx": {
@@ -2354,13 +2439,13 @@
 				"walletSpent": "지금까지 지갑에서 사용한 누적 총액입니다. 변경하면 사용액이 수정됩니다. 잔액은 누적 지급액에서 누적 사용액을 뺀 금액입니다."
 			},
 			"fieldLabels": {
-				"budgetMax": "Budget 상한",
-				"budgetSpent": "Budget 사용액",
-				"budgetBase": "Budget 기준액",
-				"budgetPeriod": "Budget 주기",
-				"budgetResetAt": "Budget 초기화 시각",
-				"walletGranted": "Wallet 누적 지급액",
-				"walletSpent": "Wallet 누적 사용액"
+				"budgetMax": "할당량 한도",
+				"budgetSpent": "사용량",
+				"budgetBase": "재설정 기준",
+				"budgetPeriod": "재설정 주기",
+				"budgetResetAt": "다음 재설정",
+				"walletGranted": "누적 지급",
+				"walletSpent": "누적 사용"
 			}
 		},
 		"title": "사용자",
@@ -2437,7 +2522,7 @@
 			"rateLimitRpm": "비우면 무제한"
 		},
 		"help": {
-			"createUser": "새 Gateway 사용자를 생성합니다. 이메일은 필수이고 다른 모든 필드는 선택 사항입니다. 이 사용자를 다른 시스템의 계정에 연결하려면 하단의 외부 ID 섹션을 사용하세요.",
+			"createUser": "이메일을 입력하여 사용자를 만듭니다. 한도, 메타데이터, 외부 ID는 선택 사항입니다.",
 			"budgetMax": "현재 주기에 사용할 수 있는 최대 금액. 비워 두면 제한 없음.",
 			"budgetBase": "주기 재설정 시 참고하는 상한 금액.",
 			"budgetSpent": "현재 주기 금액 중 이미 사용한 금액.",
@@ -2515,12 +2600,13 @@
 			"truncated": "처음 {count}개에서 잘렸습니다. 모델 필터를 좁혀 다시 요청하세요.",
 			"mode": "합성 모드 {mode}",
 			"summary": "현재 시간대",
-			"response": "응답"
+			"response": "응답",
+			"audioKind": "음성 (인식 및 합성)"
 		},
 		"externalIdentity": {
 			"title": "외부 ID",
 			"hint": "이 필드로 사용자를 다른 시스템의 계정(예: 자체 SaaS, OAuth Provider)에 연결합니다. Gateway 내부 전용 사용자는 두 필드를 모두 비워 두세요. 두 필드는 함께 설정하거나 함께 비워야 합니다.",
-			"createHint": "이 필드로 사용자를 다른 시스템의 계정(예: 자체 SaaS, OAuth Provider)에 연결합니다. Gateway 내부 전용 사용자는 두 필드를 모두 비워 두세요. 두 필드가 모두 설정되면 (external system, external user ID) 쌍을 기준으로 멱등하게 생성됩니다."
+			"createHint": "외부 계정을 연결하려면 시스템과 사용자 ID를 모두 입력하세요. 같은 외부 ID로 다시 만들면 기존 사용자를 반환합니다."
 		},
 		"metadata": {
 			"none": "메타데이터가 없습니다.",
@@ -2563,6 +2649,34 @@
 			"chargedCostFactorModelRequired": "각 Charged cost factor 행에는 모델 ID가 필요합니다.",
 			"chargedCostFactorValueInvalid": "Charged cost factor는 0 이상의 숫자여야 합니다.",
 			"chargedCostFactorDuplicate": "Charged cost factors에 중복된 모델과 라우트 그룹이 있습니다."
+		},
+		"ui": {
+			"filters": "사용자 필터",
+			"allStatuses": "모든 상태",
+			"moreFilters": "추가 필터",
+			"sort": "정렬 기준",
+			"ascending": "오름차순",
+			"descending": "내림차순",
+			"access": "접근",
+			"configuration": "설정",
+			"manageUserKeys": "{user}의 키 관리",
+			"sortOptions": {
+				"created_at": "생성 시간",
+				"budget_spent": "주기 할당량 · 사용",
+				"budget_max": "주기 할당량 · 한도",
+				"budget_base": "주기 할당량 · 재설정 기준",
+				"budget_reset_at": "주기 할당량 · 재설정 시간",
+				"wallet_granted": "영구 할당량 · 누적 지급",
+				"wallet_spent": "영구 할당량 · 사용"
+			}
+		},
+		"createErrors": {
+			"emailRequired": "이메일을 입력하세요",
+			"emailInvalid": "올바른 이메일 주소를 입력하세요",
+			"externalPair": "외부 식별 필드 두 개를 모두 입력하거나 비워 두세요",
+			"amountInvalid": "유효한 할당량 숫자를 입력하세요",
+			"metadataObject": "메타데이터는 올바른 JSON 객체여야 합니다",
+			"invalid": "입력 내용을 확인하세요"
 		}
 	},
 	"oauthAccessTokensPage": {
@@ -2646,7 +2760,7 @@
 			"afterCreation": "생성 후",
 			"existingHelp1": "Gateway User ID(사용자 목록의 users.id)를 입력하세요. 사용자 세부 정보 페이지에 있다면 해당 페이지에서 Key를 생성하는 것이 좋습니다.",
 			"existingHelp2": "사용자당 여러 개의 활성 Key를 사용할 수 있습니다. 예산은 사용자에 귀속되므로 사용자 메뉴에서 편집하세요.",
-			"secretOnce": "전체 sk-… Secret은 목록 위 배너에 한 번만 표시됩니다. 즉시 복사하세요.",
+			"secretOnce": "생성 후 키를 복사하여 안전하게 보관하세요.",
 			"metadataHelp": "metadata는 Key에 저장되는 선택적 JSON이며 GET /v1/me에서 반환됩니다.",
 			"externalHelp1": "External system, External user ID 및 Email을 입력하세요. Gateway는 이 쌍으로 기존 사용자를 찾거나 새 사용자를 생성합니다(이메일은 users.email에 저장되며 최초 생성 시 필수). 사용자가 이미 있으면 요청 이메일로 저장된 이메일을 덮어쓰지 않습니다.",
 			"externalHelp2": "이 경로로 생성된 신규 사용자는 사용자 메뉴에서 플랜을 설정할 때까지 예산이 0입니다."
@@ -2677,7 +2791,7 @@
 			"externalUserId": "업스트림 user id",
 			"userEmail": "외부 ID로 생성할 때 users.email에 저장됨",
 			"keyName": "Admin / 클라이언트에 표시할 레이블",
-			"metadataJson": "선택 사항, 예: {\"plan_id\":\"pro\"}",
+			"metadataJson": "선택 사항, 예: '{\"plan_id\":\"pro\"}'",
 			"optionalLabel": "선택적 레이블",
 			"rateLimitRpm": "비우면 무제한"
 		},
@@ -2699,7 +2813,41 @@
 		"copyKey": "Key 복사",
 		"copyId": "ID 복사",
 		"copySecret": "Secret 복사",
-		"confirmDelete": "이 API Key를 영구 삭제하시겠습니까?"
+		"confirmDelete": "이 API Key를 영구 삭제하시겠습니까?",
+		"ui": {
+			"filters": "API 키 필터",
+			"moreFilters": "상세 필터",
+			"newestFirst": "최신 생성순",
+			"oldestFirst": "오래된 생성순",
+			"selectUser": "사용자 선택",
+			"searchUser": "사용자 이메일 검색",
+			"noUsers": "사용자를 찾을 수 없습니다. 다른 이메일로 검색하거나 사용자 ID를 입력하세요.",
+			"changeUser": "다시 선택",
+			"gatewayUser": "Gateway 사용자",
+			"userDisabled": "비활성",
+			"enterUserId": "사용자 ID 직접 입력",
+			"externalHint": "외부 시스템과 사용자 ID로 사용자를 찾고, 없으면 새 사용자를 만듭니다.",
+			"quotaHint": "한도는 사용자에게 속하며 해당 사용자의 모든 키가 공유합니다.",
+			"userQuota": "사용자 공유 한도",
+			"manageQuota": "사용자 한도 관리",
+			"resetBase": "초기화 기준액",
+			"technicalDetails": "식별자 및 사용 기록",
+			"keyId": "키 ID",
+			"showSecret": "전체 키 표시",
+			"hideSecret": "전체 키 숨기기",
+			"editMetadata": "키 메타데이터 보기 및 편집",
+			"loadFailed": "불러오지 못했습니다. 다시 시도하세요.",
+			"deleteFailed": "키를 삭제하지 못했습니다. 다시 시도하세요.",
+			"unnamedKey": "이름 없는 키"
+		},
+		"errors": {
+			"userRequired": "사용자를 선택하거나 사용자 ID를 입력하세요",
+			"externalRequired": "외부 시스템과 외부 사용자 ID를 모두 입력하세요",
+			"emailRequired": "사용자 이메일을 입력하세요",
+			"emailInvalid": "올바른 이메일 주소를 입력하세요",
+			"metadata": "메타데이터는 유효한 JSON이어야 합니다",
+			"rpm": "제한은 0 이상의 정수여야 합니다. 비워 두면 제한하지 않습니다"
+		}
 	},
 	"requestLogs": {
 		"title": "요청 로그",
@@ -2892,6 +3040,36 @@
 			"copyFailed": "복사에 실패했습니다. 다시 시도하세요.",
 			"yes": "예",
 			"no": "아니요"
+		},
+		"ui": {
+			"allTime": "전체 기간",
+			"chooseRange": "기간: {range}",
+			"presets": "빠른 기간 선택",
+			"invalidRange": "시작과 종료 시간을 확인하세요. 종료는 시작보다 빠를 수 없습니다.",
+			"openRangeHint": "한쪽을 비우면 해당 경계를 제한하지 않습니다",
+			"refresh": "로그 새로고침",
+			"filters": "요청 로그 필터",
+			"allStatuses": "모든 상태",
+			"allModels": "모든 모델",
+			"moreFilters": "상세 필터",
+			"removeFilter": "{name} 필터 지우기",
+			"retry": "다시 시도",
+			"loadFailed": "로그를 불러오지 못했습니다. 다시 시도하세요.",
+			"notInCatalog": "{value} (현재 카탈로그에 없음)",
+			"notInRoutes": "{value} (현재 라우트에 없음)",
+			"upstreamLatency": "업스트림 {time}",
+			"charged": "청구",
+			"metered": "원가",
+			"modelRoute": "모델 및 라우트",
+			"latency": "소요 시간",
+			"detailHint": "요청을 선택하여 처리 흐름, 사용량 및 회계 상세 확인",
+			"detailTitle": "요청 상세",
+			"copyRequestId": "요청 ID 복사",
+			"timingDiagram": "시간 측정 경계",
+			"chargedFactor": "청구 / 카탈로그 배수",
+			"meteredFactor": "원가 / 카탈로그 배수",
+			"profit": "매출총이익",
+			"rangeTitle": "기간"
 		}
 	},
 	"auditLogs": {
@@ -2900,8 +3078,8 @@
 		"empty": "필터와 일치하는 감사 로그가 없습니다.",
 		"filters": {
 			"eventType": "이벤트 유형",
-			"actor": "작업자",
-			"actorKind": "작업 출처",
+			"actor": "작업자 분류",
+			"actorKind": "주체 유형",
 			"actorId": "작업 주체 ID",
 			"userId": "User ID",
 			"userEmail": "사용자 이메일",
@@ -3001,7 +3179,54 @@
 			"noChangeDetail": "펼쳐 볼 변경 세부 정보가 없습니다.",
 			"more": "+{count}개 더 보기"
 		},
-		"userRemovedTitle": "사용자가 삭제되었습니다. snapshot / change_payload를 확인하세요"
+		"userRemovedTitle": "사용자가 삭제되었습니다. snapshot / change_payload를 확인하세요",
+		"ui": {
+			"detailTitle": "감사 상세",
+			"overview": "개요",
+			"changes": "필드 변경",
+			"raw": "원본 기록",
+			"copyAuditId": "감사 ID 복사",
+			"copyFailed": "복사하지 못했습니다. 다시 시도하세요.",
+			"userUnavailable": "사용자 정보 없음",
+			"reasonText": "작업 설명",
+			"identifiers": "관련 식별자",
+			"requestId": "요청 ID",
+			"beforeSnapshot": "변경 전 사용자 스냅샷",
+			"afterSnapshot": "변경 후 사용자 스냅샷",
+			"changedFields": "변경 필드 목록",
+			"rawHint": "작성 당시의 스냅샷입니다. 누락된 값은 기록되지 않았음을 뜻합니다.",
+			"viewRequest": "요청 보기",
+			"userActivity": "사용자 활동",
+			"notRecorded": "미기록",
+			"unchanged": "변경 없음",
+			"refresh": "기록 새로고침",
+			"filters": "감사 로그 필터",
+			"eventScope": "이벤트 범위",
+			"changeRecords": "변경 기록",
+			"allEvents": "모든 이벤트",
+			"customEvents": "사용자 지정 이벤트",
+			"moreFilters": "상세 필터",
+			"removeFilter": "{name} 필터 지우기",
+			"searchEmail": "사용자 이메일 정확히 일치…",
+			"retry": "다시 시도",
+			"loadFailed": "감사 로그를 불러오지 못했습니다. 다시 시도하세요.",
+			"optionsFailed": "사유 목록을 불러오지 못했습니다. 기존 필터는 유지됩니다.",
+			"eventTime": "이벤트 · 시간",
+			"user": "사용자",
+			"changeCount": "{count}개 변경",
+			"defaultHint": "기본적으로 요청별 청구를 제외합니다. 기록을 선택하여 전체 값을 확인하세요.",
+			"detailHint": "기록을 선택하여 변경 내용과 관련 요청 확인",
+			"fields": {
+				"spent": "소비",
+				"max": "상한",
+				"base": "기준액",
+				"period": "주기",
+				"resetAt": "다음 초기화",
+				"granted": "지급",
+				"remaining": "잔액"
+			},
+			"userArchived": "삭제된 사용자"
+		}
 	},
 	"analytics": {
 		"modelUsage": {
@@ -3113,7 +3338,8 @@
 			"failoverShare": "전환 요청 비율",
 			"streamSpeed": "스트림 Token/초",
 			"outcomes": "성공 {success} · 실패 {errors} · 미완료 / 취소 {other}",
-			"streamSamples": "측정 스트림 {count}개"
+			"streamSamples": "측정 스트림 {count}개",
+			"detailLabel": "상세 펼치기 또는 접기"
 		},
 		"providerDimensions": {
 			"all": "모든 유형",
@@ -3141,9 +3367,11 @@
 			"blocked": "Admin 쓰기 차단 중",
 			"allowed": "Admin 쓰기 허용"
 		},
-		"statusCard": { "title": "현재 상태" },
+		"statusCard": {
+			"title": "현재 상태"
+		},
 		"settingsCard": {
-			"title": "점검 시작",
+			"title": "점검 설정",
 			"description": "예상 시간과 메시지를 선택합니다. 시작하기 전에 확인 창이 표시됩니다."
 		},
 		"configured": {
@@ -3154,6 +3382,9 @@
 		},
 		"preview": "클라이언트에 표시되는 메시지",
 		"form": {
+			"durationHelp": "예상 시간은 클라이언트 안내용입니다. 시간이 지나도 점검은 직접 종료해야 합니다.",
+			"impact": "영향 범위",
+			"inferenceImpact": "점검 중 추론 요청은 HTTP 503을 반환합니다. 상태 확인과 읽기 전용 목록은 계속 사용할 수 있습니다.",
 			"duration": "예상 소요 시간",
 			"noDuration": "예상 안 함",
 			"customMinutes": "직접 입력(분)",
@@ -3164,7 +3395,7 @@
 			"messageZh": "중국어 메시지(zh)",
 			"messageEn": "영어 메시지(en)",
 			"blockAdmin": "Admin 쓰기도 차단",
-			"blockAdminHelp": "데이터 이전 중에는 켜 두는 것을 권장합니다. Admin API를 호출하는 포털(사용자 생성, 충전)은 503을 받으므로 재시도해야 합니다. 통합 키, 이 페이지, 플레이그라운드는 계속 사용할 수 있습니다."
+			"blockAdminHelp": "데이터 이전 중에는 켜 두는 것을 권장합니다. Admin API를 호출하는 포털(사용자 생성, 충전)은 503을 받으므로 재시도해야 합니다. 통합 키, 점검 제어, 플레이그라운드는 계속 사용할 수 있습니다."
 		},
 		"actions": {
 			"enable": "점검 시작",
@@ -3217,7 +3448,7 @@
 	},
 	"config": {
 		"title": "시스템 설정",
-		"subtitle": "게이트웨이 시간대, 과금, 라우팅, 오류 알림을 설정하고 각 항목을 개별 저장하세요.",
+		"subtitle": "게이트웨이 시간대, 과금, 라우팅, 알림 및 점검 모드를 관리하고 각 항목을 개별 저장하세요.",
 		"saveTimezone": "시간대 저장",
 		"saveCurrency": "통화 저장",
 		"saveUserChargedCostFactorMode": "사용자 과금 배율 모드 저장",
@@ -3264,7 +3495,7 @@
 		},
 		"saveRouteStrategy": "라우트 전략 저장",
 		"ux": {
-			"subtitle": "게이트웨이 시간대, 과금, 라우팅, 오류 알림을 설정하고 각 항목을 개별 저장하세요.",
+			"subtitle": "게이트웨이 시간대, 과금, 라우팅, 알림 및 점검 모드를 관리하고 각 항목을 개별 저장하세요.",
 			"timezoneHint": "일일 할당량과 사용 보고서의 날짜를 구분하는 시간대입니다.",
 			"currencyHint": "모델 가격, 예산, 과금액에 사용하는 통화입니다.",
 			"billingModeHint": "라우트와 사용자 배수를 결합하는 방식을 선택하세요. 변경은 약 30초 후 적용됩니다.",
@@ -3288,7 +3519,7 @@
 		},
 		"config": {
 			"title": "REST 서비스",
-			"subtitle": "REST 도구 서비스를 연결하고 인증 정보와 요금을 설정한 뒤 테스트하고 활성화하세요.",
+			"subtitle": "검색, 웹 추출 및 콘텐츠 감지 서비스 관리",
 			"viewInvocations": "호출 내역 보기 →",
 			"saveWebSearch": "Web Search 저장",
 			"saveWebFetch": "Web Fetch 저장",
@@ -3502,7 +3733,7 @@
 			"lossHint": "사용자 과금이 공급 단가보다 낮습니다(적자)"
 		},
 		"serviceList": {
-			"search": "서비스 이름, ID 또는 도구 유형 검색",
+			"search": "서비스 또는 도구 유형 검색",
 			"toolType": "도구 유형",
 			"status": "상태",
 			"name": "서비스",
@@ -3519,6 +3750,20 @@
 			"connection": "연결 설정",
 			"pricing": "과금 규칙",
 			"credentialsRequired": "인증 정보를 입력하면 저장 후 활성화할 수 있습니다. 설정만 먼저 저장할 수도 있습니다."
+		},
+		"ui": {
+			"notConfigured": "미설정",
+			"multiplierHint": "기준 가격 대비 배율",
+			"oneActivePerType": "도구 유형마다 하나의 서비스만 활성화",
+			"invocations": "호출 기록",
+			"test": "서비스 테스트",
+			"testSavedConfig": "디버그 콘솔에서 저장된 설정 테스트",
+			"discard": "변경 되돌리기",
+			"draftHint": "저장 전 변경 사항은 현재 페이지에 유지됩니다. 테스트에는 저장된 설정을 사용합니다",
+			"saveHint": "현재 서비스만 저장합니다. 활성화하면 같은 유형의 기존 서비스를 대체합니다",
+			"activationFailed": "설정은 저장되었지만 활성화에 실패했습니다: {message}",
+			"loadFailed": "서비스 설정을 불러오지 못했습니다",
+			"retry": "다시 불러오기"
 		}
 	},
 	"pricing": {
@@ -3688,7 +3933,7 @@
 		},
 		"connectGuide": {
 			"button": "연결 가이드",
-			"title": "연결 가이드: 외부 Agent에서 MCP 사용",
+			"title": "클라이언트 연결 가이드",
 			"subtitle": "클라이언트를 선택하고 설정을 복사하세요. Agent에는 게이트웨이 URL과 사용자 API Key만 필요하며 업스트림 비밀 값은 필요 없습니다.",
 			"proxyUrl": "Proxy URL",
 			"proxyHint": "Proxy 기본 URL을 입력하세요. /mcp는 자동으로 추가됩니다. “공개 카탈로그 테스트”와 공유됩니다.",
@@ -3969,6 +4214,19 @@
 			"invalidStored": "과금 설정이 잘못되었거나 현재 버전에서 지원되지 않습니다. 도구 사용 전에 호출당 가격을 설정하세요.",
 			"perCall": "호출당",
 			"factorSummary": "사용자 배율 ×{chargedFactor} · 공급 배율 ×{meteredFactor}"
+		},
+		"ui": {
+			"invocations": "호출 기록",
+			"connect": "클라이언트 연결",
+			"factorHint": "기준 가격 대비 배율",
+			"perRequest": "호출당",
+			"requestUnit": "회",
+			"exposedItems": "{count}개 항목 제공",
+			"tokenLoadFailed": "인증 기록을 불러오지 못했습니다",
+			"retry": "다시 불러오기",
+			"connectionNotes": "연결 참고 사항",
+			"tokenSummary": "사용자 또는 앱별로 외부 클라이언트 인증을 확인하고 접근 철회",
+			"oauthSaved": "OAuth 검색 설정됨"
 		}
 	},
 	"toolPricing": {
@@ -3993,5 +4251,46 @@
 		"perUnitMode": "단위별 과금",
 		"charactersUnit": "{count} 문자",
 		"requestUnit": "회"
+	},
+	"remainingUi": {
+		"effectiveFactor": "현재 기록의 금액을 기준 금액으로 나눈 실효 배율",
+		"allStatuses": "모든 상태",
+		"loadFailed": "데이터를 불러오지 못했습니다",
+		"retry": "다시 불러오기",
+		"invocationDetails": "호출 상세",
+		"providerScope": "공급자 범위",
+		"modelPrefix": "서비스 모델 접두사",
+		"discardTitle": "저장하지 않은 변경을 버릴까요?",
+		"discardHint": "변경 사항은 아직 적용되지 않았으며 닫으면 초안이 삭제됩니다",
+		"discard": "변경 취소",
+		"integrationHint": "용도에 맞게 권한을 부여하세요. 재생성된 키는 저장 후 적용됩니다",
+		"searchKeys": "통합 이름 또는 설명 검색",
+		"allPermissions": "모든 관리자 권한 (*)",
+		"read": "읽기",
+		"write": "쓰기",
+		"secrets": "인증 정보 읽기",
+		"execute": "실행",
+		"configCategories": "설정 분류",
+		"general": "기본 설정",
+		"routing": "라우팅 및 과금",
+		"notifications": "알림",
+		"localizedMessages": "언어별 메시지 지정 (선택)",
+		"noMatches": "일치하는 결과 없음",
+		"resources": {
+			"users": "사용자",
+			"user_keys": "사용자 키",
+			"providers": "공급자",
+			"models": "모델",
+			"routes": "라우트",
+			"config": "시스템 설정",
+			"analytics": "사용량 분석",
+			"logs": "로그",
+			"playground": "디버그 콘솔",
+			"mcp": "MCP 서비스",
+			"maintenance": "유지보수"
+		},
+		"wholeMinutes": "양의 정수로 분을 입력하세요",
+		"requestLogs": "요청 로그",
+		"writeIncludesRead": "쓰기는 동일 리소스 읽기를 포함하며 인증 정보 접근은 별도로 허용해야 합니다"
 	}
 }

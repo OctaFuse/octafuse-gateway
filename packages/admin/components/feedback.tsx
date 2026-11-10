@@ -7,6 +7,7 @@ import {
 	XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
+import { useAdminDialog } from './use-admin-dialog';
 import {
 	createContext,
 	useCallback,
@@ -127,29 +128,20 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 	}, []);
 
 	useEffect(() => {
+		const timers = timersRef.current;
+		const leavingIds = leavingIdsRef.current;
 		return () => {
-			for (const timer of timersRef.current.values()) {
+			for (const timer of timers.values()) {
 				clearTimeout(timer);
 			}
-			timersRef.current.clear();
-			leavingIdsRef.current.clear();
+			timers.clear();
+			leavingIds.clear();
 			pendingRef.current?.resolve(false);
 			pendingRef.current = null;
 		};
 	}, []);
 
-	useEffect(() => {
-		if (!dialog) return;
-		const onKey = (event: KeyboardEvent) => {
-			if (event.key === 'Escape') {
-				event.preventDefault();
-				closeDialog(false);
-			}
-		};
-		window.addEventListener('keydown', onKey);
-		return () => window.removeEventListener('keydown', onKey);
-	}, [closeDialog, dialog]);
-
+	const confirmRef = useAdminDialog(Boolean(dialog), false, () => closeDialog(false));
 	const api = useMemo(() => ({ notify, confirm }), [confirm, notify]);
 
 	return (
@@ -170,20 +162,22 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 			</div>
 			{dialog ? (
 				<div
-					className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
+					className="fixed inset-0 z-[80] flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
 					onMouseDown={(event) => {
 						if (event.target === event.currentTarget) closeDialog(false);
 					}}
 				>
 					<div
-						className="w-full max-w-md rounded-xl bg-white shadow-xl ring-1 ring-black/5"
+						className="max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white outline-none"
+						ref={confirmRef}
+						tabIndex={-1}
 						role="alertdialog"
 						aria-modal="true"
 						aria-labelledby={titleId}
 						aria-describedby={dialog.message ? messageId : undefined}
 					>
 						<div className="px-5 py-4">
-							<h2 id={titleId} className="text-base font-semibold text-gray-900">
+							<h2 id={titleId} className="text-base font-medium text-gray-900">
 								{dialog.title}
 							</h2>
 							{dialog.message ? (
@@ -195,20 +189,18 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 						<div className="flex justify-end gap-3 rounded-b-xl border-t border-gray-200 bg-gray-50 px-5 py-3">
 							<button
 								type="button"
-								autoFocus={dialog.danger === true}
 								onClick={() => closeDialog(false)}
-								className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+								className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 							>
 								{dialog.cancelLabel ?? tCommon('cancel')}
 							</button>
 							<button
 								type="button"
-								autoFocus={dialog.danger !== true}
 								onClick={() => closeDialog(true)}
 								className={
 									dialog.danger
 										? 'rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500'
-										: 'rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+										: 'rounded-md admin-primary px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500'
 								}
 							>
 								{dialog.confirmLabel ?? tCommon('confirm')}
@@ -263,7 +255,7 @@ function ToastCard(props: {
 				<button
 					type="button"
 					onClick={onDismiss}
-					className="shrink-0 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+					className="shrink-0 rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 					aria-label={dismissLabel}
 				>
 					<XMarkIcon className="h-4 w-4" aria-hidden />

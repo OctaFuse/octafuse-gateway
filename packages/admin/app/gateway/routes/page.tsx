@@ -1,5 +1,8 @@
 'use client';
 
+import { AdminPageTitle } from '@/components/admin-page-title';
+import './routes-workspace.css';
+
 /**
  * 模型路由：`model_routes` CRUD、协议与 route_group、URL 查询参数驱动列表筛选（`useSearchParams` + Suspense）。
  * 模型卡片标题 / 铅笔图标可就地打开 ModelModal（改 Tag 等），无需跳转 Models 页。
@@ -17,7 +20,7 @@ import { RouteVendorGroup } from './components/route-vendor-group';
 import { useCatalogView } from '../components/use-catalog-view';
 import { RouteWorkspaceHeader } from './components/route-workspace-header';
 import { RouteSurfaceCatalog, UnroutedModelsPanel } from './components/route-surface-catalog';
-import { buildRouteSurfaceCatalog } from './route-utils';
+import { isRouteConfigurationAvailable, buildRouteSurfaceCatalog } from './route-utils';
 import {
 	readStickyRefreshInterval,
 	subscribeStickyRefreshInterval,
@@ -50,7 +53,6 @@ function subscribeFlowDensity(onStoreChange: () => void) {
 function RoutesContent() {
 	const t = useTranslations('routes');
 	const tCommon = useTranslations('common');
-	const tf = useTranslations('filter');
 	const [catalogView, setCatalogView] = useCatalogView(ROUTE_DETAIL_STORAGE_KEY, 'topology');
 	const density: RouteFlowDensity = catalogView === 'cards' ? 'topology' : 'list';
 	const setDensity = useCallback((next: RouteFlowDensity) => {
@@ -98,27 +100,24 @@ function RoutesContent() {
 		return { vendorGroups, unrouted };
 	}, [state.routeCardVendorGroups, state.routeCards]);
 
+	const availableRouteCount = state.routeCards.reduce((count, card) => count + card.groupRoutes.filter(route => isRouteConfigurationAvailable(route, state.providerMeta.get(route.provider_id))).length, 0);
+
 	if (state.isLoading) {
 		return (
-			<div className="flex min-h-full items-center justify-center bg-gray-100/90">
+			<div className="flex min-h-full items-center justify-center bg-gray-50">
 				<div className="text-gray-600">{tCommon('loading')}</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-h-full min-w-0 overflow-x-hidden bg-gray-100/90 p-4 pb-6 sm:p-6 lg:p-8">
-			<div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+		<div className="routes-design-workspace min-h-full min-w-0 overflow-x-hidden bg-gray-50 p-4 pb-6 sm:p-6 lg:p-8">
+			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{t('title')}</h1>
+					<AdminPageTitle>{t('title')}</AdminPageTitle>
 					<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
-					<div className="mt-3 flex flex-wrap items-center gap-3 text-xs tabular-nums text-slate-500">
-						<span>{tf('modelsAndRoutes', {models: state.models.length, routes: state.routes.length})}</span>
-						<span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{tCommon('active')} {state.statusCounts.active}</span>
-						<span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-slate-400" />{tCommon('inactive')} {state.statusCounts.inactive}</span>
-					</div>
 				</div>
-				<button type="button" onClick={() => state.handleCreate()} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline-blue-500"><PlusIcon className="h-4 w-4" aria-hidden />{t('flow.addRoute')}</button>
+				<button type="button" onClick={() => state.handleCreate()} className="inline-flex items-center h-9 gap-2 rounded-lg admin-primary px-4 text-xs font-medium text-white hover:bg-gray-800 focus-visible:outline-gray-500"><PlusIcon className="h-4 w-4" aria-hidden />{t('flow.addRoute')}</button>
 			</div>
 
 			<RouteFilterSidebar
@@ -151,6 +150,7 @@ function RoutesContent() {
 				<RouteWorkspaceHeader
 					visibleModelCount={state.visibleModelCount}
 					visibleRouteCount={state.visibleRouteCount}
+					availableRouteCount={availableRouteCount}
 					density={density}
 					onDensityChange={setDensity}
 					view={workspaceView}
@@ -173,7 +173,7 @@ function RoutesContent() {
 									<button
 										type="button"
 										onClick={state.clearAllFilters}
-										className="font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus-visible:underline"
+										className="font-medium text-gray-800 hover:text-gray-900 focus:outline-none focus-visible:underline"
 									>
 										{tCommon('clearAllFilters')}
 									</button>
@@ -343,7 +343,7 @@ export default function GatewayRoutesPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="flex min-h-full items-center justify-center bg-gray-100/90">
+				<div className="flex min-h-full items-center justify-center bg-gray-50">
 					<div className="text-gray-600">{tCommon('loading')}</div>
 				</div>
 			}

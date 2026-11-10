@@ -30,7 +30,6 @@ export type AdminNavGroupKey =
 	| 'user'
 	| 'tools'
 	| 'analytics'
-	| 'integration'
 	| 'system';
 
 export interface AdminNavRoute {
@@ -85,14 +84,10 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
 		],
 	},
 	{
-		groupKey: 'integration',
-		items: [{ nameKey: 'adminApiKeys', href: '/gateway/admin-api-keys' }],
-	},
-	{
 		groupKey: 'system',
 		items: [
 			{ nameKey: 'config', href: '/gateway/config' },
-			{ nameKey: 'maintenance', href: '/gateway/maintenance' },
+			{ nameKey: 'adminApiKeys', href: '/gateway/admin-api-keys' },
 		],
 	},
 ];
@@ -101,7 +96,9 @@ export const ADMIN_NAV_ROUTES: AdminNavRoute[] = ADMIN_NAV_GROUPS.flatMap((group
 
 /** 最长前缀匹配，避免 `/gateway/tools/invocations` 落到 Configuration。 */
 export function matchAdminNavRoute(pathname: string): AdminNavRoute | null {
-	const path = pathname.split('?')[0] || '/';
+	const rawPath = pathname.split(/[?#]/)[0] || '/';
+	// Old maintenance bookmarks now belong to Configuration.
+	const path = rawPath === '/gateway/maintenance' ? '/gateway/config' : rawPath;
 	let best: AdminNavRoute | null = null;
 	for (const item of ADMIN_NAV_ROUTES) {
 		if (path === item.href || path.startsWith(`${item.href}/`)) {

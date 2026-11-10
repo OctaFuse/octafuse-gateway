@@ -55,7 +55,6 @@ export function RouteVendorGroup(props: Props) {
 		vendor,
 		cards,
 		showHeader,
-		vendorGroupIdx,
 		modelMeta,
 		providerMeta,
 		globalRouteStrategy,
@@ -74,21 +73,18 @@ export function RouteVendorGroup(props: Props) {
 	const t = useTranslations('routes.vendor');
 
 	return (
-		<section className="min-w-0">
+		<section className="route-vendor-section min-w-0">
 			{showHeader ? (
 				<div
-					className={
-						(vendorGroupIdx > 0 ? 'border-t border-gray-200/80 pt-5 ' : '') +
-						'mb-3 flex items-center justify-between gap-3'
-					}
+					className="route-vendor-heading mb-4 flex items-center justify-between gap-3"
 				>
 					<div className="flex min-w-0 items-center gap-2.5">
 						<ModelVendorIcon vendor={vendor} size="default" />
 						<div className="min-w-0">
-							<h3 className="truncate text-sm font-semibold text-gray-900">
+							<h3 className="truncate text-base font-medium text-gray-900">
 								{getModelVendorLabel(vendor)}
 							</h3>
-							<p className="text-xs text-gray-500">{t('label')}</p>
+
 						</div>
 					</div>
 					<span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium tabular-nums text-gray-600 ring-1 ring-inset ring-gray-200">
@@ -98,7 +94,7 @@ export function RouteVendorGroup(props: Props) {
 					</span>
 				</div>
 			) : null}
-			<div className="space-y-4">
+			<div className="route-vendor-models space-y-4">
 				{cards.map((card) => (
 					<RouteModelFlow
 						key={card.model_id}

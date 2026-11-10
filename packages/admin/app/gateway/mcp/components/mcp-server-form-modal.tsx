@@ -20,7 +20,7 @@ const SECTIONS = ['connection', 'pricing', 'advanced'] as const;
 type Section = (typeof SECTIONS)[number];
 
 const INPUT =
-	'mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 read-only:bg-gray-50 read-only:text-gray-500';
+	'mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100 read-only:bg-gray-50 read-only:text-gray-500';
 
 export function McpServerFormModal({
 	currency,
@@ -210,7 +210,7 @@ export function McpServerFormModal({
 								document.getElementById(`${formId}-${SECTIONS[target]}-tab`)?.focus();
 								setSection(SECTIONS[target]);
 							}}
-							className={`border-b-2 px-2 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
+							className={`border-b-2 px-2 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-500 ${
 								section === key
 									? 'border-gray-900 text-gray-900'
 									: 'border-transparent text-gray-500 hover:text-gray-800'
@@ -236,14 +236,14 @@ export function McpServerFormModal({
 							type="button"
 							disabled={busy}
 							onClick={() => void requestClose()}
-							className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+							className="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
 						>
 							{common('cancel')}
 						</button>
 						<button
 							type="submit"
 							form={formId}
-							disabled={busy || (section === 'connection' && entry === 'import')}
+							disabled={busy || entry === 'import'}
 							className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
 						>
 							{busy ? common('saving') : mode === 'create' ? t('createServer') : common('save')}
@@ -253,15 +253,22 @@ export function McpServerFormModal({
 			}
 		>
 			<div hidden={section !== 'connection'}>
-				<div className="mb-5 flex gap-1 rounded-lg bg-gray-100 p-1" role="group" aria-label={t('entryMode')}>
+				<div
+					className="mb-5 inline-flex max-w-full gap-1 rounded-lg bg-gray-100 p-1"
+					role="group"
+					aria-label={t('entryMode')}
+				>
 					{(['manual', 'import'] as const).map((key) => (
 						<button
 							key={key}
 							type="button"
 							disabled={busy}
 							aria-pressed={entry === key}
-							onClick={() => setEntry(key)}
-							className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
+							onClick={() => {
+								setEntry(key);
+								setValidation(null);
+							}}
+							className={`inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
 								entry === key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
 							}`}
 						>
@@ -282,7 +289,7 @@ export function McpServerFormModal({
 				{entry === 'import' ? (
 					<div className="space-y-4">
 						<div>
-							<h3 className="font-semibold text-gray-900">{t('importTitle')}</h3>
+							<h3 className="font-medium text-gray-900">{t('importTitle')}</h3>
 							<p className="mt-1 text-sm leading-6 text-gray-500">{t('importHint')}</p>
 						</div>
 						<label className="block text-sm font-medium text-gray-700">
@@ -369,7 +376,7 @@ export function McpServerFormModal({
 						hidden={section !== 'pricing'}
 					>
 						<div className="mb-4">
-							<h3 className="text-sm font-semibold text-gray-900">{t('pricing.title')}</h3>
+							<h3 className="text-sm font-medium text-gray-900">{t('pricing.title')}</h3>
 							<p className="mt-1 text-xs leading-5 text-gray-500">{t('pricing.simpleDefaultHint')}</p>
 						</div>
 						<McpPricingEditor

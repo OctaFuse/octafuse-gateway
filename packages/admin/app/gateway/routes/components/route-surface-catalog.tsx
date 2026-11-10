@@ -100,19 +100,19 @@ function CatalogModelNode({
 	const tCard = useTranslations('routes.card');
 
 	return (
-		<div className="w-full min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+		<div className="route-catalog-model-node w-full min-w-0 rounded-xl border border-gray-200 bg-white px-3 py-3">
 			<div className="flex min-w-0 items-center gap-1">
 				<button
 					type="button"
 					onClick={() => onEditModel(card.model_id)}
-					className="min-w-0 flex-1 truncate text-left text-[13px] font-semibold leading-5 text-gray-900 underline-offset-2 hover:text-blue-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+					className="min-w-0 flex-1 truncate text-left text-[13px] font-medium leading-5 text-gray-900 underline-offset-2 hover:text-gray-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 				>
 					{card.title}
 				</button>
 				<button
 					type="button"
 					onClick={() => onEditModel(card.model_id)}
-					className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+					className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 					title={tCard('editModel', { title: card.title })}
 				>
 					<PencilSquareIcon className="h-3.5 w-3.5" />
@@ -120,7 +120,7 @@ function CatalogModelNode({
 			</div>
 			<div className="mt-2 flex items-center">
 				<span
-					className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${
+					className={`rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
 						card.activeCount > 0
 							? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
 							: 'bg-red-50 text-red-700 ring-red-200'
@@ -156,20 +156,20 @@ export function UnroutedModelsPanel({
 		>
 			<summary className="flex cursor-pointer list-none flex-wrap items-center gap-2 text-xs text-amber-900 [&::-webkit-details-marker]:hidden">
 				<ChevronDownIcon className="h-3.5 w-3.5 shrink-0 -rotate-90 transition-transform group-open:rotate-0" aria-hidden />
-				<span className="font-semibold">{t('unroutedTitle')}</span>
-				<span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold">{cards.length}</span>
+				<span className="font-medium">{t('unroutedTitle')}</span>
+				<span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium">{cards.length}</span>
 				<span className="text-amber-800/80">{t('unroutedHint')}</span>
 			</summary>
 			<div className="mt-3 flex flex-wrap items-center gap-2 border-t border-amber-200/60 pt-3">
 				{cards.map((card) => (
 					<span
 						key={card.model_id}
-						className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-amber-200/80 bg-white pl-2 pr-0.5 text-[11px] text-gray-800 shadow-sm"
+						className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-amber-200/80 bg-white pl-2 pr-0.5 text-xs text-gray-800 shadow-sm"
 					>
 						<button
 							type="button"
 							onClick={() => onEditModel(card.model_id)}
-							className="max-w-[11rem] truncate py-0.5 font-medium hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							className="max-w-[11rem] truncate py-0.5 font-medium hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 							title={tCard('editModel', { title: card.title })}
 						>
 							{card.title}
@@ -177,7 +177,7 @@ export function UnroutedModelsPanel({
 						<button
 							type="button"
 							onClick={() => onCreate(card.model_id)}
-							className="rounded-full p-0.5 text-amber-700 hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							className="rounded-full p-0.5 text-amber-700 hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 							title={t('addRoute')}
 							aria-label={`${t('addRoute')}: ${card.title}`}
 						>
@@ -375,7 +375,7 @@ function ModelToGroupsBranch({
 
 	return (
 		<div className="relative py-2 xl:pl-4">
-			<BranchConnectors index={modelIndex} count={modelCount} colorClass="bg-blue-300" />
+			<BranchConnectors index={modelIndex} count={modelCount} colorClass="bg-gray-300" />
 			<div className="xl:grid xl:grid-cols-[minmax(160px,220px)_minmax(0,1fr)]">
 				<div className="route-flow-entry relative flex min-w-0 flex-col justify-center xl:pr-8">
 					<CatalogModelNode
@@ -383,7 +383,7 @@ function ModelToGroupsBranch({
 						onEditModel={onEditModel}
 					/>
 					<FlowConnectorAdd
-						railClass="bg-blue-300"
+						railClass="bg-gray-300"
 						label={t('addRouteGroup')}
 						onClick={() =>
 							onCreate(card.model_id, {
@@ -458,27 +458,27 @@ function SurfaceCatalogSection({
 	const [collapsed, setCollapsed] = useState(false);
 	const routeCount = surface.models.reduce((sum, model) => sum + model.sections.reduce((n, section) => n + section.routes.length, 0), 0);
 	return (
-		<article className={`${density === 'list' ? 'route-flow-list-layout ' : ''}overflow-hidden rounded-xl border border-slate-200 bg-white`}>
-			<button type="button" onClick={() => setCollapsed(value => !value)} aria-expanded={!collapsed} className="flex w-full flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 focus-visible:outline-blue-500">
+		<article className={`route-surface-section ${density === 'list' ? 'route-flow-list-layout ' : ''}overflow-hidden rounded-xl border border-slate-200 bg-white`}>
+			<button type="button" onClick={() => setCollapsed(value => !value)} aria-expanded={!collapsed} className="flex w-full flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 focus-visible:outline-gray-500">
 				<ChevronDownIcon className={`h-4 w-4 text-slate-400 transition-transform ${collapsed ? '-rotate-90' : ''}`} aria-hidden />
-				<span className="text-xs font-semibold text-slate-800">{surface.protocolLabel}</span>
-				<span className="min-w-0 break-all font-mono text-[11px] text-slate-500">{requestSurfacePath(surface.protocol, surface.requestOperation)}</span>
-				<span className="ml-auto text-[11px] tabular-nums text-slate-500">{tw('surfaceCounts', {models: surface.models.length, routes: routeCount})}</span>
+				<span className="text-xs font-medium text-slate-800">{surface.protocolLabel}</span>
+				<span className="min-w-0 break-all font-mono text-xs text-slate-500">{requestSurfacePath(surface.protocol, surface.requestOperation)}</span>
+				<span className="ml-auto text-xs tabular-nums text-slate-500">{tw('surfaceCounts', {models: surface.models.length, routes: routeCount})}</span>
 			</button>
 			{!collapsed ? <>
-				<div className="hidden grid-cols-[210px_220px_200px_minmax(0,1fr)] gap-0 border-b border-slate-100 bg-slate-50/70 px-4 py-2 text-[10px] font-medium uppercase tracking-wider text-slate-400 2xl:grid">
+				<div className="hidden grid-cols-[210px_220px_200px_minmax(0,1fr)] gap-0 border-b border-slate-100 bg-slate-50/70 px-4 py-2 text-xs font-medium normal-case tracking-normal text-slate-400 2xl:grid">
 					{['catalogColumnSurface', 'catalogColumnModel', 'catalogColumnGroup', 'catalogColumnProvider'].map(key => <span key={key}>{t(key)}</span>)}
 				</div>
-			<div className="bg-slate-200/80 px-3 sm:px-4">
+			<div className="route-surface-canvas bg-gray-50 px-3 sm:px-4">
 				<div className="xl:grid xl:grid-cols-[minmax(160px,210px)_minmax(0,1fr)]">
 					<div className="relative flex min-w-0 flex-col justify-center py-3 xl:pr-4">
 						<RequestSurfaceNode surface={surface} />
 						<span
-							className="absolute right-0 top-1/2 hidden h-px w-4 bg-blue-300 xl:block"
+							className="absolute right-0 top-1/2 hidden h-px w-4 bg-gray-300 xl:block"
 							aria-hidden
 						/>
 						<div className="flex justify-center pt-1 xl:hidden" aria-hidden>
-							<ArrowDownIcon className="h-4 w-4 text-blue-400" />
+							<ArrowDownIcon className="h-4 w-4 text-gray-500" />
 						</div>
 					</div>
 					<div>

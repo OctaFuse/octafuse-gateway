@@ -19,6 +19,8 @@ export type RouteStrategyPickerProps = {
 	className?: string;
 	/** Compact density for Config page. */
 	dense?: boolean;
+	/** Show the selected strategy details separately in route dialogs. */
+	compact?: boolean;
 };
 
 function strategyTitleKey(id: RouteStrategyName): `display.${RouteStrategyName}` {
@@ -34,13 +36,13 @@ export function RouteStrategyPicker(props: RouteStrategyPickerProps) {
 		disabled = false,
 		className,
 		dense = false,
+		compact = false,
 	} = props;
 	const t = useTranslations('routes.strategy');
 	const groupId = useId();
 	const [hovered, setHovered] = useState<string | null>(null);
 
-	const effective =
-		value || (allowInherit && inheritedStrategy ? inheritedStrategy : value);
+	const effective = value || (allowInherit && inheritedStrategy ? inheritedStrategy : value);
 
 	const selectStrategy = (next: string) => {
 		if (disabled) return;
@@ -54,11 +56,7 @@ export function RouteStrategyPicker(props: RouteStrategyPickerProps) {
 
 	return (
 		<div className={className}>
-			<div
-				role="radiogroup"
-				aria-labelledby={`${groupId}-label`}
-				className="grid gap-3 sm:grid-cols-2"
-			>
+			<div role="radiogroup" aria-labelledby={`${groupId}-label`} className="grid gap-3 sm:grid-cols-2">
 				<span id={`${groupId}-label`} className="sr-only">
 					{t('guideTitle')}
 				</span>
@@ -77,46 +75,79 @@ export function RouteStrategyPicker(props: RouteStrategyPickerProps) {
 							onMouseLeave={() => setHovered((cur) => (cur === meta.id ? null : cur))}
 							onFocus={() => setHovered(meta.id)}
 							onBlur={() => setHovered((cur) => (cur === meta.id ? null : cur))}
-							className={`flex h-full flex-col items-stretch justify-start rounded-lg border p-3.5 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${
+							className={`flex h-full flex-col items-stretch justify-start rounded-lg border p-3.5 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-not-allowed disabled:opacity-50 ${
 								selected
-									? 'border-indigo-300 bg-indigo-50/70 ring-1 ring-inset ring-indigo-200'
-									: 'border-gray-200 bg-white hover:border-indigo-200 hover:bg-slate-50'
+									? 'border-gray-300 bg-gray-50/70 ring-1 ring-inset ring-gray-200'
+									: 'border-gray-200 bg-white hover:border-gray-200 hover:bg-slate-50'
 							}`}
 						>
 							<div>
-								<div className="truncate text-sm font-semibold leading-5 text-gray-900">
+								<div className="truncate text-sm font-medium leading-5 text-gray-900">
 									{t(strategyTitleKey(meta.id))}
 								</div>
-								<div className="mt-0.5 truncate font-mono text-[10px] leading-4 text-gray-400">
+								<div
+									className={`${
+										compact ? 'hidden' : 'mt-0.5'
+									} truncate font-mono text-xs leading-4 text-gray-400`}
+								>
 									{meta.machineId}
 								</div>
 							</div>
 
-							<div className="mt-2.5">
-								<RouteStrategyDiagram
-									kind={meta.diagram}
-									active={showMotion}
-									caption={t(`diagramCaption.${meta.id}`)}
-								/>
-							</div>
+							{!compact && (
+								<div className="mt-2.5">
+									<RouteStrategyDiagram
+										kind={meta.diagram}
+										active={showMotion}
+										caption={t(`diagramCaption.${meta.id}`)}
+									/>
+								</div>
+							)}
 
-							<p className={`mt-2 leading-relaxed text-gray-600 ${dense ? 'text-[11px]' : 'text-xs'}`}>
+							<p className={`mt-2 leading-relaxed text-gray-600 ${dense ? 'text-xs' : 'text-xs'}`}>
 								{t(`description.${meta.id}.summary`)}
 							</p>
-							<p className="mt-1 text-[11px] leading-relaxed text-gray-500">
-								<span className="font-medium text-gray-600">{t('bestFor')}</span>
-								{t('labelSeparator')}
-								{t(`description.${meta.id}.bestFor`)}
-							</p>
-							<p className="mt-0.5 text-[11px] leading-relaxed text-gray-500">
-								<span className="font-medium text-gray-600">{t('tradeoff')}</span>
-								{t('labelSeparator')}
-								{t(`description.${meta.id}.tradeoff`)}
-							</p>
+							{!compact && (
+								<>
+									<p className="mt-1 text-xs leading-relaxed text-gray-500">
+										<span className="font-medium text-gray-600">{t('bestFor')}</span>
+										{t('labelSeparator')}
+										{t(`description.${meta.id}.bestFor`)}
+									</p>
+									<p className="mt-0.5 text-xs leading-relaxed text-gray-500">
+										<span className="font-medium text-gray-600">{t('tradeoff')}</span>
+										{t('labelSeparator')}
+										{t(`description.${meta.id}.tradeoff`)}
+									</p>
+								</>
+							)}
 						</button>
 					);
 				})}
 			</div>
+			{compact &&
+				ROUTE_STRATEGY_META_LIST.filter((meta) => meta.id === effective).map((meta) => (
+					<div
+						key={meta.id}
+						className="mt-4 rounded-xl bg-gray-50 p-4 text-xs leading-relaxed text-gray-600"
+						aria-live="polite"
+					>
+						<p>
+							<span className="font-medium text-gray-800">
+								{t('bestFor')}
+								{t('labelSeparator')}
+							</span>
+							{t(`description.${meta.id}.bestFor`)}
+						</p>
+						<p className="mt-2">
+							<span className="font-medium text-gray-800">
+								{t('tradeoff')}
+								{t('labelSeparator')}
+							</span>
+							{t(`description.${meta.id}.tradeoff`)}
+						</p>
+					</div>
+				))}
 		</div>
 	);
 }

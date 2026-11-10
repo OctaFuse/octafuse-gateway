@@ -97,7 +97,10 @@ export function auditDisplayExtras(item: GatewayApiKeyBudgetAuditLog) {
 	let m: Record<string, unknown> = {};
 	try {
 		const raw = item.change_payload;
-		if (raw) m = JSON.parse(raw) as Record<string, unknown>;
+		if (raw) {
+			const parsed: unknown = JSON.parse(raw);
+			if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) m = parsed as Record<string, unknown>;
+		}
 	} catch {
 		/* keep empty */
 	}

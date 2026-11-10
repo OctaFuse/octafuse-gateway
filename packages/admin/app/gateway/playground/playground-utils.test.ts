@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
 	BODY_TEMPLATES,
+	defaultImageOperationForRoute,
 	isPlaygroundBodyDirty,
 	isResponsesPlaygroundRoute,
 	LLM_SAMPLE_BODIES,
@@ -19,7 +20,11 @@ import {
 	templateForRoute,
 	type PlaygroundLlmFamily,
 } from './playground-utils';
-import { AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE, MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE, MINIMAX_SPEECH_BODY_TEMPLATE } from '@/lib/audio-transcriptions';
+import {
+	AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+	MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE,
+	MINIMAX_SPEECH_BODY_TEMPLATE,
+} from '@/lib/audio-transcriptions';
 import { MINIMAX_IMAGE_BODY_TEMPLATE, VOLCENGINE_IMAGE_BODY_TEMPLATE } from '@/lib/image-generations';
 import type { RouteListRow } from './types';
 
@@ -62,8 +67,8 @@ describe('playground-utils', () => {
 					adapter: 'dashscope-image-qwen',
 				}),
 				{ output_modalities: '["image"]' } as never,
-				'edits',
-			),
+				'edits'
+			)
 		) as { size?: string; quality?: string; parameters?: { negative_prompt?: string } };
 		assert.equal(parsed.size, '1024*1024');
 		assert.equal(parsed.quality, undefined);
@@ -85,9 +90,9 @@ describe('playground-utils', () => {
 						audio_billing_mode: 'per_second',
 						audio: { price_per_second: 0.000694444 },
 					}),
-				} as never,
+				} as never
 			),
-			AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE,
+			AUDIO_TRANSCRIPTIONS_BODY_TEMPLATE
 		);
 	});
 
@@ -106,9 +111,9 @@ describe('playground-utils', () => {
 						audio: { price_per_character: 0.0002 },
 					}),
 					modalities: JSON.stringify({ input: ['text'], output: ['audio'] }),
-				} as never,
+				} as never
 			),
-			MINIMAX_SPEECH_BODY_TEMPLATE,
+			MINIMAX_SPEECH_BODY_TEMPLATE
 		);
 		assert.equal(
 			templateForRoute(
@@ -124,9 +129,9 @@ describe('playground-utils', () => {
 						image: { default: 0.025 },
 					}),
 					modalities: JSON.stringify({ input: ['text'], output: ['image'] }),
-				} as never,
+				} as never
 			),
-			MINIMAX_IMAGE_BODY_TEMPLATE,
+			MINIMAX_IMAGE_BODY_TEMPLATE
 		);
 		assert.equal(
 			templateForRoute(
@@ -142,9 +147,9 @@ describe('playground-utils', () => {
 						image: { default: 0.22 },
 					}),
 					modalities: JSON.stringify({ input: ['text', 'image'], output: ['image'] }),
-				} as never,
+				} as never
 			),
-			VOLCENGINE_IMAGE_BODY_TEMPLATE,
+			VOLCENGINE_IMAGE_BODY_TEMPLATE
 		);
 		const gemini = JSON.parse(
 			templateForRoute(
@@ -161,8 +166,8 @@ describe('playground-utils', () => {
 						image_billing_mode: 'token',
 						image: { default: 0 },
 					}),
-				} as never,
-			),
+				} as never
+			)
 		) as { generationConfig?: { responseModalities?: string[]; imageConfig?: { imageSize?: string } } };
 		assert.deepEqual(gemini.generationConfig?.responseModalities, ['TEXT', 'IMAGE']);
 		assert.equal(gemini.generationConfig?.imageConfig?.imageSize, '1K');
@@ -183,9 +188,9 @@ describe('playground-utils', () => {
 						audio: { price_per_character: 0.0002 },
 					}),
 					modalities: JSON.stringify({ input: ['text'], output: ['audio'] }),
-				} as never,
+				} as never
 			),
-			MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE,
+			MINIMAX_OPENAI_SPEECH_BODY_TEMPLATE
 		);
 		const minimaxOpenAi = JSON.parse(
 			templateForRoute(
@@ -201,8 +206,8 @@ describe('playground-utils', () => {
 						image: { default: 0.025 },
 					}),
 					modalities: JSON.stringify({ input: ['text'], output: ['image'] }),
-				} as never,
-			),
+				} as never
+			)
 		) as { aspect_ratio?: string; size?: string };
 		assert.equal(minimaxOpenAi.aspect_ratio, '1:1');
 		assert.equal(minimaxOpenAi.size, undefined);
@@ -220,8 +225,8 @@ describe('playground-utils', () => {
 						image: { default: 0.22 },
 					}),
 					modalities: JSON.stringify({ input: ['text', 'image'], output: ['image'] }),
-				} as never,
-			),
+				} as never
+			)
 		) as { size?: string; watermark?: boolean; quality?: string };
 		assert.equal(seedreamLite.size, '2K');
 		assert.equal(seedreamLite.watermark, false);
@@ -241,8 +246,8 @@ describe('playground-utils', () => {
 						image: { default: 0.22 },
 					}),
 					modalities: JSON.stringify({ input: ['text', 'image'], output: ['image'] }),
-				} as never,
-			),
+				} as never
+			)
 		) as { size?: string };
 		assert.equal(seedreamPro.size, '1K');
 		const seedreamFlash = JSON.parse(
@@ -260,8 +265,8 @@ describe('playground-utils', () => {
 						image: { default: 0.12 },
 					}),
 					modalities: JSON.stringify({ input: ['text', 'image'], output: ['image'] }),
-				} as never,
-			),
+				} as never
+			)
 		) as { size?: string };
 		assert.equal(seedreamFlash.size, '1K');
 	});
@@ -269,7 +274,7 @@ describe('playground-utils', () => {
 	it('templateForRoute picks Responses vs Chat from upstream_operation', () => {
 		assert.equal(
 			templateForRoute(route({ upstream_operation: 'responses' }), undefined),
-			BODY_TEMPLATES.openai_responses,
+			BODY_TEMPLATES.openai_responses
 		);
 		assert.equal(templateForRoute(route({ upstream_operation: 'chat' }), undefined), BODY_TEMPLATES.openai);
 	});
@@ -332,7 +337,9 @@ describe('playground-utils', () => {
 		assert.ok(anthropic.tools?.[0]?.input_schema);
 
 		const gemini = JSON.parse(LLM_SAMPLE_BODIES.gemini.tools) as {
-			tools?: Array<{ functionDeclarations?: Array<{ name?: string; parameters?: { additionalProperties?: unknown } }> }>;
+			tools?: Array<{
+				functionDeclarations?: Array<{ name?: string; parameters?: { additionalProperties?: unknown } }>;
+			}>;
 			toolConfig?: { functionCallingConfig?: { mode?: string; streamFunctionCallArguments?: boolean } };
 		};
 		assert.equal(gemini.tools?.[0]?.functionDeclarations?.[0]?.name, 'write_note');
@@ -362,9 +369,7 @@ describe('playground-utils', () => {
 
 	it('Claude reasoning samples follow Anthropic thinking modes by model generation', () => {
 		const parse = (modelId: string, providerModelName = modelId) =>
-			JSON.parse(
-				playgroundLlmSampleBody('anthropic', 'reasoning', { modelId, providerModelName }),
-			) as {
+			JSON.parse(playgroundLlmSampleBody('anthropic', 'reasoning', { modelId, providerModelName })) as {
 				thinking?: { type?: string; budget_tokens?: number; display?: string };
 				output_config?: { effort?: string };
 			};
@@ -410,6 +415,11 @@ describe('playground-utils', () => {
 		assert.equal(fable51.thinking?.type, 'adaptive');
 		assert.equal(fable51.output_config?.effort, 'high');
 
+		const fable52 = parse('claude-fable-5-2');
+		assert.equal(fable52.thinking?.type, 'adaptive');
+		assert.equal(fable52.output_config?.effort, 'high');
+		assert.equal(fable52.thinking?.budget_tokens, undefined);
+
 		const sonnet4 = parse('claude-sonnet-4', 'claude-sonnet-4-20250514');
 		assert.equal(sonnet4.thinking?.type, 'enabled');
 		assert.equal(sonnet4.output_config, undefined);
@@ -422,40 +432,44 @@ describe('playground-utils', () => {
 			matchPlaygroundLlmSample(
 				'anthropic',
 				playgroundLlmSampleBody('anthropic', 'reasoning', { modelId: 'claude-opus-4.8' }),
-				{ modelId: 'claude-opus-4.8' },
+				{ modelId: 'claude-opus-4.8' }
 			),
-			'reasoning',
+			'reasoning'
 		);
 	});
 
 	it('Gemini reasoning samples use thinkingBudget on 2.5 and thinkingLevel on 3+', () => {
 		const gemini25 = JSON.parse(
-			playgroundLlmSampleBody('gemini', 'reasoning', { modelId: 'gemini-2.5-pro' }),
+			playgroundLlmSampleBody('gemini', 'reasoning', { modelId: 'gemini-2.5-pro' })
 		) as { generationConfig?: { thinkingConfig?: { thinkingBudget?: number; thinkingLevel?: string } } };
 		assert.equal(gemini25.generationConfig?.thinkingConfig?.thinkingBudget, 1024);
 		assert.equal(gemini25.generationConfig?.thinkingConfig?.thinkingLevel, undefined);
 
 		const gemini35 = JSON.parse(
-			playgroundLlmSampleBody('gemini', 'reasoning', { modelId: 'gemini-3.5-flash' }),
+			playgroundLlmSampleBody('gemini', 'reasoning', { modelId: 'gemini-3.5-flash' })
 		) as { generationConfig?: { thinkingConfig?: { thinkingBudget?: number; thinkingLevel?: string } } };
 		assert.equal(gemini35.generationConfig?.thinkingConfig?.thinkingLevel, 'MEDIUM');
 		assert.equal(gemini35.generationConfig?.thinkingConfig?.thinkingBudget, undefined);
 	});
 
 	it('omits Chat Completions reasoning_effort for GPT-4o', () => {
-		const gpt4o = JSON.parse(
-			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'gpt-4o' }),
-		) as { reasoning_effort?: string; max_tokens?: number; max_completion_tokens?: number };
+		const gpt4o = JSON.parse(playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'gpt-4o' })) as {
+			reasoning_effort?: string;
+			max_tokens?: number;
+			max_completion_tokens?: number;
+		};
 		assert.equal(gpt4o.reasoning_effort, undefined);
 		assert.equal(gpt4o.max_tokens, 1024);
-		const gpt5 = JSON.parse(
-			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'gpt-5.4' }),
-		) as { reasoning_effort?: string; max_tokens?: number; max_completion_tokens?: number };
+		const gpt5 = JSON.parse(playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'gpt-5.4' })) as {
+			reasoning_effort?: string;
+			max_tokens?: number;
+			max_completion_tokens?: number;
+		};
 		assert.equal(gpt5.reasoning_effort, 'medium');
 		assert.equal(gpt5.max_completion_tokens, 4096);
 		assert.equal(gpt5.max_tokens, undefined);
 		const gpt6 = JSON.parse(
-			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'gpt-6-astra' }),
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'gpt-6-astra' })
 		) as { reasoning_effort?: string; max_tokens?: number; max_completion_tokens?: number };
 		assert.equal(gpt6.reasoning_effort, 'medium');
 		assert.equal(gpt6.max_completion_tokens, 4096);
@@ -464,68 +478,70 @@ describe('playground-utils', () => {
 
 	it('uses OpenAI-compat vendor thinking fields for DeepSeek, GLM, Qwen, MiniMax, and Kimi', () => {
 		const deepseek = JSON.parse(
-			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'deepseek-v4-pro' }),
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'deepseek-v4-pro' })
 		) as { thinking?: { type?: string }; reasoning_effort?: string };
 		assert.equal(deepseek.thinking?.type, 'enabled');
 		assert.equal(deepseek.reasoning_effort, 'high');
 
-		const glm5 = JSON.parse(
-			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'glm-5' }),
-		) as { thinking?: { type?: string }; reasoning_effort?: string };
+		const glm5 = JSON.parse(playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'glm-5' })) as {
+			thinking?: { type?: string };
+			reasoning_effort?: string;
+		};
 		assert.equal(glm5.thinking?.type, 'enabled');
 		assert.equal(glm5.reasoning_effort, undefined);
 
-		const glm52 = JSON.parse(
-			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'glm-5.2' }),
-		) as { thinking?: { type?: string }; reasoning_effort?: string };
+		const glm52 = JSON.parse(playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'glm-5.2' })) as {
+			thinking?: { type?: string };
+			reasoning_effort?: string;
+		};
 		assert.equal(glm52.thinking?.type, 'enabled');
 		assert.equal(glm52.reasoning_effort, 'high');
 
 		const qwen = JSON.parse(
-			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'qwen3.8-max' }),
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'qwen3.8-max' })
 		) as { enable_thinking?: boolean; reasoning_effort?: string; thinking?: unknown };
 		assert.equal(qwen.enable_thinking, true);
 		assert.equal(qwen.reasoning_effort, 'medium');
 		assert.equal(qwen.thinking, undefined);
 
 		const minimax = JSON.parse(
-			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'minimax-m2.7' }),
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'minimax-m2.7' })
 		) as { reasoning_split?: boolean; thinking?: { type?: string }; reasoning_effort?: string };
 		assert.equal(minimax.reasoning_split, true);
 		assert.equal(minimax.thinking?.type, 'adaptive');
 		assert.equal(minimax.reasoning_effort, undefined);
 
 		const kimi = JSON.parse(
-			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'kimi-k2.5' }),
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'kimi-k2.5' })
 		) as { thinking?: { type?: string } };
 		assert.equal(kimi.thinking?.type, 'enabled');
 
 		const doubao = JSON.parse(
-			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'doubao-seed-2-1-pro-260628' }),
+			playgroundLlmSampleBody('openai_chat', 'reasoning', { modelId: 'doubao-seed-2-1-pro-260628' })
 		) as { thinking?: { type?: string } };
 		assert.equal(doubao.thinking?.type, 'enabled');
 	});
 
 	it('uses max_completion_tokens for GPT-5 connectivity and omits Gemini 2.5 tool arg streaming', () => {
 		const gpt5 = JSON.parse(
-			playgroundLlmSampleBody('openai_chat', 'connectivity', { modelId: 'gpt-5.4' }),
+			playgroundLlmSampleBody('openai_chat', 'connectivity', { modelId: 'gpt-5.4' })
 		) as { max_completion_tokens?: number; max_tokens?: number };
 		assert.equal(gpt5.max_completion_tokens, 256);
 		assert.equal(gpt5.max_tokens, undefined);
 
 		const gpt6 = JSON.parse(
-			playgroundLlmSampleBody('openai_chat', 'connectivity', { modelId: 'gpt-6-astra' }),
+			playgroundLlmSampleBody('openai_chat', 'connectivity', { modelId: 'gpt-6-astra' })
 		) as { max_completion_tokens?: number; max_tokens?: number };
 		assert.equal(gpt6.max_completion_tokens, 256);
 		assert.equal(gpt6.max_tokens, undefined);
 
 		const gemini25 = JSON.parse(
-			playgroundLlmSampleBody('gemini', 'tools', { modelId: 'gemini-2.5-flash' }),
+			playgroundLlmSampleBody('gemini', 'tools', { modelId: 'gemini-2.5-flash' })
 		) as { toolConfig?: { functionCallingConfig?: { streamFunctionCallArguments?: boolean } } };
 		assert.equal(gemini25.toolConfig?.functionCallingConfig?.streamFunctionCallArguments, undefined);
 
 		const gemini3 = JSON.parse(
-			playgroundLlmSampleBody('gemini', 'tools', { modelId: 'gemini-3.5-flash' }),
+			playgroundLlmSampleBody('gemini', 'tools', { modelId: 'gemini-3.5-flash' })
 		) as { toolConfig?: { functionCallingConfig?: { streamFunctionCallArguments?: boolean } } };
 		assert.equal(gemini3.toolConfig?.functionCallingConfig?.streamFunctionCallArguments, true);
 	});
@@ -535,18 +551,26 @@ describe('playground-utils', () => {
 		assert.equal(resolvePlaygroundLlmFamily(route({ upstream_operation: 'responses' })), 'openai_responses');
 		assert.equal(
 			resolvePlaygroundLlmFamily(route({ upstream_protocol: 'anthropic', upstream_operation: 'messages' })),
-			'anthropic',
+			'anthropic'
 		);
 		assert.equal(
-			resolvePlaygroundLlmFamily(route({ upstream_protocol: 'gemini', upstream_operation: 'generateContent' })),
-			'gemini',
+			resolvePlaygroundLlmFamily(
+				route({ upstream_protocol: 'gemini', upstream_operation: 'generateContent' })
+			),
+			'gemini'
 		);
-		assert.equal(resolvePlaygroundLlmFamily(route({ upstream_operation: 'images.generations' })), 'openai_chat');
+		assert.equal(
+			resolvePlaygroundLlmFamily(route({ upstream_operation: 'images.generations' })),
+			'openai_chat'
+		);
 		assert.equal(
 			playgroundLlmFamilyForRoute(route({ upstream_operation: 'images.generations' }), { isImage: true }),
-			null,
+			null
 		);
-		assert.equal(playgroundLlmFamilyForRoute(route({ upstream_protocol: 'anthropic' }), { isImage: true }), null);
+		assert.equal(
+			playgroundLlmFamilyForRoute(route({ upstream_protocol: 'anthropic' }), { isImage: true }),
+			null
+		);
 	});
 
 	it('isPlaygroundBodyDirty ignores whitespace-only edits', () => {
@@ -629,7 +653,10 @@ describe('playground-utils', () => {
 			providerModelName: 'paraformer-realtime-v2',
 		});
 		assert.equal(result.status, 'preview');
-		const body = JSON.parse(result.json) as { model?: string; payload: { model: string; parameters: Record<string, unknown> } };
+		const body = JSON.parse(result.json) as {
+			model?: string;
+			payload: { model: string; parameters: Record<string, unknown> };
+		};
 		assert.equal(body.model, undefined);
 		assert.equal(body.payload.model, 'paraformer-realtime-v2');
 		assert.equal(body.payload.parameters.semantic_punctuation_enabled, true);
@@ -726,7 +753,7 @@ describe('playground-utils', () => {
 					'X-Title': 'My App',
 					Authorization: 'Bearer secret',
 				},
-			}),
+			})
 		);
 		assert.deepEqual(headers, {
 			'HTTP-Referer': 'https://example.com',
@@ -734,7 +761,7 @@ describe('playground-utils', () => {
 		});
 		assert.equal(
 			formatPlaygroundRouteHeadersPreview(headers),
-			'HTTP-Referer: https://example.com\nX-Title: My App',
+			'HTTP-Referer: https://example.com\nX-Title: My App'
 		);
 	});
 
@@ -751,7 +778,7 @@ describe('playground-utils', () => {
 				{ name: 'Content-Type', source: 'provider' },
 				{ name: 'Authorization', source: 'provider' },
 				{ name: 'x', source: 'custom_params' },
-			],
+			]
 		);
 		const tagged = rows.find((row) => row.name === 'x');
 		assert.equal(tagged?.value, '1');
@@ -759,10 +786,7 @@ describe('playground-utils', () => {
 
 	it('previewPlaygroundOutboundHeaderRows uses xi-api-key for ElevenLabs', () => {
 		const rows = previewPlaygroundOutboundHeaderRows({ upstreamProtocol: 'elevenlabs' });
-		assert.deepEqual(
-			rows.map((row) => row.name).sort(),
-			['Content-Type', 'xi-api-key'],
-		);
+		assert.deepEqual(rows.map((row) => row.name).sort(), ['Content-Type', 'xi-api-key']);
 	});
 
 	it('previewPlaygroundOutboundHeaderRows prefers sent headers and still tags extras', () => {
@@ -779,5 +803,31 @@ describe('playground-utils', () => {
 		assert.equal(rows.find((row) => row.name === 'X-DashScope-Async')?.source, 'provider');
 		assert.equal(rows.find((row) => row.name === 'x')?.source, 'custom_params');
 		assert.equal(rows.find((row) => row.name === 'Authorization')?.value, 'Bearer sk-abcd…mnop');
+	});
+});
+
+describe('selected image route operation', () => {
+	it('starts an OpenAI edits route in edits mode', () => {
+		assert.equal(
+			defaultImageOperationForRoute(
+				route({ upstream_protocol: 'openai', upstream_operation: 'images.edits' })
+			),
+			'edits'
+		);
+	});
+	it('uses generation for generation routes and other protocols', () => {
+		assert.equal(
+			defaultImageOperationForRoute(
+				route({ upstream_protocol: 'openai', upstream_operation: 'images.generations' })
+			),
+			'generations'
+		);
+		assert.equal(
+			defaultImageOperationForRoute(
+				route({ upstream_protocol: 'dashscope', upstream_operation: 'images.generations.multimodal' })
+			),
+			'generations'
+		);
+		assert.equal(defaultImageOperationForRoute(route({ upstream_operation: null })), 'generations');
 	});
 });

@@ -33,7 +33,7 @@ import {
 	EMPTY_PROTOCOL_FORM,
 	EMPTY_PROVIDER_FORM,
 	PROVIDER_LIST_FILTERS,
-	parseProviderListFilterParam,
+	parseProviderListFilters,
 } from './types';
 
 function emptyFilterCounts(): Record<ProviderListFilter, number> {
@@ -70,6 +70,7 @@ export function useProvidersPageState() {
 	const [selectedFilter, setSelectedFilter] = useState<ProviderListFilter>(
 		DEFAULT_PROVIDER_LIST_FILTER
 	);
+	const [selectedProtocol, setSelectedProtocol] = useState<ProviderListFilter>('all');
 	const [showModal, setShowModal] = useState(false);
 	const [editingProvider, setEditingProvider] = useState<GatewayProvider | null>(null);
 	const [duplicateSourceId, setDuplicateSourceId] = useState<string | null>(null);
@@ -92,13 +93,10 @@ export function useProvidersPageState() {
 
 	useEffect(() => {
 		const q = searchParams.get('q');
-		if (q !== null) {
-			setProviderSearch(q);
-		}
-		const filterParam = searchParams.get('filter');
-		if (filterParam !== null) {
-			setSelectedFilter(parseProviderListFilterParam(filterParam));
-		}
+		setProviderSearch(q ?? '');
+		const filters = parseProviderListFilters(searchParams.get('filter'), searchParams.get('protocol'));
+		setSelectedFilter(filters.status);
+		setSelectedProtocol(filters.protocol);
 	}, [searchParams]);
 
 	useReplaceListPageQuery(() => {
@@ -108,8 +106,9 @@ export function useProvidersPageState() {
 		if (selectedFilter !== DEFAULT_PROVIDER_LIST_FILTER) {
 			params.set('filter', selectedFilter);
 		}
+		if (selectedProtocol !== 'all') params.set('protocol', selectedProtocol);
 		return params;
-	}, [providerSearch, selectedFilter]);
+	}, [providerSearch, selectedFilter, selectedProtocol]);
 
 	// 差异只在手动检查后才有；把结果合并到卡片，供徽标和「有更新」筛选使用。
 	const providers = useMemo(() => {
@@ -132,8 +131,8 @@ export function useProvidersPageState() {
 		[providers, locale, customKindLabel],
 	);
 	const searchMatchedProviders = useMemo(
-		() => orderedProviders.filter((provider) => providerMatchesSearch(provider, providerSearch)),
-		[providerSearch, orderedProviders]
+		() => orderedProviders.filter((provider) => providerMatchesSearch(provider, providerSearch) && providerMatchesListFilter(provider, selectedProtocol)),
+		[providerSearch, orderedProviders, selectedProtocol]
 	);
 
 	const filterCounts = useMemo(() => {
@@ -404,7 +403,7 @@ export function useProvidersPageState() {
 
 	const handleSave = useCallback(async () => {
 		if (!editingProvider && !formData.api_key.trim()) {
-			setSaveError('API key is required');
+			setSaveError(tModal('apiKeyRequiredError'));
 			return;
 		}
 		if (!editingProvider && !formData.kind.trim()) {
@@ -427,11 +426,11 @@ export function useProvidersPageState() {
 			}
 		} catch (error) {
 			console.error('Save error:', error);
-			setSaveError('Save failed, please try again');
+			setSaveError(tCommon('saveFailed'));
 		} finally {
 			setIsSaving(false);
 		}
-	}, [editingProvider, formData, refreshProviders, tModal]);
+	}, [editingProvider, formData, refreshProviders, tModal, tCommon]);
 
 	const closeProviderModal = useCallback(() => {
 		if (isSaving || isDeleting) return;
@@ -445,6 +444,8 @@ export function useProvidersPageState() {
 		setProviderSearch,
 		selectedFilter,
 		setSelectedFilter,
+		selectedProtocol,
+		setSelectedProtocol,
 		filterCounts,
 		filteredProviders,
 		copiedId,

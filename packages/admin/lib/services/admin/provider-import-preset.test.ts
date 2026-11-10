@@ -199,9 +199,14 @@ describe('provider import preset catalog metadata', () => {
 			anthropic: 'https://api.deepseek.com/anthropic',
 		});
 		expectEndpoints('Tencent Hunyuan', {
-			chat: 'https://api.hunyuan.cloud.tencent.com/v1/chat/completions',
-			anthropic: 'https://api.hunyuan.cloud.tencent.com/anthropic',
+			chat: 'https://tokenhub.tencentmaas.com/v1/chat/completions',
+			responses: 'https://tokenhub.tencentmaas.com/v1/responses',
+			anthropic: 'https://tokenhub.tencentmaas.com',
 		});
+		assert.equal(
+			byName.get('Tencent Hunyuan')?.endpoints.openai?.endpoints?.embeddings,
+			'https://tokenhub.tencentmaas.com/v1/embeddings'
+		);
 		expectEndpoints('Baidu Qianfan', {
 			chat: 'https://qianfan.baidubce.com/v2/chat/completions',
 			responses: 'https://qianfan.baidubce.com/v2/responses',
@@ -263,10 +268,11 @@ describe('provider import preset catalog metadata', () => {
 			byName.get('Alibaba Cloud Bailian (Coding Plan)')?.endpoints.openai?.endpoints?.responses,
 			undefined
 		);
-		assert.equal(
-			byName.get('Tencent TokenHub (Hy Token Plan)')?.endpoints.openai?.endpoints?.responses,
-			undefined
-		);
+		expectEndpoints('Tencent TokenHub (Hy Token Plan)', {
+			chat: 'https://tokenhub.tencentmaas.com/plan/v3/chat/completions',
+			responses: 'https://tokenhub.tencentmaas.com/plan/v3/responses',
+			anthropic: 'https://tokenhub.tencentmaas.com/plan/anthropic',
+		});
 	});
 
 	it('includes the limited Qwen Token Plan DashScope audio endpoints', () => {

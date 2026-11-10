@@ -12,7 +12,7 @@ const compactMagnitudeClasses: Record<TokenCountMagnitude, string> = {
 	plain: 'text-gray-600',
 	K: 'bg-sky-50 text-sky-700 ring-sky-100',
 	M: 'bg-violet-50 text-violet-700 ring-violet-100 font-medium',
-	B: 'bg-rose-50 text-rose-700 ring-rose-100 font-semibold',
+	B: 'bg-rose-50 text-rose-700 ring-rose-100 font-medium',
 };
 
 export type AnalyticsTokenCountProps = {

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRightIcon, ComputerDesktopIcon, ServerIcon } from '@heroicons/react/24/outline';
+import { ArrowRightIcon, ArrowsRightLeftIcon, AdjustmentsHorizontalIcon, ComputerDesktopIcon, ServerIcon } from '@heroicons/react/24/outline';
 import { editorInputClass, editorLabelClass, RouteEditorSection } from './route-editor-ui';
 import { RouteAdapterGuide } from './route-adapter-guide';
 import { useTranslations, useLocale } from 'next-intl';
@@ -139,10 +139,10 @@ export function RouteMappingFields({
 
 	return (
 		<div className="space-y-4">
-			<RouteEditorSection title={t('editor.mappingTitle')} description={t('editor.mappingDescription')}>
+			<RouteEditorSection icon={ArrowsRightLeftIcon} title={t('editor.mappingTitle')} description={t('editor.mappingDescription')}>
 				<div className="relative grid gap-5 md:grid-cols-2 md:gap-12">
 					<div className="min-w-0 space-y-4">
-						<p className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+						<p className="flex items-center gap-2 text-xs font-medium text-slate-700">
 							<ComputerDesktopIcon className="h-4 w-4 text-slate-500" aria-hidden />
 							{t('clientColumn')}
 						</p>
@@ -305,7 +305,7 @@ export function RouteMappingFields({
 						</span>
 					</span>
 					<div className="min-w-0 space-y-4 border-t border-slate-200 pt-5 md:border-0 md:pt-0">
-						<p className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+						<p className="flex items-center gap-2 text-xs font-medium text-slate-700">
 							<ServerIcon className="h-4 w-4 text-slate-500" aria-hidden />
 							{t('upstreamColumn')}
 						</p>
@@ -483,7 +483,7 @@ export function RouteMappingFields({
 					</div>
 				</div>
 			</RouteEditorSection>
-			<RouteEditorSection title={t('editor.routingTitle')}>
+			<RouteEditorSection icon={AdjustmentsHorizontalIcon} title={t('editor.routingTitle')}>
 				<div className="grid items-start gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,120px)_minmax(0,95px)_minmax(0,95px)]">
 					<div>
 						<label htmlFor="route-field-adapter" className={editorLabelClass}>

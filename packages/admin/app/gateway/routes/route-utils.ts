@@ -208,7 +208,7 @@ export function protocolBadgeClass(protocol: string): string {
 		return 'bg-orange-50 text-orange-800 ring-orange-200';
 	}
 	if (protocol === 'gemini') {
-		return 'bg-indigo-50 text-indigo-800 ring-indigo-200';
+		return 'bg-gray-50 text-gray-900 ring-gray-200';
 	}
 	return 'bg-amber-50 text-amber-900 ring-amber-200';
 }

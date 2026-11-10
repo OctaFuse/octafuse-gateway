@@ -133,7 +133,7 @@ export function StickyBindingTable({
 									onClick={() => onUnbind(row.id)}
 									disabled={disabled}
 									aria-label={t('unbindUser', { user: row.userLabel })}
-									className="whitespace-nowrap rounded-md border border-red-200 bg-white px-2 py-1 text-[11px] font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+									className="whitespace-nowrap rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
 								>
 									{t('clearBinding')}
 								</button>
@@ -253,7 +253,7 @@ export function StickyBindingsListPanel(props: Props) {
 	return (
 		<div>
 			<div className="flex flex-wrap items-center justify-between gap-2">
-				<h3 className="text-sm font-semibold text-gray-900">{t('usersTitle')}</h3>
+				<h3 className="text-sm font-medium text-gray-900">{t('usersTitle')}</h3>
 				<div className="flex w-full min-w-0 items-center gap-2 sm:ml-auto sm:w-auto sm:justify-end">
 					{!showingLookup ? (
 						<StickyProviderFilter
@@ -270,13 +270,13 @@ export function StickyBindingsListPanel(props: Props) {
 						type="button"
 						onClick={onRefresh}
 						disabled={loading || refreshing || disabled || Boolean(busyHash)}
-						className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+						className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-gray-800 hover:bg-gray-50 disabled:opacity-50"
 					>
 						{refreshing || loading ? tCommon('loadingEllipsis') : t('refresh')}
 					</button>
 				</div>
 			</div>
-			<p className="mt-1 text-[11px] leading-relaxed text-gray-500">{t('usersHint')}</p>
+			<p className="mt-1 text-xs leading-relaxed text-gray-500">{t('usersHint')}</p>
 
 			<div className="mt-3">{search}</div>
 
@@ -316,7 +316,7 @@ export function StickyBindingsListPanel(props: Props) {
 					</div>
 
 					{total > 0 ? (
-						<div className="mt-3 flex items-center justify-between text-[11px] text-gray-600">
+						<div className="mt-3 flex items-center justify-between text-xs text-gray-600">
 							<span>{t('usersTotal', { total, page, pages: lastPage })}</span>
 							<div className="flex gap-1.5">
 								<button

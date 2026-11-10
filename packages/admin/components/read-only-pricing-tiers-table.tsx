@@ -36,10 +36,10 @@ export function ReadOnlyPricingTiersTable({
 	const unitLabel = t('unitPerMillion', { symbol: getGatewayCurrencySymbol(billCode) });
 	const dash = tCommon('noData');
 	const cellPad = dense ? 'px-2 py-1' : 'px-3 py-2';
-	const tableSize = dense ? 'text-[10px]' : 'text-[11px]';
+	const tableSize = dense ? 'text-xs' : 'text-xs';
 	if (rows.length === 0) {
 		return (
-			<p className={`rounded-md border border-dashed border-gray-200 bg-white/80 px-2 py-3 text-center text-[11px] leading-snug text-gray-500${fillHeight ? ' flex h-full min-h-0 items-center justify-center' : ''}`}>
+			<p className={`rounded-md border border-dashed border-gray-200 bg-white/80 px-2 py-3 text-center text-xs leading-snug text-gray-500${fillHeight ? ' flex h-full min-h-0 items-center justify-center' : ''}`}>
 				{emptyLabel}
 			</p>
 		);
@@ -55,7 +55,7 @@ export function ReadOnlyPricingTiersTable({
 					className={`min-w-full divide-y divide-gray-200 text-left ${tableSize}`}
 					title={tableTitle}
 				>
-					<thead className="bg-gray-50 text-[10px] font-semibold tracking-wide text-gray-500">
+					<thead className="bg-gray-50 text-xs font-medium tracking-normal text-gray-500">
 						<tr>
 							<th className={`whitespace-nowrap ${cellPad}`}>{t('inputRange')}</th>
 							<th className={`whitespace-nowrap ${cellPad} text-right`}>{t('input')}</th>
@@ -104,7 +104,7 @@ export function ReadOnlyPricingTiersTable({
 				</table>
 			</div>
 			{hideUnitFooter ? null : (
-				<p className="shrink-0 border-t border-gray-100 bg-gray-50/90 px-2 py-1 text-[10px] leading-snug text-gray-500">
+				<p className="shrink-0 border-t border-gray-100 bg-gray-50/90 px-2 py-1 text-xs leading-snug text-gray-500">
 					{t('unitFooter', { unit: unitLabel })}
 				</p>
 			)}

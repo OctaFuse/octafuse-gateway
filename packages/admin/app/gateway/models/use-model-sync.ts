@@ -85,11 +85,6 @@ export function useModelSync(options: {
 			setLastCheckedAt(new Date());
 			if (next.models_with_diff === 0) {
 				notify('success', t('check.upToDate'));
-			} else {
-				notify(
-					'info',
-					t('check.foundUpdates', { models: next.models_with_diff, vendors: next.groups.length })
-				);
 			}
 		} catch (e) {
 			notify('error', e instanceof Error ? e.message : t('loadFailed'));

@@ -16,7 +16,7 @@ export function routeGroupBadgeClass(group: string): string {
     paid: 'bg-violet-100 text-violet-900 ring-violet-200/90',
     pro: 'bg-amber-100 text-amber-950 ring-amber-200/90',
     preview: 'bg-cyan-100 text-cyan-900 ring-cyan-200/90',
-    beta: 'bg-indigo-100 text-indigo-900 ring-indigo-200/90',
+    beta: 'bg-gray-100 text-gray-950 ring-gray-200/90',
   };
   if (known[key]) {
     return `ring-1 ring-inset ${known[key]}`;

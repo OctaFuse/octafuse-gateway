@@ -105,13 +105,6 @@ export function useProviderSync(options: {
 			const orphans = next.orphans.length;
 			if (updates === 0 && orphans === 0) {
 				notify('success', t('check.upToDate'));
-			} else {
-				notify(
-					'info',
-					updates > 0
-						? t('check.foundUpdates', { providers: updates, kinds: next.groups.length })
-						: t('check.foundOrphans', { count: orphans })
-				);
 			}
 		} catch (e) {
 			notify('error', e instanceof Error ? e.message : t('loadFailed'));

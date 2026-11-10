@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { readApiJson } from '@/lib/api-json';
 import type { UserModelsPreview } from '@/lib/services/admin/user-models-preview';
@@ -9,12 +9,14 @@ type Kind = UserModelsPreview['preview']['kind'];
 
 export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: string; factorsDirty: boolean }) {
 	const t = useTranslations('users.modelsPreview');
+	const tf = useTranslations('filter');
 	const [model, setModel] = useState('');
 	const [routeGroups, setRouteGroups] = useState('default,free');
 	const [kind, setKind] = useState<Kind>('llm');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
 	const [result, setResult] = useState<UserModelsPreview | null>(null);
+	useEffect(() => { setResult(null); setError(''); }, [model, routeGroups, kind]);
 
 	const request = async () => {
 		setLoading(true);
@@ -42,9 +44,9 @@ export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: strin
 	const payload = result ? { object: result.object, data: result.data } : null;
 
 	return (
-		<section className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+		<section className="admin-content-panel admin-table-surface rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
 			<div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-				<h2 className="text-sm font-semibold text-gray-900">{t('title')}</h2>
+				<h2 className="text-sm font-medium text-gray-900">{t('title')}</h2>
 				{result ? (
 					<span className="text-xs text-gray-500">{t('mode', { mode: result.preview.user_charged_factor_mode })}</span>
 				) : null}
@@ -54,37 +56,37 @@ export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: strin
 			<div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
 				<div className="min-w-0">
 					<div className="flex flex-wrap items-end gap-2">
-						<label className="block min-w-[9rem] flex-1 text-[11px] font-medium text-gray-500">
+						<label className="block min-w-[9rem] flex-1 text-xs font-medium text-gray-500">
 							{t('model')}
-							<input
+							<input disabled={loading}
 								value={model}
 								onChange={(event) => setModel(event.target.value)}
 								placeholder={t('modelPlaceholder')}
 								className="mt-1 h-8 w-full rounded-md border border-gray-300 bg-white px-2 text-xs font-normal text-gray-900"
 							/>
 						</label>
-						<label className="block w-32 text-[11px] font-medium text-gray-500">
+						<label className="block w-32 text-xs font-medium text-gray-500">
 							{t('routeGroups')}
-							<input
+							<input disabled={loading}
 								value={routeGroups}
 								onChange={(event) => setRouteGroups(event.target.value)}
 								className="mt-1 h-8 w-full rounded-md border border-gray-300 bg-white px-2 font-mono text-xs font-normal text-gray-900"
 							/>
 						</label>
-						<label className="block w-32 text-[11px] font-medium text-gray-500">
+						<label className="block w-32 text-xs font-medium text-gray-500">
 							{t('kind')}
-							<select
+							<select disabled={loading}
 								value={kind}
 								onChange={(event) => setKind(event.target.value as Kind)}
 								className="mt-1 h-8 w-full rounded-md border border-gray-300 bg-white px-2 text-xs font-normal text-gray-900"
 							>
-								<option value="llm">llm</option>
-								<option value="image">image</option>
-								<option value="asr">asr</option>
-								<option value="tts">tts</option>
-								<option value="audio">audio (asr + tts)</option>
-								<option value="embedding">embedding</option>
-								<option value="all">all</option>
+								<option value="llm">{tf('kindLlm')}</option>
+								<option value="image">{tf('kindImage')}</option>
+								<option value="asr">{tf('kindAsr')}</option>
+								<option value="tts">{tf('kindTts')}</option>
+								<option value="audio">{t('audioKind')}</option>
+								<option value="embedding">{tf('kindEmbedding')}</option>
+								<option value="all">{tf('all')}</option>
 							</select>
 						</label>
 						<button
@@ -135,7 +137,7 @@ export function UserModelsPreviewPanel({ userId, factorsDirty }: { userId: strin
 				</div>
 				<div className="min-w-0">
 					<h3 className="mb-2 text-xs font-medium text-gray-500">{t('response')}</h3>
-					<pre className="max-h-[70vh] min-h-48 overflow-auto rounded-md bg-gray-950 p-3 text-[11px] leading-5 text-gray-100">
+					<pre className="max-h-[70vh] min-h-48 overflow-auto rounded-md bg-gray-950 p-3 text-xs leading-5 text-gray-100">
 						{payload ? JSON.stringify(payload, null, 2) : ''}
 					</pre>
 				</div>
