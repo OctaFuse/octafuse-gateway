@@ -1,4 +1,9 @@
-import { catalogInputPriceSortKey } from '@/lib/pricing-ui';
+import { resolveModelKind } from '@octafuse/core/db/model-kind';
+import { formatGatewayMoneyCompact } from '@/lib/format-gateway-currency';
+import {
+	catalogInputPriceSortKey,
+	getCatalogCardPricing,
+} from '@/lib/pricing-ui';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { normalizeModelVendorInput } from '@/lib/model-vendor';
 import {
@@ -19,7 +24,9 @@ export function parseVendorFilterParam(value: string | null): string {
 }
 
 /** Pretty-print in the editor when stored value is a JSON object. */
-export function formatMetadataForEditor(metadata: string | null | undefined): string {
+export function formatMetadataForEditor(
+	metadata: string | null | undefined
+): string {
 	if (metadata == null || metadata.trim() === '') return '';
 	try {
 		const p = JSON.parse(metadata.trim()) as unknown;
@@ -40,10 +47,15 @@ export function parseMetadataForSave(
 	if (t === '') return { ok: true, value: null };
 	try {
 		const parsed = JSON.parse(t) as unknown;
-		if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+		if (
+			parsed === null ||
+			typeof parsed !== 'object' ||
+			Array.isArray(parsed)
+		) {
 			return {
 				ok: false,
-				error: 'Metadata must be a JSON object ({ ... }), not an array or primitive',
+				error:
+					'Metadata must be a JSON object ({ ... }), not an array or primitive',
 			};
 		}
 		return { ok: true, value: JSON.stringify(parsed) };
@@ -52,14 +64,20 @@ export function parseMetadataForSave(
 	}
 }
 
-export function buildMetadataSummary(metadata: string | null | undefined): MetadataSummary {
+export function buildMetadataSummary(
+	metadata: string | null | undefined
+): MetadataSummary {
 	if (metadata == null || metadata.trim() === '') {
 		return { kind: 'empty' };
 	}
 	const trimmed = metadata.trim();
 	try {
 		const parsed = JSON.parse(trimmed) as unknown;
-		if (parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+		if (
+			parsed != null &&
+			typeof parsed === 'object' &&
+			!Array.isArray(parsed)
+		) {
 			const keys = Object.keys(parsed as Record<string, unknown>);
 			return {
 				kind: 'object',
@@ -74,7 +92,9 @@ export function buildMetadataSummary(metadata: string | null | undefined): Metad
 	}
 }
 
-export function getMetadataButtonLabel(summary: Exclude<MetadataSummary, { kind: 'empty' }>): string {
+export function getMetadataButtonLabel(
+	summary: Exclude<MetadataSummary, { kind: 'empty' }>
+): string {
 	if (summary.kind === 'raw') return summary.label;
 	if (summary.keyCount === 0) return '0 keys';
 	const preview = summary.keyPreview.join(', ');
@@ -82,15 +102,14 @@ export function getMetadataButtonLabel(summary: Exclude<MetadataSummary, { kind:
 	if (extra > 0) {
 		return `${summary.keyCount} keys: ${preview}, +${extra}`;
 	}
-	return `${summary.keyCount} key${summary.keyCount !== 1 ? 's' : ''}: ${preview}`;
+	return `${summary.keyCount} key${
+		summary.keyCount !== 1 ? 's' : ''
+	}: ${preview}`;
 }
 
 export function tagBadgeClass(tag: string): string {
-	if (tag === 'free') return 'bg-green-100 text-green-800';
-	if (tag === 'lite') return 'bg-cyan-100 text-cyan-800';
-	if (tag === 'pro') return 'bg-blue-100 text-blue-800';
-	if (tag === 'max') return 'bg-purple-100 text-purple-800';
-	return 'bg-gray-100 text-gray-700';
+	if (tag === 'free') return 'bg-green-50 text-green-800';
+	return 'bg-gray-100 text-gray-600';
 }
 
 function getTierConditionLabel(
@@ -99,9 +118,12 @@ function getTierConditionLabel(
 	upto: number | null
 ): string {
 	if (tierIdx === 0 && upto != null) return `≤${formatCompactTokens(upto)}`;
-	if (upto == null && previousUpto != null) return `>${formatCompactTokens(previousUpto)}`;
+	if (upto == null && previousUpto != null)
+		return `>${formatCompactTokens(previousUpto)}`;
 	if (upto != null && previousUpto != null) {
-		return `>${formatCompactTokens(previousUpto)}–≤${formatCompactTokens(upto)}`;
+		return `>${formatCompactTokens(previousUpto)}–≤${formatCompactTokens(
+			upto
+		)}`;
 	}
 	return 'All';
 }
@@ -141,12 +163,16 @@ function hasImageTokenTiers(tiers: PricingTierPrices[]): boolean {
 	);
 }
 
-export function buildPricingMetricColumns(pricingProfile: string | null | undefined): PricingMetricColumn[] {
+export function buildPricingMetricColumns(
+	pricingProfile: string | null | undefined
+): PricingMetricColumn[] {
 	const profile = parsePricingProfile(pricingProfile ?? undefined);
 	if (!profile) return [];
 
 	const columns: PricingMetricColumn[] = [];
-	const buildMetricLines = (pickPrice: (tier: PricingTierPrices) => number | null): PricingMetricLine[] =>
+	const buildMetricLines = (
+		pickPrice: (tier: PricingTierPrices) => number | null
+	): PricingMetricLine[] =>
 		profile.tiers.map((tier, tierIdx) => {
 			const previous = tierIdx === 0 ? null : profile.tiers[tierIdx - 1]!.upto;
 			return {
@@ -248,7 +274,8 @@ export function buildPricingMetricColumns(pricingProfile: string | null | undefi
 		return columns;
 	}
 
-	const showTokenColumns = profile.tiers.length > 0 && hasNonZeroTokenTiers(profile.tiers);
+	const showTokenColumns =
+		profile.tiers.length > 0 && hasNonZeroTokenTiers(profile.tiers);
 
 	if (showTokenColumns) {
 		columns.push(
@@ -285,7 +312,9 @@ export function buildPricingMetricColumns(pricingProfile: string | null | undefi
 	return columns;
 }
 
-export function groupModelsByVendor(models: ModelListItem[]): [string, ModelListItem[]][] {
+export function groupModelsByVendor(
+	models: ModelListItem[]
+): [string, ModelListItem[]][] {
 	const g = new Map<string, ModelListItem[]>();
 	for (const m of models) {
 		const key = normalizeModelVendorInput(m.vendor);
@@ -298,9 +327,13 @@ export function groupModelsByVendor(models: ModelListItem[]): [string, ModelList
 			const pa = catalogInputPriceSortKey(a);
 			const pb = catalogInputPriceSortKey(b);
 			if (pb !== pa) return pb - pa;
-			return (a.display_name || a.id).localeCompare(b.display_name || b.id, undefined, {
-				sensitivity: 'base',
-			});
+			return (a.display_name || a.id).localeCompare(
+				b.display_name || b.id,
+				undefined,
+				{
+					sensitivity: 'base',
+				}
+			);
 		});
 	}
 	return [...g.entries()].sort(([a], [b]) => {
@@ -310,7 +343,9 @@ export function groupModelsByVendor(models: ModelListItem[]): [string, ModelList
 	});
 }
 
-export function sortImportCatalogRows(rows: PresetCatalogRow[]): PresetCatalogRow[] {
+export function sortImportCatalogRows(
+	rows: PresetCatalogRow[]
+): PresetCatalogRow[] {
 	return [...rows].sort((a, b) => {
 		const va = normalizeModelVendorInput(a.vendor);
 		const vb = normalizeModelVendorInput(b.vendor);
@@ -322,3 +357,38 @@ export function sortImportCatalogRows(rows: PresetCatalogRow[]): PresetCatalogRo
 }
 
 export { formatCompactTokens };
+
+/** Match every search term across model identity, vendor and user tags. */
+export function modelMatchesSearch(
+	model: Pick<ModelListItem, 'id' | 'display_name' | 'vendor' | 'tags'>,
+	query: string
+): boolean {
+	const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+	const haystack = [
+		model.id,
+		model.display_name,
+		model.vendor,
+		...(model.tags ?? []),
+	]
+		.join(' ')
+		.toLocaleLowerCase();
+	return terms.every((term) => haystack.includes(term));
+}
+
+/** Embeddings charge input tokens only; retain the catalog's tier and unit information. */
+export function getModelCardPricing(
+	model: Pick<
+		ModelListItem,
+		'pricing_profile' | 'input_modalities' | 'output_modalities'
+	>,
+	currencyCode: string,
+	emptyLabel: string
+) {
+	const summary = getCatalogCardPricing(model, currencyCode, emptyLabel);
+	if (resolveModelKind(model) !== 'embedding') return summary;
+	const profile = parsePricingProfile(model.pricing_profile);
+	const input = profile?.tiers[0]?.input_price;
+	return input == null
+		? summary
+		: { ...summary, amount: formatGatewayMoneyCompact(input, currencyCode) };
+}

@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminPageTitle } from '@/components/admin-page-title';
+
 /**
  * 集成密钥：
  * - 点击行 / 创建：模态框编辑；密钥轮换在表单内预生成，保存后才生效
@@ -15,6 +17,9 @@ import {
 	EyeSlashIcon,
 	PlusIcon,
 } from '@heroicons/react/24/outline';
+import { AdminDialog } from '@/components/admin-dialog';
+import { useFeedback } from '@/components/feedback';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { ADMIN_PERMISSIONS, type AdminPermission } from '@/lib/admin-principal';
 import { generateAdminApiKey } from '@/lib/auth';
 import { readApiJson } from '@/lib/api-json';
@@ -42,6 +47,11 @@ const DEFAULT_PERMISSIONS: AdminPermission[] = ['routes.read', 'routes.write', '
 export default function AdminApiKeysPage() {
 	const t = useTranslations('adminApiKeys');
 	const tCommon = useTranslations('common');
+	const ui = useTranslations('remainingUi');
+	const { confirm } = useFeedback();
+	const [query, setQuery] = useState('');
+	const [filter, setFilter] = useState('all');
+	const [initialDraft, setInitialDraft] = useState('');
 	const { formatDateTime } = useGatewayDateTime();
 	const [keys, setKeys] = useState<AccessKey[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -58,6 +68,7 @@ export default function AdminApiKeysPage() {
 	const [secretVisible, setSecretVisible] = useState(false);
 	const [copiedId, setCopiedId] = useState<string | null>(null);
 	const [revealedSecrets, setRevealedSecrets] = useState<Record<string, string>>({});
+	const [visibleKeyIds, setVisibleKeyIds] = useState<Set<string>>(new Set());
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -90,7 +101,8 @@ export default function AdminApiKeysPage() {
 		const secret = generateAdminApiKey();
 		setDraftSecret(secret);
 		setOriginalSecret(secret);
-		setSecretVisible(true);
+		setInitialDraft(JSON.stringify({ name: '', description: '', permissions: DEFAULT_PERMISSIONS, secret }));
+		setSecretVisible(false);
 	};
 
 	const openEdit = async (key: AccessKey) => {
@@ -101,12 +113,22 @@ export default function AdminApiKeysPage() {
 		setDescription(key.description ?? '');
 		setPermissions(key.permissions.length > 0 ? [...key.permissions] : DEFAULT_PERMISSIONS);
 		setSecretVisible(false);
+		setDraftSecret('');
+		setOriginalSecret('');
 		setBusy(true);
 		try {
 			const cached = revealedSecrets[key.id];
 			if (cached) {
 				setDraftSecret(cached);
 				setOriginalSecret(cached);
+				setInitialDraft(
+					JSON.stringify({
+						name: key.name,
+						description: key.description ?? '',
+						permissions: key.permissions.length ? [...key.permissions] : DEFAULT_PERMISSIONS,
+						secret: cached,
+					})
+				);
 				return;
 			}
 			const response = await fetch(`/api/admin/access-keys/${encodeURIComponent(key.id)}/secret`);
@@ -116,6 +138,14 @@ export default function AdminApiKeysPage() {
 			}
 			setDraftSecret(data.data.key);
 			setOriginalSecret(data.data.key);
+			setInitialDraft(
+				JSON.stringify({
+					name: key.name,
+					description: key.description ?? '',
+					permissions: key.permissions.length ? [...key.permissions] : DEFAULT_PERMISSIONS,
+					secret: data.data.key,
+				})
+			);
 			setRevealedSecrets((prev) => ({ ...prev, [key.id]: data.data!.key }));
 		} catch (cause) {
 			setError(cause instanceof Error ? cause.message : tCommon('requestFailed'));
@@ -125,8 +155,19 @@ export default function AdminApiKeysPage() {
 		}
 	};
 
-	const closeEditor = () => {
+	const closeEditor = async () => {
 		if (busy) return;
+		const draft = JSON.stringify({ name, description, permissions, secret: draftSecret });
+		if (
+			draft !== initialDraft &&
+			!(await confirm({
+				title: ui('discardTitle'),
+				message: ui('discardHint'),
+				confirmLabel: ui('discard'),
+				cancelLabel: tCommon('cancel'),
+			}))
+		)
+			return;
 		setEditor(null);
 		setEditorError('');
 	};
@@ -143,7 +184,7 @@ export default function AdminApiKeysPage() {
 
 	const regenerateDraftSecret = () => {
 		setDraftSecret(generateAdminApiKey());
-		setSecretVisible(true);
+		setSecretVisible(false);
 	};
 
 	const secretChanged = draftSecret !== originalSecret;
@@ -153,7 +194,7 @@ export default function AdminApiKeysPage() {
 		setBusy(true);
 		setEditorError('');
 		try {
-			if (editor.kind === 'create') {
+			if (editor?.kind === 'create') {
 				const response = await fetch('/api/admin/access-keys', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
@@ -237,16 +278,17 @@ export default function AdminApiKeysPage() {
 	const revealInRow = async (key: AccessKey, event: MouseEvent) => {
 		event.stopPropagation();
 		setError('');
-		if (revealedSecrets[key.id]) {
-			setRevealedSecrets((prev) => {
-				const next = { ...prev };
-				delete next[key.id];
+		if (visibleKeyIds.has(key.id)) {
+			setVisibleKeyIds((prev) => {
+				const next = new Set(prev);
+				next.delete(key.id);
 				return next;
 			});
 			return;
 		}
 		try {
 			await ensureSecret(key);
+			setVisibleKeyIds((prev) => new Set(prev).add(key.id));
 		} catch (cause) {
 			setError(cause instanceof Error ? cause.message : tCommon('requestFailed'));
 		}
@@ -268,38 +310,74 @@ export default function AdminApiKeysPage() {
 
 	const copyDraftSecret = async () => {
 		if (!draftSecret) return;
-		await navigator.clipboard.writeText(draftSecret);
+		try {
+			await navigator.clipboard.writeText(draftSecret);
+		} catch {
+			setEditorError(tCommon('requestFailed'));
+			return;
+		}
 		setCopiedId('draft');
 		window.setTimeout(() => setCopiedId((current) => (current === 'draft' ? null : current)), 1500);
 	};
 
+	const visibleKeys = keys.filter(
+		(key) =>
+			(filter === 'all' || key.status === filter) &&
+			[key.name, key.description].some((text) => text?.toLowerCase().includes(query.trim().toLowerCase()))
+	);
 	return (
-		<div className="min-w-0 p-4 sm:p-6 lg:p-8">
+		<div className="admin-content-workspace content-tone-inference min-w-0 p-4 sm:p-6 lg:p-8">
 			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+					<AdminPageTitle>{t('title')}</AdminPageTitle>
 					<p className="mt-1 max-w-3xl text-sm text-gray-500">{t('subtitle')}</p>
-					<p className="mt-2 max-w-3xl text-xs text-gray-500">{t('rotateHint')}</p>
+					<p className="mt-2 max-w-3xl text-xs text-gray-500">{ui('integrationHint')}</p>
 				</div>
 				<button
 					type="button"
 					onClick={openCreate}
-					className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+					className="inline-flex items-center gap-2 rounded-lg admin-primary px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
 				>
-					<PlusIcon className="h-5 w-5" />
+					<PlusIcon className="h-4 w-4" />
 					{t('create')}
 				</button>
 			</div>
 
 			{error && (
-				<div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700" role="alert">
+				<div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
 					{error}
 				</div>
 			)}
 
-			<div className="overflow-x-auto rounded-lg border bg-white shadow-sm">
+			<div className="mb-4 flex flex-wrap items-center gap-2">
+				<div className="relative w-full sm:max-w-sm">
+					<MagnifyingGlassIcon
+						className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-gray-400"
+						aria-hidden="true"
+					/>
+					<input
+						type="search"
+						aria-label={ui('searchKeys')}
+						placeholder={ui('searchKeys')}
+						value={query}
+						onChange={(e) => setQuery(e.target.value)}
+						className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-sm"
+					/>
+				</div>
+				<select
+					aria-label={tCommon('status')}
+					value={filter}
+					onChange={(e) => setFilter(e.target.value)}
+					className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm"
+				>
+					<option value="all">{ui('allStatuses')}</option>
+					<option value="active">{t('status.active')}</option>
+					<option value="revoked">{t('status.revoked')}</option>
+				</select>
+			</div>
+			<div className="admin-content-panel overflow-x-auto rounded-xl border border-gray-200 bg-white">
 				<table className="admin-data-table min-w-full divide-y">
-					<thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+					<thead className="bg-gray-50 text-left text-xs normal-case text-gray-500">
 						<tr>
 							<th className="px-4 py-3">{t('name')}</th>
 							<th className="px-4 py-3">{t('key')}</th>
@@ -309,23 +387,33 @@ export default function AdminApiKeysPage() {
 						</tr>
 					</thead>
 					<tbody className="divide-y text-sm">
-						{keys.map((key) => {
-							const revealed = revealedSecrets[key.id];
+						{visibleKeys.map((key) => {
+							const revealed = visibleKeyIds.has(key.id) ? revealedSecrets[key.id] : undefined;
 							return (
 								<tr
 									key={key.id}
 									onClick={() => void openEdit(key)}
-									className={`cursor-pointer hover:bg-gray-50 ${key.status === 'revoked' ? 'bg-gray-50 text-gray-500' : ''}`}
+									className={`cursor-pointer hover:bg-gray-50 ${
+										key.status === 'revoked' ? 'bg-gray-50 text-gray-500' : ''
+									}`}
 								>
 									<td className="px-4 py-3">
-										<div className="font-medium text-gray-900">{key.name}</div>
-										<div className="text-xs text-gray-500">{key.description || key.id}</div>
+										<button
+											type="button"
+											aria-haspopup="dialog"
+											onClick={(event) => {
+												event.stopPropagation();
+												void openEdit(key);
+											}}
+											className="rounded text-left font-medium text-gray-900 focus-visible:ring-2 focus-visible:ring-gray-500"
+										>
+											{key.name}
+										</button>
+										{key.description ? <p className="mt-1 text-xs text-gray-500">{key.description}</p> : null}
 									</td>
 									<td className="px-4 py-3">
 										<div className="flex items-center gap-2">
-											<code className="font-mono text-xs">
-												{revealed ?? key.key}
-											</code>
+											<code className="font-mono text-xs">{revealed ?? key.key}</code>
 											<button
 												type="button"
 												onClick={(event) => void revealInRow(key, event)}
@@ -349,11 +437,16 @@ export default function AdminApiKeysPage() {
 									</td>
 									<td className="max-w-sm px-4 py-3">
 										<div className="flex flex-wrap gap-1">
-											{key.permissions.map((permission) => (
+											{key.permissions.slice(0, 3).map((permission) => (
 												<code key={permission} className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">
 													{permission}
 												</code>
 											))}
+											{key.permissions.length > 3 ? (
+												<span title={key.permissions.join(', ')} className="text-xs text-gray-500">
+													+{key.permissions.length - 3}
+												</span>
+											) : null}
 										</div>
 									</td>
 									<td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
@@ -361,8 +454,8 @@ export default function AdminApiKeysPage() {
 											type="button"
 											disabled={statusBusyId === key.id}
 											onClick={(event) => void toggleStatus(key, event)}
-											className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-												key.status === 'active' ? 'bg-blue-600' : 'bg-gray-200'
+											className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+												key.status === 'active' ? 'bg-gray-950' : 'bg-gray-200'
 											}`}
 											role="switch"
 											aria-checked={key.status === 'active'}
@@ -370,7 +463,7 @@ export default function AdminApiKeysPage() {
 											title={key.status === 'active' ? t('deactivate') : t('activate')}
 										>
 											<span
-												className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+												className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
 													key.status === 'active' ? 'translate-x-5' : 'translate-x-0'
 												}`}
 											/>
@@ -384,45 +477,47 @@ export default function AdminApiKeysPage() {
 						})}
 					</tbody>
 				</table>
-				{!loading && keys.length === 0 && (
+				{!loading && visibleKeys.length === 0 && (
 					<div className="p-8 text-center text-sm text-gray-500">{t('empty')}</div>
 				)}
-				{loading && (
-					<div className="p-8 text-center text-sm text-gray-500">{tCommon('loading')}</div>
-				)}
+				{loading && <div className="p-8 text-center text-sm text-gray-500">{tCommon('loading')}</div>}
 			</div>
 
-			{editor && (
-				<div
-					className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-					onClick={closeEditor}
-					role="presentation"
-				>
-					<div
-						className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-xl"
-						onClick={(event) => event.stopPropagation()}
-						role="dialog"
-						aria-modal="true"
-						aria-labelledby="integration-key-editor-title"
-					>
-						<div className="flex items-center justify-between border-b px-6 py-4">
-							<h2 id="integration-key-editor-title" className="text-xl font-bold text-gray-900">
-								{editor.kind === 'create' ? t('createTitle') : t('editTitle')}
-							</h2>
-							<button
-								type="button"
-								onClick={closeEditor}
-								disabled={busy}
-								className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
-								aria-label={tCommon('close')}
-							>
-								×
-							</button>
-						</div>
-
-						<div className="p-6">
+			<AdminDialog
+				open={editor !== null}
+				title={editor?.kind === 'create' ? t('createTitle') : t('editTitle')}
+				hint={t('rotateHint')}
+				busy={busy}
+				onClose={() => void closeEditor()}
+				footer={
+					<div className="flex justify-end gap-2 ">
+						<button
+							type="button"
+							onClick={() => void closeEditor()}
+							disabled={busy}
+							className="rounded border px-4 py-2 text-sm disabled:opacity-50"
+						>
+							{tCommon('cancel')}
+						</button>
+						<button
+							type="button"
+							disabled={busy || !name.trim() || permissions.length === 0}
+							onClick={() => void saveEditor()}
+							className="rounded admin-primary px-4 py-2 text-sm text-white disabled:opacity-50"
+						>
+							{busy ? (editor?.kind === 'create' ? tCommon('creating') : tCommon('saving')) : tCommon('save')}
+						</button>
+					</div>
+				}
+			>
+				{editor ? (
+					<>
+						<fieldset disabled={busy} className="min-w-0">
 							{editorError && (
-								<div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700" role="alert">
+								<div
+									className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+									role="alert"
+								>
 									{editorError}
 								</div>
 							)}
@@ -433,7 +528,7 @@ export default function AdminApiKeysPage() {
 									<input
 										value={name}
 										onChange={(event) => setName(event.target.value)}
-										className="mt-1 w-full rounded-md border px-3 py-2 font-normal"
+										className="mt-1 w-full rounded-lg border px-3 py-2 font-normal"
 									/>
 								</label>
 								<label className="text-sm font-medium text-gray-700">
@@ -441,7 +536,7 @@ export default function AdminApiKeysPage() {
 									<input
 										value={description}
 										onChange={(event) => setDescription(event.target.value)}
-										className="mt-1 w-full rounded-md border px-3 py-2 font-normal"
+										className="mt-1 w-full rounded-lg border px-3 py-2 font-normal"
 									/>
 								</label>
 							</div>
@@ -450,7 +545,7 @@ export default function AdminApiKeysPage() {
 								<div className="text-sm font-medium text-gray-700">{t('key')}</div>
 								<p className="mt-1 text-xs text-gray-500">{t('secretDraftHint')}</p>
 								<div className="mt-2 flex flex-wrap items-center gap-2">
-									<code className="min-w-0 flex-1 break-all rounded border bg-gray-50 px-3 py-2 font-mono text-sm">
+									<code className="min-w-0 flex-1 basis-full break-all rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 font-mono text-sm sm:basis-auto">
 										{secretVisible ? draftSecret : `${draftSecret.slice(0, 12)}••••••••`}
 									</code>
 									<button
@@ -479,59 +574,62 @@ export default function AdminApiKeysPage() {
 										{t('regenerate')}
 									</button>
 								</div>
-								{secretChanged && editor.kind === 'edit' && (
+								{secretChanged && editor?.kind === 'edit' && (
 									<p className="mt-2 text-xs text-amber-700">{t('secretPendingHint')}</p>
 								)}
 							</div>
 
-							<div className="mt-4 text-sm font-medium text-gray-700">{t('permissions')}</div>
-							<div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-								{DELEGABLE_PERMISSIONS.map((permission) => (
-									<label key={permission} className="flex items-center gap-2 rounded border px-3 py-2 text-sm">
-										<input
-											type="checkbox"
-											checked={permissions.includes(permission)}
-											onChange={() => togglePermission(permission)}
-										/>
-										<code>{permission}</code>
-									</label>
+							<div className="mt-5 text-sm font-medium text-gray-700">{t('permissions')}</div>
+							<p className="mt-1 text-xs leading-5 text-gray-500">{ui('writeIncludesRead')}</p>
+							<div className="mt-3 grid gap-3 sm:grid-cols-2">
+								{[...new Set(DELEGABLE_PERMISSIONS.map((p) => p.split('.')[0]))].map((resource) => (
+									<fieldset key={resource} className="min-w-0 rounded-lg border border-gray-200 p-3">
+										<legend className="px-1 text-xs font-medium text-gray-700">
+											{ui(`resources.${resource}`)}
+										</legend>
+										<div className="flex flex-wrap gap-3">
+											{DELEGABLE_PERMISSIONS.filter((p) => p.split('.')[0] === resource).map((permission) => (
+												<label
+													key={permission}
+													title={permission}
+													className="inline-flex items-center gap-2 text-xs text-gray-600"
+												>
+													<input
+														type="checkbox"
+														aria-label={permission}
+														checked={permissions.includes(permission)}
+														onChange={() => togglePermission(permission)}
+														className="h-4 w-4 accent-gray-950"
+													/>
+													{ui(
+														permission.endsWith('.secrets.read')
+															? 'secrets'
+															: permission.endsWith('.write')
+															? 'write'
+															: permission.endsWith('.execute')
+															? 'execute'
+															: 'read'
+													)}
+												</label>
+											))}
+										</div>
+									</fieldset>
 								))}
-								<label className="flex items-center gap-2 rounded border border-violet-200 bg-violet-50 px-3 py-2 text-sm">
-									<input
-										type="checkbox"
-										checked={permissions.includes('*')}
-										onChange={() => togglePermission('*')}
-									/>
-									<code>*</code>
-								</label>
 							</div>
-						</div>
-
-						<div className="flex justify-end gap-2 border-t px-6 py-4">
-							<button
-								type="button"
-								onClick={closeEditor}
-								disabled={busy}
-								className="rounded border px-4 py-2 text-sm disabled:opacity-50"
-							>
-								{tCommon('cancel')}
-							</button>
-							<button
-								type="button"
-								disabled={busy || !name.trim() || permissions.length === 0}
-								onClick={() => void saveEditor()}
-								className="rounded bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50"
-							>
-								{busy
-									? editor.kind === 'create'
-										? tCommon('creating')
-										: tCommon('saving')
-									: tCommon('save')}
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
+							<label className="mt-4 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+								<input
+									type="checkbox"
+									aria-label="*"
+									checked={permissions.includes('*')}
+									onChange={() => togglePermission('*')}
+									className="h-4 w-4 accent-gray-950"
+								/>
+								{ui('allPermissions')}
+							</label>
+						</fieldset>
+					</>
+				) : null}
+			</AdminDialog>
 		</div>
 	);
 }

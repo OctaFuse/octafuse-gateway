@@ -19,7 +19,7 @@ function FollowContent({ text, label, children }: { text: string; label: string;
 				const el = e.currentTarget;
 				follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 32;
 			}}
-			className="min-h-0 flex-1 overflow-auto overscroll-contain p-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+			className="min-h-0 flex-1 overflow-auto overscroll-contain p-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-500"
 		>
 			{children}
 		</div>
@@ -75,7 +75,7 @@ export function LlmResponseContent({
 								) : null}
 								{preview.tools.length ? (
 									<section className="space-y-3 py-3 first:pt-0">
-										<h3 className="text-xs font-medium text-blue-700">{t('tools')}</h3>
+										<h3 className="text-xs font-medium text-gray-800">{t('tools')}</h3>
 										{preview.tools.map((call) => (
 											<div key={call.key}>
 												<p className="mb-1 flex gap-2 font-mono text-xs">
@@ -87,7 +87,7 @@ export function LlmResponseContent({
 												<pre className={textClass}>{call.arguments || '…'}</pre>
 											</div>
 										))}
-										<p className="text-[11px] text-gray-400">{t('toolHint')}</p>
+										<p className="text-xs text-gray-400">{t('toolHint')}</p>
 									</section>
 								) : null}
 								{preview.error ? (

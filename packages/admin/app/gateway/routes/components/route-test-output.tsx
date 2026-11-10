@@ -38,7 +38,7 @@ function LiveText({
 			}}
 			className={`${
 				scroll ? 'min-h-0 flex-1 overflow-auto overscroll-contain' : ''
-			} whitespace-pre-wrap break-words font-mono text-xs leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${className}`}
+			} whitespace-pre-wrap break-words font-mono text-xs leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${className}`}
 		>
 			{text}
 		</pre>
@@ -116,7 +116,7 @@ export function RouteTestOutput({
 						const el = e.currentTarget;
 						followResult.current = el.scrollHeight - el.scrollTop - el.clientHeight < 32;
 					}}
-					className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+					className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-500"
 				>
 					{stale ? <p className="mb-3 text-xs text-amber-700">{t('stale')}</p> : null}
 
@@ -146,7 +146,7 @@ export function RouteTestOutput({
 							) : null}
 							{preview.tools.length ? (
 								<section className="space-y-3 py-3 first:pt-0">
-									<h4 className="text-xs font-medium text-blue-700">{t('toolCalls')}</h4>
+									<h4 className="text-xs font-medium text-gray-800">{t('toolCalls')}</h4>
 									{preview.tools.map((call, index) => (
 										<div key={call.key} className="min-w-0">
 											<div className="mb-1 flex items-baseline gap-2 font-mono text-xs">
@@ -165,7 +165,7 @@ export function RouteTestOutput({
 											/>
 										</div>
 									))}
-									<p className="text-[11px] text-gray-400">{t('toolHint')}</p>
+									<p className="text-xs text-gray-400">{t('toolHint')}</p>
 								</section>
 							) : null}
 							{preview.error ? (
@@ -186,7 +186,7 @@ export function RouteTestOutput({
 						</div>
 					) : null}
 					{preview.finishReason || Object.keys(preview.usage).length ? (
-						<div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 border-t border-gray-100 pt-3 font-mono text-[11px] text-gray-500">
+						<div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 border-t border-gray-100 pt-3 font-mono text-xs text-gray-500">
 							{preview.finishReason ? (
 								<span>
 									{t('finishReason')}: {preview.finishReason}
@@ -205,7 +205,7 @@ export function RouteTestOutput({
 								type="button"
 								onClick={() => setRaw(!raw)}
 								aria-expanded={raw}
-								className="text-xs font-medium text-blue-600"
+								className="text-xs font-medium text-gray-800"
 							>
 								{raw ? t('hideRaw') : t('raw')}
 							</button>

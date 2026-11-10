@@ -70,8 +70,8 @@ export function MultiSelectDropdown({
 				<div className="min-w-0 rounded-lg bg-slate-100/80 p-1">
 					<button
 						type="button"
-						className={`flex h-6 w-32 items-center justify-between gap-2 rounded-md pl-2.5 pr-2 text-left text-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-							open ? 'bg-white font-semibold text-blue-700 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-900'
+						className={`flex h-6 w-32 items-center justify-between gap-2 rounded-md pl-2.5 pr-2 text-left text-xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${
+							open ? 'bg-white font-medium text-gray-800 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-900'
 						}`}
 						aria-label={label}
 						aria-expanded={open}
@@ -81,7 +81,7 @@ export function MultiSelectDropdown({
 					>
 						<span className="truncate tabular-nums">{triggerText}</span>
 						<ChevronDownIcon
-							className={`h-3 w-3 shrink-0 transition-transform ${open ? 'rotate-180 text-blue-600' : 'text-slate-400'}`}
+							className={`h-3 w-3 shrink-0 transition-transform ${open ? 'rotate-180 text-gray-800' : 'text-slate-400'}`}
 							aria-hidden
 						/>
 					</button>
@@ -110,7 +110,7 @@ export function MultiSelectDropdown({
 									<label
 										key={option.value}
 										className={`flex min-h-10 cursor-pointer items-center gap-2 px-3 py-2 md:min-h-0 md:py-1.5 text-xs hover:bg-gray-50 ${
-											checked ? 'bg-blue-50/70 text-blue-900' : 'text-gray-700'
+											checked ? 'bg-gray-50/70 text-gray-950' : 'text-gray-700'
 										}`}
 										title={option.title ?? option.value}
 									>

@@ -14,10 +14,10 @@ export function RequestTargetUrl(props: Props) {
 
 	return (
 		<div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-			<div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{label}</div>
+			<div className="text-xs font-medium normal-case tracking-normal text-slate-500">{label}</div>
 			{hasUrl ? (
 				<p className="mt-1 break-all font-mono text-xs leading-relaxed text-slate-900">
-					<span className="font-semibold text-slate-700">{method}</span>{' '}
+					<span className="font-medium text-slate-700">{method}</span>{' '}
 					{url}
 				</p>
 			) : (

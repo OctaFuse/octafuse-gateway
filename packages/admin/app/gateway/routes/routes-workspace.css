@@ -1,0 +1,388 @@
+/* Route canvas: entry → pool → upstream. Workflow: unslop by Damir Sokolovsky
+   (@heydamir), CC BY 4.0. Scope stays inside this page and its owned dialogs. */
+.routes-design-workspace .route-workspace-toolbar {
+	border-color: #e9e9ec;
+	border-radius: 16px;
+	box-shadow: 0 1px 2px rgb(24 24 27 / 2%);
+}
+.routes-design-workspace .route-coverage-summary {
+	width: 168px;
+	margin-inline: auto;
+}
+.routes-design-workspace .route-vendor-section {
+	min-width: 0;
+	padding: 16px;
+	border-radius: 20px;
+	background: #f1f2f4;
+}
+.routes-design-workspace .route-vendor-heading {
+	padding: 0 4px;
+}
+.routes-design-workspace .route-model-panel {
+	border-color: #e4e5e9;
+	border-radius: 14px;
+	box-shadow: 0 1px 2px rgb(24 24 27 / 2%);
+}
+.routes-design-workspace .route-model-heading {
+	align-items: center;
+}
+.routes-design-workspace .route-model-name {
+	max-width: 100%;
+	line-height: 24px;
+}
+.routes-design-workspace .route-model-symbol,
+.routes-design-workspace .route-dialog-symbol {
+	display: inline-flex;
+	width: 32px;
+	height: 32px;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	border-radius: 9px;
+	background: #f1f5fc;
+	color: #4568a6;
+}
+.routes-design-workspace .route-model-surfaces {
+	padding: 4px 16px 12px;
+	background: #fff;
+}
+.routes-design-workspace .route-model-surfaces > div {
+	padding-inline: 0;
+}
+.routes-design-workspace .route-model-list-surfaces > * + * {
+	margin-top: 4px;
+	padding-top: 12px;
+}
+.routes-design-workspace .route-model-list-surfaces > * + *::before {
+	inset-inline: 0;
+	background: #ededf0;
+}
+.routes-design-workspace .route-entry-node {
+	border-color: #dfe7f1;
+	background: #f1f6fc;
+	box-shadow: none;
+}
+.routes-design-workspace .route-entry-node code {
+	margin-top: 4px;
+	color: #394556;
+	line-height: 18px;
+}
+.routes-design-workspace .route-group-node {
+	display: block;
+	padding: 12px;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	background: #f7f7f9;
+}
+.routes-design-workspace .route-group-node[data-default-group='false'] {
+	border-color: #e7e2f2;
+	background: #f7f4fc;
+}
+.routes-design-workspace .route-group-node .route-group-label {
+	height: auto;
+	align-items: center;
+	padding: 0;
+}
+.routes-design-workspace .route-group-node .route-group-rail {
+	display: none;
+}
+.routes-design-workspace .route-group-node .route-group-details > :first-child {
+	padding-top: 8px;
+}
+.routes-design-workspace .route-upstream-pool {
+	border-color: #e3e5e9;
+	box-shadow: 0 1px 3px rgb(24 24 27 / 4%);
+}
+.routes-design-workspace .route-priority-heading {
+	background: #f8f9fb;
+	color: #525866;
+}
+.routes-design-workspace .route-provider-target {
+	border-color: #eceef1;
+	box-shadow: none;
+}
+.routes-design-workspace .route-provider-target > span[aria-hidden] {
+	width: 2px;
+	opacity: 0.65;
+}
+.routes-design-workspace .route-provider-list-grid {
+	gap: 12px;
+	padding: 12px;
+}
+.routes-design-workspace .route-provider-list-content {
+	grid-template-columns: minmax(0, 1fr);
+	gap: 8px;
+}
+.routes-design-workspace .route-provider-list-summary {
+	grid-column: 1;
+	grid-row: auto;
+	padding-left: 0;
+	gap: 8px;
+}
+.routes-design-workspace .route-provider-list-identity {
+	max-width: 100%;
+	margin-left: 0;
+}
+.routes-design-workspace .route-provider-list-name,
+.routes-design-workspace .route-provider-card-name {
+	font-size: 14px;
+	line-height: 20px;
+}
+.routes-design-workspace .route-provider-list-model,
+.routes-design-workspace .route-provider-list-meta {
+	grid-column: 1;
+	grid-row: auto;
+	padding-left: 36px;
+}
+.routes-design-workspace .route-provider-list-meta {
+	color: #666c77;
+}
+.routes-design-workspace .route-provider-list-summary {
+	display: block;
+}
+.routes-design-workspace .route-provider-list-status {
+	margin-left: 0;
+	padding-top: 0;
+	justify-content: flex-start;
+	gap: 4px;
+}
+.routes-design-workspace .route-provider-status-toggle {
+	min-height: 24px;
+	gap: 4px;
+	padding: 0 4px;
+	white-space: nowrap;
+}
+.routes-design-workspace .route-provider-list-secondary > .route-provider-list-status:first-child {
+	margin-left: -4px;
+}
+.routes-design-workspace .route-provider-list-secondary > span + .route-provider-list-status {
+	border-left: 1px solid #dfe3e8;
+	padding-left: 4px;
+}
+.routes-design-workspace .route-provider-status-reason {
+	min-height: 24px;
+}
+.routes-design-workspace .route-provider-list-meta > * + * {
+	border-color: #e5e7eb;
+}
+.routes-design-workspace .route-provider-price-well {
+	border-color: #edf0f3;
+	background: #f8f9fb;
+}
+.routes-design-workspace .route-provider-list-pricing {
+	padding: 10px 12px;
+	border: 1px solid #edf0f3;
+	border-radius: 10px;
+	align-self: center;
+}
+.routes-design-workspace .route-provider-pricing-columns {
+	grid-template-columns: minmax(64px, 1fr) repeat(2, 4rem);
+	gap: 0 8px;
+}
+.routes-design-workspace .route-provider-pricing-configured {
+	grid-template-columns: minmax(64px, 1fr) repeat(3, 3rem);
+}
+.routes-design-workspace .route-provider-price-heading {
+	color: #6b7280;
+}
+.routes-design-workspace .route-factor-value {
+	padding: 2px 6px;
+	font-size: 13px;
+	line-height: 20px;
+}
+.routes-design-workspace .route-surface-section {
+	border-color: #e4e5e9;
+	border-radius: 16px;
+}
+.routes-design-workspace .route-surface-section > button {
+	background: #f4f5f7;
+	padding-block: 16px;
+}
+.routes-design-workspace .route-surface-canvas {
+	background: #fafafb;
+}
+.routes-design-workspace .route-catalog-model-node {
+	box-shadow: none;
+}
+.routes-design-workspace .route-design-dialog {
+	border-radius: 20px;
+	box-shadow: 0 20px 64px rgb(24 24 27 / 16%);
+}
+.routes-design-workspace .route-editor-dialog > header h2 {
+	align-items: center;
+	flex-wrap: wrap;
+}
+.routes-design-workspace .route-section-heading {
+	border-color: #eef0f3;
+	background: #fff;
+	padding-block: 16px;
+}
+.routes-design-workspace .route-section-symbol {
+	display: inline-flex;
+	width: 28px;
+	height: 28px;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	border-radius: 8px;
+	background: #f0f4fa;
+	color: #5574a4;
+}
+.routes-design-workspace .route-editor-section {
+	border-color: #e6e8ec;
+	box-shadow: 0 1px 2px rgb(24 24 27 / 2%);
+}
+.routes-design-workspace .route-design-dialog [role='tablist'] {
+	gap: 4px;
+	margin: 12px 20px;
+	padding: 4px;
+	border: 0;
+	border-radius: 10px;
+	background: #f3f4f6;
+}
+.routes-design-workspace .route-editor-dialog [role='tablist'] {
+	margin: 16px 0;
+}
+.routes-design-workspace .route-design-dialog [role='tab'] {
+	justify-content: center;
+	padding: 8px 12px;
+	border: 0;
+	border-radius: 7px;
+	font-size: 13px;
+	font-weight: 500;
+}
+.routes-design-workspace
+	.route-design-dialog
+	[role='tab'][aria-selected='true'] {
+	background: #fff;
+	color: #202938;
+	box-shadow: 0 1px 3px rgb(24 24 27 / 8%);
+}
+@container route-providers (min-width: 34rem) {
+	.routes-design-workspace .route-provider-list-grid {
+		grid-template-columns: minmax(0, 1fr) minmax(15rem, 0.85fr);
+	}
+	.routes-design-workspace .route-provider-list-content {
+		grid-column: 1;
+		grid-row: 1;
+	}
+	.routes-design-workspace .route-provider-list-pricing {
+		grid-column: 2;
+		grid-row: 1;
+	}
+}
+@media (max-width: 1279px) {
+	.routes-design-workspace .route-group-node .route-group-details {
+		display: block;
+		margin-top: 0;
+	}
+	.routes-design-workspace
+		.route-group-node
+		.route-group-details
+		> :last-child {
+		margin-top: 8px;
+	}
+}
+@media (max-width: 639px) {
+	.routes-design-workspace .route-vendor-section {
+		padding: 12px;
+		border-radius: 16px;
+	}
+	.routes-design-workspace .route-workspace-toolbar > :last-child {
+		width: 100%;
+	}
+	.routes-design-workspace .route-coverage-summary {
+		width: 128px;
+		margin-inline: 0;
+	}
+	.routes-design-workspace .route-model-surfaces {
+		padding: 4px 12px 12px;
+	}
+	.routes-design-workspace .route-model-heading {
+		padding: 16px;
+	}
+	.routes-design-workspace .route-provider-list-model,
+	.routes-design-workspace .route-provider-list-meta {
+		padding-left: 0;
+	}
+	.routes-design-workspace .route-provider-pricing-configured {
+		grid-template-columns: minmax(0, 1fr) repeat(3, minmax(0, 2.75rem));
+	}
+	.routes-design-workspace .route-provider-list-pricing {
+		padding: 8px;
+	}
+	.routes-design-workspace .route-model-symbol {
+		width: 28px;
+		height: 28px;
+	}
+}
+
+@container route-providers (min-width: 60rem) {
+	.routes-design-workspace .route-provider-list-grid {
+		grid-template-columns: minmax(0, 1fr) 22rem;
+	}
+	.routes-design-workspace .route-provider-list-content {
+		grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+	}
+	.routes-design-workspace .route-provider-list-summary {
+		grid-column: 1;
+		grid-row: 1 / 3;
+	}
+	.routes-design-workspace .route-provider-list-model {
+		grid-column: 2;
+		grid-row: 1;
+		padding-left: 0;
+	}
+	.routes-design-workspace .route-provider-list-meta {
+		grid-column: 2;
+		grid-row: 2;
+		padding-left: 0;
+	}
+}
+
+.routes-design-workspace .route-factor-field {
+	padding: 8px;
+	border-radius: 10px;
+	background: #f8f9fb;
+}
+.routes-design-workspace
+	.route-factor-field[data-factor-type='charged_factor'] {
+	background: #f1f5fb;
+}
+.routes-design-workspace
+	.route-factor-field[data-factor-type='metered_factor'] {
+	background: #eff8f3;
+}
+.routes-design-workspace
+	.route-factor-heading[data-factor-type='charged_factor'] {
+	color: #41638f;
+}
+.routes-design-workspace
+	.route-factor-heading[data-factor-type='metered_factor'] {
+	color: #3e765b;
+}
+.routes-design-workspace
+	.route-design-dialog
+	[role='radio'][aria-checked='true'] {
+	border-color: #b9cbe3;
+	background: #f3f7fc;
+	box-shadow: inset 0 0 0 1px #d4e0ef;
+}
+
+@media (max-width: 639px) {
+	.routes-design-workspace
+		.route-provider-pricing-columns:not(.route-provider-pricing-configured) {
+		grid-template-columns: minmax(0, 1fr) repeat(2, minmax(0, 4rem));
+	}
+	.routes-design-workspace .route-factor-field {
+		padding: 8px 4px;
+	}
+	.routes-design-workspace .route-factor-field > div:first-child {
+		min-height: 32px;
+		align-items: flex-start;
+	}
+}
+/* Leave room for the small provider-discount marker at the last value. */
+.routes-design-workspace .route-provider-pricing-columns {
+	padding-inline-end: 2px;
+}

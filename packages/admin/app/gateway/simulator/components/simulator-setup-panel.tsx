@@ -1,10 +1,13 @@
 'use client';
 
+import { AdminInspector } from '@/components/admin-inspector';
+import { ArrowPathIcon, KeyIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { formatKeyOptionLabel, inputClass, labelClass } from '../simulator-utils';
 import type { AdminKeyListItem } from '../types';
 
 type Props = {
+	disabled: boolean;
 	proxyBaseUrl: string;
 	onProxyBaseUrlChange: (v: string) => void;
 	filterKeyEmail: string;
@@ -22,6 +25,7 @@ type Props = {
 };
 
 export function SimulatorSetupPanel({
+	disabled,
 	proxyBaseUrl,
 	onProxyBaseUrlChange,
 	filterKeyEmail,
@@ -39,74 +43,112 @@ export function SimulatorSetupPanel({
 }: Props) {
 	const t = useTranslations('simulator');
 	const tCommon = useTranslations('common');
-	const keyStatus = [
-		t('keysShowing', { shown: keys.length, total: keysTotal }),
-		revealLoading && selectedKeyId ? t('loadingKey') : null,
-		!revealLoading && revealedSk && revealedSk.startsWith('sk-')
-			? t('loadedKey', { prefix: revealedSk.slice(0, 12), suffix: revealedSk.slice(-4) })
-			: null,
-	]
-		.filter(Boolean)
-		.join(' · ');
 
+	const keySelect = (id: string) => (
+		<div className="min-w-0 flex-1">
+			<label htmlFor={id} className={labelClass}>
+				{t('apiKey')}
+			</label>
+			<select
+				id={id}
+				disabled={disabled}
+				value={selectedKeyId}
+				onChange={(event) => onSelectedKeyIdChange(event.target.value)}
+				className={inputClass}
+			>
+				<option value="">{t('select')}</option>
+				{selectedKeyId && !keys.some((key) => key.id === selectedKeyId) && (
+					<option value={selectedKeyId}>
+						{t('selectedKeyOutsideFilter', { id: selectedKeyId.slice(0, 8) })}
+					</option>
+				)}
+				{keys.map((key) => (
+					<option key={key.id} value={key.id}>
+						{formatKeyOptionLabel(key)}
+					</option>
+				))}
+			</select>
+		</div>
+	);
 	return (
-		<section className="shrink-0 border-b border-gray-200/80 bg-white px-4 py-3 sm:px-5">
-			<div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-				<div className="min-w-0 flex-1">
-					<label className={labelClass}>{t('proxyBaseUrl')}</label>
+		<section aria-label={t('connection')} className="admin-editor-panel admin-content-panel shrink-0 rounded-xl border border-gray-200 bg-white p-4">
+			<div className="flex flex-wrap items-end gap-3">
+				<div className="min-w-0 flex-1 basis-64">
+					<label htmlFor="simulator-proxy" className={labelClass}>
+						{t('proxyBaseUrl')}
+					</label>
 					<input
+						id="simulator-proxy"
 						type="url"
+						disabled={disabled}
 						placeholder="http://127.0.0.1:8787"
 						value={proxyBaseUrl}
-						onChange={(e) => onProxyBaseUrlChange(e.target.value)}
+						onChange={(event) => onProxyBaseUrlChange(event.target.value)}
 						className={inputClass}
 						autoComplete="off"
 						title={t('localDevHint')}
 					/>
 				</div>
-				<div className="min-w-0 flex-[1.4]">
-					<label className={labelClass}>{t('apiKey')}</label>
-					<select
-						value={selectedKeyId}
-						onChange={(e) => onSelectedKeyIdChange(e.target.value)}
-						className={`${inputClass} font-mono`}
-					>
-						<option value="">{t('select')}</option>
-						{keys.map((k) => (
-							<option key={k.id} value={k.id}>
-								{formatKeyOptionLabel(k)}
-							</option>
-						))}
-					</select>
-				</div>
-				<div className="flex min-w-0 flex-1 items-end gap-2">
-					<div className="min-w-0 flex-1">
-						<label className={labelClass}>{t('emailContains')}</label>
-						<input
-							type="search"
-							value={filterKeyEmail}
-							onChange={(e) => onFilterKeyEmailChange(e.target.value)}
-							placeholder={t('emailContains')}
-							className={inputClass}
-						/>
+				<div className="min-w-0 flex-[1.4] basis-72">{keySelect('simulator-key')}</div>
+				<AdminInspector label={t('keyFilters')} size="md">
+					<div className="flex items-end gap-2">
+						<div className="min-w-0 flex-1">
+							<label htmlFor="simulator-key-email" className={labelClass}>
+								{t('emailContains')}
+							</label>
+							<input
+								id="simulator-key-email"
+								type="search"
+								disabled={disabled}
+								value={filterKeyEmail}
+								onChange={(event) => onFilterKeyEmailChange(event.target.value)}
+								className={inputClass}
+							/>
+						</div>
+						<button
+							type="button"
+							disabled={disabled || loadingKeys}
+							onClick={onRefreshKeys}
+							className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-gray-200 px-3 text-xs text-gray-600 disabled:opacity-50"
+						>
+							<ArrowPathIcon className={`h-4 w-4 ${loadingKeys ? 'animate-spin' : ''}`} aria-hidden />
+							{loadingKeys ? tCommon('refreshing') : t('refreshList')}
+						</button>
 					</div>
-					<button
-						type="button"
-						onClick={onRefreshKeys}
-						disabled={loadingKeys}
-						className="shrink-0 rounded-md border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
-					>
-						{loadingKeys ? tCommon('refreshing') : t('refreshList')}
-					</button>
-				</div>
+					{keySelect('simulator-filtered-key')}
+					<p role="status" className="text-xs text-gray-500">
+						{t('keysShowing', { shown: keys.length, total: keysTotal })}
+					</p>
+					{keysError && (
+						<p role="alert" className="text-xs text-red-700">
+							{keysError}
+						</p>
+					)}
+				</AdminInspector>
 			</div>
-			<p className="mt-2 truncate text-xs text-gray-500" title={keyStatus}>
-				{keyStatus}
-			</p>
-			{keysError ? (
-				<div className="mt-1 rounded border border-red-100 bg-red-50 px-2 py-1 text-xs text-red-600">{keysError}</div>
-			) : null}
-			{revealError ? <div className="mt-1 text-xs text-red-600">{revealError}</div> : null}
+			<div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+				{selectedKeyId && (
+					<span
+						role="status"
+						className={`inline-flex items-center gap-1.5 ${
+							revealedSk && !revealLoading ? 'text-emerald-700' : ''
+						}`}
+					>
+						<KeyIcon className="h-3.5 w-3.5" aria-hidden />
+						{revealLoading ? t('loadingKey') : revealedSk ? t('keyReady') : t('errSelectKey')}
+					</span>
+				)}
+				{keysError && (
+					<span role="alert" className="text-red-700">
+						{keysError}
+					</span>
+				)}
+				{revealError && (
+					<span role="alert" className="text-red-700">
+						{revealError}
+					</span>
+				)}
+			</div>
 		</section>
 	);
 }

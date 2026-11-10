@@ -1,6 +1,14 @@
 'use client';
 
-import { ArrowPathIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { AdminContentMark } from '@/components/admin-content-mark';
+
+import { useAdminDialog } from '@/components/use-admin-dialog';
+import {
+	ArrowPathIcon,
+	CheckCircleIcon,
+	ExclamationTriangleIcon,
+	XMarkIcon,
+} from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import type {
@@ -22,12 +30,26 @@ const STATUS_STYLE: Record<string, string> = {
 	removed: 'bg-slate-100 text-slate-700 ring-slate-200',
 };
 
-function Value({ value, tone }: { value: string | null; tone: 'old' | 'new' | 'none' }) {
+function Value({
+	value,
+	tone,
+}: {
+	value: string | null;
+	tone: 'old' | 'new' | 'none';
+}) {
 	if (value === null) return <span className="text-gray-300">—</span>;
 	const toneClass =
-		tone === 'old' ? 'bg-red-50 text-red-900' : tone === 'new' ? 'bg-emerald-50 text-emerald-900' : '';
+		tone === 'old'
+			? 'bg-red-50 text-red-900'
+			: tone === 'new'
+			? 'bg-emerald-50 text-emerald-900'
+			: '';
 	return (
-		<span className={`break-all rounded px-1 py-0.5 font-mono text-[11px] leading-5 ${toneClass}`}>{value}</span>
+		<span
+			className={`break-all rounded px-1 py-0.5 font-mono text-xs leading-5 ${toneClass}`}
+		>
+			{value}
+		</span>
 	);
 }
 
@@ -51,12 +73,21 @@ function ScalarDiff({ field }: { field: ModelSyncScalarField }) {
 	);
 }
 
-function PricingDiff({ field, currency }: { field: ModelSyncPricingField; currency: string }) {
+function PricingDiff({
+	field,
+	currency,
+}: {
+	field: ModelSyncPricingField;
+	currency: string;
+}) {
 	const t = useTranslations('models.sync');
 	return (
 		<div className="space-y-2">
 			<p className="flex items-start gap-1.5 rounded-md bg-amber-50 px-2.5 py-2 text-xs text-amber-900">
-				<ExclamationTriangleIcon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+				<ExclamationTriangleIcon
+					className="mt-0.5 h-4 w-4 shrink-0"
+					aria-hidden
+				/>
 				<span>{t('pricingHint', { currency })}</span>
 			</p>
 			<div className="overflow-x-auto">
@@ -71,21 +102,27 @@ function PricingDiff({ field, currency }: { field: ModelSyncPricingField; curren
 					<tbody className="divide-y divide-gray-100 align-top">
 						{field.rows.map((row) => (
 							<tr key={row.path}>
-								<td className="py-1.5 pr-2 font-mono text-[11px] text-gray-600">
+								<td className="py-1.5 pr-2 font-mono text-xs text-gray-600">
 									<span className="break-all">{row.path}</span>
 									{row.status === 'removed' ? (
 										<span
-											className={`ml-1 inline-flex rounded-full px-1.5 py-0.5 text-[10px] ring-1 ring-inset ${STATUS_STYLE.removed}`}
+											className={`ml-1 inline-flex rounded-full px-1.5 py-0.5 text-xs ring-1 ring-inset ${STATUS_STYLE.removed}`}
 										>
 											{t('status.removed')}
 										</span>
 									) : null}
 								</td>
 								<td className="py-1.5 pr-2">
-									<Value value={row.current} tone={row.current === null ? 'none' : 'old'} />
+									<Value
+										value={row.current}
+										tone={row.current === null ? 'none' : 'old'}
+									/>
 								</td>
 								<td className="py-1.5">
-									<Value value={row.official} tone={row.official === null ? 'none' : 'new'} />
+									<Value
+										value={row.official}
+										tone={row.official === null ? 'none' : 'new'}
+									/>
 								</td>
 							</tr>
 						))}
@@ -112,22 +149,26 @@ function FieldBlock(props: {
 		if (wantApply !== apply) onToggle();
 	};
 	const segment = (active: boolean, tone: 'official' | 'keep') =>
-		`px-2.5 py-1 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50 ${
+		`px-2.5 py-1 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:opacity-50 ${
 			active
 				? tone === 'official'
-					? 'bg-blue-600 text-white'
+					? 'admin-primary'
 					: 'bg-slate-700 text-white'
 				: 'bg-white text-gray-600 hover:bg-gray-50'
 		}`;
 
 	return (
 		<div
-			className={`rounded-lg border p-3 ${apply ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200 bg-white'}`}
+			className={`rounded-lg border p-3 ${
+				apply ? 'border-gray-200 bg-gray-50/30' : 'border-gray-200 bg-white'
+			}`}
 		>
 			<div className="mb-2 flex flex-wrap items-center gap-2">
-				<h4 className="text-sm font-semibold text-gray-900">{title}</h4>
+				<h4 className="text-sm font-medium text-gray-900">{title}</h4>
 				<span
-					className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${STATUS_STYLE[field.status]}`}
+					className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
+						STATUS_STYLE[field.status]
+					}`}
 				>
 					{t(`status.${field.status}`)}
 				</span>
@@ -167,31 +208,41 @@ function FieldBlock(props: {
 	);
 }
 
-function ModelBlock(props: { sync: ModelSyncState; model: ModelSyncModelEntry; currency: string }) {
+function ModelBlock(props: {
+	sync: ModelSyncState;
+	model: ModelSyncModelEntry;
+	currency: string;
+}) {
 	const { sync, model, currency } = props;
 	const t = useTranslations('models.sync');
 	const tCard = useTranslations('models.card');
 	const selectedCount = sync.selectedFieldsOf(model).length;
 
 	return (
-		<section className="rounded-xl border border-gray-200 bg-white shadow-sm">
+		<section className="admin-content-panel rounded-xl border border-gray-200 bg-white shadow-sm">
 			<header className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-3">
 				<div className="min-w-0">
-					<h3 className="truncate text-sm font-semibold text-gray-900">
+					<h3 className="truncate text-sm font-medium text-gray-900">
 						{model.display_name || model.model_id}
 					</h3>
-					<p className="truncate font-mono text-[11px] text-gray-500">{model.model_id}</p>
+					<p className="truncate font-mono text-xs text-gray-500">
+						{model.model_id}
+					</p>
 				</div>
 				<span className="text-xs text-gray-500">
 					{model.routes_count <= 0
 						? tCard('noRoutes')
-						: `${tCard(model.routes_count === 1 ? 'routes' : 'routesPlural', { count: model.routes_count })} · ${tCard('activeRoutes', { count: model.active_routes_count })}`}
+						: `${tCard(model.routes_count === 1 ? 'routes' : 'routesPlural', {
+								count: model.routes_count,
+						  })} · ${tCard('activeRoutes', {
+								count: model.active_routes_count,
+						  })}`}
 				</span>
 				<button
 					type="button"
 					onClick={() => void sync.runApply([model.model_id])}
 					disabled={sync.submitting || selectedCount === 0}
-					className="ml-auto rounded-md border border-blue-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+					className="ml-auto rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-800 hover:bg-gray-50 disabled:opacity-50"
 				>
 					{t('applyModel', { count: selectedCount })}
 				</button>
@@ -203,7 +254,9 @@ function ModelBlock(props: { sync: ModelSyncState; model: ModelSyncModelEntry; c
 						model={model}
 						field={field}
 						currency={currency}
-						apply={Boolean(sync.selection[modelSyncSelectionKey(model.model_id, field.key)])}
+						apply={Boolean(
+							sync.selection[modelSyncSelectionKey(model.model_id, field.key)]
+						)}
 						disabled={sync.submitting}
 						onToggle={() => sync.toggleField(model.model_id, field.key)}
 					/>
@@ -213,7 +266,11 @@ function ModelBlock(props: { sync: ModelSyncState; model: ModelSyncModelEntry; c
 	);
 }
 
-function GroupPanel(props: { sync: ModelSyncState; group: ModelSyncVendorGroup; currency: string }) {
+function GroupPanel(props: {
+	sync: ModelSyncState;
+	group: ModelSyncVendorGroup;
+	currency: string;
+}) {
 	const { sync, group, currency } = props;
 	const t = useTranslations('models.sync');
 	return (
@@ -221,7 +278,9 @@ function GroupPanel(props: { sync: ModelSyncState; group: ModelSyncVendorGroup; 
 			<div className="flex flex-wrap items-center gap-3">
 				<ModelVendorIcon vendor={group.vendor} size="compact" />
 				<div className="min-w-0">
-					<h3 className="truncate text-base font-semibold text-gray-900">{group.vendor_label}</h3>
+					<h3 className="truncate text-base font-medium text-gray-900">
+						{group.vendor_label}
+					</h3>
 					<p className="text-xs text-gray-500">{t('groupHint')}</p>
 				</div>
 				<div className="ml-auto flex flex-wrap gap-2">
@@ -244,13 +303,19 @@ function GroupPanel(props: { sync: ModelSyncState; group: ModelSyncVendorGroup; 
 				</div>
 			</div>
 			{group.models.map((model) => (
-				<ModelBlock key={model.model_id} sync={sync} model={model} currency={currency} />
+				<ModelBlock
+					key={model.model_id}
+					sync={sync}
+					model={model}
+					currency={currency}
+				/>
 			))}
 		</div>
 	);
 }
 
 export function ModelSyncModal({ sync }: ModelSyncModalProps) {
+	const dialogRef = useAdminDialog(sync.open, sync.submitting, sync.close);
 	const t = useTranslations('models.sync');
 	const tCommon = useTranslations('common');
 
@@ -259,24 +324,31 @@ export function ModelSyncModal({ sync }: ModelSyncModalProps) {
 	const report = sync.report;
 	const hasAnything = Boolean(report && report.groups.length > 0);
 	const activeGroup =
-		report && sync.activeVendor ? report.groups.find((g) => g.vendor === sync.activeVendor) : undefined;
+		report && sync.activeVendor
+			? report.groups.find((g) => g.vendor === sync.activeVendor)
+			: undefined;
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
 			onMouseDown={(e) => {
 				if (e.target === e.currentTarget && !sync.submitting) sync.close();
 			}}
 		>
 			<div
-				className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+				ref={dialogRef}
+				tabIndex={-1}
+				className="admin-content-dialog flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="model-sync-title"
 			>
-				<div className="flex shrink-0 items-start justify-between gap-3 border-b px-6 py-4">
+				<div className="admin-dialog-header flex shrink-0 items-start justify-between gap-3 border-b px-6 py-4">
 					<div>
-						<h2 id="model-sync-title" className="text-xl font-bold text-gray-900">
+						<h2
+							id="model-sync-title"
+							className="admin-dialog-title text-lg font-medium text-gray-900"
+						><AdminContentMark />
 							{t('title')}
 						</h2>
 						<p className="mt-1 text-xs text-gray-500">{t('subtitle')}</p>
@@ -290,16 +362,19 @@ export function ModelSyncModal({ sync }: ModelSyncModalProps) {
 							aria-label={t('recheck')}
 							title={t('recheck')}
 						>
-							<ArrowPathIcon className={`h-5 w-5 ${sync.loading ? 'animate-spin' : ''}`} aria-hidden />
+							<ArrowPathIcon
+								className={`h-5 w-5 ${sync.loading ? 'animate-spin' : ''}`}
+								aria-hidden
+							/>
 						</button>
 						<button
 							type="button"
 							onClick={sync.close}
 							disabled={sync.submitting}
-							className="px-2 text-2xl leading-none text-gray-400 hover:text-gray-600 disabled:opacity-50"
+							className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
 							aria-label={tCommon('close')}
 						>
-							×
+							<XMarkIcon className="h-5 w-5" aria-hidden />
 						</button>
 					</div>
 				</div>
@@ -312,7 +387,10 @@ export function ModelSyncModal({ sync }: ModelSyncModalProps) {
 						>
 							<ul className="space-y-1">
 								{report.groups.map((group) => {
-									const fieldCount = group.models.reduce((n, m) => n + m.fields.length, 0);
+									const fieldCount = group.models.reduce(
+										(n, m) => n + m.fields.length,
+										0
+									);
 									const active = sync.activeVendor === group.vendor;
 									return (
 										<li key={group.vendor}>
@@ -320,15 +398,22 @@ export function ModelSyncModal({ sync }: ModelSyncModalProps) {
 												type="button"
 												onClick={() => sync.setActiveVendor(group.vendor)}
 												aria-current={active ? 'true' : undefined}
-												className={`flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-													active ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'
+												className={`flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${
+													active
+														? 'bg-gray-100 text-gray-950'
+														: 'text-gray-700 hover:bg-gray-100'
 												}`}
 											>
 												<ModelVendorIcon vendor={group.vendor} size="compact" />
 												<span className="min-w-0 flex-1">
-													<span className="block truncate font-medium">{group.vendor_label}</span>
-													<span className="block text-[11px] text-gray-500">
-														{t('groupSummary', { models: group.models.length, fields: fieldCount })}
+													<span className="block truncate font-medium">
+														{group.vendor_label}
+													</span>
+													<span className="block text-xs text-gray-500">
+														{t('groupSummary', {
+															models: group.models.length,
+															fields: fieldCount,
+														})}
 													</span>
 												</span>
 											</button>
@@ -341,7 +426,9 @@ export function ModelSyncModal({ sync }: ModelSyncModalProps) {
 
 					<div className="min-h-0 flex-1 overflow-y-auto bg-gray-50/50 px-6 py-5">
 						{sync.loading && !report ? (
-							<div className="py-16 text-center text-gray-600">{t('loading')}</div>
+							<div className="py-16 text-center text-gray-600">
+								{t('loading')}
+							</div>
 						) : null}
 						{sync.error ? (
 							<div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -350,29 +437,48 @@ export function ModelSyncModal({ sync }: ModelSyncModalProps) {
 						) : null}
 						{report && !sync.error && !hasAnything ? (
 							<div className="flex flex-col items-center gap-3 py-16 text-center">
-								<CheckCircleIcon className="h-12 w-12 text-emerald-500" aria-hidden />
-								<p className="text-base font-medium text-gray-900">{t('allSyncedTitle')}</p>
-								<p className="max-w-md text-sm text-gray-500">{t('allSyncedHint')}</p>
+								<CheckCircleIcon
+									className="h-12 w-12 text-emerald-500"
+									aria-hidden
+								/>
+								<p className="text-base font-medium text-gray-900">
+									{t('allSyncedTitle')}
+								</p>
+								<p className="max-w-md text-sm text-gray-500">
+									{t('allSyncedHint')}
+								</p>
 							</div>
 						) : null}
 						{report && activeGroup ? (
-							<GroupPanel sync={sync} group={activeGroup} currency={report.billing_currency} />
+							<GroupPanel
+								sync={sync}
+								group={activeGroup}
+								currency={report.billing_currency}
+							/>
 						) : null}
 					</div>
 				</div>
 
-				<div className="flex shrink-0 flex-wrap items-center gap-3 border-t bg-gray-50 px-6 py-4">
-					<div className="min-w-0 flex-1 text-sm text-gray-600">
-						<p>
-							{t('summary', { fields: sync.totals.fields, models: sync.totals.models })}
-							{sync.totals.pricing > 0 ? (
-								<span className="ml-1 text-amber-700">
-									{t('summaryPricing', { models: sync.totals.pricing, routes: sync.totals.activeRoutes })}
-								</span>
-							) : null}
-						</p>
-						<p className="mt-0.5 text-xs text-gray-400">{t('safeNote')}</p>
-					</div>
+				<div className="admin-dialog-footer flex shrink-0 flex-wrap items-center justify-end gap-3 border-t bg-gray-50 px-6 py-4">
+					{hasAnything && (
+						<div className="min-w-0 flex-1 text-sm text-gray-600">
+							<p>
+								{t('summary', {
+									fields: sync.totals.fields,
+									models: sync.totals.models,
+								})}
+								{sync.totals.pricing > 0 ? (
+									<span className="ml-1 text-amber-700">
+										{t('summaryPricing', {
+											models: sync.totals.pricing,
+											routes: sync.totals.activeRoutes,
+										})}
+									</span>
+								) : null}
+							</p>
+							<p className="mt-0.5 text-xs text-gray-400">{t('safeNote')}</p>
+						</div>
+					)}
 					{report && report.groups.length > 0 ? (
 						<button
 							type="button"
@@ -391,14 +497,20 @@ export function ModelSyncModal({ sync }: ModelSyncModalProps) {
 					>
 						{tCommon('close')}
 					</button>
-					<button
-						type="button"
-						onClick={() => void sync.runApply()}
-						disabled={sync.submitting || sync.loading || sync.totals.fields === 0}
-						className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-					>
-						{sync.submitting ? t('applying') : t('applyAll', { count: sync.totals.models })}
-					</button>
+					{hasAnything && (
+						<button
+							type="button"
+							onClick={() => void sync.runApply()}
+							disabled={
+								sync.submitting || sync.loading || sync.totals.fields === 0
+							}
+							className="rounded-md admin-primary px-4 py-2 text-white hover:bg-gray-800 disabled:opacity-50"
+						>
+							{sync.submitting
+								? t('applying')
+								: t('applyAll', { count: sync.totals.models })}
+						</button>
+					)}
 				</div>
 			</div>
 		</div>

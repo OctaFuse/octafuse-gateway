@@ -1,0 +1,309 @@
+/* Supplier accounts, credentials and protocol capabilities.
+   Polish workflow: unslop by Damir Sokolovsky (@heydamir), CC BY 4.0.
+   Rules are scoped to the providers page and its owned dialogs. */
+.providers-design-workspace .provider-filter-panel {
+	padding: 16px;
+	border: 1px solid #e7e8ec;
+	border-radius: 16px;
+	background: #fff;
+}
+.providers-design-workspace .provider-list-canvas,
+.providers-design-workspace .provider-card-canvas {
+	padding: 12px;
+	border: 1px solid #edeef1;
+	border-radius: 18px;
+	background: #f1f2f4;
+}
+.providers-design-workspace .provider-list-heading {
+	gap: 24px;
+	padding: 0 16px 12px;
+	color: #676d78;
+}
+.providers-design-workspace .provider-list-items {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 8px;
+}
+.providers-design-workspace .provider-account {
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	background: #fff;
+	box-shadow: 0 1px 2px rgb(24 24 27 / 2%);
+}
+.providers-design-workspace .provider-account[data-view='list'] {
+	gap: 16px 24px;
+	padding: 16px;
+}
+.providers-design-workspace .provider-account > button:first-child {
+	border-radius: inherit;
+}
+.providers-design-workspace .provider-account:hover {
+	border-color: #ccd1d9;
+}
+.providers-design-workspace .provider-account[data-provider-status='disabled'] {
+	background: #f8f8fa;
+	box-shadow: none;
+}
+.providers-design-workspace .provider-identity {
+	order: 1;
+	align-items: center;
+}
+.providers-design-workspace .provider-account-meta > span + .provider-status-control {
+	border-left: 1px solid #e5e7eb;
+	padding-left: 8px;
+}
+.providers-design-workspace .provider-account-meta > .provider-status-control:first-child {
+	margin-left: -4px;
+}
+.providers-design-workspace .provider-capabilities {
+	order: 2;
+}
+.providers-design-workspace .provider-route-summary {
+	order: 4;
+}
+.providers-design-workspace .provider-key-well {
+	order: 3;
+	width: fit-content;
+	min-height: 38px;
+	max-width: 100%;
+	padding: 4px 8px;
+	border: 1px solid #edf0f3;
+	border-radius: 10px;
+	background: #f8f9fb;
+}
+.providers-design-workspace .provider-key-well > div {
+	flex-wrap: wrap;
+}
+.providers-design-workspace .provider-key-label {
+	padding: 2px 0;
+	background: transparent;
+	--tw-ring-color: transparent;
+}
+.providers-design-workspace .provider-key-well[data-key-status='pending'] {
+	border-color: #f4e2c6;
+	background: #fffaef;
+}
+.providers-design-workspace .provider-key-well[data-key-status='no_key'] {
+	border-color: #f2d9df;
+	background: #fff6f7;
+}
+.providers-design-workspace .provider-route-link {
+	gap: 4px 8px;
+}
+.providers-design-workspace .provider-route-symbol {
+	display: inline-flex;
+	width: 28px;
+	height: 28px;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	border-radius: 8px;
+	background: #f0f4fb;
+	color: #5273aa;
+}
+.providers-design-workspace .provider-account[data-provider-status='disabled'] .provider-route-symbol {
+	background: #edeef1;
+	color: #818792;
+}
+.providers-design-workspace .provider-protocol-trigger:hover {
+	background: #f0f3f8;
+}
+.providers-design-workspace .provider-protocol-tile {
+	gap: 8px;
+	padding: 4px 6px 4px 0;
+	border-color: transparent;
+	background: transparent;
+	color: #4e5664;
+}
+.providers-design-workspace .provider-protocol-symbol {
+	display: inline-flex;
+	width: 24px;
+	height: 24px;
+	align-items: center;
+	justify-content: center;
+	padding: 5px;
+	border: 1px solid #e9ecf1;
+	border-radius: 7px;
+	background: #f6f8fb;
+}
+.providers-design-workspace .provider-protocol-tile[data-protocol='anthropic'] .provider-protocol-symbol {
+	background: #f7f4f1;
+}
+.providers-design-workspace .provider-protocol-tile[data-protocol='gemini'] .provider-protocol-symbol {
+	background: #f4f3fc;
+}
+.providers-design-workspace .provider-account[data-view='cards'] {
+	gap: 16px;
+	padding: 16px;
+}
+.providers-design-workspace .provider-account[data-view='cards'] .provider-capabilities {
+	padding: 12px;
+	border-radius: 10px;
+	background: #f7f8fa;
+}
+.providers-design-workspace .provider-account[data-view='cards'] .provider-key-well {
+	order: 4;
+	width: auto;
+	margin: 0;
+}
+.providers-design-workspace .provider-account[data-view='cards'] .provider-route-summary {
+	order: 3;
+}
+.providers-design-workspace .provider-dialog,
+.providers-design-workspace .provider-quota-dialog {
+	border: 1px solid #e4e6eb;
+	border-radius: 18px;
+}
+.providers-design-workspace .provider-dialog-heading {
+	padding: 24px;
+	border-color: #eceef1;
+}
+.providers-design-workspace .provider-dialog-heading p {
+	max-width: 60ch;
+	line-height: 20px;
+}
+.providers-design-workspace .provider-dialog-symbol {
+	display: inline-flex;
+	width: 36px;
+	height: 36px;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	border-radius: 10px;
+	background: #eff4fc;
+	color: #4c6fa9;
+}
+.providers-design-workspace .provider-main-tabs {
+	padding: 0 24px 16px;
+}
+.providers-design-workspace .provider-tablist {
+	padding: 4px;
+	border: 1px solid #eeeff2;
+	border-radius: 10px;
+	background: #f4f5f7;
+}
+.providers-design-workspace .provider-tablist > [role='tab'] {
+	gap: 8px;
+	padding: 8px 12px;
+	border: 0;
+	border-radius: 7px;
+	font-size: 13px;
+	line-height: 20px;
+	color: #6c727e;
+}
+.providers-design-workspace .provider-tablist > [aria-selected='true'] {
+	background: #fff;
+	box-shadow: 0 1px 3px rgb(24 24 27 / 7%);
+	color: #242a35;
+}
+.providers-design-workspace .provider-dialog-body {
+	padding: 20px 24px;
+	border-top: 1px solid #eceef1;
+	background: #f6f7f9;
+}
+.providers-design-workspace .provider-credentials,
+.providers-design-workspace .provider-catalog-intro,
+.providers-design-workspace .provider-note {
+	padding: 16px;
+	border: 1px solid #e7e9ee;
+	border-radius: 12px;
+	background: #fff;
+}
+.providers-design-workspace .provider-section-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+	font-weight: 500;
+	line-height: 20px;
+	color: #4b5669;
+}
+.providers-design-workspace .provider-section-title > svg {
+	color: #6682af;
+}
+.providers-design-workspace .provider-note textarea {
+	height: 128px;
+	background: #fafbfc;
+}
+.providers-design-workspace .provider-dialog input:not([type='checkbox']):not([type='radio']),
+.providers-design-workspace .provider-dialog select,
+.providers-design-workspace .provider-dialog textarea {
+	min-width: 0;
+	max-width: 100%;
+	border-color: #dfe3e9;
+	border-radius: 8px;
+}
+.providers-design-workspace .provider-endpoint-tabs {
+	border: 1px solid #e7e9ee;
+	background: #edeff3;
+}
+.providers-design-workspace .provider-endpoint-fields {
+	border-color: #e3e6ec;
+	border-radius: 12px;
+}
+.providers-design-workspace .provider-dialog-footer {
+	padding: 16px 24px;
+	border-color: #e7e9ee;
+	background: #fff;
+}
+.providers-design-workspace .provider-import-body,
+.providers-design-workspace .provider-sync-body {
+	background: #f4f5f7;
+}
+.providers-design-workspace .provider-import-list > li {
+	overflow: hidden;
+	border: 1px solid #e5e7ed;
+	border-radius: 12px;
+	background: #fff;
+}
+.providers-design-workspace .provider-import-list [role='checkbox'][aria-checked='true'] {
+	background: #f0f5fc;
+}
+.providers-design-workspace .provider-sync-body section {
+	box-shadow: none;
+}
+.providers-design-workspace .provider-sync-body table {
+	table-layout: fixed;
+	width: 100%;
+}
+.providers-design-workspace .provider-sync-body td {
+	overflow-wrap: anywhere;
+}
+@media (max-width: 639px) {
+	.providers-design-workspace .provider-filter-panel {
+		padding: 12px;
+	}
+	.providers-design-workspace .provider-list-canvas,
+	.providers-design-workspace .provider-card-canvas {
+		padding: 8px;
+	}
+	.providers-design-workspace .provider-account[data-view='list'] {
+		gap: 12px;
+		padding: 12px;
+	}
+	.providers-design-workspace .provider-account[data-view='list'] .provider-identity {
+		margin-bottom: 4px;
+	}
+	.providers-design-workspace .provider-account[data-view='list'] .provider-capabilities {
+		padding: 8px;
+		border-radius: 8px;
+		background: #f7f8fa;
+	}
+	.providers-design-workspace .provider-dialog-heading {
+		padding: 16px;
+	}
+	.providers-design-workspace .provider-main-tabs {
+		padding: 0 16px 12px;
+	}
+	.providers-design-workspace .provider-tablist > [role='tab'] {
+		padding: 8px;
+		font-size: 12px;
+	}
+	.providers-design-workspace .provider-dialog-body {
+		padding: 16px;
+	}
+	.providers-design-workspace .provider-dialog-footer {
+		padding: 12px 16px;
+	}
+}

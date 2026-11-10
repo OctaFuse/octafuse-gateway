@@ -29,6 +29,16 @@ const nextConfig = {
 				destination: '/dashboard',
 				permanent: false,
 			},
+			{
+				source: '/gateway/maintenance',
+				destination: '/gateway/config#config-panel-maintenance',
+				permanent: false,
+			},
+			{
+				source: '/gateway/oauth-access-tokens',
+				destination: '/gateway/mcp#oauth-access-tokens',
+				permanent: false,
+			},
 		];
 	},
 	// 与 `turbopack.root` 必须相同（npm workspaces 下 Next 会从 monorepo 根解析 `next`）

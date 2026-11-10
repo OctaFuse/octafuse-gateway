@@ -74,15 +74,15 @@ export function RouteModelCard(props: Props) {
 	const tagExtra = tags.length - tagShown.length;
 
 	return (
-		<div className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200/80 bg-white shadow-sm transition-all duration-200 ease-out hover:-translate-y-1 hover:border-blue-300 hover:bg-blue-50/30 hover:shadow-lg hover:shadow-blue-100/70 hover:ring-1 hover:ring-blue-200 focus-within:border-blue-400 focus-within:bg-blue-50/30 focus-within:shadow-lg focus-within:ring-2 focus-within:ring-blue-500 active:translate-y-0">
-			<div className="flex items-start justify-between gap-2 border-b border-gray-100 bg-white px-4 py-3 transition-colors group-hover:bg-blue-50/30 group-focus-within:bg-blue-50/30">
+		<div className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200/80 bg-white transition-colors  hover:border-gray-300 hover:bg-gray-50/30   hover:ring-1 hover:ring-gray-200 focus-within:border-gray-400 focus-within:bg-gray-50/30  focus-within:ring-1 focus-within:ring-gray-500 ">
+			<div className="flex items-start justify-between gap-2 border-b border-gray-100 bg-white px-4 py-3 transition-colors group-hover:bg-gray-50/30 group-focus-within:bg-gray-50/30">
 				<div className="min-w-0 flex-1">
 					<div className="flex min-w-0 flex-wrap items-center gap-1.5">
-						<h4 className="min-w-0 truncate text-sm font-semibold leading-snug text-gray-900">
+						<h4 className="min-w-0 truncate text-sm font-medium leading-snug text-gray-900">
 							<button
 								type="button"
 								onClick={() => onEditModel(model_id)}
-								className="max-w-full truncate text-left text-gray-900 underline-offset-2 hover:text-blue-700 hover:underline focus:outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-blue-500"
+								className="max-w-full truncate text-left text-gray-900 underline-offset-2 hover:text-gray-800 hover:underline focus:outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-gray-500"
 								title={t('editModelTitle', { title })}
 							>
 								{title}
@@ -91,7 +91,7 @@ export function RouteModelCard(props: Props) {
 						<button
 							type="button"
 							onClick={() => onEditModel(model_id)}
-							className="shrink-0 rounded-md p-0.5 text-gray-400 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+							className="shrink-0 rounded-md p-0.5 text-gray-400 hover:bg-gray-50 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-1"
 							title={t('editModel', { title })}
 							aria-label={t('editModelAria', { title })}
 						>
@@ -100,7 +100,7 @@ export function RouteModelCard(props: Props) {
 						<button
 							type="button"
 							onClick={() => void onCopyModelId(model_id)}
-							className={`shrink-0 rounded-md p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${
+							className={`shrink-0 rounded-md p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-1 ${
 								copiedModelId === model_id
 									? 'text-green-600 hover:bg-green-50 hover:text-green-700'
 									: 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'
@@ -116,11 +116,11 @@ export function RouteModelCard(props: Props) {
 						</button>
 					</div>
 					<div className="mt-0.5 flex min-w-0 items-center gap-1.5">
-						<p className="min-w-0 truncate text-[11px] text-gray-500" title={modelStatsTitle}>
+						<p className="min-w-0 truncate text-xs text-gray-500" title={modelStatsTitle}>
 							{modelStatsLine}
 						</p>
 						{copiedModelId === model_id ? (
-							<span className="shrink-0 rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-green-700 ring-1 ring-inset ring-green-200">
+							<span className="shrink-0 rounded bg-green-50 px-1.5 py-0.5 text-xs font-medium leading-4 text-green-700 ring-1 ring-inset ring-green-200">
 								{t('copied')}
 							</span>
 						) : null}
@@ -131,18 +131,18 @@ export function RouteModelCard(props: Props) {
 								{tagShown.map((tag) => (
 									<span
 										key={tag}
-										className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${tagBadgeClass(tag)}`}
+										className={`rounded px-1.5 py-0.5 text-xs font-medium ${tagBadgeClass(tag)}`}
 										title={t('modelTagTitle', { tag })}
 									>
 										{tag}
 									</span>
 								))}
 								{tagExtra > 0 ? (
-									<span className="self-center text-[10px] text-gray-400">+{tagExtra}</span>
+									<span className="self-center text-xs text-gray-400">+{tagExtra}</span>
 								) : null}
 							</>
 						) : (
-							<span className="text-[10px] text-gray-400">{tModelsCard('noTags')}</span>
+							<span className="text-xs text-gray-400">{tModelsCard('noTags')}</span>
 						)}
 					</div>
 				</div>
@@ -150,14 +150,14 @@ export function RouteModelCard(props: Props) {
 					<button
 						type="button"
 						onClick={() => onCreate(model_id)}
-						className="rounded-md p-1 text-blue-600 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+						className="rounded-md p-1 text-gray-800 hover:bg-gray-50 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-1"
 						title={t('newRouteFor', { title })}
 						aria-label={t('newRouteFor', { title })}
 					>
 						<PlusIcon className="h-5 w-5" />
 					</button>
 					<span
-						className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold tabular-nums ring-1 ring-inset ${
+						className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums ring-1 ring-inset ${
 							activeCount === 0
 								? 'bg-red-50 text-red-700 ring-red-200'
 								: 'bg-green-50 text-green-700 ring-green-200'

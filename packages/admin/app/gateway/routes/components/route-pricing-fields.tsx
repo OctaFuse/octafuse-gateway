@@ -2,7 +2,7 @@
 
 import { PricingInfoHint } from '@/components/PricingInfoHint';
 import { useMemo, useState } from 'react';
-import { CodeBracketIcon } from '@heroicons/react/24/outline';
+import { CodeBracketIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { ReadOnlyImagePricing } from '@/components/read-only-image-pricing';
 import { getUserChargedCatalogTierRows } from '@/lib/pricing-ui';
@@ -82,9 +82,9 @@ export function RoutePricingFields({
 					aria-expanded={priceOverrideJsonOpen}
 					aria-controls="route-price-override-json"
 					title={priceOverrideJsonOpen ? t('hidePriceOverrideJson') : t('viewPriceOverrideJson')}
-					className={`inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 ${
+					className={`inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500/30 ${
 						priceOverrideJsonOpen
-							? 'border-blue-300 bg-blue-50 text-blue-800'
+							? 'border-gray-300 bg-gray-50 text-gray-900'
 							: 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
 					}`}
 				>
@@ -98,7 +98,7 @@ export function RoutePricingFields({
 					className="mb-3 space-y-1.5 rounded-md border border-dashed border-gray-300 bg-gray-50/90 p-2"
 				>
 					<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-						<code className="rounded bg-white px-1 py-0.5 text-[11px] font-semibold text-gray-600">
+						<code className="rounded bg-white px-1 py-0.5 text-xs font-medium text-gray-600">
 							price_override
 						</code>
 						{priceOverridePreview.ok ? (
@@ -114,7 +114,7 @@ export function RoutePricingFields({
 										() => {}
 									);
 								}}
-								className="text-xs font-medium text-blue-600 hover:text-blue-800"
+								className="text-xs font-medium text-gray-800 hover:text-gray-900"
 							>
 								{priceOverrideJsonCopied ? tCommon('copied') : tCommon('copy')}
 							</button>
@@ -148,7 +148,7 @@ export function RoutePricingFields({
 									const window = i == null ? null : editorScheduleWindows[i];
 									return (
 										<details>
-											<summary className="cursor-pointer py-1 text-xs font-medium text-blue-600 hover:text-blue-800">
+											<summary className="cursor-pointer py-1 text-xs font-medium text-gray-800 hover:text-gray-900">
 												{t('editor.effectivePrices')}
 											</summary>
 											<p className="mb-2 text-xs leading-5 text-slate-500">{t('editor.pricesAtCurrentDate')}</p>
@@ -179,7 +179,7 @@ export function RoutePricingFields({
 							: undefined
 					}
 				/>
-				<RouteEditorSection
+				<RouteEditorSection icon={CurrencyDollarIcon}
 					className="lg:sticky lg:top-0"
 					title={t('standardCatalog')}
 					action={<PricingInfoHint kind="catalog" />}
@@ -200,7 +200,7 @@ export function RoutePricingFields({
 											<span className="text-xs text-gray-500">{tModels('audioInputPricePerM')}</span>
 											<span className="font-medium text-gray-900">
 												{catalogAudioPricingDisplay.inputPrice}
-												<span className="ml-1 text-[11px] font-normal text-gray-400">
+												<span className="ml-1 text-xs font-normal text-gray-400">
 													{catalogAudioPricingDisplay.unit}
 												</span>
 											</span>
@@ -209,7 +209,7 @@ export function RoutePricingFields({
 											<span className="text-xs text-gray-500">{tModels('audioOutputPricePerM')}</span>
 											<span className="font-medium text-gray-900">
 												{catalogAudioPricingDisplay.outputPrice}
-												<span className="ml-1 text-[11px] font-normal text-gray-400">
+												<span className="ml-1 text-xs font-normal text-gray-400">
 													{catalogAudioPricingDisplay.unit}
 												</span>
 											</span>
@@ -221,7 +221,7 @@ export function RoutePricingFields({
 											<span className="text-xs text-gray-500">{t('audioPricePerCharacter')}</span>
 											<span className="font-medium text-gray-900">
 												{catalogAudioPricingDisplay.pricePerCharacter}
-												<span className="ml-1 text-[11px] font-normal text-gray-400">
+												<span className="ml-1 text-xs font-normal text-gray-400">
 													{catalogAudioPricingDisplay.unit}
 												</span>
 											</span>
@@ -239,7 +239,7 @@ export function RoutePricingFields({
 											<span className="text-xs text-gray-500">{t('audioPricePerSecond')}</span>
 											<span className="font-medium text-gray-900">
 												{catalogAudioPricingDisplay.pricePerSecond}
-												<span className="ml-1 text-[11px] font-normal text-gray-400">
+												<span className="ml-1 text-xs font-normal text-gray-400">
 													{catalogAudioPricingDisplay.unit}
 												</span>
 											</span>

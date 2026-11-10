@@ -270,13 +270,13 @@ export const PROTOCOL_DISPLAY_LABEL: Record<string, string> = {
 export const ROUTE_GROUP_CARD_BADGE_CLASS = 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200';
 
 export const FACTOR_CHIP_BASE =
-	'inline-flex w-auto shrink-0 whitespace-nowrap rounded-md px-1.5 py-0 text-[10px] font-semibold font-mono tabular-nums leading-4 ring-1 ring-inset';
+	'inline-flex w-auto shrink-0 whitespace-nowrap rounded-md px-1.5 py-0 text-xs font-medium font-mono tabular-nums leading-4 ring-1 ring-inset';
 
 export const routePricePanelShell: Record<'neutral' | 'charged' | 'metered' | 'provider', string> = {
 	neutral:
 		'rounded-lg border border-gray-300/90 bg-gray-50/90 p-4 shadow-sm ring-1 ring-gray-200/50',
 	charged:
-		'rounded-lg border border-blue-200/90 bg-blue-50/45 p-4 shadow-sm ring-1 ring-blue-100/60',
+		'rounded-lg border border-gray-200/90 bg-gray-50/45 p-4 shadow-sm ring-1 ring-gray-100/60',
 	metered:
 		'rounded-lg border border-emerald-200/90 bg-emerald-50/40 p-4 shadow-sm ring-1 ring-emerald-100/60',
 	provider:
@@ -285,7 +285,7 @@ export const routePricePanelShell: Record<'neutral' | 'charged' | 'metered' | 'p
 
 export const routePricePanelHeaderBorder: Record<'neutral' | 'charged' | 'metered' | 'provider', string> = {
 	neutral: 'border-b border-gray-200/90',
-	charged: 'border-b border-blue-200/80',
+	charged: 'border-b border-gray-200/80',
 	metered: 'border-b border-emerald-200/80',
 	provider: 'border-b border-violet-200/80',
 };

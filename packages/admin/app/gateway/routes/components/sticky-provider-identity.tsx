@@ -31,13 +31,13 @@ export function StickyProviderIdentity({
 						{name}
 					</span>
 					{enabled === false ? (
-						<span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
+						<span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
 							{t('targetDisabled')}
 						</span>
 					) : null}
 				</div>
 				{identity?.kindLabel ? (
-					<p title={identity.kindLabel} className={`mt-0.5 ${wrap ? '[overflow-wrap:anywhere]' : 'truncate'} text-[11px] text-gray-500`}>
+					<p title={identity.kindLabel} className={`mt-0.5 ${wrap ? '[overflow-wrap:anywhere]' : 'truncate'} text-xs text-gray-500`}>
 						{identity.kindLabel}
 					</p>
 				) : null}

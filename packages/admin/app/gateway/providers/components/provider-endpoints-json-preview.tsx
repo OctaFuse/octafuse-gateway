@@ -37,7 +37,7 @@ export function ProviderEndpointsJsonPreview({
 		<div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
 			<div className="flex items-start justify-between gap-4 border-b border-gray-200 bg-gray-50/70 px-4 py-3">
 				<div>
-					<h3 className="text-sm font-semibold text-gray-800">
+					<h3 className="text-sm font-medium text-gray-800">
 						{t("jsonConfigTitle")}
 					</h3>
 					<p id={hintId} className="mt-1 text-xs leading-5 text-gray-500">
@@ -47,7 +47,7 @@ export function ProviderEndpointsJsonPreview({
 				<button
 					type="button"
 					onClick={() => void copy()}
-					className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+					className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 				>
 					{copyState === "copied" ? (
 						<CheckIcon className="h-3.5 w-3.5 text-emerald-600" aria-hidden />
@@ -70,7 +70,7 @@ export function ProviderEndpointsJsonPreview({
 				aria-describedby={hintId}
 				value={json}
 				rows={18}
-				className="block min-h-64 w-full resize-none border-0 bg-gray-50/40 p-4 font-mono text-xs leading-6 text-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-200"
+				className="block min-h-64 w-full resize-none border-0 bg-gray-50/40 p-4 font-mono text-xs leading-6 text-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gray-200"
 			/>
 		</div>
 	);

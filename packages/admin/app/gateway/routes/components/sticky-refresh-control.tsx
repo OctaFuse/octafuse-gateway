@@ -12,6 +12,7 @@ import { useStickyRefreshControls } from '../sticky-summary-store';
 
 type Props = {
 	intervalMs: StickyRefreshIntervalMs;
+	compact?: boolean;
 };
 
 function formatAgo(elapsedMs: number): string {
@@ -22,7 +23,7 @@ function formatAgo(elapsedMs: number): string {
 }
 
 export function StickyRefreshControl(props: Props) {
-	const { intervalMs } = props;
+	const { intervalMs, compact = false } = props;
 	const t = useTranslations('routes.workspace');
 	const { refreshAll, isRefreshing, lastUpdatedAt, registeredCount } = useStickyRefreshControls();
 	const disabled = registeredCount === 0;
@@ -44,6 +45,7 @@ export function StickyRefreshControl(props: Props) {
 			className="flex items-center gap-1.5"
 			title={disabled ? t('stickyRefreshEmptyHint') : t('stickyRefreshLabel')}
 		>
+			{!compact && <>
 			<label className="shrink-0 text-xs text-slate-500" htmlFor="routes-sticky-refresh-interval">
 				{t('stickyRefreshShortLabel')}
 			</label>
@@ -65,20 +67,21 @@ export function StickyRefreshControl(props: Props) {
 					if (!STICKY_REFRESH_INTERVAL_OPTIONS.includes(next)) return;
 					writeStickyRefreshInterval(next);
 				}}
-				className="max-w-[9.5rem] rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-600 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+				className="max-w-[9.5rem] rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-not-allowed disabled:opacity-60"
 			>
 				<option value="off">{t('stickyRefreshOff')}</option>
 				<option value="60000">{t('stickyRefresh1m')}</option>
 				<option value="300000">{t('stickyRefresh5m')}</option>
 				<option value="600000">{t('stickyRefresh10m')}</option>
 			</select>
+			</>}
 			<button
 				type="button"
 				onClick={() => void refreshAll()}
 				disabled={disabled || isRefreshing}
 				title={agoLabel ? `${t('stickyRefreshNow')} · ${agoLabel}` : t('stickyRefreshNow')}
 				aria-label={t('stickyRefreshNow')}
-				className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+				className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-not-allowed disabled:opacity-60"
 			>
 				<ArrowPathIcon className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
 			</button>

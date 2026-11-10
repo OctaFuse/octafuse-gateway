@@ -22,12 +22,12 @@ export function FilterDisclosure({ children, activeCount = 0, className = '', la
         aria-expanded={expanded}
         aria-controls={contentId}
         onClick={() => setExpanded((value) => !value)}
-        className="flex min-h-11 w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm font-medium text-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 md:hidden"
+        className="flex min-h-11 w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm font-medium text-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-500 md:hidden"
       >
         <AdjustmentsHorizontalIcon className="h-4 w-4 shrink-0" aria-hidden />
         <span className="min-w-0 flex-1">{label ?? t('filters')}</span>
         {activeCount > 0 && (
-          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
+          <span className="rounded-full bg-gray-50 px-2 py-0.5 text-xs text-gray-800">
             {t('activeFilters', { count: activeCount })}
           </span>
         )}

@@ -11,6 +11,9 @@ import {
 	InformationCircleIcon,
 	AdjustmentsHorizontalIcon,
 	ShareIcon,
+	KeyIcon,
+	ServerStackIcon,
+	ChatBubbleLeftEllipsisIcon,
 } from "@heroicons/react/24/outline";
 import { CheckIcon } from "@heroicons/react/24/solid";
 import { useTranslations, useLocale } from "next-intl";
@@ -62,6 +65,7 @@ import { PROVIDER_ENDPOINT_FIELDS } from "../provider-endpoint-fields";
 
 type ProviderModalProps = {
 	open: boolean;
+	initialTab?: "basic" | "endpoints" | "routes";
 	editingProvider: GatewayProvider | null;
 	duplicateSourceId: string | null;
 	formData: ProviderFormData;
@@ -78,7 +82,7 @@ type ProviderModalProps = {
 };
 
 const inputClass =
-	"w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500";
+	"w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-500";
 
 const PROTOCOL_TABS: Array<{
 	key: UpstreamProtocol;
@@ -174,8 +178,8 @@ function EndpointUrlField({
 				</InfoHintPopover>
 				<code
 					id={`${id}-path`}
-					className={`ml-auto break-all rounded px-1.5 py-0.5 text-[11px] font-medium leading-5 ${
-						filled ? "bg-blue-50 text-blue-700" : "bg-gray-100 text-gray-600"
+					className={`ml-auto break-all rounded px-1.5 py-0.5 text-xs font-medium leading-5 ${
+						filled ? "bg-gray-50 text-gray-800" : "bg-gray-100 text-gray-600"
 					}`}
 				>
 					{websocket ? "WSS " : ""}
@@ -188,9 +192,9 @@ function EndpointUrlField({
 				type="url"
 				value={value}
 				onChange={(event) => onChange(event.target.value)}
-				className={`w-full rounded-lg border px-3 py-2.5 font-mono text-[13px] leading-5 text-gray-900 transition-colors placeholder:text-gray-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 ${
+				className={`w-full rounded-lg border px-3 py-2.5 font-mono text-[13px] leading-5 text-gray-900 transition-colors placeholder:text-gray-400 focus:border-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gray-100 ${
 					filled
-						? "border-blue-200 bg-blue-50/30"
+						? "border-gray-200 bg-gray-50/30"
 						: "border-gray-200 bg-white hover:border-gray-300"
 				}`}
 				autoComplete="off"
@@ -202,7 +206,7 @@ function EndpointUrlField({
 					type="button"
 					onClick={() => onChange(suggestedUrl)}
 					title={suggestedUrl}
-					className="mt-2 rounded text-xs font-medium text-blue-600 hover:text-blue-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+					className="mt-2 rounded text-xs font-medium text-gray-800 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 				>
 					{t("useBaseUrlEndpoint")}
 				</button>
@@ -244,7 +248,7 @@ function ProtocolFields({
 			: null;
 
 	return (
-		<div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+		<div className="provider-endpoint-fields overflow-hidden rounded-xl border border-gray-200 bg-white">
 			<div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-gray-200 bg-gray-50/70 px-4 py-3">
 				<fieldset className="shrink-0">
 					<legend className="sr-only">{t("endpointMode")}</legend>
@@ -254,7 +258,7 @@ function ProtocolFields({
 								key={value}
 								className={`relative cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
 									mode === value
-										? "bg-white text-blue-700 shadow-sm ring-1 ring-gray-200/80"
+										? "bg-white text-gray-800 shadow-sm ring-1 ring-gray-200/80"
 										: "text-gray-500 hover:text-gray-800"
 								}`}
 							>
@@ -270,7 +274,7 @@ function ProtocolFields({
 									aria-describedby={`${panelId}-mode-hint`}
 								/>
 								<span
-									className="absolute inset-0 rounded-md peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500"
+									className="absolute inset-0 rounded-md peer-focus-visible:ring-2 peer-focus-visible:ring-gray-500"
 									aria-hidden
 								/>
 								{t(value === "all" ? "allCapabilities" : "partialCapabilities")}
@@ -294,7 +298,7 @@ function ProtocolFields({
 				<div className="px-4 py-5">
 					<label
 						htmlFor={`${panelId}-base`}
-						className="mb-2.5 block text-sm font-semibold text-gray-800"
+						className="mb-2.5 block text-sm font-medium text-gray-800"
 					>
 						{t("baseUrl")}
 					</label>
@@ -305,7 +309,7 @@ function ProtocolFields({
 						onChange={(event) =>
 							onChange({ ...form, base: event.target.value })
 						}
-						className="w-full rounded-lg border border-blue-200 bg-blue-50/30 px-3 py-2.5 font-mono text-[13px] leading-5 text-gray-900 placeholder:text-gray-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
+						className="w-full rounded-lg border border-gray-200 bg-gray-50/30 px-3 py-2.5 font-mono text-[13px] leading-5 text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gray-100"
 						placeholder={t(`${protocol}Placeholder`)}
 						autoComplete="off"
 						spellCheck={false}
@@ -328,7 +332,7 @@ function ProtocolFields({
 											title={t(`endpointCapabilities.${description}`)}
 											className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
 												checked
-													? "border-blue-200 bg-blue-50 text-blue-700"
+													? "border-gray-200 bg-gray-50 text-gray-800"
 													: "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
 											}`}
 										>
@@ -345,7 +349,7 @@ function ProtocolFields({
 														)
 													)
 												}
-												className="h-3.5 w-3.5 rounded border-gray-300 accent-blue-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+												className="h-3.5 w-3.5 rounded border-gray-300 accent-gray-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
 											/>
 											{t(`endpointCapabilityLabels.${description}`)}
 										</label>
@@ -464,7 +468,7 @@ function ProtocolFields({
 											: "auto",
 								})
 							}
-							className="min-w-0 flex-1 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-100"
+							className="min-w-0 flex-1 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-100"
 						>
 							<option value="auto">{t("geminiAuthAuto")}</option>
 							<option value="query-key">{t("geminiAuthQueryKey")}</option>
@@ -483,6 +487,7 @@ function ProtocolFields({
 export function ProviderModal(props: ProviderModalProps) {
 	const {
 		open,
+		initialTab = "basic",
 		editingProvider,
 		duplicateSourceId,
 		formData,
@@ -575,12 +580,12 @@ export function ProviderModal(props: ProviderModalProps) {
 	}, [formData.kind, locale]);
 
 	useEffect(() => {
-		setActiveTab("basic");
+		setActiveTab(editingProvider?.id ? initialTab : "basic");
 		setShowEndpointsJson(false);
 		setShowApiKey(false);
 		setApiKeyFocused(false);
 		setApiKeyCopied(false);
-	}, [open, editingProvider?.id, duplicateSourceId]);
+	}, [open, editingProvider?.id, duplicateSourceId, initialTab]);
 
 	useEffect(() => {
 		if (!open) return;
@@ -632,7 +637,7 @@ export function ProviderModal(props: ProviderModalProps) {
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-2 sm:p-6"
+			className="providers-design-workspace fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
 			onMouseDown={(e) => {
 				if (e.target === e.currentTarget && !busy) {
 					onClose();
@@ -679,24 +684,20 @@ export function ProviderModal(props: ProviderModalProps) {
 						first?.focus();
 					}
 				}}
-				className="flex h-[min(760px,90dvh)] max-h-[calc(100dvh-1rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl outline-none"
+				className="provider-dialog flex max-h-[min(720px,90dvh)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby={titleId}
 			>
-				<div className="flex shrink-0 items-start justify-between gap-4 px-5 pb-5 pt-6 sm:px-7">
+				<div className="provider-dialog-heading flex shrink-0 items-start justify-between gap-4 px-5 pb-5 pt-6 sm:px-7">
 					<div>
-						<h2 id={titleId} className="text-lg font-semibold text-gray-900">
+						<h2 id={titleId} className="flex items-center gap-3 text-lg font-medium text-gray-900">
+							<span className="provider-dialog-symbol" aria-hidden><ServerStackIcon className="h-5 w-5" /></span>
 							{editingProvider ? t("editTitle") : t("newTitle")}
 						</h2>
 						<p className="mt-1.5 text-sm text-gray-500">
-							{editingProvider ? t("editHint") : t("newHint")}
+							{editingProvider ? editingProvider.name : duplicateSourceId ? t("duplicateHint") : t("newHint")}
 						</p>
-						{!editingProvider && duplicateSourceId && (
-							<p className="mt-1 text-xs text-gray-500">
-								{t("prefilledFrom", { id: duplicateSourceId })}
-							</p>
-						)}
 					</div>
 					<button
 						type="button"
@@ -711,11 +712,11 @@ export function ProviderModal(props: ProviderModalProps) {
 					</button>
 				</div>
 
-				<div className="flex shrink-0 flex-wrap items-start justify-between gap-x-4 border-b border-gray-200 px-5 sm:px-7">
+				<div className="provider-main-tabs flex shrink-0 flex-wrap items-start justify-between gap-x-4 px-5 sm:px-7">
 					<div
 						role="tablist"
 						aria-label={t("modalTabs")}
-						className="flex gap-3 sm:gap-5"
+						className="provider-tablist flex flex-wrap gap-1"
 					>
 						{mainTabs.map(({ key, label, Icon }) => (
 							<button
@@ -731,9 +732,9 @@ export function ProviderModal(props: ProviderModalProps) {
 								}}
 								onKeyDown={navigateTabs}
 								tabIndex={activeTab === key ? 0 : -1}
-								className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 pb-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+								className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 pb-3 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${
 									activeTab === key
-										? "border-blue-600 text-blue-700"
+										? "border-gray-600 text-gray-800"
 										: "border-transparent text-gray-500 hover:text-gray-900"
 								}`}
 							>
@@ -743,7 +744,7 @@ export function ProviderModal(props: ProviderModalProps) {
 									<span
 										className={`rounded-full px-2 py-0.5 text-xs ${
 											activeTab === key
-												? "bg-blue-50 text-blue-700"
+												? "bg-gray-50 text-gray-800"
 												: "bg-gray-100 text-gray-600"
 										}`}
 									>
@@ -758,7 +759,7 @@ export function ProviderModal(props: ProviderModalProps) {
 							type="button"
 							onClick={() => setShowEndpointsJson((value) => !value)}
 							aria-pressed={showEndpointsJson}
-							className="mb-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+							className="mb-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 						>
 							<CodeBracketIcon className="h-4 w-4" aria-hidden />
 							{t(
@@ -767,9 +768,9 @@ export function ProviderModal(props: ProviderModalProps) {
 						</button>
 					) : null}
 				</div>
-				<div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-6 sm:px-7">
+				<div className="provider-dialog-body flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-6 sm:px-7">
 					{saveError && (
-						<div className="mb-4 shrink-0 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+						<div role="alert" className="mb-4 shrink-0 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">
 							{saveError}
 						</div>
 					)}
@@ -782,8 +783,9 @@ export function ProviderModal(props: ProviderModalProps) {
 							id={`${tabsId}-basic-panel`}
 							aria-labelledby={`${tabsId}-basic`}
 						>
-							<div className="grid gap-8 md:h-full md:min-h-0 md:grid-cols-[1fr_0.9fr]">
-								<div className="min-w-0 space-y-5 md:min-h-0 md:overflow-y-auto md:overscroll-contain md:pr-1">
+							<div className="grid items-start gap-6 md:grid-cols-[1fr_0.9fr]">
+								<div className="provider-credentials min-w-0 space-y-5">
+									<h3 className="provider-section-title"><KeyIcon className="h-4 w-4" aria-hidden />{t("credentialsTitle")}</h3>
 									<div>
 										<label
 											htmlFor={`${tabsId}-kind`}
@@ -798,7 +800,7 @@ export function ProviderModal(props: ProviderModalProps) {
 												onChange={(e) =>
 													onFormChange({ ...formData, kind: e.target.value })
 												}
-												className="h-10 min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+												className="h-10 min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
 												required={!editingProvider}
 											>
 												<option value="" disabled={!showUnclassified}>
@@ -849,7 +851,7 @@ export function ProviderModal(props: ProviderModalProps) {
 											onChange={(e) =>
 												onFormChange({ ...formData, name: e.target.value })
 											}
-											className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+											className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
 											placeholder={t("namePlaceholder")}
 											autoComplete="off"
 											required
@@ -873,7 +875,7 @@ export function ProviderModal(props: ProviderModalProps) {
 														endpoints: editingProvider?.endpoints,
 													}).catalogLinks
 												}
-												className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800"
+												className="inline-flex items-center gap-1 text-xs font-medium text-gray-800 hover:text-gray-900"
 											/>
 										</div>
 										<div className="relative">
@@ -974,26 +976,27 @@ export function ProviderModal(props: ProviderModalProps) {
 										</p>
 									</div>
 								</div>
-								<div className="flex min-w-0 flex-col gap-5 md:h-full md:min-h-0">
+								<div className="flex min-w-0 flex-col gap-5">
 									{catalogIntro ? (
-										<div className="flex flex-col rounded-xl border border-gray-200 bg-gray-50/40 p-4 md:min-h-0 md:flex-1">
-											<h3 className="shrink-0 text-xs font-medium text-gray-500">
+										<div className="provider-catalog-intro rounded-xl bg-gray-50 p-4">
+											<h3 className="provider-section-title shrink-0 text-xs font-medium text-gray-500">
+												<InformationCircleIcon className="h-4 w-4" aria-hidden />
 												{t("catalogIntro")}
 											</h3>
 											<p
 												tabIndex={0}
-												className="mt-2 max-h-40 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words text-sm leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-blue-200 md:min-h-0 md:max-h-none md:flex-1"
+												className="mt-2 max-h-40 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words text-sm leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-gray-200 md:max-h-32"
 											>
 												{catalogIntro}
 											</p>
 										</div>
 									) : null}
-									<div className="shrink-0">
+									<div className="provider-note shrink-0">
 										<label
 											htmlFor={`${tabsId}-note`}
-											className="mb-2 block text-xs font-medium text-gray-700"
+											className="provider-section-title mb-3 text-xs font-medium text-gray-700"
 										>
-											{t("note")}
+											<ChatBubbleLeftEllipsisIcon className="h-4 w-4" aria-hidden />{t("note")}
 										</label>
 										<textarea
 											id={`${tabsId}-note`}
@@ -1002,7 +1005,7 @@ export function ProviderModal(props: ProviderModalProps) {
 											onChange={(e) =>
 												onFormChange({ ...formData, note: e.target.value })
 											}
-											className="block h-32 max-h-32 w-full resize-none overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+											className="block h-32 max-h-32 w-full resize-none overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-500/10"
 											placeholder={t("notePlaceholder")}
 											autoComplete="off"
 										/>
@@ -1022,7 +1025,7 @@ export function ProviderModal(props: ProviderModalProps) {
 							) : (
 								<div className="grid items-start gap-5 md:grid-cols-[160px_minmax(0,1fr)]">
 									<div
-										className="flex flex-wrap gap-1 rounded-xl bg-gray-50 p-2 md:flex-col"
+										className="provider-endpoint-tabs flex flex-wrap gap-1 rounded-xl bg-gray-50 p-2 md:flex-col"
 										role="tablist"
 										aria-label={t("endpointsTabsAria")}
 									>
@@ -1040,16 +1043,17 @@ export function ProviderModal(props: ProviderModalProps) {
 													id={`provider-endpoint-tab-${key}`}
 													aria-selected={selected}
 													aria-controls={`provider-endpoint-panel-${key}`}
+													aria-label={t(labelKey)}
 													onClick={() => setEndpointTab(key)}
 													onKeyDown={navigateTabs}
 													tabIndex={selected ? 0 : -1}
-													className={`inline-flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+													className={`inline-flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${
 														selected
 															? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
 															: "text-gray-600 hover:bg-white/70 hover:text-gray-900"
 													}`}
 												>
-													<span className="h-4 w-4 shrink-0">
+													<span className="h-4 w-4 shrink-0" aria-hidden>
 														<ProviderProtocolIcon protocol={key} />
 													</span>
 													{t(labelKey)}
@@ -1099,7 +1103,7 @@ export function ProviderModal(props: ProviderModalProps) {
 					</div>
 				</div>
 
-				<div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50 px-5 py-4 sm:px-7">
+				<div className="provider-dialog-footer flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-gray-50 px-5 py-4 sm:px-7">
 					<div className="flex flex-wrap items-center gap-2">
 						{editingProvider &&
 							(deleteDisabledReason ? (
@@ -1117,7 +1121,7 @@ export function ProviderModal(props: ProviderModalProps) {
 								deleteButton
 							))}
 					</div>
-					<div className="ml-auto flex gap-2">
+					<div className="ml-auto flex flex-wrap justify-end gap-2">
 						<button
 							type="button"
 							onClick={() => {
@@ -1143,7 +1147,7 @@ export function ProviderModal(props: ProviderModalProps) {
 							type="button"
 							onClick={() => void onSave()}
 							disabled={busy}
-							className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+							className="rounded-md admin-primary px-4 py-2 text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{isSaving
 								? tCommon("saving")

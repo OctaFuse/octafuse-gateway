@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminPageTitle } from '@/components/admin-page-title';
+
 /**
  * 单个网关用户：预算计划、关联密钥、请求日志与用户审计。
  */
@@ -7,8 +9,9 @@ import { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } fro
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ClipboardDocumentIcon, MagnifyingGlassIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ClipboardDocumentIcon, MagnifyingGlassIcon, PlusIcon, TrashIcon, XMarkIcon, WalletIcon, ClockIcon, KeyIcon, SignalIcon, UserCircleIcon, AdjustmentsHorizontalIcon, ListBulletIcon, CubeIcon } from '@heroicons/react/24/outline';
 import { InfoHintPopover } from '@/components/InfoHintPopover';
+import { useAdminDialog } from '@/components/use-admin-dialog';
 import { useFeedback } from '@/components/feedback';
 import { readApiJson } from '@/lib/api-json';
 import { instantToZonedDatetimeLocalInput, zonedDatetimeLocalInputToInstant } from '@/lib/business-timezone-client';
@@ -214,7 +217,14 @@ export default function GatewayUserDetailPage() {
   const [planError, setPlanError] = useState('');
   const [planSuccess, setPlanSuccess] = useState('');
   const [isSavingPlan, setIsSavingPlan] = useState(false);
-  const [activeSection, setActiveSection] = useState<'overview' | 'billing' | 'models' | 'keys' | 'activity'>('overview');
+  const [activeSection, setActiveSectionState] = useState<'overview' | 'billing' | 'models' | 'keys' | 'activity'>('overview');
+  const setActiveSection = useCallback((section: typeof activeSection) => {
+    setActiveSectionState(section);
+    const url = new URL(window.location.href);
+    url.searchParams.set('section', section);
+    window.history.replaceState(window.history.state, '', url);
+  }, []);
+
   const planSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [catalogModels, setCatalogModels] = useState<CatalogModelOption[]>([]);
   const [routeGroupsByModel, setRouteGroupsByModel] = useState<Map<string, string[]>>(new Map());
@@ -265,6 +275,13 @@ export default function GatewayUserDetailPage() {
   const [keyStatusTogglingId, setKeyStatusTogglingId] = useState<string | null>(null);
   const [metaViewKey, setMetaViewKey] = useState<KeyRow | null>(null);
   const [isKeySaving, setIsKeySaving] = useState(false);
+  const modelPickerRef = useAdminDialog(showModelPicker, false, () => setShowModelPicker(false));
+  const keyMetadataRef = useAdminDialog(Boolean(metaViewKey), false, () => setMetaViewKey(null));
+  const newKeyRef = useAdminDialog(showNewKey, isKeySaving, () => setShowNewKey(false));
+  useEffect(() => {
+    const section = new URLSearchParams(window.location.search).get('section');
+    if (section && ['overview','billing','keys','activity','models'].includes(section)) setActiveSection(section as typeof activeSection);
+  }, [userId, setActiveSection]);
   const { currency: billingCurrency } = useBillingCurrency();
   const { formatDateTime, businessTimezone } = useGatewayDateTime();
   const businessTimezoneRef = useRef(businessTimezone);
@@ -729,7 +746,7 @@ export default function GatewayUserDetailPage() {
       if (newKeyMeta.trim() !== '') {
         const m = normalizeMetadataClient(newKeyMeta);
         if (!m.ok) {
-          setKeyError(m.message);
+          setKeyError(tCommon('invalidJson'));
           setIsKeySaving(false);
           return;
         }
@@ -832,7 +849,7 @@ export default function GatewayUserDetailPage() {
   if (loadError) {
     return (
       <div className="w-full min-w-0 p-4 sm:p-6 lg:p-8">
-        <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">{t('backUsers')}</Link>
+        <Link href="/gateway/users" className="text-sm text-gray-800 hover:underline">{t('backUsers')}</Link>
         <p className="mt-4 text-red-600">{loadError}</p>
       </div>
     );
@@ -841,20 +858,20 @@ export default function GatewayUserDetailPage() {
   if (!user) {
     return (
       <div className="w-full min-w-0 p-4 sm:p-6 lg:p-8">
-        <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">{t('backUsers')}</Link>
+        <Link href="/gateway/users" className="text-sm text-gray-800 hover:underline">{t('backUsers')}</Link>
         <div className="mt-8 text-gray-600">{tCommon('loadingEllipsis')}</div>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-w-0 p-4 sm:p-6 lg:p-8">
+    <div className="admin-content-workspace content-tone-accounts w-full min-w-0 p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
-        <Link href="/gateway/users" className="text-sm text-blue-600 hover:underline">
+        <Link href="/gateway/users" className="text-sm text-gray-800 hover:underline">
           {t('backUsers')}
         </Link>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <h1 className="min-w-0 break-all text-2xl font-bold text-gray-900">{user.email}</h1>
+          <AdminPageTitle>{user.email}</AdminPageTitle>
           <span
             className={`rounded-full px-2.5 py-1 text-xs font-medium ${
               user.status === 'active' ? 'bg-green-50 text-green-700 ring-1 ring-green-200' : 'bg-gray-100 text-gray-600'
@@ -878,7 +895,7 @@ export default function GatewayUserDetailPage() {
       <div
         role="tablist"
         aria-label={t('detailTitle')}
-        className="mb-6 flex gap-1 overflow-x-auto border-b border-gray-200"
+        className="admin-detail-tabs mb-5 flex gap-1 overflow-x-auto"
       >
         {(['overview', 'billing', 'keys', 'activity', 'models'] as const).map((section, index, sections) => (
           <button
@@ -906,13 +923,13 @@ export default function GatewayUserDetailPage() {
               setActiveSection(sections[nextIndex]);
               document.getElementById(`user-tab-${sections[nextIndex]}`)?.focus();
             }}
-            className={`shrink-0 border-b-2 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
+            className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-500 ${
               activeSection === section
-                ? 'border-blue-600 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-900'
+                ? 'bg-gray-950 text-white'
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
             }`}
           >
-            {section === 'keys' ? t('apiKeys') : t(`detailUx.${section}`)}
+            {(() => { const Icon = {overview:UserCircleIcon,billing:WalletIcon,keys:KeyIcon,activity:ListBulletIcon,models:CubeIcon}[section]; return <Icon className="h-4 w-4" aria-hidden />; })()}{section === 'keys' ? t('apiKeys') : t(`detailUx.${section}`)}
             {((section === 'overview' && overviewHasChanges) || (section === 'billing' && billingHasChanges)) && (
               <span
                 aria-label={t('detailUx.unsaved')}
@@ -923,8 +940,8 @@ export default function GatewayUserDetailPage() {
         ))}
       </div>
 
-      {activeSection !== 'billing' && (
-        <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
+      {activeSection === 'overview' && (
+        <div className="admin-summary-canvas mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
           {[
             {
               label: t('fields.walletBalance'),
@@ -934,7 +951,7 @@ export default function GatewayUserDetailPage() {
                 2
               ),
               hint: t('detailUx.walletHint'),
-              section: 'billing' as const,
+              icon: WalletIcon, section: 'billing' as const,
             },
             {
               label: t('detailUx.budgetRemaining'),
@@ -943,13 +960,13 @@ export default function GatewayUserDetailPage() {
                   ? tCommon('noLimit')
                   : formatGatewayMoneyCode(Math.max(0, user.budget_max - user.budget_spent), billingCurrency, 2),
               hint: t('detailUx.budgetSpent', { amount: formatGatewayMoneyCode(user.budget_spent, billingCurrency, 2) }),
-              section: 'billing' as const,
+              icon: ClockIcon, section: 'billing' as const,
             },
             {
               label: t('detailUx.activeKeys'),
               value: String(keys.filter((key) => key.status === 'active').length),
               hint: t('detailUx.totalKeys', { count: keys.length }),
-              section: 'keys' as const,
+              icon: KeyIcon, section: 'keys' as const,
             },
             {
               label: t('table.rateLimit'),
@@ -958,17 +975,17 @@ export default function GatewayUserDetailPage() {
                   ? tCommon('noLimit')
                   : t('table.rateLimitRpmValue', { rpm: user.rate_limit.rpm }),
               hint: t('detailUx.rateLimitHint'),
-              section: 'overview' as const,
+              icon: SignalIcon, section: 'overview' as const,
             },
           ].map((item) => (
             <button
               key={item.label}
               type="button"
               onClick={() => setActiveSection(item.section)}
-              className="flex min-w-0 flex-col items-start rounded-xl border border-gray-200 bg-white p-3 sm:p-4 text-left transition-colors hover:border-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="flex min-w-0 flex-col items-start rounded-xl border border-gray-200 bg-white p-3 sm:p-4 text-left transition-colors hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
             >
-              <span className="block text-xs font-medium text-gray-500">{item.label}</span>
-              <span className="mt-2 block break-words text-xl sm:text-2xl font-semibold tabular-nums text-gray-900">
+              <span className="flex items-center gap-2 text-xs font-medium text-gray-500"><item.icon className="h-4 w-4 text-gray-400" aria-hidden />{item.label}</span>
+              <span className="mt-2 block break-words text-xl sm:text-2xl font-medium tabular-nums text-gray-900">
                 {item.value}
               </span>
               <span className="mt-1 block text-xs text-gray-500">{item.hint}</span>
@@ -995,11 +1012,11 @@ export default function GatewayUserDetailPage() {
           hidden={activeSection !== 'overview'}
           tabIndex={0}
         >
-          <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-2">
-            <div className="min-w-0 space-y-4 sm:space-y-6">
-              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 space-y-4">
+          <div className="grid grid-cols-1 items-start gap-4 sm:gap-4 xl:grid-cols-2">
+            <div className="min-w-0 space-y-4 sm:space-y-4">
+              <div className="admin-content-panel rounded-xl border border-gray-200 bg-white p-4 sm:p-5 space-y-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">{t('userDetail')}</h2>
+                  <h2 className="text-sm font-medium text-gray-900">{t('userDetail')}</h2>
                   <p className="mt-1 text-sm text-gray-500">{t('detailUx.overviewHint')}</p>
                 </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1018,7 +1035,7 @@ export default function GatewayUserDetailPage() {
                       autoComplete="email"
                       value={planForm.email}
                       onChange={(e) => setPlanForm({ ...planForm, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
                       placeholder="user@example.com"
                     />
                   </div>
@@ -1030,7 +1047,7 @@ export default function GatewayUserDetailPage() {
                       id="user-status"
                       value={planForm.status}
                       onChange={(e) => setPlanForm({ ...planForm, status: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
                     >
                       <option value="active">{tOptions('userStatus.active')}</option>
                       <option value="disabled">{tOptions('userStatus.disabled')}</option>
@@ -1049,7 +1066,7 @@ export default function GatewayUserDetailPage() {
                       value={planForm.rateLimitRpm}
                       onChange={(e) => setPlanForm({ ...planForm, rateLimitRpm: e.target.value })}
                       placeholder={t('placeholders.rateLimitRpm')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
                     />
                     <p className="mt-1 text-xs text-gray-500">
                       {t('detailUx.rateLimitHint')}{' '}
@@ -1075,13 +1092,13 @@ export default function GatewayUserDetailPage() {
                   </button>
                 </div>
               </div>
-              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+              <div className="admin-content-panel rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <h2 className="text-lg font-semibold text-gray-900">{t('apiKeys')}</h2>
+                  <h2 className="text-sm font-medium text-gray-900">{t('apiKeys')}</h2>
                   <button
                     type="button"
                     onClick={() => setActiveSection('keys')}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                    className="text-sm font-medium text-gray-800 hover:text-gray-900"
                   >
                     {t('detailUx.manageKeys')}
                   </button>
@@ -1126,16 +1143,16 @@ export default function GatewayUserDetailPage() {
                   <button
                     type="button"
                     onClick={() => setActiveSection('keys')}
-                    className="mt-2 text-xs text-blue-600 hover:underline"
+                    className="mt-2 text-xs text-gray-800 hover:underline"
                   >
                     {t('detailSections.moreCount', { count: keys.length - 3 })}
                   </button>
                 )}
               </div>
             </div>
-            <div className="min-w-0 space-y-4 sm:space-y-6">
-              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
-                <h2 className="text-lg font-semibold text-gray-900">
+            <div className="min-w-0 space-y-4 sm:space-y-4">
+              <div className="admin-content-panel rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+                <h2 className="text-sm font-medium text-gray-900">
                   {t('externalIdentity.title')}{' '}
                   <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                 </h2>
@@ -1151,7 +1168,7 @@ export default function GatewayUserDetailPage() {
                       type="text"
                       value={planForm.external_system}
                       onChange={(e) => setPlanForm({ ...planForm, external_system: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
                       placeholder="my-app"
                     />
                   </div>
@@ -1165,15 +1182,16 @@ export default function GatewayUserDetailPage() {
                       type="text"
                       value={planForm.external_user_id}
                       onChange={(e) => setPlanForm({ ...planForm, external_user_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
                       placeholder={t('fields.externalUserId')}
                     />
                   </div>
                 </div>
               </div>
-              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+              <details className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+                <summary className="cursor-pointer text-sm font-medium text-gray-900">{tCommon('metadata')}</summary>
                 <div className="min-w-0">
-                  <label htmlFor="user-metadataJsonObject" className="block text-lg font-semibold text-gray-900 mb-3">
+                  <label htmlFor="user-metadataJsonObject" className="block text-sm font-medium text-gray-900 mb-3">
                     {t('fields.metadataJsonObject')}{' '}
                     <span className="ml-1 text-xs font-normal text-gray-400">{tCommon('optional')}</span>
                   </label>
@@ -1182,12 +1200,12 @@ export default function GatewayUserDetailPage() {
                     value={planForm.metadata}
                     onChange={(e) => setPlanForm({ ...planForm, metadata: e.target.value })}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-xs"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg font-mono text-xs"
                     placeholder="{}"
                   />
                   <p className="mt-1 text-xs text-gray-500">{t('help.metadataReplace')}</p>
                 </div>
-              </div>
+              </details>
             </div>
           </div>
         </section>
@@ -1199,23 +1217,23 @@ export default function GatewayUserDetailPage() {
           tabIndex={0}
         >
           <p className="mb-4 text-sm text-gray-500">{t('detailUx.billingOrder')}</p>
-          <div className="space-y-4 sm:space-y-6">
-            <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-6 xl:grid-cols-2">
-              <div className="flex flex-col gap-4 rounded-xl border border-sky-200 bg-sky-50/70 p-4 sm:p-6">
+          <div className="space-y-4 sm:space-y-4">
+            <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-4 xl:grid-cols-2">
+              <div className="admin-content-panel flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
                 <div className="flex items-center gap-1.5">
-                  <h2 className="text-sm font-semibold text-sky-950">{t('table.budget')}</h2>
+                  <h2 className="admin-section-title flex items-center gap-2 text-sm font-medium text-gray-900"><ClockIcon className="h-4 w-4 text-gray-400" aria-hidden />{t('table.budget')}</h2>
                   <InfoHintPopover label={t('hints.budgetTitle')} portal openOnHover align="start">
                     <p>{t('hints.budgetVsWallet')}</p>
                   </InfoHintPopover>
                 </div>
                 <ReadonlyRow label={t('detailUx.budgetRemaining')}>
-                  <span className="text-xl sm:text-2xl font-semibold tabular-nums text-gray-900">
+                  <span className="text-xl sm:text-2xl font-medium tabular-nums text-gray-900">
                     {budgetPreviewRemaining == null
                       ? tCommon('noLimit')
                       : formatGatewayMoneyCode(budgetPreviewRemaining, billingCurrency, 2)}
                   </span>
                 </ReadonlyRow>
-                <div className="grid grid-cols-1 items-start gap-4 border-t border-sky-200 pt-4 sm:grid-cols-2 2xl:grid-cols-3">
+                <div className="grid grid-cols-1 items-start gap-4 border-t border-gray-100 pt-4 sm:grid-cols-2 2xl:grid-cols-3">
                   <div>
                     <BillingFieldLabel
                       htmlFor="user-budgetMax"
@@ -1229,7 +1247,7 @@ export default function GatewayUserDetailPage() {
                       step="0.01"
                       value={planForm.budget_max}
                       onChange={(e) => setPlanForm({ ...planForm, budget_max: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
                       placeholder={tCommon('noLimit')}
                     />
                   </div>
@@ -1245,7 +1263,7 @@ export default function GatewayUserDetailPage() {
                       step="0.01"
                       value={planForm.budget_spent}
                       onChange={(e) => setPlanForm({ ...planForm, budget_spent: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
                     />
                   </div>
                   <div>
@@ -1261,7 +1279,7 @@ export default function GatewayUserDetailPage() {
                       step="0.01"
                       value={planForm.budget_base}
                       onChange={(e) => setPlanForm({ ...planForm, budget_base: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
                       placeholder={tCommon('optional')}
                     />
                   </div>
@@ -1276,7 +1294,7 @@ export default function GatewayUserDetailPage() {
                       id="user-budgetPeriod"
                       value={planForm.budget_period}
                       onChange={(e) => setPlanForm({ ...planForm, budget_period: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
                     >
                       <option value="none">{t('detailUx.noAutoReset')}</option>
                       <option value="daily">{tOptions('budgetPeriod.daily')}</option>
@@ -1300,28 +1318,28 @@ export default function GatewayUserDetailPage() {
                         budgetResetDirtyRef.current = true;
                         setPlanForm({ ...planForm, budget_reset_at: e.target.value });
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
                     />
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-4 rounded-xl border border-violet-200 bg-violet-50/50 p-4 sm:p-6">
+              <div className="admin-content-panel flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
                 <div className="flex items-center gap-1.5">
-                  <h2 className="text-sm font-semibold text-violet-950">{t('table.wallet')}</h2>
+                  <h2 className="admin-section-title flex items-center gap-2 text-sm font-medium text-gray-900"><WalletIcon className="h-4 w-4 text-gray-400" aria-hidden />{t('table.wallet')}</h2>
                   <InfoHintPopover label={t('hints.walletTitle')} portal openOnHover align="start">
                     <p>{t('hints.budgetVsWallet')}</p>
                   </InfoHintPopover>
                 </div>
                 <ReadonlyRow label={t('fields.walletBalance')}>
                   <span
-                    className={`text-xl sm:text-2xl font-semibold tabular-nums ${
+                    className={`text-xl sm:text-2xl font-medium tabular-nums ${
                       walletPreviewBalance < 0 ? 'text-red-600' : 'text-gray-900'
                     }`}
                   >
                     {formatGatewayMoneyCode(walletPreviewBalance, billingCurrency, 2)}
                   </span>
                 </ReadonlyRow>
-                <div className="grid grid-cols-1 items-start gap-4 border-t border-violet-200 pt-4">
+                <div className="grid grid-cols-1 items-start gap-4 border-t border-gray-100 pt-4">
                   <div>
                     <BillingFieldLabel
                       htmlFor="user-walletGranted"
@@ -1335,7 +1353,7 @@ export default function GatewayUserDetailPage() {
                       min="0"
                       value={planForm.wallet_granted}
                       onChange={(e) => setPlanForm({ ...planForm, wallet_granted: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
                     />
                   </div>
                   <div>
@@ -1351,7 +1369,7 @@ export default function GatewayUserDetailPage() {
                       min="0"
                       value={planForm.wallet_spent}
                       onChange={(e) => setPlanForm({ ...planForm, wallet_spent: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
                     />
                   </div>
                 </div>
@@ -1402,9 +1420,9 @@ export default function GatewayUserDetailPage() {
         hidden={activeSection !== 'keys'}
         tabIndex={0}
       >
-        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 flex min-w-0 flex-col">
+        <div className="admin-content-panel bg-white rounded-xl border border-gray-200 p-4 sm:p-5 flex min-w-0 flex-col">
           <div className="flex justify-between items-center mb-4 shrink-0">
-            <h2 className="text-lg font-semibold text-gray-900">{t('apiKeys')}</h2>
+            <h2 className="text-sm font-medium text-gray-900">{t('apiKeys')}</h2>
             <button
               type="button"
               onClick={() => {
@@ -1413,7 +1431,7 @@ export default function GatewayUserDetailPage() {
                 setKeysInlineError('');
                 setFreshApiKey(null);
               }}
-              className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+              className="flex items-center gap-1 px-3 py-1.5 admin-primary rounded-md text-sm hover:bg-gray-800"
             >
               <PlusIcon className="h-4 w-4" />
               {t('newKey')}
@@ -1428,7 +1446,7 @@ export default function GatewayUserDetailPage() {
           <div className="min-h-0 flex-1 overflow-auto">
             <table className="min-w-full text-sm table-auto">
               <thead>
-                <tr className="border-b text-xs text-gray-500 uppercase">
+                <tr className="border-b text-xs text-gray-500 normal-case">
                   <th className="py-2 pr-4 text-left">{tCommon('key')}</th>
                   <th className="py-2 pr-4 text-left" title={t('keysTable.rateLimitHint')}>
                     {t('keysTable.rateLimit')}
@@ -1445,7 +1463,7 @@ export default function GatewayUserDetailPage() {
                       <div className="truncate text-sm font-medium text-gray-900" title={k.name || undefined}>
                         {k.name?.trim() ? k.name : '—'}
                       </div>
-                      <div className="mt-0.5 flex min-w-0 items-center gap-1 font-mono text-[11px] text-gray-400">
+                      <div className="mt-0.5 flex min-w-0 items-center gap-1 font-mono text-xs text-gray-400">
                         <span className="min-w-0 truncate" title={k.key}>
                           {maskKey(k.key)}
                         </span>
@@ -1458,7 +1476,7 @@ export default function GatewayUserDetailPage() {
                           <ClipboardDocumentIcon className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                      <div className="mt-0.5 font-mono text-[11px] text-gray-400">{shortId(k.id)}</div>
+                      <div className="mt-0.5 font-mono text-xs text-gray-400">{shortId(k.id)}</div>
                     </td>
                     <td className="py-2 pr-4 align-top" title={t('keysTable.rateLimitHint')}>
                       {(() => {
@@ -1489,7 +1507,7 @@ export default function GatewayUserDetailPage() {
                             <button
                               type="button"
                               onClick={() => setMetaViewKey(k)}
-                              className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-800"
+                              className="shrink-0 text-xs font-medium text-gray-800 hover:text-gray-900"
                             >
                               {t('keysTable.details')}
                             </button>
@@ -1510,8 +1528,8 @@ export default function GatewayUserDetailPage() {
                         title={k.status}
                         disabled={keyStatusTogglingId === k.id}
                         onClick={() => toggleKeyStatus(k)}
-                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                          k.status === 'active' ? 'bg-blue-600' : 'bg-gray-200'
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                          k.status === 'active' ? 'bg-gray-950' : 'bg-gray-200'
                         }`}
                       >
                         <span
@@ -1547,12 +1565,12 @@ export default function GatewayUserDetailPage() {
         hidden={activeSection !== 'activity'}
         tabIndex={0}
       >
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+        <div className="admin-content-panel mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">{t('detailSections.recentRequestLogs')}</h2>
+            <h2 className="text-sm font-medium text-gray-900">{t('detailSections.recentRequestLogs')}</h2>
             <Link
               href={`/gateway/request-logs?user_email=${encodeURIComponent(user.email)}`}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-gray-800 hover:underline"
             >
               {tCommon('more')}
             </Link>
@@ -1591,7 +1609,7 @@ export default function GatewayUserDetailPage() {
                       </td>
                       <td className="py-2 pr-2">
                         <span
-                          className={`inline-flex items-center rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold leading-4 ${routeGroupBadgeClass(
+                          className={`inline-flex items-center rounded-md px-2 py-0.5 font-mono text-xs font-medium leading-4 ${routeGroupBadgeClass(
                             routeGroup
                           )}`}
                           title={`route_group: ${routeGroup}`}
@@ -1621,12 +1639,12 @@ export default function GatewayUserDetailPage() {
           </div>
         </div>
 
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+        <div className="admin-content-panel mb-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">{t('detailSections.userAuditLogs')}</h2>
+            <h2 className="text-sm font-medium text-gray-900">{t('detailSections.userAuditLogs')}</h2>
             <Link
               href={`/gateway/audit-logs?user_id=${encodeURIComponent(user.id)}`}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-gray-800 hover:underline"
             >
               {tCommon('more')}
             </Link>
@@ -1635,17 +1653,17 @@ export default function GatewayUserDetailPage() {
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50">
                 <tr className="text-left text-gray-500 border-b">
-                  <th className="px-3 py-2 text-xs font-medium uppercase whitespace-nowrap">{tAudit('table.time')}</th>
-                  <th className="px-3 py-2 text-xs font-medium uppercase whitespace-nowrap min-w-[11rem] max-w-[15rem]">
+                  <th className="px-3 py-2 text-xs font-medium normal-case whitespace-nowrap">{tAudit('table.time')}</th>
+                  <th className="px-3 py-2 text-xs font-medium normal-case whitespace-nowrap min-w-[11rem] max-w-[15rem]">
                     {tAudit('table.event')}
                   </th>
-                  <th className="px-3 py-2 text-xs font-medium uppercase whitespace-nowrap min-w-[8.5rem] max-w-[12rem]">
+                  <th className="px-3 py-2 text-xs font-medium normal-case whitespace-nowrap min-w-[8.5rem] max-w-[12rem]">
                     {tAudit('table.actor')}
                   </th>
-                  <th className="px-3 py-2 text-xs font-medium uppercase min-w-[14rem]">{tAudit('table.budget')}</th>
-                  <th className="px-3 py-2 text-xs font-medium uppercase min-w-[12rem]">{tAudit('table.periodPlan')}</th>
-                  <th className="px-3 py-2 text-xs font-medium uppercase min-w-[14rem]">{tAudit('table.wallet')}</th>
-                  <th className="px-3 py-2 text-xs font-medium uppercase min-w-[16rem]">
+                  <th className="px-3 py-2 text-xs font-medium normal-case min-w-[14rem]">{tAudit('table.budget')}</th>
+                  <th className="px-3 py-2 text-xs font-medium normal-case min-w-[12rem]">{tAudit('table.periodPlan')}</th>
+                  <th className="px-3 py-2 text-xs font-medium normal-case min-w-[14rem]">{tAudit('table.wallet')}</th>
+                  <th className="px-3 py-2 text-xs font-medium normal-case min-w-[16rem]">
                     {tAudit('table.userChangeDetail')}
                   </th>
                 </tr>
@@ -1679,7 +1697,7 @@ export default function GatewayUserDetailPage() {
         <div
           className={`${
             hasChanges ? 'sticky bottom-4 z-20' : ''
-          } mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur`}
+          } mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3`}
         >
           <p className={`text-sm ${hasChanges ? 'text-amber-700' : 'text-gray-500'}`} role="status">
             {hasChanges ? t('detailUx.unsaved') : t('detailUx.saved')}
@@ -1703,7 +1721,7 @@ export default function GatewayUserDetailPage() {
               type="button"
               onClick={savePlan}
               disabled={isSavingPlan || !hasChanges}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-md admin-primary px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
             >
               {isSavingPlan ? tCommon('saving') : t('detailUx.saveChanges')}
             </button>
@@ -1721,18 +1739,18 @@ export default function GatewayUserDetailPage() {
 
       {showModelPicker && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-gray-950/40 flex items-center justify-center z-50 p-3 sm:p-6"
           onClick={() => setShowModelPicker(false)}
         >
           <div
-            className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col"
+            ref={modelPickerRef} tabIndex={-1} className="admin-content-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
             role="dialog"
             aria-modal="true"
             aria-labelledby="user-factor-model-picker-title"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-6 py-4 border-b flex justify-between items-center gap-3">
-              <h3 id="user-factor-model-picker-title" className="text-lg font-bold text-gray-900">
+              <h3 id="user-factor-model-picker-title" className="text-base font-medium text-gray-900">
                 {t('chargedCostFactors.pickTitle')}
               </h3>
               <button
@@ -1749,7 +1767,7 @@ export default function GatewayUserDetailPage() {
                 <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <input
                   type="search"
-                  value={modelPickerSearch}
+                  aria-label={t('chargedCostFactors.pickSearch')} value={modelPickerSearch}
                   onChange={(e) => setModelPickerSearch(e.target.value)}
                   className="w-full rounded-md border border-gray-300 py-2 pl-9 pr-3 text-sm"
                   placeholder={t('chargedCostFactors.pickSearch')}
@@ -1757,7 +1775,7 @@ export default function GatewayUserDetailPage() {
                 />
               </label>
             </div>
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="admin-dialog-body flex-1 overflow-y-auto px-6 py-4">
               {pickerModelsByVendor.length === 0 ? (
                 <p className="py-6 text-sm text-gray-500">{t('chargedCostFactors.pickEmpty')}</p>
               ) : (
@@ -1766,7 +1784,7 @@ export default function GatewayUserDetailPage() {
                     <section key={vendorKey}>
                       <div className="mb-2 flex items-center gap-2">
                         <ModelVendorIcon vendor={vendorKey} size="compact" />
-                        <h4 className="text-sm font-semibold text-gray-900">{getModelVendorLabel(vendorKey)}</h4>
+                        <h4 className="text-sm font-medium text-gray-900">{getModelVendorLabel(vendorKey)}</h4>
                         <span className="text-xs text-gray-400">{models.length}</span>
                       </div>
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -1778,11 +1796,11 @@ export default function GatewayUserDetailPage() {
                               type="button"
                               disabled={added}
                               onClick={() => addChargedCostFactorModel(model.id)}
-                              className="flex min-w-0 items-start justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 text-left hover:border-blue-300 hover:bg-blue-50/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-200 disabled:hover:bg-transparent"
+                              className="flex min-w-0 items-start justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 text-left hover:border-gray-300 hover:bg-gray-50/60 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-200 disabled:hover:bg-transparent"
                             >
                               <span className="min-w-0">
                                 <span className="block truncate text-sm text-gray-900">{catalogModelLabel(model, model.id)}</span>
-                                <span className="block truncate font-mono text-[11px] text-gray-500">{model.id}</span>
+                                <span className="block truncate font-mono text-xs text-gray-500">{model.id}</span>
                               </span>
                               {added ? (
                                 <span className="shrink-0 pt-0.5 text-xs text-gray-400">{t('chargedCostFactors.alreadyAdded')}</span>
@@ -1800,7 +1818,7 @@ export default function GatewayUserDetailPage() {
               <button
                 type="button"
                 onClick={() => setShowModelPicker(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
               >
                 {tCommon('close')}
               </button>
@@ -1812,11 +1830,11 @@ export default function GatewayUserDetailPage() {
       {metaViewKey && (() => {
         const m = summarizeMetadata(metaViewKey.metadata);
         return (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+          <div className="fixed inset-0 bg-gray-950/40 flex items-center justify-center z-50 p-3 sm:p-6">
+            <div ref={keyMetadataRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="key-metadata-title" className="admin-content-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none">
               <div className="px-6 py-4 border-b flex justify-between items-center">
                 <div className="min-w-0">
-                  <h3 className="text-lg font-bold text-gray-900">{t('detailSections.keyMetadata')}</h3>
+                  <h3 id="key-metadata-title" className="text-base font-medium text-gray-900">{t('detailSections.keyMetadata')}</h3>
                   <p className="mt-0.5 text-xs text-gray-500 font-mono truncate" title={metaViewKey.id}>
                     {[metaViewKey.name, maskKey(metaViewKey.key)].filter(Boolean).join(' · ')} · {metaViewKey.id}
                   </p>
@@ -1830,7 +1848,7 @@ export default function GatewayUserDetailPage() {
                   ×
                 </button>
               </div>
-              <div className="p-6 overflow-y-auto">
+              <div className="admin-dialog-body p-6 overflow-y-auto">
                 {m.empty ? (
                   <div className="text-sm text-gray-500">{t('metadata.none')}</div>
                 ) : (
@@ -1851,7 +1869,7 @@ export default function GatewayUserDetailPage() {
                   <button
                     type="button"
                     onClick={() => copy(m.full)}
-                    className="px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+                    className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
                   >
                     {tCommon('copy')}
                   </button>
@@ -1859,7 +1877,7 @@ export default function GatewayUserDetailPage() {
                 <button
                   type="button"
                   onClick={() => setMetaViewKey(null)}
-                  className="px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+                  className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
                 >
                   {tCommon('close')}
                 </button>
@@ -1870,11 +1888,11 @@ export default function GatewayUserDetailPage() {
       })()}
 
       {showNewKey && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">{t('detailSections.newApiKey')}</h3>
-            {keyError && <div className="mb-3 p-2 bg-red-50 text-red-700 text-sm rounded">{keyError}</div>}
-            <div className="space-y-3">
+        <div className="fixed inset-0 bg-gray-950/40 flex items-center justify-center z-50 p-3 sm:p-6">
+          <div ref={newKeyRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="new-user-key-title" className="admin-content-dialog max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-panel outline-none">
+            <h3 id="new-user-key-title" className="mb-4 text-base font-medium text-gray-900">{t('detailSections.newApiKey')}</h3>
+            {keyError && <div role="alert" className="mb-3 p-2 bg-red-50 text-red-700 text-sm rounded">{keyError}</div>}
+            <fieldset disabled={isKeySaving} className="space-y-3">
               <div>
                 <label htmlFor="new-key-name" className="block text-sm text-gray-700 mb-1">
                   {t('fields.name')}</label>
@@ -1885,10 +1903,10 @@ export default function GatewayUserDetailPage() {
                   {t('fields.metadataJson')}</label>
                 <textarea id="new-key-metadata" value={newKeyMeta} onChange={(e) => setNewKeyMeta(e.target.value)} rows={4} className="w-full border rounded px-3 py-2 font-mono text-xs" />
               </div>
-            </div>
+            </fieldset>
             <div className="mt-4 flex justify-end gap-2">
               <button type="button" onClick={() => setShowNewKey(false)} className="px-3 py-2 border rounded text-sm" disabled={isKeySaving}>{tCommon('cancel')}</button>
-              <button type="button" onClick={createKey} disabled={isKeySaving} className="px-3 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50">{isKeySaving ? '…' : tCommon('create')}</button>
+              <button type="button" onClick={createKey} disabled={isKeySaving} className="px-3 py-2 admin-primary rounded text-sm disabled:opacity-50">{isKeySaving ? '…' : tCommon('create')}</button>
             </div>
           </div>
         </div>

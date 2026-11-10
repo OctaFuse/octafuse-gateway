@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
 	draftPricesOk,
+	draftsForProviderSave,
+	priceMultiplier,
 	formatPriceSummary,
 	isDraftDirty,
 	isLossPricing,
@@ -34,10 +36,7 @@ describe('provider-card-state', () => {
 	});
 
 	it('isDraftDirty ignores key order', () => {
-		assert.equal(
-			isDraftDirty({ a: '1', b: '2' }, { b: '2', a: '1' }),
-			false
-		);
+		assert.equal(isDraftDirty({ a: '1', b: '2' }, { b: '2', a: '1' }), false);
 		assert.equal(isDraftDirty({ a: '1' }, { a: '2' }), true);
 	});
 
@@ -149,10 +148,7 @@ describe('provider-card-state', () => {
 		assert.deepEqual(resolveCompactStatusBadges(base), []);
 		assert.equal(showConfiguredDot(base), true);
 
-		assert.deepEqual(
-			resolveCompactStatusBadges({ ...base, isActive: true }),
-			['active']
-		);
+		assert.deepEqual(resolveCompactStatusBadges({ ...base, isActive: true }), ['active']);
 		assert.equal(showConfiguredDot({ ...base, isActive: true }), false);
 
 		assert.deepEqual(
@@ -173,9 +169,45 @@ describe('provider-card-state', () => {
 			}),
 			['unavailable']
 		);
-		assert.equal(
-			showConfiguredDot({ ...base, isConfigured: false, isImplemented: false }),
-			false
-		);
+		assert.equal(showConfiguredDot({ ...base, isConfigured: false, isImplemented: false }), false);
+	});
+});
+
+describe('single-provider save scope', () => {
+	it('keeps sibling drafts out of the saved catalog, including invalid prices and cleared credentials', () => {
+		const saved = { a: { apiKey: 'existing', price: '1' }, b: { apiKey: '', price: '2' } };
+		const drafts = { a: { apiKey: '', price: '-1' }, b: { apiKey: 'new', price: '3' } };
+		const result = draftsForProviderSave(saved, drafts, 'b');
+		assert.deepEqual(result, { a: saved.a, b: drafts.b });
+		assert.deepEqual(drafts.a, { apiKey: '', price: '-1' });
+		result.b.price = '4';
+		assert.equal(drafts.b.price, '3');
+		assert.equal(saved.b.price, '2');
+	});
+	it('keeps unsaved siblings dirty after saving the current provider', () => {
+		const saved = { a: { price: '1' }, b: { price: '2' } };
+		const drafts = { a: { price: '3' }, b: { price: '4' } };
+		const nextSaved = draftsForProviderSave(saved, drafts, 'a');
+		assert.equal(isDraftDirty(drafts.a, nextSaved.a), false);
+		assert.equal(isDraftDirty(drafts.b, nextSaved.b), true);
+	});
+});
+
+describe('service price multipliers', () => {
+	it('shows zero, fractional and greater-than-one factors', () => {
+		assert.equal(priceMultiplier('0', '0.001'), 0);
+		assert.equal(priceMultiplier('0.001', '0.002'), 0.5);
+		assert.equal(priceMultiplier('0.006', '0.002'), 3);
+	});
+	it('omits undefined and invalid factors', () => {
+		for (const [amount, standard] of [
+			['0', '0'],
+			['1', '0'],
+			['', '1'],
+			['-1', '1'],
+			['1', 'bad'],
+			['1e308', '1e-308'],
+		])
+			assert.equal(priceMultiplier(amount!, standard!), null);
 	});
 });

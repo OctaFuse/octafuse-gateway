@@ -1,5 +1,8 @@
 'use client';
 
+import { useAdminDialog } from '@/components/use-admin-dialog';
+import { ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/outline';
+
 import { useTranslations } from 'next-intl';
 
 type Props = {
@@ -10,6 +13,7 @@ type Props = {
 export function FailoverRulesDialog({ open, onClose }: Props) {
 	const t = useTranslations('routes.failover');
 	const tCommon = useTranslations('common');
+	const dialogRef = useAdminDialog(open, false, onClose);
 
 	if (!open) return null;
 
@@ -26,20 +30,23 @@ export function FailoverRulesDialog({ open, onClose }: Props) {
 
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/40 p-3 sm:p-6"
 			onMouseDown={(event) => {
 				if (event.target === event.currentTarget) onClose();
 			}}
 		>
 			<div
-				className="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-black/5"
+				className="route-design-dialog flex max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none ring-1 ring-black/5"
+				ref={dialogRef}
+				tabIndex={-1}
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="failover-rules-dialog-title"
 			>
 				<div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-3.5">
 					<div>
-						<h2 id="failover-rules-dialog-title" className="text-base font-semibold text-gray-900">
+						<h2 id="failover-rules-dialog-title" className="flex items-center gap-2 text-base font-medium text-gray-900">
+                                <span className="route-dialog-symbol" aria-hidden><ArrowPathIcon className="h-4 w-4" /></span>
 							{t('title')}
 						</h2>
 						<p className="mt-1 text-xs text-amber-700">{t('readonlyHint')}</p>
@@ -47,12 +54,10 @@ export function FailoverRulesDialog({ open, onClose }: Props) {
 					<button
 						type="button"
 						onClick={onClose}
-						className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+						className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 						aria-label={tCommon('close')}
 					>
-						<span className="block text-xl leading-none" aria-hidden>
-							×
-						</span>
+						<XMarkIcon className="h-4 w-4" aria-hidden />
 					</button>
 				</div>
 				<div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">
@@ -66,7 +71,7 @@ export function FailoverRulesDialog({ open, onClose }: Props) {
 					<button
 						type="button"
 						onClick={onClose}
-						className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+						className="rounded-md admin-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 					>
 						{tCommon('close')}
 					</button>

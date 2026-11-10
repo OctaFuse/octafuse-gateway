@@ -91,8 +91,8 @@ type Props = {
 };
 
 const SIZE_CLASSES = {
-	compact: { box: 'h-7 w-7', glyph: 'h-[18px] w-[18px]', text: 'text-[9px]' },
-	default: { box: 'h-8 w-8', glyph: 'h-5 w-5', text: 'text-[10px]' },
+	compact: { box: 'h-7 w-7', glyph: 'h-[18px] w-[18px]', text: 'text-xs' },
+	default: { box: 'h-8 w-8', glyph: 'h-5 w-5', text: 'text-xs' },
 	identity: { box: 'h-12 w-12', glyph: 'h-8 w-8', text: 'text-xs' },
 } as const;
 
@@ -140,7 +140,7 @@ export function VendorIcon({ vendor, iconKey, size = 'default', className }: Pro
 			{visual.url ? (
 				<span aria-hidden className={`${glyph} block`} style={maskStyle(visual.url, visual.accent)} />
 			) : (
-				<span aria-hidden className={`${text} font-bold leading-none`} style={{ color: visual.accent }}>
+				<span aria-hidden className={`${text} font-semibold leading-none`} style={{ color: visual.accent }}>
 					{initials(label)}
 				</span>
 			)}

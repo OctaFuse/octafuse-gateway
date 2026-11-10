@@ -42,9 +42,9 @@ export function McpCatalogItemRow({
 
 	return (
 		<li
-			className={`rounded-xl border p-4 transition ${
-				selected ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200 bg-white'
-			} ${item.status === 'removed' ? 'opacity-60' : ''}`}
+			className={`p-4 transition ${selected ? 'bg-gray-50/70' : 'bg-white'} ${
+				item.status === 'removed' ? 'opacity-60' : ''
+			}`}
 		>
 			<div className="flex items-start gap-3">
 				<input
@@ -53,13 +53,11 @@ export function McpCatalogItemRow({
 					disabled={busy || item.status === 'removed'}
 					onChange={(e) => onSelect(e.target.checked)}
 					aria-label={t('selectItem', { name: item.exposedName })}
-					className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 accent-blue-600"
+					className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 accent-gray-950"
 				/>
 				<div className="min-w-0 flex-1">
 					<div className="flex flex-wrap items-center gap-2">
-						<span className="break-all font-mono text-sm font-semibold text-gray-900">
-							{item.upstreamKey}
-						</span>
+						<span className="break-all font-mono text-sm font-medium text-gray-900">{item.upstreamKey}</span>
 						{item.reviewState === 'new' && item.status !== 'removed' ? (
 							<span className="rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
 								{t('reviewNew')}
@@ -71,7 +69,7 @@ export function McpCatalogItemRow({
 							</span>
 						) : null}
 					</div>
-					<p className="mt-1 break-all font-mono text-xs text-gray-400">{item.exposedName}</p>
+					<p className="mt-1 break-all font-mono text-xs text-gray-500">{item.exposedName}</p>
 					<p
 						className={`mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 ${
 							expandedDescription ? '' : 'line-clamp-2'
@@ -102,7 +100,7 @@ export function McpCatalogItemRow({
 							aria-checked={item.status === 'enabled'}
 							disabled={busy}
 							onClick={() => onToggle(item.status !== 'enabled')}
-							className={`relative h-5 w-9 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
+							className={`relative h-5 w-9 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 ${
 								item.status === 'enabled' ? 'bg-gray-900' : 'bg-gray-300'
 							} disabled:opacity-50`}
 						>
@@ -155,7 +153,7 @@ export function McpCatalogItemRow({
 					</button>
 				</div>
 			) : null}
-			<div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-3">
+			<div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
 				<details className="min-w-0">
 					<summary className="cursor-pointer text-xs font-medium text-gray-500 hover:text-gray-900">
 						{t('viewDefinition')}
@@ -171,7 +169,7 @@ export function McpCatalogItemRow({
 						) : (
 							<span className="text-red-600">{t('pricing.invalidStored')}</span>
 						)}
-						<span className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px]">
+						<span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">
 							{t(custom ? 'custom' : 'inheritedPrice')}
 						</span>
 						<button
@@ -186,7 +184,7 @@ export function McpCatalogItemRow({
 								}
 								setPricing(!pricing);
 							}}
-							className="font-medium text-blue-600 hover:underline disabled:opacity-50"
+							className="font-medium text-gray-800 hover:underline disabled:opacity-50"
 						>
 							{t(pricing ? 'collapsePrice' : 'customPrice')}
 						</button>
@@ -196,7 +194,7 @@ export function McpCatalogItemRow({
 			{pricing ? (
 				<form
 					id={priceId}
-					className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-4"
+					className="mt-3 rounded-lg border border-gray-200 bg-gray-50/60 p-4"
 					onSubmit={async (e) => {
 						e.preventDefault();
 						const rule = pricingRuleFromDraft(draft);

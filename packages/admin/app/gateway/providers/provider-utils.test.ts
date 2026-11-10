@@ -10,7 +10,7 @@ import {
 	providerToFormData,
 	tryCollapseGeminiLegacyEndpoints,
 } from './provider-utils';
-import { EMPTY_PROVIDER_FORM } from './types';
+import { EMPTY_PROVIDER_FORM, parseProviderListFilters } from './types';
 import type { GatewayProvider } from '@/lib/types';
 
 function providerWithEndpoints(endpoints: unknown, extras: Partial<GatewayProvider> = {}): GatewayProvider {
@@ -195,4 +195,22 @@ describe('providerApiKeyPreview', () => {
 		assert.equal(providerApiKeyPreview(credential), 'sa:test@example.com');
 		assert.equal(providerApiKeyPreview(credential).includes('private-test-material'), false);
 	});
+});
+
+
+describe('provider status and protocol filters', () => {
+ it('preserves legacy protocol links and ignores unknown values', () => {
+  assert.deepEqual(parseProviderListFilters('anthropic', null), { status: 'all', protocol: 'anthropic' });
+  assert.deepEqual(parseProviderListFilters('unknown', 'invalid'), { status: 'all', protocol: 'all' });
+ });
+ it('retains independent status and protocol selections', () => {
+  assert.deepEqual(parseProviderListFilters('disabled', 'openai'), { status: 'disabled', protocol: 'openai' });
+  const selected = parseProviderListFilters('disabled', 'openai');
+  const providers = [
+   providerWithEndpoints({ openai: { base: 'https://example.com/v1' } }, { id: 'active', status: 'active' }),
+   providerWithEndpoints({ openai: { base: 'https://example.com/v1' } }, { id: 'disabled', status: 'disabled' }),
+   providerWithEndpoints({ anthropic: { base: 'https://example.com' } }, { id: 'other', status: 'disabled' }),
+  ];
+  assert.deepEqual(providers.filter(p => providerMatchesListFilter(p, selected.status) && providerMatchesListFilter(p, selected.protocol)).map(p => p.id), ['disabled']);
+ });
 });

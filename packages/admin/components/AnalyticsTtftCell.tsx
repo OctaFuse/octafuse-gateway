@@ -87,7 +87,7 @@ export function AnalyticsTtftCell({
 		<span className="inline-flex items-center gap-1.5 tabular-nums" title={tooltip}>
 			{primary.kind === 'reasoning' || primary.kind === 'content' ? (
 				<span
-					className={`inline-flex min-w-[1.125rem] items-center justify-center rounded px-1 py-0.5 text-[10px] font-semibold leading-none ${TTFT_BADGE_CLASS[primary.kind]}`}
+					className={`inline-flex min-w-[1.125rem] items-center justify-center rounded px-1 py-0.5 text-xs font-medium leading-none ${TTFT_BADGE_CLASS[primary.kind]}`}
 				>
 					{primary.kind === 'reasoning' ? 'R' : 'C'}
 				</span>

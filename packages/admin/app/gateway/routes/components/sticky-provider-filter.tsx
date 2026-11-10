@@ -141,7 +141,7 @@ export function StickyProviderFilter({
 				onClick={() => (open ? setOpen(false) : expand())}
 				onKeyDown={onKeyDown}
 				onBlur={() => setOpen(false)}
-				className="flex min-h-12 w-full min-w-0 items-center gap-2 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-left hover:border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-60"
+				className="flex min-h-12 w-full min-w-0 items-center gap-2 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-left hover:border-gray-400 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500/30 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-60"
 			>
 				<div className="min-w-0 flex-1">{identity(selected)}</div>
 				<ChevronDownIcon
@@ -172,13 +172,13 @@ export function StickyProviderFilter({
 								onMouseMove={() => setActiveIndex(index)}
 								onClick={() => choose(index)}
 								className={`flex min-h-12 cursor-pointer items-center gap-2 rounded-md px-2 py-2 ${
-									index === activeIndex ? 'bg-blue-50' : 'hover:bg-gray-50'
+									index === activeIndex ? 'bg-gray-50' : 'hover:bg-gray-50'
 								}`}
 							>
 								<div className="min-w-0 flex-1">{identity(option)}</div>
 								<span className="w-4 shrink-0">
 									{option.id === value ? (
-										<CheckIcon className="h-4 w-4 text-blue-600" aria-hidden />
+										<CheckIcon className="h-4 w-4 text-gray-800" aria-hidden />
 									) : null}
 								</span>
 							</div>

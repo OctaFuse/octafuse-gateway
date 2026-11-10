@@ -50,6 +50,7 @@ import { DEFAULT_KIND_FILTER, type ModelKindFilter } from '../models/types';
 import {
 	BODY_TEMPLATES,
 	decodeWireRequestBodyHeader,
+	defaultImageOperationForRoute,
 	isPlaygroundBodyDirty,
 	playgroundLlmSampleBody,
 	playgroundModelHintFromRoute,
@@ -474,10 +475,19 @@ export function usePlaygroundPageState() {
 	}, [initialRouteId, initialMode, routes, modelsById]);
 
 	useEffect(() => {
+		setImagePreviews([]);
+		setResponseMeta(null);
+		setLastSentWireBody(null);
+		setLastSentWireHeaders(null);
+		setLastSentInputSnapshot(null);
+		setResponseText('');
+		setUsageHint(null);
+		setAudioPreviewUrl(null);
 		const r = routes.find((x) => x.id === selectedId);
 		if (!r) return;
-		const nextTemplate = templateForRoute(r, modelsById.get(r.model_id), 'generations');
-		setImageOperation('generations');
+		const nextImageOperation = defaultImageOperationForRoute(r);
+		const nextTemplate = templateForRoute(r, modelsById.get(r.model_id), nextImageOperation);
+		setImageOperation(nextImageOperation);
 		setEditFiles([]);
 		setAudioFile(null);
 		setAudioInputMode(
@@ -485,7 +495,6 @@ export function usePlaygroundPageState() {
 				? defaultAudioInputModeForElevenLabsOperation(r.upstream_operation)
 				: defaultAudioInputModeForDashScopeOperation(r.upstream_operation),
 		);
-		setAudioPreviewUrl(null);
 		realtimeAudioChunksRef.current = [];
 		if (!bodyDirtyRef.current) {
 			setBodyTextState(nextTemplate);
@@ -495,13 +504,7 @@ export function usePlaygroundPageState() {
 		}
 		setTemplateBody(nextTemplate);
 		setBodyError(null);
-		setImagePreviews([]);
-		setResponseMeta(null);
-		setLastSentWireBody(null);
-		setLastSentWireHeaders(null);
-		setLastSentInputSnapshot(null);
-		setResponseText('');
-		setUsageHint(null);
+
 	}, [selectedId, routes, modelsById]);
 
 	useEffect(() => {
@@ -1009,6 +1012,7 @@ export function usePlaygroundPageState() {
 		setBodyText,
 		bodyDirtyHint,
 		applyLlmSample,
+		applyCurrentTemplate,
 		applyLlmBody: (body: string) => {
 			setBodyTextState(body);
 			setTemplateBody(body);

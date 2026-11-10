@@ -107,12 +107,12 @@ export default function AuthWrapper({ children }: Props) {
   if (!isAuthenticated) {
     return (
       <div className="flex h-dvh items-start justify-center overflow-y-auto bg-gray-50 p-4">
-        <div className="my-auto w-full max-w-md rounded-lg bg-white p-5 shadow-md sm:p-8">
+        <div className="my-auto w-full max-w-md rounded-lg bg-white p-5 shadow-panel sm:p-8">
           <div className="mb-6 flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <BrandMark className="h-12 w-12" />
               <div className="min-w-0">
-                <h1 className="text-xl font-bold text-gray-800 sm:text-2xl">{tBrand('loginHeading')}</h1>
+                <h1 className="text-xl font-medium text-gray-800 sm:text-[28px]">{tBrand('loginHeading')}</h1>
                 <p className="mt-1 text-xs text-gray-500">{tBrand('operatorConsole')}</p>
               </div>
             </div>
@@ -128,7 +128,7 @@ export default function AuthWrapper({ children }: Props) {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900"
                 required
                 autoComplete="username"
               />
@@ -142,7 +142,7 @@ export default function AuthWrapper({ children }: Props) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-900"
                 required
                 autoComplete="current-password"
               />
@@ -155,7 +155,7 @@ export default function AuthWrapper({ children }: Props) {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full admin-primary py-2 px-4 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? t('loggingIn') : t('login')}
             </button>

@@ -97,12 +97,12 @@ export function RouteCatalogPricingTable({
 													>
 														<p
 															className={`whitespace-nowrap text-slate-800 ${
-																window ? 'font-mono text-[11px] tabular-nums' : 'font-medium'
+																window ? 'font-mono text-xs tabular-nums' : 'font-medium'
 															}`}
 														>
 															{label}
 														</p>
-														<div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-4 text-slate-500">
+														<div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-4 text-slate-500">
 															{window && <span>{daySummary(window.days)}</span>}
 															{window && window.factor !== 1 && (
 																<span
@@ -113,8 +113,8 @@ export function RouteCatalogPricingTable({
 																</span>
 															)}
 															{active && hasSchedule && (
-																<span className="inline-flex items-center gap-1 text-blue-600">
-																	<span className="h-1 w-1 rounded-full bg-blue-500" aria-hidden />
+																<span className="inline-flex items-center gap-1 text-gray-800">
+																	<span className="h-1 w-1 rounded-full bg-gray-700" aria-hidden />
 																	{t('catalogScheduleNow')}
 																</span>
 															)}
@@ -123,7 +123,7 @@ export function RouteCatalogPricingTable({
 												</>
 											)}
 											{showRange && (
-												<td className="whitespace-nowrap px-2 py-4 font-mono text-[11px] tabular-nums text-slate-500">
+												<td className="whitespace-nowrap px-2 py-4 font-mono text-xs tabular-nums text-slate-500">
 													{row?.rangeLine}
 												</td>
 											)}
@@ -147,7 +147,7 @@ export function RouteCatalogPricingTable({
 				</table>
 			</div>
 			{showPrices && (
-				<p className="border-t border-slate-200 pt-3 text-[11px] leading-5 text-slate-500">
+				<p className="border-t border-slate-200 pt-3 text-xs leading-5 text-slate-500">
 					{prices('unitFooter', {
 						unit: prices('unitPerMillion', {
 							symbol: getGatewayCurrencySymbol(billingCurrency.trim().toUpperCase()),

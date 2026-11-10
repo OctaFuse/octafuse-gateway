@@ -28,23 +28,23 @@
     left: 0;
     z-index: 1;
     background-color: #fff;
-    box-shadow: 1px 0 #e5e7eb;
+    box-shadow: 1px 0 #e4e4e7;
     max-width: 14rem;
     overflow-wrap: anywhere;
   }
 
   .admin-data-table > thead > tr > th:first-child {
     z-index: 2;
-    background-color: #f9fafb;
+    background-color: #fafafa;
   }
 
   .admin-data-table > tbody > tr:hover > td:first-child:not([colspan]) {
-    background-color: #f9fafb;
+    background-color: #fafafa;
   }
 
   .admin-data-table > tbody > tr.admin-data-row-open > td:first-child:not([colspan]),
   .admin-data-table > tbody > tr.admin-data-row-open:hover > td:first-child:not([colspan]) {
-    background-color: #eff6ff;
+    background-color: #f4f4f5;
   }
 
   .admin-log-table {
@@ -63,12 +63,12 @@
 @layer base {
   body {
     @apply bg-gray-50 text-gray-900 antialiased;
-    background-color: #F9FAFB;
-    color: #111827;
+    background-color: #fafafa;
+    color: #18181b;
   }
 
   ::selection {
-    @apply bg-blue-200 text-gray-900;
+    @apply bg-gray-200 text-gray-900;
   }
 }
 
@@ -132,11 +132,11 @@
 .route-provider-list {
   container: route-providers / inline-size;
   width: 100%;
-  max-width: 80rem;
-  justify-self: start;
+  max-width: 100%;
+  justify-self: stretch;
 }
 
-/* Model and surface sections fill the workspace; provider rows keep a readable width. */
+/* Model, surface and provider sections share the available workspace width. */
 .route-flow-list-layout {
   width: 100%;
 }
@@ -154,7 +154,7 @@
   top: 0;
   inset-inline: 1rem;
   height: 1px;
-  background: linear-gradient(to right, transparent, rgb(148 163 184 / 0.3) 15%, rgb(148 163 184 / 0.3) 85%, transparent);
+  background: #e4e4e7;
 }
 
 .route-provider-list-grid {
@@ -204,7 +204,7 @@
 }
 
 .route-provider-list-model > button {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
 }
 
 .route-provider-list-meta {
@@ -383,33 +383,54 @@
 input,
 textarea,
 select {
-  color: #111827;
+  color: #18181b;
+}
+
+/* Use one centered caret for closed single-choice selectors across the admin. */
+select:not([multiple]):not([size]),
+select:not([multiple])[size='1'] {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2371717a%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem 1rem;
+  padding-inline-end: 2.25rem;
+}
+
+@media (forced-colors: active) {
+  select:not([multiple]):not([size]),
+  select:not([multiple])[size='1'] {
+    -webkit-appearance: auto;
+    appearance: auto;
+    background-image: none;
+  }
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #9CA3AF;
+  color: #71717a;
 }
 
 @keyframes octafuse-toast-in {
   from {
     opacity: 0;
-    transform: translateX(1.25rem) scale(0.98);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translateX(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 @keyframes octafuse-toast-out {
   from {
     opacity: 1;
-    transform: translateX(0) scale(1);
+    transform: translateY(0);
   }
   to {
     opacity: 0;
-    transform: translateX(1.25rem) scale(0.98);
+    transform: translateY(8px);
   }
 }
 
@@ -423,11 +444,11 @@ textarea::placeholder {
 }
 
 .octafuse-toast-enter {
-  animation: octafuse-toast-in 280ms ease-out both;
+  animation: octafuse-toast-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .octafuse-toast-leaving {
-  animation: octafuse-toast-out 200ms ease-in both;
+  animation: octafuse-toast-out 160ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .octafuse-toast-progress {
@@ -445,4 +466,57 @@ textarea::placeholder {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Admin visual system. Workflow informed by unslop, Damir Sokolovsky (@heydamir),
+   CC BY 4.0: https://heydamir.design/unslop. Product layouts and data remain Octafuse's. */
+@layer base {
+  :root {
+    --admin-canvas: #fafafa;
+    --admin-sidebar: #f4f4f5;
+    --admin-surface: #fff;
+    --admin-border: #e4e4e7;
+    --admin-ink: #18181b;
+    --admin-secondary: #52525b;
+    --admin-muted: #71717a;
+  }
+
+  body { font-feature-settings: 'cv11', 'ss01'; }
+  button, input, select, textarea { accent-color: var(--admin-ink); }
+  button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--admin-ink);
+    outline-offset: 3px;
+  }
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']), select {
+    min-height: 36px;
+  }
+  input::placeholder, textarea::placeholder { opacity: 1; }
+  svg[stroke='currentColor'] { stroke-width: 1.5; }
+  code, pre, time { font-variant-numeric: tabular-nums; }
+}
+
+@layer components {
+  .admin-shell { background: var(--admin-canvas); }
+  /* Page blocks fill the workspace; each page owns its responsive edge padding. */
+  .admin-workspace { scrollbar-gutter: stable; }
+  .admin-sidebar { background: var(--admin-sidebar); border-right: 1px solid var(--admin-border); }
+  .admin-nav-item {
+    @apply flex min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-sm font-normal text-gray-600 transition-colors hover:bg-gray-200/60 hover:text-gray-950;
+  }
+  .admin-nav-item[aria-current='page'] { @apply bg-gray-950 font-medium text-white shadow-sm hover:bg-gray-800 hover:text-white; }
+  .admin-nav-item svg { @apply h-4 w-4 shrink-0; }
+  .admin-primary { @apply rounded-lg bg-gray-950 font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50; }
+  .admin-secondary { @apply rounded-lg border border-gray-200 bg-white font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50; }
+  .admin-badge { @apply inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-normal text-gray-600 ring-1 ring-inset ring-gray-200; }
+  .admin-data-table { font-variant-numeric: tabular-nums; }
+  .admin-data-table th { @apply bg-gray-50 text-xs font-medium normal-case tracking-normal text-gray-500; }
+  .admin-data-table td { border-color: var(--admin-border); }
+  .admin-data-table tbody tr { @apply transition-colors; }
+  .admin-data-table tbody tr:hover { @apply bg-gray-50; }
+  .admin-data-table :is(th, td) { vertical-align: middle; }
+}
+
+@media (min-width: 1024px) {
+  .admin-nav-item { min-height: 36px; padding-block: 8px; }
 }

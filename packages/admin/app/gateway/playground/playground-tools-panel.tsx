@@ -4,7 +4,8 @@
  * Playground Tools：工具 + 引擎两级下拉，直连 catalog 引擎（不计费、不写 logs）。
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import { AdminInspector } from '@/components/admin-inspector';
+import { PaperAirplaneIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { GATEWAY_TOOLS } from '@/lib/gateway-tools';
 import { parseGatewayToolId, type GatewayToolId } from '@/lib/invoke-kind';
@@ -64,6 +65,9 @@ export function usePlaygroundToolsState(initialToolId?: string | null, initialPr
 		const parsed = parseGatewayToolId(next);
 		if (!parsed) return;
 		setToolId(parsed);
+		setResponseMeta(null);
+		setResponseText('');
+		setWireBody(null);
 		setBodyText(TOOL_BODY_TEMPLATES[parsed] ?? bodyTemplateForTool(parsed));
 		setBodyError(null);
 		const nextProviders = providersForTool(parsed);
@@ -134,12 +138,20 @@ export function usePlaygroundToolsState(initialToolId?: string | null, initialPr
 		}
 	}, [bodyText, provider, toolId, t, tCommon]);
 
+	const onProviderChange = (value: string) => {
+		setProvider(value);
+		setBodyError(null);
+		setResponseMeta(null);
+		setResponseText('');
+		setWireBody(null);
+	};
+
 	return {
 		toolId,
 		onToolChange,
 		providers,
 		provider,
-		setProvider,
+		setProvider: onProviderChange,
 		bodyText,
 		setBodyText,
 		bodyError,
@@ -160,13 +172,17 @@ export function PlaygroundToolsSetup({ state }: { state: PlaygroundToolsState })
 
 	return (
 		<section className={panelClass}>
-			<h2 className="text-sm font-semibold text-gray-900">{t('toolsSection')}</h2>
+			<h2 className="text-sm font-medium text-gray-900">{t('toolsSection')}</h2>
 			<p className="text-xs text-gray-500">{t('toolsHint')}</p>
 			<div className="space-y-3">
 				<div>
-					<label className={labelClass}>{t('tool')}</label>
+					<label className={labelClass} htmlFor="playground-tool">
+						{t('tool')}
+					</label>
 					<select
+						id="playground-tool"
 						value={state.toolId}
+						disabled={state.sending}
 						onChange={(e) => state.onToolChange(e.target.value)}
 						className={`${inputClass} font-mono`}
 					>
@@ -178,9 +194,13 @@ export function PlaygroundToolsSetup({ state }: { state: PlaygroundToolsState })
 					</select>
 				</div>
 				<div>
-					<label className={labelClass}>{t('engineProvider')}</label>
+					<label className={labelClass} htmlFor="playground-engine">
+						{t('engineProvider')}
+					</label>
 					<select
+						id="playground-engine"
 						value={state.provider}
+						disabled={state.sending}
 						onChange={(e) => state.setProvider(e.target.value)}
 						className={`${inputClass} font-mono`}
 					>
@@ -202,84 +222,110 @@ export function PlaygroundToolsWorkspace({ state }: { state: PlaygroundToolsStat
 	const tCommon = useTranslations('common');
 
 	return (
-		<div className="space-y-4">
-			<section className="space-y-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm">
-				<div className="flex flex-wrap items-center justify-between gap-2">
-					<h2 className="text-sm font-semibold text-gray-900">{t('requestBody')}</h2>
-					<div className="flex flex-wrap items-center gap-2">
-						<button
-							type="button"
-							onClick={state.applyTemplate}
-							className="rounded-md border border-gray-300 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
+		<div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-2 xl:grid-rows-[minmax(0,1fr)]">
+			<section
+				aria-label={t('requestBody')}
+				className="admin-content-panel flex min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white"
+			>
+				<header className="flex min-h-[57px] shrink-0 flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-4 py-2.5">
+					<h2 className="text-sm font-medium text-gray-900">{t('requestBody')}</h2>
+					<div className="flex items-center gap-2">
+						<AdminInspector
+							label={t('sentBody')}
+							hint={state.wireBody ? t('sentBodyHint') : t('sentBodyEmpty')}
+							disabled={!state.wireBody}
 						>
-							{t('applyTemplate')}
-						</button>
+							<pre className={`${codeBlockClass} leading-6`}>{state.wireBody}</pre>
+						</AdminInspector>
 						<button
 							type="button"
 							disabled={state.sending}
 							onClick={() => void state.send()}
-							className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+							className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-gray-950 px-3 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50"
 						>
-							<PaperAirplaneIcon className="h-4 w-4" />
+							<PaperAirplaneIcon className="h-4 w-4" aria-hidden />
 							{state.sending ? tCommon('sending') : tCommon('send')}
 						</button>
 					</div>
-				</div>
-				<div className="grid min-h-0 grid-cols-1 gap-3 xl:grid-cols-2 xl:items-stretch">
-					<div className="flex min-h-0 min-w-0 flex-col">
-						<label className="mb-1 text-xs font-medium uppercase tracking-wider text-gray-500">
-							{t('inputBody')}
-						</label>
-						<textarea
-							value={state.bodyText}
-							onChange={(e) => state.setBodyText(e.target.value)}
-							rows={12}
-							className={`${inputClass} min-h-[180px] flex-1 font-mono text-sm`}
-							spellCheck={false}
-						/>
-					</div>
-					<div className="flex min-h-0 min-w-0 flex-col">
-						<div className="mb-1 flex items-center justify-between gap-2">
-							<label className="text-xs font-medium uppercase tracking-wider text-gray-500">{t('sentBody')}</label>
-							{state.wireBody ? (
-								<span className="text-[11px] font-medium text-emerald-700">{t('sentBodySourceSent')}</span>
-							) : null}
-						</div>
-						<p className="mb-1 text-[11px] text-gray-500">
-							{state.wireBody ? t('sentBodyHint') : t('sentBodyEmpty')}
+				</header>
+				<div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
+					<div className="flex flex-wrap items-center justify-between gap-2">
+						<p className="min-w-0 truncate font-mono text-xs text-gray-500">
+							{state.toolId} · {state.provider}
 						</p>
-						<pre className={`${codeBlockClass} min-h-[180px] flex-1 overflow-y-auto`}>
-							{state.wireBody ?? '—'}
+						<button
+							type="button"
+							onClick={state.applyTemplate}
+							disabled={state.sending}
+							className="shrink-0 rounded-lg px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-100 disabled:opacity-50"
+						>
+							{t('applyTemplate')}
+						</button>
+					</div>
+					<label className="sr-only" htmlFor="playground-tool-body">
+						{t('inputBody')}
+					</label>
+					<textarea
+						id="playground-tool-body"
+						value={state.bodyText}
+						onChange={(event) => state.setBodyText(event.target.value)}
+						disabled={state.sending}
+						rows={14}
+						spellCheck={false}
+						className={`${inputClass} min-h-[280px] flex-1 resize-y bg-gray-50/60 font-mono text-xs leading-6 xl:min-h-0 xl:resize-none`}
+					/>
+					{state.bodyError && (
+						<p
+							role="alert"
+							className="max-h-24 shrink-0 overflow-auto whitespace-pre-wrap text-xs leading-5 text-red-700"
+						>
+							{state.bodyError}
+						</p>
+					)}
+				</div>
+			</section>
+			<section
+				aria-label={t('response')}
+				className="admin-content-panel flex min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white"
+			>
+				<header className="flex min-h-[57px] shrink-0 flex-wrap items-center justify-between gap-2 border-b border-gray-100 px-4 py-2.5">
+					<h2 className="text-sm font-medium text-gray-900">{t('response')}</h2>
+					{state.responseMeta && (
+						<div className="flex items-center gap-2 text-xs tabular-nums">
+							<span
+								className={`rounded-md px-2 py-1 ${
+									state.responseMeta.status >= 400
+										? 'bg-red-50 text-red-700'
+										: 'bg-emerald-50 text-emerald-700'
+								}`}
+							>
+								HTTP {state.responseMeta.status}
+							</span>
+							{state.responseMeta.latencyMs != null && (
+								<span className="text-gray-500">{state.responseMeta.latencyMs} ms</span>
+							)}
+						</div>
+					)}
+				</header>
+				{state.responseText ? (
+					<div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
+						{state.responseMeta?.upstreamUrl && (
+							<p className="truncate font-mono text-xs text-gray-500" title={state.responseMeta.upstreamUrl}>
+								{state.responseMeta.upstreamUrl}
+							</p>
+						)}
+						<pre className={`${codeBlockClass} min-h-0 flex-1 overflow-auto leading-6`}>
+							{state.responseText}
 						</pre>
 					</div>
-				</div>
-				{state.bodyError ? (
-					<div className="whitespace-pre-wrap rounded-md border border-red-200 bg-red-50 p-2.5 text-sm text-red-700">
-						{state.bodyError}
-					</div>
-				) : null}
-			</section>
-
-			<section className="space-y-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm">
-				<h2 className="text-sm font-semibold text-gray-900">{t('response')}</h2>
-				{state.responseMeta ? (
-					<div className="flex flex-wrap gap-2 text-xs">
-						<span className="rounded-full bg-gray-100 px-2.5 py-1 font-medium">HTTP {state.responseMeta.status}</span>
-						{state.responseMeta.latencyMs ? (
-							<span className="rounded-full bg-gray-100 px-2.5 py-1 font-medium">
-								{state.responseMeta.latencyMs} ms
-							</span>
-						) : null}
-						{state.responseMeta.upstreamUrl ? (
-							<span className="max-w-full truncate rounded-full bg-gray-100 px-2.5 py-1 font-mono">
-								{state.responseMeta.upstreamUrl}
-							</span>
-						) : null}
-					</div>
 				) : (
-					<p className="text-sm text-gray-500">{t('emptyResponseHint')}</p>
+					<div className="flex min-h-[320px] flex-1 flex-col items-center justify-center gap-4 px-6 py-12 text-center">
+						<span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400">
+							<ArrowDownTrayIcon className="h-5 w-5" aria-hidden />
+						</span>
+						<p className="max-w-64 text-xs leading-6 text-gray-500">{t('emptyResponseHint')}</p>
+					</div>
 				)}
-				{state.responseText ? <pre className={codeBlockClass}>{state.responseText}</pre> : null}
 			</section>
 		</div>
 	);

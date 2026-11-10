@@ -1,5 +1,7 @@
 'use client';
 
+import { AdminPageTitle } from '@/components/admin-page-title';
+
 /**
  * 模型用量分析：时间范围、表格展示、支持 CSV 导出。
  */
@@ -14,7 +16,9 @@ import { AnalyticsTtftCell } from '@/components/AnalyticsTtftCell';
 import { AnalyticsTokenCount } from '@/components/AnalyticsTokenCount';
 import { AnalyticsTokenDisplayPicker } from '@/components/AnalyticsTokenDisplayPicker';
 import { useAnalyticsRange } from '@/lib/use-analytics-range';
-import { GatewayTimeRangePicker } from '@/components/GatewayTimeRangePicker';
+import { AnalyticsRangeControl } from '@/components/AnalyticsRangeControl';
+import { FinancialAmount } from '@/components/FinancialAmount';
+import { ArrowDownTrayIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { readJson } from '@/lib/api-json';
 import { compareAnalyticsTableRows } from '@/lib/analytics-range';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
@@ -31,455 +35,678 @@ type SortKey = keyof ModelUsageRow | '';
 type SortDir = 'asc' | 'desc';
 
 function formatMaybeNumber(value: number | null | undefined, digits = 0): string {
-  return value == null ? '' : value.toFixed(digits);
+	return value == null ? '' : value.toFixed(digits);
 }
 
 export default function ModelUsagePage() {
-  const t = useTranslations('analytics.modelUsage');
-  const tA = useTranslations('analytics');
-  const tCommon = useTranslations('common');
-  const tKind = useTranslations('providers.kind');
-  const locale = useLocale();
-  const [rows, setRows] = useState<ModelUsageRow[]>([]);
-  const [search, setSearch] = useState('');
-  const [view, setView] = useState<AnalyticsView>('overview');
-  const [detailError, setDetailError] = useState(false);
-  const [loadError, setLoadError] = useState(false);
-  const [refresh, setRefresh] = useState(0);
-  const queryGeneration = useRef(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [rangeValue, setRangeValue] = useAnalyticsRange();
-  const [committedQuery, setCommittedQuery] = useState(rangeValue);
-  const [sortKey, setSortKey] = useState<SortKey>('request_count');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('compact');
-  const [expandedModelKeys, setExpandedModelKeys] = useState<Set<string>>(() => new Set());
-  const [providerRowsByModel, setProviderRowsByModel] = useState<Record<string, ProviderUsageRow[]>>({});
-  const [providerRowsLoading, setProviderRowsLoading] = useState<Record<string, boolean>>({});
-  const [providerCatalog, setProviderCatalog] = useState<GatewayProvider[]>([]);
-  const { currency: billingCurrency } = useBillingCurrency();
+	const t = useTranslations('analytics.modelUsage');
+	const tA = useTranslations('analytics');
+	const tCommon = useTranslations('common');
+	const tKind = useTranslations('providers.kind');
+	const locale = useLocale();
+	const [rows, setRows] = useState<ModelUsageRow[]>([]);
+	const [search, setSearch] = useState('');
+	const [view, setView] = useState<AnalyticsView>('overview');
+	const [detailError, setDetailError] = useState(false);
+	const [loadError, setLoadError] = useState(false);
+	const [refresh, setRefresh] = useState(0);
+	const queryGeneration = useRef(0);
+	const [isLoading, setIsLoading] = useState(true);
+	const [rangeValue, setRangeValue] = useAnalyticsRange(true);
+	const [committedQuery, setCommittedQuery] = useState(rangeValue);
+	const [sortKey, setSortKey] = useState<SortKey>('request_count');
+	const [sortDir, setSortDir] = useState<SortDir>('desc');
+	const [tokenDisplayMode, setTokenDisplayMode] = useState<TokenDisplayMode>('compact');
+	const [expandedModelKeys, setExpandedModelKeys] = useState<Set<string>>(() => new Set());
+	const [providerRowsByModel, setProviderRowsByModel] = useState<Record<string, ProviderUsageRow[]>>({});
+	const [providerRowsLoading, setProviderRowsLoading] = useState<Record<string, boolean>>({});
+	const [providerCatalog, setProviderCatalog] = useState<GatewayProvider[]>([]);
+	const { currency: billingCurrency } = useBillingCurrency();
 
-  useEffect(() => {
-    const controller = new AbortController();
-    queryGeneration.current += 1;
-    const run = async () => {
-      setIsLoading(true);
-      setLoadError(false);
-      setDetailError(false);
-      setRows([]);
-      try {
-        const { start_date, end_date } = rangeValue;
-        const params = new URLSearchParams({ start_date, end_date });
-        const response = await fetch(`/api/admin/analytics/models?${params.toString()}`, { signal: controller.signal });
-        const data = await readJson<ApiResponse<ModelUsageRow[]>>(response);
-        if (controller.signal.aborted) return;
-        if (!response.ok || !data.success) throw new Error(data.message);
-        if (data.success) {
-          setRows(data.data ?? []);
-          setCommittedQuery(rangeValue);
-          setExpandedModelKeys(new Set());
-          setProviderRowsByModel({});
-          setProviderRowsLoading({});
-        }
-      } catch (e) {
-        if (controller.signal.aborted) return;
-        setLoadError(true);
-        console.error('Fetch model usage error:', e);
-      } finally {
-        if (!controller.signal.aborted) setIsLoading(false);
-      }
-    };
-    void run();
-    return () => { controller.abort(); queryGeneration.current += 1; };
-  }, [rangeValue, refresh]);
+	useEffect(() => {
+		const controller = new AbortController();
+		queryGeneration.current += 1;
+		const run = async () => {
+			setIsLoading(true);
+			setLoadError(false);
+			setDetailError(false);
+			setRows([]);
+			try {
+				const { start_date, end_date } = rangeValue;
+				const params = new URLSearchParams({ start_date, end_date });
+				const response = await fetch(`/api/admin/analytics/models?${params.toString()}`, {
+					signal: controller.signal,
+				});
+				const data = await readJson<ApiResponse<ModelUsageRow[]>>(response);
+				if (controller.signal.aborted) return;
+				if (!response.ok || !data.success) throw new Error(data.message);
+				if (data.success) {
+					setRows(data.data ?? []);
+					setCommittedQuery(rangeValue);
+					setExpandedModelKeys(new Set());
+					setProviderRowsByModel({});
+					setProviderRowsLoading({});
+				}
+			} catch (e) {
+				if (controller.signal.aborted) return;
+				setLoadError(true);
+				console.error('Fetch model usage error:', e);
+			} finally {
+				if (!controller.signal.aborted) setIsLoading(false);
+			}
+		};
+		void run();
+		return () => {
+			controller.abort();
+			queryGeneration.current += 1;
+		};
+	}, [rangeValue, refresh]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await fetch('/api/admin/providers');
-        const data = await readJson<ApiResponse<GatewayProvider[]>>(response);
-        if (!cancelled && data.success) setProviderCatalog(data.data ?? []);
-      } catch (e) {
-        console.error('Fetch providers for model usage labels:', e);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+	useEffect(() => {
+		let cancelled = false;
+		(async () => {
+			try {
+				const response = await fetch('/api/admin/providers');
+				const data = await readJson<ApiResponse<GatewayProvider[]>>(response);
+				if (!cancelled && data.success) setProviderCatalog(data.data ?? []);
+			} catch (e) {
+				console.error('Fetch providers for model usage labels:', e);
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
-  const providerById = useMemo(() => {
-    const map = new Map<string, GatewayProvider>();
-    for (const provider of providerCatalog) map.set(provider.id, provider);
-    return map;
-  }, [providerCatalog]);
+	const providerById = useMemo(() => {
+		const map = new Map<string, GatewayProvider>();
+		for (const provider of providerCatalog) map.set(provider.id, provider);
+		return map;
+	}, [providerCatalog]);
 
-  const providerKind = useAnalyticsProviderKind(providerById);
+	const providerKind = useAnalyticsProviderKind(providerById);
 
-  /** 统计仍按 provider id。别名优先用账号目录，其次日志快照名，最后 provider id。 */
-  const providerUsageIdentityFor = (row: ProviderUsageRow) => {
-    const provider = providerById.get(row.provider_id);
-    return providerAccountIdentity(provider, locale, tKind('custom'), row.provider_name?.trim() || row.provider_id);
-  };
+	/** 统计仍按 provider id。别名优先用账号目录，其次日志快照名，最后 provider id。 */
+	const providerUsageIdentityFor = (row: ProviderUsageRow) => {
+		const provider = providerById.get(row.provider_id);
+		return providerAccountIdentity(
+			provider,
+			locale,
+			tKind('custom'),
+			row.provider_name?.trim() || row.provider_id
+		);
+	};
 
-  const deletedProviderBadge = (providerId: string) => {
-    const id = providerId.trim();
-    if (!id || id === GATEWAY_TOOLS_PROVIDER_ID || providerById.has(id)) return null;
-    return tA('deletedProvider');
-  };
+	const deletedProviderBadge = (providerId: string) => {
+		const id = providerId.trim();
+		if (!id || id === GATEWAY_TOOLS_PROVIDER_ID || providerById.has(id)) return null;
+		return tA('deletedProvider');
+	};
 
-  const filteredRows = rows.filter(r => [r.model_id, r.route_group].some(value => value?.toLowerCase().includes(search.trim().toLowerCase())));
+	const filteredRows = rows.filter((r) =>
+		[r.model_id, r.route_group].some((value) => value?.toLowerCase().includes(search.trim().toLowerCase()))
+	);
 
-  const sorted = [...filteredRows].sort((a, b) => compareAnalyticsTableRows(a, b, sortKey, sortDir));
+	const sorted = [...filteredRows].sort((a, b) => compareAnalyticsTableRows(a, b, sortKey, sortDir));
 
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    else {
-      setSortKey(key);
-      setSortDir('desc');
-    }
-  };
+	const toggleSort = (key: SortKey) => {
+		if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+		else {
+			setSortKey(key);
+			setSortDir('desc');
+		}
+	};
 
-  const modelKey = (row: Pick<ModelUsageRow, 'model_id' | 'route_group'>) => `${row.model_id}\t${row.route_group}`;
+	const modelKey = (row: Pick<ModelUsageRow, 'model_id' | 'route_group'>) =>
+		`${row.model_id}\t${row.route_group}`;
 
-  const toggleModelProviders = async (row: ModelUsageRow) => {
-    const key = modelKey(row);
-    const isCurrentlyExpanded = expandedModelKeys.has(key);
-    setExpandedModelKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-    if (isCurrentlyExpanded || providerRowsByModel[key] || providerRowsLoading[key]) return;
+	const toggleModelProviders = async (row: ModelUsageRow) => {
+		const key = modelKey(row);
+		const isCurrentlyExpanded = expandedModelKeys.has(key);
+		setExpandedModelKeys((prev) => {
+			const next = new Set(prev);
+			if (next.has(key)) next.delete(key);
+			else next.add(key);
+			return next;
+		});
+		if (isCurrentlyExpanded || providerRowsByModel[key] || providerRowsLoading[key]) return;
 
-    setProviderRowsLoading((prev) => ({ ...prev, [key]: true }));
-    setDetailError(false);
-    const generation = queryGeneration.current;
-    try {
-      const { start_date, end_date } = committedQuery;
-      const params = new URLSearchParams({
-        start_date,
-        end_date,
-        model_id: row.model_id,
-        route_group: row.route_group,
-      });
-      const response = await fetch(`/api/admin/analytics/providers?${params.toString()}`);
-      const data = await readJson<ApiResponse<ProviderUsageRow[]>>(response);
-      if (generation !== queryGeneration.current) return;
-      if (!response.ok || !data.success) throw new Error(data.message);
-      if (data.success) {
-        setProviderRowsByModel((prev) => ({ ...prev, [key]: data.data ?? [] }));
-      }
-    } catch (e) {
-      console.error('Fetch model provider usage error:', e);
-      if (generation === queryGeneration.current) setDetailError(true);
-    } finally {
-      if (generation === queryGeneration.current) setProviderRowsLoading((prev) => ({ ...prev, [key]: false }));
-    }
-  };
+		setProviderRowsLoading((prev) => ({ ...prev, [key]: true }));
+		setDetailError(false);
+		const generation = queryGeneration.current;
+		try {
+			const { start_date, end_date } = committedQuery;
+			const params = new URLSearchParams({
+				start_date,
+				end_date,
+				model_id: row.model_id,
+				route_group: row.route_group,
+			});
+			const response = await fetch(`/api/admin/analytics/providers?${params.toString()}`);
+			const data = await readJson<ApiResponse<ProviderUsageRow[]>>(response);
+			if (generation !== queryGeneration.current) return;
+			if (!response.ok || !data.success) throw new Error(data.message);
+			if (data.success) {
+				setProviderRowsByModel((prev) => ({ ...prev, [key]: data.data ?? [] }));
+			}
+		} catch (e) {
+			console.error('Fetch model provider usage error:', e);
+			if (generation === queryGeneration.current) setDetailError(true);
+		} finally {
+			if (generation === queryGeneration.current)
+				setProviderRowsLoading((prev) => ({ ...prev, [key]: false }));
+		}
+	};
 
-  const Th = ({ label, columnKey }: { label: string; columnKey: SortKey }) => (
-    <th hidden={!analyticsColumnVisible(columnKey, view)} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-      <button
-        type="button"
-        onClick={() => toggleSort(columnKey)}
-        className="hover:text-gray-700"
-      >
-        {label} {sortKey === columnKey && (sortDir === 'asc' ? '↑' : '↓')}
-      </button>
-    </th>
-  );
+	const Th = ({ label, columnKey }: { label: string; columnKey: SortKey }) => (
+		<th
+			hidden={!analyticsColumnVisible(columnKey, view)}
+			className="px-4 py-3 text-left text-xs font-medium text-gray-500 normal-case tracking-normal whitespace-nowrap"
+		>
+			<button type="button" onClick={() => toggleSort(columnKey)} className="hover:text-gray-700">
+				{label} {sortKey === columnKey && (sortDir === 'asc' ? '↑' : '↓')}
+			</button>
+		</th>
+	);
 
-  const exportCsv = () => {
-    const { start_date, end_date } = committedQuery;
-    const headers = [
-      'model_id',
-      'route_group',
-      'request_count',
-      'input_tokens',
-      'output_tokens',
-      'cache_read_tokens',
-      'cache_write_tokens',
-      'cache_hit_rate',
-      'standard_cost',
-      'charged_cost',
-      'metered_cost',
-      'success_count',
-      'error_count',
-      'success_rate',
-      'avg_latency_ms',
-      'avg_first_reasoning_token_ms',
-      'avg_first_token_ms',
-      'avg_effective_ttft_ms',
-      'avg_reasoning_phase_ms',
-      'reasoning_ttft_rate',
-      'content_ttft_rate',
-      'avg_upstream_response_ms',
-      'tokens_per_second',
-      'failover_rate',
-      'avg_attempts',
-      'avg_charged_per_request',
-      'failover_request_count',
-      'failover_request_rate',
-      'stream_tokens_per_second',
-      'stream_sample_count',
-      'range_start_utc',
-      'range_end_utc',
-    ];
-    const dataRows: string[][] = sorted.map((r) => [
-      r.model_id,
-      r.route_group,
-      String(r.request_count),
-      String(r.input_tokens),
-      String(r.output_tokens),
-      String(r.cache_read_tokens),
-      String(r.cache_write_tokens),
-      String(r.cache_hit_rate),
-      String(r.standard_cost ?? 0),
-      String(r.charged_cost),
-      String(r.metered_cost),
-      String(r.success_count),
-      String(r.error_count),
-      String(r.success_rate),
-      r.avg_latency_ms != null ? String(r.avg_latency_ms) : '',
-      formatMaybeNumber(r.avg_first_reasoning_token_ms),
-      formatMaybeNumber(r.avg_first_token_ms),
-      formatMaybeNumber(r.avg_effective_ttft_ms),
-      formatMaybeNumber(r.avg_reasoning_phase_ms),
-      formatMaybeNumber(r.reasoning_ttft_rate, 1),
-      formatMaybeNumber(r.content_ttft_rate, 1),
-      formatMaybeNumber(r.avg_upstream_response_ms),
-      formatMaybeNumber(r.tokens_per_second, 2),
-      String(r.failover_rate),
-      formatMaybeNumber(r.avg_attempts, 2),
-      String(r.avg_charged_per_request),
-      String(r.failover_request_count ?? ''),
-      String(r.failover_request_rate ?? ''),
-      String(r.stream_tokens_per_second ?? ''),
-      String(r.stream_sample_count ?? ''),
-      start_date,
-      end_date,
-    ]);
-    const csv = csvRowsToString([headers, ...dataRows]);
-    downloadCsvFile(`model-usage-${filenameTimestamp()}.csv`, csv);
-  };
+	const exportCsv = () => {
+		const { start_date, end_date } = committedQuery;
+		const headers = [
+			'model_id',
+			'route_group',
+			'request_count',
+			'input_tokens',
+			'output_tokens',
+			'cache_read_tokens',
+			'cache_write_tokens',
+			'cache_hit_rate',
+			'standard_cost',
+			'charged_cost',
+			'metered_cost',
+			'success_count',
+			'error_count',
+			'success_rate',
+			'avg_latency_ms',
+			'avg_first_reasoning_token_ms',
+			'avg_first_token_ms',
+			'avg_effective_ttft_ms',
+			'avg_reasoning_phase_ms',
+			'reasoning_ttft_rate',
+			'content_ttft_rate',
+			'avg_upstream_response_ms',
+			'tokens_per_second',
+			'failover_rate',
+			'avg_attempts',
+			'avg_charged_per_request',
+			'failover_request_count',
+			'failover_request_rate',
+			'stream_tokens_per_second',
+			'stream_sample_count',
+			'range_start_utc',
+			'range_end_utc',
+		];
+		const dataRows: string[][] = sorted.map((r) => [
+			r.model_id,
+			r.route_group,
+			String(r.request_count),
+			String(r.input_tokens),
+			String(r.output_tokens),
+			String(r.cache_read_tokens),
+			String(r.cache_write_tokens),
+			String(r.cache_hit_rate),
+			String(r.standard_cost ?? 0),
+			String(r.charged_cost),
+			String(r.metered_cost),
+			String(r.success_count),
+			String(r.error_count),
+			String(r.success_rate),
+			r.avg_latency_ms != null ? String(r.avg_latency_ms) : '',
+			formatMaybeNumber(r.avg_first_reasoning_token_ms),
+			formatMaybeNumber(r.avg_first_token_ms),
+			formatMaybeNumber(r.avg_effective_ttft_ms),
+			formatMaybeNumber(r.avg_reasoning_phase_ms),
+			formatMaybeNumber(r.reasoning_ttft_rate, 1),
+			formatMaybeNumber(r.content_ttft_rate, 1),
+			formatMaybeNumber(r.avg_upstream_response_ms),
+			formatMaybeNumber(r.tokens_per_second, 2),
+			String(r.failover_rate),
+			formatMaybeNumber(r.avg_attempts, 2),
+			String(r.avg_charged_per_request),
+			String(r.failover_request_count ?? ''),
+			String(r.failover_request_rate ?? ''),
+			String(r.stream_tokens_per_second ?? ''),
+			String(r.stream_sample_count ?? ''),
+			start_date,
+			end_date,
+		]);
+		const csv = csvRowsToString([headers, ...dataRows]);
+		downloadCsvFile(`model-usage-${filenameTimestamp()}.csv`, csv);
+	};
 
-  return (
-    <div className="min-w-0 p-4 sm:p-6 lg:p-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
-        <p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
-      </div>
-      <div className="mb-4 grid min-w-0 gap-4 rounded-xl border border-gray-200 bg-white p-3 sm:p-4 2xl:grid-cols-[minmax(0,1fr)_auto] 2xl:items-end">
-        <GatewayTimeRangePicker value={rangeValue} onChange={setRangeValue} className="flex-1 min-w-0" />
-        <AnalyticsTokenDisplayPicker value={tokenDisplayMode} onChange={setTokenDisplayMode} />
-      </div>
+	return (
+		<div className="admin-content-workspace content-tone-analytics min-w-0 p-4 sm:p-6 lg:p-8">
+			<div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+				<div>
+					<AdminPageTitle>{t('title')}</AdminPageTitle>
+					<p className="text-sm text-gray-500 mt-1">{t('subtitle')}</p>
+				</div>
+				<div className="flex flex-wrap items-center gap-2">
+					<AnalyticsRangeControl value={rangeValue} onChange={setRangeValue} />
+					<button
+						type="button"
+						onClick={exportCsv}
+						disabled={isLoading || loadError || sorted.length === 0}
+						className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+					>
+						<ArrowDownTrayIcon className="h-4 w-4" aria-hidden="true" />
+						{tCommon('exportCsv')}
+					</button>
+				</div>
+			</div>
 
-      {loadError && <AnalyticsLoadError onRetry={() => setRefresh(n => n + 1)} />}
-      {detailError && <p role="alert" className="mb-3 text-sm text-red-600">{tA('insights.detailError')}</p>}
-      {!isLoading && !loadError && <AnalyticsInsights rows={filteredRows} currency={billingCurrency} scope="models" />}
-      <AnalyticsControls search={search} onSearch={setSearch} view={view} onView={setView} count={filteredRows.length} users={false} />
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 flex flex-wrap justify-between items-center gap-x-4 gap-y-2 text-sm">
-          <button
-            type="button"
-            onClick={exportCsv}
-            disabled={isLoading || loadError || sorted.length === 0}
-            className="px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-800 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {tCommon('exportCsv')}
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="admin-data-table min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <Th label={tA('columns.model')} columnKey="model_id" />
-                <Th label={tA('columns.routeGroup')} columnKey="route_group" />
-                <Th label={tA('columns.requests')} columnKey="request_count" />
-                <Th label={tA('columns.inputTokens')} columnKey="input_tokens" />
-                <Th label={tA('columns.outputTokens')} columnKey="output_tokens" />
-                <Th label={tA('columns.cacheHitRate')} columnKey="cache_hit_rate" />
-                <Th label={tA('columns.standard')} columnKey="standard_cost" />
-                <Th label={tA('columns.charged')} columnKey="charged_cost" />
-                <Th label={tA('columns.metered')} columnKey="metered_cost" />
-                <Th label={tA('columns.avgChargedPerReq')} columnKey="avg_charged_per_request" />
-                <Th label={tA('columns.successRate')} columnKey="success_rate" />
-                <Th label={tA('columns.avgLatencyMs')} columnKey="avg_latency_ms" />
-                <Th label={tA('columns.ttft')} columnKey="avg_effective_ttft_ms" />
-                <Th label={tA('columns.avgUpstreamMs')} columnKey="avg_upstream_response_ms" />
-                <Th label={tA('insights.streamSpeed')} columnKey="stream_tokens_per_second" />
-                <Th label={tA('insights.failoverShare')} columnKey="failover_request_rate" />
-                <Th label={tA('columns.avgAttempts')} columnKey="avg_attempts" />
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {sorted.map((r) => {
-                const { start_date, end_date } = committedQuery;
-                const logQuery = new URLSearchParams();
-                logQuery.set('model_id', r.model_id);
-                logQuery.set('route_group', r.route_group);
-                logQuery.set('start_date', start_date);
-                logQuery.set('end_date', end_date);
-                const key = modelKey(r);
-                const isExpanded = expandedModelKeys.has(key);
-                const providerRows = providerRowsByModel[key] ?? [];
-                const isProviderRowsLoading = providerRowsLoading[key] === true;
-                return (
-                  <Fragment key={key}>
-                    <tr
-                      className={`cursor-pointer hover:bg-gray-50 ${isExpanded ? 'bg-indigo-50/40' : ''}`}
-                      onClick={() => void toggleModelProviders(r)}
-                    >
-                      <td hidden={!analyticsColumnVisible("model_id", view)} className="px-4 py-3 text-sm">
-                        <button
-                          type="button"
-                          className="text-left font-medium text-blue-600 hover:text-blue-800"
-                          aria-expanded={isExpanded}
-                        >
-                          {r.model_id}
-                        </button>
-                      </td>
-                      <td hidden={!analyticsColumnVisible("route_group", view)} className="px-4 py-3 text-sm font-mono text-gray-700">{r.route_group}</td>
-                      <td hidden={!analyticsColumnVisible("request_count", view)} className="px-4 py-3 text-sm text-gray-900">{r.request_count.toLocaleString()}</td>
-                      <td hidden={!analyticsColumnVisible("input_tokens", view)} className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.input_tokens} mode={tokenDisplayMode} /></td>
-                      <td hidden={!analyticsColumnVisible("output_tokens", view)} className="px-4 py-3 text-sm"><AnalyticsTokenCount value={r.output_tokens} mode={tokenDisplayMode} /></td>
-                      <td hidden={!analyticsColumnVisible("cache_hit_rate", view)} className="px-4 py-3 text-sm">
-                        <span className={cacheHitRateClassName(r.cache_hit_rate)}>{r.input_tokens > 0 ? `${r.cache_hit_rate.toFixed(1)}%` : '—'}</span>
-                      </td>
-                      <td hidden={!analyticsColumnVisible("standard_cost", view)} className="px-4 py-3 text-sm text-gray-600 tabular-nums">
-                        {formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
-                      </td>
-                      <td hidden={!analyticsColumnVisible("charged_cost", view)} className="px-4 py-3 text-sm text-gray-600 tabular-nums">
-                        {formatGatewayMoneyCode(r.charged_cost, billingCurrency, 4)}
-                      </td>
-                      <td hidden={!analyticsColumnVisible("metered_cost", view)} className="px-4 py-3 text-sm text-gray-600 tabular-nums">
-                        {formatGatewayMoneyCode(r.metered_cost, billingCurrency, 4)}
-                      </td>
-                      <td hidden={!analyticsColumnVisible("avg_charged_per_request", view)} className="px-4 py-3 text-sm text-gray-600">
-                        {formatGatewayMoneyCode(r.avg_charged_per_request, billingCurrency, 6)}
-                      </td>
-                      <td hidden={!analyticsColumnVisible("success_rate", view)} className="px-4 py-3 text-sm">
-                        <span className={successRateClassName(r.success_rate)}>
-                          {r.success_rate.toFixed(1)}%
-                        </span>
-                      </td>
-                      <td hidden={!analyticsColumnVisible("avg_latency_ms", view)} className="px-4 py-3 text-sm text-gray-600 tabular-nums">{r.avg_latency_ms != null ? formatLatencyMs(r.avg_latency_ms) : tCommon('noData')}</td>
-                      <td hidden={!analyticsColumnVisible("avg_effective_ttft_ms", view)} className="px-4 py-3 text-sm text-gray-600">
-                        <AnalyticsTtftCell metrics={r} noDataLabel={tCommon('noData')} />
-                      </td>
-                      <td hidden={!analyticsColumnVisible("avg_upstream_response_ms", view)} className="px-4 py-3 text-sm text-gray-600 tabular-nums">{r.avg_upstream_response_ms != null ? formatLatencyMs(r.avg_upstream_response_ms) : tCommon('noData')}</td>
-                      <td title={tA('insights.streamSamples', { count: r.stream_sample_count ?? 0 })} hidden={!analyticsColumnVisible("stream_tokens_per_second", view)} className="px-4 py-3 text-sm text-gray-600">{r.stream_tokens_per_second != null ? r.stream_tokens_per_second.toFixed(1) : tCommon('noData')}</td>
-                      <td hidden={!analyticsColumnVisible("failover_request_rate", view)} className="px-4 py-3 text-sm text-gray-600">{r.failover_request_rate != null ? `${r.failover_request_rate.toFixed(1)}%` : '—'}</td>
-                      <td hidden={!analyticsColumnVisible("avg_attempts", view)} className="px-4 py-3 text-sm text-gray-600">{r.avg_attempts != null ? r.avg_attempts.toFixed(2) : tCommon('noData')}</td>
-                    </tr>
-                    {isExpanded ? (
-                      <tr key={`${key}:providers`} className="bg-indigo-50/60">
-                        <td colSpan={["model_id", "route_group", "request_count", "input_tokens", "output_tokens", "cache_hit_rate", "standard_cost", "charged_cost", "metered_cost", "avg_charged_per_request", "success_rate", "avg_latency_ms", "avg_effective_ttft_ms", "avg_upstream_response_ms", "stream_tokens_per_second", "failover_request_rate", "avg_attempts"].filter(key => analyticsColumnVisible(key, view)).length} className="border-l-4 border-indigo-300 px-5 py-4">
-                          {isProviderRowsLoading ? (
-                            <div className="py-4 text-sm text-gray-500">{tA('loadingProviderUsage')}</div>
-                          ) : providerRows.length === 0 ? (
-                            <div className="py-4 text-sm text-gray-500">{tA('noProviderUsageForModel')}</div>
-                          ) : (
-                            <div className="overflow-hidden rounded-lg border border-indigo-200 bg-white shadow-sm ring-1 ring-indigo-100">
-                              <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                  <tr>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.providerKind')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.providerAccount')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.requests')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.inputTokens')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.outputTokens')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.cacheHitRate')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.standard')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.charged')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.metered')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgChargedPerReq')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.successRate')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.avgLatencyMs')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('columns.ttft')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('insights.streamSpeed')}</th>
-                                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{tA('insights.failoverShare')}</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                  {providerRows.map((providerRow) => {
-                                    const providerLogQuery = new URLSearchParams(logQuery);
-                                    providerLogQuery.set('provider_id', providerRow.provider_id);
-                                    const identity = providerUsageIdentityFor(providerRow);
-                                    return (
-                                      <tr key={`${key}\t${providerRow.provider_id}`} className="hover:bg-gray-50">
-                                        <td className="px-3 py-2 text-sm whitespace-nowrap text-gray-600">{providerKind(providerRow.provider_id).label}</td>
-                                        <td className="px-3 py-2 text-sm">
-                                          <Link
-                                            href={`/gateway/request-logs?${providerLogQuery.toString()}`}
-                                            className="group block min-w-0 max-w-[14rem]"
-                                            title={identity.title}
-                                            onClick={(event) => event.stopPropagation()}
-                                          >
-                                            <ProviderAccountLines
-                                              identity={{ ...identity, kind: null }}
-                                              nameClassName="font-medium text-blue-600 group-hover:underline"
-                                              badge={deletedProviderBadge(providerRow.provider_id)}
-                                            />
-                                          </Link>
-                                        </td>
-                                        <td className="px-3 py-2 text-sm text-gray-900">{providerRow.request_count.toLocaleString()}</td>
-                                        <td className="px-3 py-2 text-sm"><AnalyticsTokenCount value={providerRow.input_tokens} mode={tokenDisplayMode} /></td>
-                                        <td className="px-3 py-2 text-sm"><AnalyticsTokenCount value={providerRow.output_tokens} mode={tokenDisplayMode} /></td>
-                                        <td className="px-3 py-2 text-sm">
-                                          <span className={cacheHitRateClassName(providerRow.cache_hit_rate)}>{providerRow.input_tokens > 0 ? `${providerRow.cache_hit_rate.toFixed(1)}%` : '—'}</span>
-                                        </td>
-                                        <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
-                                          {formatGatewayMoneyCode(providerRow.standard_cost ?? 0, billingCurrency, 4)}
-                                        </td>
-                                        <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
-                                          {formatGatewayMoneyCode(providerRow.charged_cost, billingCurrency, 4)}
-                                        </td>
-                                        <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
-                                          {formatGatewayMoneyCode(providerRow.metered_cost, billingCurrency, 4)}
-                                        </td>
-                                        <td className="px-3 py-2 text-sm text-gray-600">
-                                          {formatGatewayMoneyCode(providerRow.avg_charged_per_request, billingCurrency, 6)}
-                                        </td>
-                                        <td className="px-3 py-2 text-sm">
-                                          <span className={successRateClassName(providerRow.success_rate)}>
-                                            {providerRow.success_rate.toFixed(1)}%
-                                          </span>
-                                        </td>
-                                        <td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
-                                          {providerRow.avg_latency_ms != null ? formatLatencyMs(providerRow.avg_latency_ms) : tCommon('noData')}
-                                        </td>
-                                        <td className="px-3 py-2 text-sm text-gray-600">
-                                          <AnalyticsTtftCell metrics={providerRow} noDataLabel={tCommon('noData')} />
-                                        </td>
-                                        <td className="px-3 py-2 text-sm text-gray-600">
-                                          {providerRow.stream_tokens_per_second != null ? providerRow.stream_tokens_per_second.toFixed(1) : tCommon('noData')}
-                                        </td>
-                                        <td className="px-3 py-2 text-sm text-gray-600">
-                                          {providerRow.failover_request_rate != null ? `${providerRow.failover_request_rate.toFixed(1)}%` : '—'}
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ) : null}
-                  </Fragment>
-              );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {sorted.length === 0 && !isLoading && !loadError && <div className="text-center py-12 text-gray-500">{tA('noData')}</div>}
-        {isLoading && <div className="text-center py-12 text-gray-500">{tCommon('loading')}</div>}
-      </div>
-    </div>
-  );
+			{loadError && <AnalyticsLoadError onRetry={() => setRefresh((n) => n + 1)} />}
+			{detailError && (
+				<p role="alert" className="mb-3 text-sm text-red-600">
+					{tA('insights.detailError')}
+				</p>
+			)}
+			{!isLoading && !loadError && (
+				<AnalyticsInsights rows={filteredRows} currency={billingCurrency} scope="models" />
+			)}
+			<AnalyticsControls
+				search={search}
+				onSearch={setSearch}
+				view={view}
+				onView={setView}
+				count={filteredRows.length}
+				users={false}
+			>
+				{(view === 'cost' || view === 'all') && (
+					<AnalyticsTokenDisplayPicker value={tokenDisplayMode} onChange={setTokenDisplayMode} label="" />
+				)}
+			</AnalyticsControls>
+			<div className="admin-content-panel admin-table-surface overflow-hidden rounded-xl border border-gray-200 bg-white">
+				<div className="overflow-x-auto">
+					<table className="admin-data-table min-w-full divide-y divide-gray-200">
+						<thead className="bg-gray-50">
+							<tr>
+								<Th label={tA('columns.model')} columnKey="model_id" />
+								<Th label={tA('columns.routeGroup')} columnKey="route_group" />
+								<Th label={tA('columns.requests')} columnKey="request_count" />
+								<Th label={tA('columns.inputTokens')} columnKey="input_tokens" />
+								<Th label={tA('columns.outputTokens')} columnKey="output_tokens" />
+								<Th label={tA('columns.cacheHitRate')} columnKey="cache_hit_rate" />
+								<Th label={tA('columns.standard')} columnKey="standard_cost" />
+								<Th label={tA('columns.charged')} columnKey="charged_cost" />
+								<Th label={tA('columns.metered')} columnKey="metered_cost" />
+								<Th label={tA('columns.avgChargedPerReq')} columnKey="avg_charged_per_request" />
+								<Th label={tA('columns.successRate')} columnKey="success_rate" />
+								<Th label={tA('columns.avgLatencyMs')} columnKey="avg_latency_ms" />
+								<Th label={tA('columns.ttft')} columnKey="avg_effective_ttft_ms" />
+								<Th label={tA('columns.avgUpstreamMs')} columnKey="avg_upstream_response_ms" />
+								<Th label={tA('insights.streamSpeed')} columnKey="stream_tokens_per_second" />
+								<Th label={tA('insights.failoverShare')} columnKey="failover_request_rate" />
+								<Th label={tA('columns.avgAttempts')} columnKey="avg_attempts" />
+							</tr>
+						</thead>
+						<tbody className="bg-white divide-y divide-gray-200">
+							{sorted.map((r) => {
+								const { start_date, end_date } = committedQuery;
+								const logQuery = new URLSearchParams();
+								logQuery.set('model_id', r.model_id);
+								logQuery.set('route_group', r.route_group);
+								logQuery.set('start_date', start_date);
+								logQuery.set('end_date', end_date);
+								const key = modelKey(r);
+								const isExpanded = expandedModelKeys.has(key);
+								const providerRows = providerRowsByModel[key] ?? [];
+								const isProviderRowsLoading = providerRowsLoading[key] === true;
+								return (
+									<Fragment key={key}>
+										<tr
+											className={`cursor-pointer hover:bg-gray-50 ${isExpanded ? 'bg-gray-50/40' : ''}`}
+											onClick={() => void toggleModelProviders(r)}
+										>
+											<td hidden={!analyticsColumnVisible('model_id', view)} className="px-4 py-3 text-sm">
+												<div className="flex items-center gap-2">
+													<button
+														type="button"
+														aria-label={tA('insights.detailLabel')}
+														aria-expanded={isExpanded}
+														onClick={(event) => {
+															event.stopPropagation();
+															void toggleModelProviders(r);
+														}}
+														className="rounded p-1 text-gray-500 hover:bg-gray-100"
+													>
+														<ChevronRightIcon
+															className={`h-4 w-4 ${isExpanded ? 'rotate-90' : ''}`}
+															aria-hidden="true"
+														/>
+													</button>
+													{r.model_id}
+												</div>
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('route_group', view)}
+												className="px-4 py-3 text-sm font-mono text-gray-700"
+											>
+												{r.route_group}
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('request_count', view)}
+												className="px-4 py-3 text-sm text-gray-900"
+											>
+												{r.request_count.toLocaleString()}
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('input_tokens', view)}
+												className="px-4 py-3 text-sm"
+											>
+												<AnalyticsTokenCount value={r.input_tokens} mode={tokenDisplayMode} />
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('output_tokens', view)}
+												className="px-4 py-3 text-sm"
+											>
+												<AnalyticsTokenCount value={r.output_tokens} mode={tokenDisplayMode} />
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('cache_hit_rate', view)}
+												className="px-4 py-3 text-sm"
+											>
+												<span className={cacheHitRateClassName(r.cache_hit_rate)}>
+													{r.input_tokens > 0 ? `${r.cache_hit_rate.toFixed(1)}%` : '—'}
+												</span>
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('standard_cost', view)}
+												className="px-4 py-3 text-sm text-gray-600 tabular-nums"
+											>
+												{formatGatewayMoneyCode(r.standard_cost ?? 0, billingCurrency, 4)}
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('charged_cost', view)}
+												className="px-4 py-3 text-sm text-gray-600 tabular-nums"
+											>
+												<FinancialAmount
+													value={r.charged_cost}
+													standard={r.standard_cost}
+													currency={billingCurrency}
+												/>
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('metered_cost', view)}
+												className="px-4 py-3 text-sm text-gray-600 tabular-nums"
+											>
+												<FinancialAmount
+													value={r.metered_cost}
+													standard={r.standard_cost}
+													currency={billingCurrency}
+												/>
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('avg_charged_per_request', view)}
+												className="px-4 py-3 text-sm text-gray-600"
+											>
+												{formatGatewayMoneyCode(r.avg_charged_per_request, billingCurrency, 6)}
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('success_rate', view)}
+												className="px-4 py-3 text-sm"
+											>
+												<span className={successRateClassName(r.success_rate)}>
+													{r.success_rate.toFixed(1)}%
+												</span>
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('avg_latency_ms', view)}
+												className="px-4 py-3 text-sm text-gray-600 tabular-nums"
+											>
+												{r.avg_latency_ms != null ? formatLatencyMs(r.avg_latency_ms) : tCommon('noData')}
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('avg_effective_ttft_ms', view)}
+												className="px-4 py-3 text-sm text-gray-600"
+											>
+												<AnalyticsTtftCell metrics={r} noDataLabel={tCommon('noData')} />
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('avg_upstream_response_ms', view)}
+												className="px-4 py-3 text-sm text-gray-600 tabular-nums"
+											>
+												{r.avg_upstream_response_ms != null
+													? formatLatencyMs(r.avg_upstream_response_ms)
+													: tCommon('noData')}
+											</td>
+											<td
+												title={tA('insights.streamSamples', { count: r.stream_sample_count ?? 0 })}
+												hidden={!analyticsColumnVisible('stream_tokens_per_second', view)}
+												className="px-4 py-3 text-sm text-gray-600"
+											>
+												{r.stream_tokens_per_second != null
+													? r.stream_tokens_per_second.toFixed(1)
+													: tCommon('noData')}
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('failover_request_rate', view)}
+												className="px-4 py-3 text-sm text-gray-600"
+											>
+												{r.failover_request_rate != null ? `${r.failover_request_rate.toFixed(1)}%` : '—'}
+											</td>
+											<td
+												hidden={!analyticsColumnVisible('avg_attempts', view)}
+												className="px-4 py-3 text-sm text-gray-600"
+											>
+												{r.avg_attempts != null ? r.avg_attempts.toFixed(2) : tCommon('noData')}
+											</td>
+										</tr>
+										{isExpanded ? (
+											<tr key={`${key}:providers`} className="bg-gray-50/60">
+												<td
+													colSpan={
+														[
+															'model_id',
+															'route_group',
+															'request_count',
+															'input_tokens',
+															'output_tokens',
+															'cache_hit_rate',
+															'standard_cost',
+															'charged_cost',
+															'metered_cost',
+															'avg_charged_per_request',
+															'success_rate',
+															'avg_latency_ms',
+															'avg_effective_ttft_ms',
+															'avg_upstream_response_ms',
+															'stream_tokens_per_second',
+															'failover_request_rate',
+															'avg_attempts',
+														].filter((key) => analyticsColumnVisible(key, view)).length
+													}
+													className="border-l-4 border-gray-300 px-5 py-4"
+												>
+													{isProviderRowsLoading ? (
+														<div className="py-4 text-sm text-gray-500">{tA('loadingProviderUsage')}</div>
+													) : providerRows.length === 0 ? (
+														<div className="py-4 text-sm text-gray-500">{tA('noProviderUsageForModel')}</div>
+													) : (
+														<div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm ring-1 ring-gray-100">
+															<table className="min-w-full divide-y divide-gray-200">
+																<thead className="bg-gray-50">
+																	<tr>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('columns.providerKind')}
+																		</th>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('columns.providerAccount')}
+																		</th>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('columns.requests')}
+																		</th>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('columns.inputTokens')}
+																		</th>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('columns.outputTokens')}
+																		</th>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('columns.cacheHitRate')}
+																		</th>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('columns.standard')}
+																		</th>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('columns.charged')}
+																		</th>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('columns.metered')}
+																		</th>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('columns.avgChargedPerReq')}
+																		</th>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('columns.successRate')}
+																		</th>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('columns.avgLatencyMs')}
+																		</th>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('columns.ttft')}
+																		</th>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('insights.streamSpeed')}
+																		</th>
+																		<th className="px-3 py-2 text-left text-xs font-medium normal-case tracking-normal text-gray-500">
+																			{tA('insights.failoverShare')}
+																		</th>
+																	</tr>
+																</thead>
+																<tbody className="divide-y divide-gray-100">
+																	{providerRows.map((providerRow) => {
+																		const providerLogQuery = new URLSearchParams(logQuery);
+																		providerLogQuery.set('provider_id', providerRow.provider_id);
+																		const identity = providerUsageIdentityFor(providerRow);
+																		return (
+																			<tr
+																				key={`${key}\t${providerRow.provider_id}`}
+																				className="hover:bg-gray-50"
+																			>
+																				<td className="px-3 py-2 text-sm whitespace-nowrap text-gray-600">
+																					{providerKind(providerRow.provider_id).label}
+																				</td>
+																				<td className="px-3 py-2 text-sm">
+																					<Link
+																						href={`/gateway/request-logs?${providerLogQuery.toString()}`}
+																						className="group block min-w-0 max-w-[14rem]"
+																						title={identity.title}
+																						onClick={(event) => event.stopPropagation()}
+																					>
+																						<ProviderAccountLines
+																							identity={{ ...identity, kind: null }}
+																							nameClassName="font-medium text-gray-800 group-hover:underline"
+																							badge={deletedProviderBadge(providerRow.provider_id)}
+																						/>
+																					</Link>
+																				</td>
+																				<td className="px-3 py-2 text-sm text-gray-900">
+																					{providerRow.request_count.toLocaleString()}
+																				</td>
+																				<td className="px-3 py-2 text-sm">
+																					<AnalyticsTokenCount
+																						value={providerRow.input_tokens}
+																						mode={tokenDisplayMode}
+																					/>
+																				</td>
+																				<td className="px-3 py-2 text-sm">
+																					<AnalyticsTokenCount
+																						value={providerRow.output_tokens}
+																						mode={tokenDisplayMode}
+																					/>
+																				</td>
+																				<td className="px-3 py-2 text-sm">
+																					<span className={cacheHitRateClassName(providerRow.cache_hit_rate)}>
+																						{providerRow.input_tokens > 0
+																							? `${providerRow.cache_hit_rate.toFixed(1)}%`
+																							: '—'}
+																					</span>
+																				</td>
+																				<td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
+																					{formatGatewayMoneyCode(
+																						providerRow.standard_cost ?? 0,
+																						billingCurrency,
+																						4
+																					)}
+																				</td>
+																				<td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
+																					<FinancialAmount
+																						value={providerRow.charged_cost}
+																						standard={providerRow.standard_cost}
+																						currency={billingCurrency}
+																					/>
+																				</td>
+																				<td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
+																					<FinancialAmount
+																						value={providerRow.metered_cost}
+																						standard={providerRow.standard_cost}
+																						currency={billingCurrency}
+																					/>
+																				</td>
+																				<td className="px-3 py-2 text-sm text-gray-600">
+																					{formatGatewayMoneyCode(
+																						providerRow.avg_charged_per_request,
+																						billingCurrency,
+																						6
+																					)}
+																				</td>
+																				<td className="px-3 py-2 text-sm">
+																					<span className={successRateClassName(providerRow.success_rate)}>
+																						{providerRow.success_rate.toFixed(1)}%
+																					</span>
+																				</td>
+																				<td className="px-3 py-2 text-sm text-gray-600 tabular-nums">
+																					{providerRow.avg_latency_ms != null
+																						? formatLatencyMs(providerRow.avg_latency_ms)
+																						: tCommon('noData')}
+																				</td>
+																				<td className="px-3 py-2 text-sm text-gray-600">
+																					<AnalyticsTtftCell
+																						metrics={providerRow}
+																						noDataLabel={tCommon('noData')}
+																					/>
+																				</td>
+																				<td className="px-3 py-2 text-sm text-gray-600">
+																					{providerRow.stream_tokens_per_second != null
+																						? providerRow.stream_tokens_per_second.toFixed(1)
+																						: tCommon('noData')}
+																				</td>
+																				<td className="px-3 py-2 text-sm text-gray-600">
+																					{providerRow.failover_request_rate != null
+																						? `${providerRow.failover_request_rate.toFixed(1)}%`
+																						: '—'}
+																				</td>
+																			</tr>
+																		);
+																	})}
+																</tbody>
+															</table>
+														</div>
+													)}
+												</td>
+											</tr>
+										) : null}
+									</Fragment>
+								);
+							})}
+						</tbody>
+					</table>
+				</div>
+				{sorted.length === 0 && !isLoading && !loadError && (
+					<div className="text-center py-12 text-gray-500">{tA('noData')}</div>
+				)}
+				{isLoading && <div className="text-center py-12 text-gray-500">{tCommon('loading')}</div>}
+			</div>
+		</div>
+	);
 }

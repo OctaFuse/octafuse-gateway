@@ -9,11 +9,12 @@ import {
 	SignalIcon,
 	CheckCircleIcon,
 	ExclamationTriangleIcon,
+	LinkIcon,
 } from '@heroicons/react/24/outline';
 import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { useTranslations } from 'next-intl';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
-import { MCP_REQUEST_LOG_PROVIDER_ID } from '@/lib/invoke-kind';
+import { mcpConnectEndpoint } from '../mcp-connect-guide-utils';
 import type { CatalogItem, ServerDetail, ServerSummary } from '../mcp-types';
 import { McpCatalogItemRow } from './mcp-catalog-item-row';
 import { McpDialog } from './mcp-dialog';
@@ -24,6 +25,8 @@ const BUTTON =
 	'inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50';
 
 export function McpServerDrawer({
+	proxyBaseUrl,
+	onConnectGuide,
 	currency,
 	open,
 	detail,
@@ -49,6 +52,8 @@ export function McpServerDrawer({
 	onSavePricing,
 	onDelete,
 }: {
+	proxyBaseUrl: string;
+	onConnectGuide: () => void;
 	currency: string;
 	open: boolean;
 	detail: ServerDetail | null;
@@ -120,7 +125,7 @@ export function McpServerDrawer({
 			subtitle={server?.slug ?? summary?.slug}
 			onClose={onClose}
 			footer={
-				<div className="flex items-center justify-between gap-3">
+				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div>
 						{server && section === 'connection' ? (
 							<button
@@ -134,18 +139,19 @@ export function McpServerDrawer({
 						) : server ? (
 							<Link
 								href={`/gateway/tools/invocations?source=mcp&server=${encodeURIComponent(server.slug)}`}
-								className="text-xs font-medium text-blue-600 hover:underline"
+								className="text-xs font-medium text-gray-800 hover:underline"
 							>
 								{t('viewInvocations')}
 							</Link>
 						) : null}
 					</div>
-					<div className="flex items-center gap-2">
+					<div className="ml-auto flex flex-wrap items-center gap-2">
+						<button type="button" disabled={busy || !server} onClick={onConnectGuide} className={BUTTON}>
+							<LinkIcon className="h-4 w-4" aria-hidden="true" />
+							{t('ui.connect')}
+						</button>
 						<button type="button" disabled={busy || !summary} onClick={onCatalogTest} className={BUTTON}>
 							{t('catalogTest.title')}
-						</button>
-						<button type="button" disabled={busy} onClick={onClose} className={BUTTON}>
-							{common('close')}
 						</button>
 					</div>
 				</div>
@@ -199,13 +205,6 @@ export function McpServerDrawer({
 							{t(server.status === 'active' ? 'active' : 'disabled')}
 						</button>
 						<div className="flex flex-wrap gap-2">
-							<button type="button" disabled={busy} onClick={onTest} className={BUTTON}>
-								<SignalIcon
-									className={`h-4 w-4 ${action?.startsWith('test:') ? 'animate-pulse' : ''}`}
-									aria-hidden="true"
-								/>
-								{t(action?.startsWith('test:') ? 'testing' : 'test')}
-							</button>
 							<button
 								type="button"
 								disabled={busy}
@@ -229,7 +228,7 @@ export function McpServerDrawer({
 							{server.description}
 						</p>
 					) : null}
-					<div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-400">
+					<div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
 						<span>
 							{t('lastSync')}: {server.lastSyncedAt ? formatDateTime(server.lastSyncedAt) : t('neverSynced')}
 						</span>
@@ -297,41 +296,43 @@ export function McpServerDrawer({
 						))}
 					</div>
 					{section === 'connection' ? (
-						<div className="space-y-5">
-							<section className="rounded-xl border border-gray-200 p-4">
+						<div className="space-y-6">
+							<section>
 								<div className="flex items-center justify-between">
-									<h3 className="text-sm font-semibold text-gray-900">{t('connectionSettings')}</h3>
-									<button
-										type="button"
-										disabled={busy}
-										onClick={onEdit}
-										className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
-									>
-										{t('editSettings')}
+									<h3 className="text-sm font-medium text-gray-900">{t('connectionSettings')}</h3>
+									<button type="button" disabled={busy} onClick={onTest} className={BUTTON}>
+										<SignalIcon className="h-4 w-4" aria-hidden="true" />
+										{t(action?.startsWith('test:') ? 'testing' : 'test')}
 									</button>
 								</div>
 								<dl className="mt-4 space-y-4 text-sm">
 									<div>
-										<dt className="text-xs text-gray-400">{t('url')}</dt>
+										<dt className="text-xs text-gray-500">{t('clientEndpoint')}</dt>
+										<dd className="mt-1 break-all font-mono text-xs leading-6 text-gray-700">
+											{mcpConnectEndpoint(proxyBaseUrl, server.slug)}
+										</dd>
+									</div>
+									<div>
+										<dt className="text-xs text-gray-500">{t('url')}</dt>
 										<dd className="mt-1 break-all font-mono text-xs leading-6 text-gray-700">
 											{revealed?.url ?? server.urlMasked}
 										</dd>
 									</div>
 									<div>
-										<dt className="text-xs text-gray-400">{t('headers')}</dt>
+										<dt className="text-xs text-gray-500">{t('headers')}</dt>
 										<dd className="mt-1 break-all font-mono text-xs text-gray-700">
 											{server.authHeaderNames.length ? server.authHeaderNames.join(', ') : t('noAuthHeaders')}
 										</dd>
 									</div>
 									<div className="grid grid-cols-2 gap-4">
 										<div>
-											<dt className="text-xs text-gray-400">{t('timeout')}</dt>
+											<dt className="text-xs text-gray-500">{t('timeout')}</dt>
 											<dd className="mt-1 font-mono text-xs text-gray-700">
 												{server.timeoutMs.toLocaleString()}
 											</dd>
 										</div>
 										<div>
-											<dt className="text-xs text-gray-400">{t('maxBytes')}</dt>
+											<dt className="text-xs text-gray-500">{t('maxBytes')}</dt>
 											<dd className="mt-1 font-mono text-xs text-gray-700">
 												{server.maxResponseBytes.toLocaleString()}
 											</dd>
@@ -342,7 +343,7 @@ export function McpServerDrawer({
 									type="button"
 									disabled={busy}
 									onClick={onReveal}
-									className="mt-4 text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+									className="mt-4 text-xs font-medium text-gray-800 hover:underline disabled:opacity-50"
 								>
 									{t(revealed ? 'hide' : 'reveal')}
 								</button>
@@ -352,8 +353,8 @@ export function McpServerDrawer({
 									</pre>
 								) : null}
 							</section>
-							<section className="rounded-xl border border-gray-200 p-4">
-								<h3 className="text-sm font-semibold text-gray-900">
+							<section className="border-t border-gray-100 pt-6">
+								<h3 className="text-sm font-medium text-gray-900">
 									{t('defaultPrices')} · {getGatewayCurrencySymbol(currency)}
 								</h3>
 								<p className="mt-1 text-xs leading-5 text-gray-400">{t('defaultPriceHint')}</p>
@@ -366,10 +367,10 @@ export function McpServerDrawer({
 								)}
 							</section>
 							<Link
-								className="inline-flex text-xs font-medium text-blue-600 hover:underline"
-								href={`/gateway/request-logs?provider_id=${MCP_REQUEST_LOG_PROVIDER_ID}`}
+								className="inline-flex text-xs font-medium text-gray-800 hover:underline"
+								href={`/gateway/tools/invocations?source=mcp&server=${encodeURIComponent(server.slug)}`}
 							>
-								{t('logs')}
+								{t('viewInvocations')}
 							</Link>
 						</div>
 					) : (
@@ -417,7 +418,7 @@ export function McpServerDrawer({
 											setQuery(e.target.value);
 											setSelection(new Set());
 										}}
-										className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+										className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100"
 									/>
 								</div>
 								<select
@@ -436,7 +437,7 @@ export function McpServerDrawer({
 									))}
 								</select>
 							</div>
-							<div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-gray-50 px-3 py-2">
+							<div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-gray-50/60 px-3 py-2">
 								<label className="inline-flex items-center gap-2 text-xs text-gray-500">
 									<input
 										type="checkbox"
@@ -448,7 +449,7 @@ export function McpServerDrawer({
 										onChange={(e) =>
 											setSelection(e.target.checked ? new Set(selectable.map((item) => item.id)) : new Set())
 										}
-										className="h-4 w-4 rounded accent-blue-600"
+										className="h-4 w-4 rounded accent-gray-950"
 									/>
 									{selectedItems.length
 										? t('selectedCount', { count: selectedItems.length })
@@ -465,7 +466,7 @@ export function McpServerDrawer({
 													'enabled'
 												)
 											}
-											className="text-xs font-medium text-blue-600 hover:underline disabled:text-gray-400"
+											className="text-xs font-medium text-gray-800 hover:underline disabled:text-gray-400"
 										>
 											{t('enable')}
 										</button>
@@ -488,16 +489,16 @@ export function McpServerDrawer({
 										type="button"
 										disabled={busy}
 										onClick={() => void applyStatus(newIds, 'enabled')}
-										className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+										className="text-xs font-medium text-gray-800 hover:underline disabled:opacity-50"
 									>
 										{t('enableNewCount', { count: newIds.length })}
 									</button>
 								) : (
-									<span className="text-xs text-gray-400">{t('itemCount', { count: visible.length })}</span>
+									<span className="text-xs text-gray-500">{t('itemCount', { count: visible.length })}</span>
 								)}
 							</div>
 							{visible.length ? (
-								<ul className="space-y-3">
+								<ul className="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200">
 									{visible.map((item) => (
 										<McpCatalogItemRow
 											currency={currency}
@@ -528,7 +529,7 @@ export function McpServerDrawer({
 											type="button"
 											disabled={busy}
 											onClick={onSync}
-											className="mt-3 text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+											className="mt-3 text-xs font-medium text-gray-800 hover:underline disabled:opacity-50"
 										>
 											{t('syncCatalog')}
 										</button>
@@ -539,7 +540,7 @@ export function McpServerDrawer({
 												setQuery('');
 												setFilter('all');
 											}}
-											className="mt-3 text-xs font-medium text-blue-600 hover:underline"
+											className="mt-3 text-xs font-medium text-gray-800 hover:underline"
 										>
 											{t('clearFilters')}
 										</button>
