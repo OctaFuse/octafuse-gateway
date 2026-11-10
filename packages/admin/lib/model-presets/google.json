@@ -536,7 +536,8 @@
 				"text"
 			]
 		},
-		"released": "2025-06-17"
+		"released": "2025-06-17",
+		"retired": "2026-12-01"
 	},
 	{
 		"id": "gemini-2.5-flash",
@@ -587,7 +588,8 @@
 				"text"
 			]
 		},
-		"released": "2025-06-17"
+		"released": "2025-06-17",
+		"retired": "2026-12-01"
 	},
 	{
 		"id": "gemini-2.5-flash-lite",

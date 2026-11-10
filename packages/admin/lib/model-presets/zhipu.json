@@ -402,6 +402,51 @@
 		}
 	},
 	{
+		"id": "glm-5v-turbo",
+		"display_name": "GLM-5V-Turbo",
+		"description": "Zhipu's first multimodal coding model for vision-based coding and agent workflows. Input covers video, image, text, and file, and output is text. The context window is 200K and the maximum output is 128K. Official docs say it does not understand files, video, and images at the same time. Thinking can be turned on or off; published examples set thinking.type to enabled. Z.AI pricing does not list this model, so there is no USD price.",
+		"i18n": {
+			"en": "Zhipu's first multimodal coding model for vision-based coding and agent workflows. Input covers video, image, text, and file, and output is text. The context window is 200K and the maximum output is 128K. Official docs say it does not understand files, video, and images at the same time. Thinking can be turned on or off; published examples set thinking.type to enabled. Z.AI pricing does not list this model, so there is no USD price.",
+			"zh": "智谱首个面向视觉编程与 Agent 工作流的多模态 Coding 基座模型。输入为视频、图像、文本与文件，输出文本。上下文窗口 200K，最大输出 128K。官方注明不支持同时理解文件、视频和图像。思考模式可以开启或关闭，公开示例把 thinking.type 设为 enabled。Z.AI 定价页未收录该模型，因此没有美元刊例价。",
+			"ja": "視覚的なコーディングとエージェント向けの、智譜初のマルチモーダル Coding 基盤モデルです。入力は動画、画像、テキスト、ファイルで、出力はテキストです。コンテキストは 200K、最大出力は 128K です。公式には、ファイル、動画、画像を同時には理解しないとあります。思考モードはオンとオフを切り替えられ、公開例は thinking.type を enabled にしています。Z.AI の料金表に載っていないため、米ドルの定価はありません。",
+			"ko": "시각 코딩과 에이전트용으로, Zhipu의 첫 멀티모달 Coding 기반 모델입니다. 입력은 영상, 이미지, 텍스트, 파일이고 출력은 텍스트입니다. 컨텍스트는 200K, 최대 출력은 128K입니다. 공식 문서는 파일, 영상, 이미지를 동시에 이해하지 않는다고 적습니다. 사고 모드는 켜거나 끌 수 있고, 공개 예시는 thinking.type 을 enabled 로 둡니다. Z.AI 가격표에 없어 미국 달러 정가는 없습니다."
+		},
+		"vendor": "zhipu",
+		"context_window": 200000,
+		"max_tokens": 128000,
+		"pricing": {
+			"cny": {
+				"tiers": [
+					{
+						"upto": 32000,
+						"input_price": 5,
+						"output_price": 22,
+						"cache_read_price": 1.2,
+						"cache_write_price": null
+					},
+					{
+						"upto": null,
+						"input_price": 7,
+						"output_price": 26,
+						"cache_read_price": 1.8,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		}
+	},
+	{
 		"id": "glm-ocr",
 		"display_name": "GLM-OCR",
 		"description": "A lightweight professional OCR model for document and image parsing, with a 32K context and PDF/image input.",
