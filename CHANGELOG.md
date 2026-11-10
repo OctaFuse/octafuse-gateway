@@ -24,6 +24,7 @@
 
 ### 目录与供应商
 
+- **Claude Fable 5.2**：新增 `claude-fable-5-2`（2026-11-09），上下文 1M、同步最大输出 128K，输入支持文本、图片与文件。标准刊例价为输入 $8、输出 $40、5 分钟缓存写入 $10、缓存读取 $0.20 / 百万 tokens；不含 Fast 模式（$16 / $80）与 Batch 半价。人民币价为美元刊例 ×7 的占位价。不写入退役日期（官方只给出不早于 2027-11-09 的下限）。已导入的模型不会被覆盖，导入也不会自动挂路由。
 - **智谱 GLM-5V-Turbo**：新增 `glm-5v-turbo`，上下文 200K、最大输出 128K，输入为文本、图像、视频与文件，输出文本；官方注明不支持同时理解文件、视频和图像。人民币刊例取自 BigModel「视觉理解」表：输入长度 [0, 32K) 为输入 ¥5、输出 ¥22、缓存命中 ¥1.2 / 百万 tokens，≥32K 为 ¥7 / ¥26 / ¥1.8；缓存存储限时免费，不写入刊例。Z.AI 定价页没有该模型的美元刊例，目录不写 `pricing.usd`，也不借用 `glm-5-turbo` 的美元价。
 - **Gemini 2.5 退役日期**：`gemini-2.5-pro` 与 `gemini-2.5-flash` 写上 Gemini API 公布的停服日 2026-12-01，该日起请求分别自动改路由到 `gemini-3.8-flash` 与 `gemini-3.5-flash-lite`；`gemini-2.5-flash-lite` 官网未公布停服日，不写 `retired`。`gemini-4-argon` 与 `gemini-3.8-flash` 的最大输出仍为 64000。只记官方停服日，不影响路由与计费。
 - **腾讯云 TokenHub 模板**：按量模板改用广州 `tokenhub.tencentmaas.com`，支持 Chat、Responses、Embeddings 和 Anthropic Messages；个人版 Token Plan 使用 `/plan/v3` 与 `/plan/anthropic`，补充 Responses。通用套餐与 Hy 套餐共用地址及 `sk-tp-` Key；英文类型名不变，新加坡站 `tokenhub-intl.tencentmaas.com` 需单独配置。
