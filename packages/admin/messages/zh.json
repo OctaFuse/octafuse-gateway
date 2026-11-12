@@ -1,4 +1,18 @@
 {
+	"autoRefresh": {
+		"offShort": "关闭",
+		"label": "自动刷新",
+		"off": "关闭自动刷新",
+		"manual": "手动",
+		"every1m": "每 1 分钟",
+		"every5m": "每 5 分钟",
+		"every10m": "每 10 分钟",
+		"refreshing": "刷新中",
+		"succeeded": "已刷新",
+		"failed": "刷新失败",
+		"nextIn": "距下次刷新 {time}",
+		"updatedAgo": "{ago} 前更新"
+	},
 	"responsive": {
 		"filters": "筛选条件",
 		"activeFilters": "已选 {count} 项"
@@ -1153,15 +1167,9 @@
 			"pathDisplayCompact": "省略",
 			"pathDisplayFullHint": "完整显示请求路径，空间不足时自动换行",
 			"pathDisplayCompactHint": "单行显示请求路径，过长时省略",
-			"stickyRefreshShortLabel": "自动刷新",
 			"stickyRefreshLabel": "Sticky 数据自动刷新",
-			"stickyRefreshOff": "关闭自动刷新",
-			"stickyRefresh1m": "每 1 分钟",
-			"stickyRefresh5m": "每 5 分钟",
-			"stickyRefresh10m": "每 10 分钟",
 			"stickyRefreshNow": "刷新 Sticky",
 			"stickyRefreshEmptyHint": "当前页面没有启用 Sticky 的路由池",
-			"stickyRefreshUpdatedAgo": "{ago} 前更新",
 			"moreFilters": "更多筛选",
 			"clearSearch": "清除搜索",
 			"allStatuses": "全部状态",
@@ -3355,6 +3363,8 @@
 		}
 	},
 	"maintenance": {
+		"refreshLabel": "维护状态自动刷新",
+		"refreshNow": "刷新维护状态",
 		"title": "维护模式",
 		"subtitle": "在迁移数据或其它维护期间，让推理请求收到友好的 503 提示。健康检查和只读列表接口不受影响。",
 		"state": {

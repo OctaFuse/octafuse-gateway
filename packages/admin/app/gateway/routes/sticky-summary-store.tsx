@@ -11,6 +11,7 @@ import {
 	type ReactNode,
 } from 'react';
 import { fetchStickyBindingsSummary } from './route-api';
+import { createStickyRefreshScheduler } from './sticky-refresh-scheduler';
 import type { StickyRefreshIntervalMs } from './sticky-refresh-preference';
 import type { StickyBindingsSummary } from './types';
 
@@ -21,6 +22,8 @@ type StickySummaryStoreValue = {
 	isRefreshing: boolean;
 	lastUpdatedAt: number | null;
 	registeredCount: number;
+	nextRefreshAt: number | null;
+	lastRefreshResult: { finishedAt: number; status: 'success' | 'error' } | null;
 	register: (poolId: string) => void;
 	unregister: (poolId: string) => void;
 	refreshAll: () => Promise<void>;
@@ -45,9 +48,13 @@ export function StickySummaryProvider(props: {
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
 	const [registeredCount, setRegisteredCount] = useState(0);
+	const [nextRefreshAt, setNextRefreshAt] = useState<number | null>(null);
+	const [lastRefreshResult, setLastRefreshResult] = useState<StickySummaryStoreValue['lastRefreshResult']>(null);
+	const schedulerRef = useRef<ReturnType<typeof createStickyRefreshScheduler> | null>(null);
+	const fullRefreshRef = useRef<Promise<void> | null>(null);
 
 	const refCountsRef = useRef(new Map<string, number>());
-	const inflightRef = useRef(new Map<string, Promise<void>>());
+	const inflightRef = useRef(new Map<string, Promise<boolean>>());
 
 	const fetchOne = useCallback(async (poolId: string) => {
 		const existing = inflightRef.current.get(poolId);
@@ -55,14 +62,15 @@ export function StickySummaryProvider(props: {
 
 		const promise = (async () => {
 			const result = await fetchStickyBindingsSummary(poolId);
-			if (!result.success) return;
-			if (!refCountsRef.current.has(poolId)) return;
+			if (!result.success) return false;
+			if (!refCountsRef.current.has(poolId)) return false;
 			setSummaries((prev) => {
 				const next = new Map(prev);
 				next.set(poolId, result.data);
 				return next;
 			});
-		})().finally(() => {
+			return true;
+		})().catch(() => false).finally(() => {
 			inflightRef.current.delete(poolId);
 		});
 
@@ -74,9 +82,17 @@ export function StickySummaryProvider(props: {
 		async (poolIds: string[]) => {
 			if (poolIds.length === 0) return;
 			setIsRefreshing(true);
+			setLastRefreshResult(null);
 			try {
-				await runInBatches(poolIds, BATCH_SIZE, (id) => fetchOne(id));
-				setLastUpdatedAt(Date.now());
+				let failed = false;
+				await runInBatches(poolIds, BATCH_SIZE, async (id) => {
+					const success = await fetchOne(id);
+					if (!success && refCountsRef.current.has(id)) failed = true;
+				});
+				if (!poolIds.some(id => refCountsRef.current.has(id))) return;
+				const finishedAt = Date.now();
+				setLastRefreshResult({ finishedAt, status: failed ? 'error' : 'success' });
+				if (!failed) setLastUpdatedAt(finishedAt);
 			} finally {
 				setIsRefreshing(false);
 			}
@@ -84,17 +100,24 @@ export function StickySummaryProvider(props: {
 		[fetchOne]
 	);
 
-	const refreshAll = useCallback(async () => {
-		await refreshPoolIds([...refCountsRef.current.keys()]);
+	const refreshAllData = useCallback(() => {
+		if (fullRefreshRef.current) return fullRefreshRef.current;
+		fullRefreshRef.current = refreshPoolIds([...refCountsRef.current.keys()]).finally(() => {
+			fullRefreshRef.current = null;
+		});
+		return fullRefreshRef.current;
 	}, [refreshPoolIds]);
+	const refreshAll = useCallback(async () => {
+		if (schedulerRef.current) await schedulerRef.current.refreshNow();
+		else await refreshAllData();
+	}, [refreshAllData]);
 
 	const invalidate = useCallback(
 		async (poolId: string) => {
 			const id = poolId.trim();
 			if (!id) return;
 			if (refCountsRef.current.has(id)) {
-				await fetchOne(id);
-				setLastUpdatedAt(Date.now());
+				if (await fetchOne(id)) setLastUpdatedAt(Date.now());
 				return;
 			}
 			// Pool not currently displayed; still probe so a remount can pick up fresh data
@@ -121,8 +144,8 @@ export function StickySummaryProvider(props: {
 			refCountsRef.current.set(id, prev + 1);
 			setRegisteredCount(refCountsRef.current.size);
 			if (prev === 0) {
-				void fetchOne(id).then(() => {
-					if (refCountsRef.current.has(id)) setLastUpdatedAt(Date.now());
+				void fetchOne(id).then((success) => {
+					if (success && refCountsRef.current.has(id)) setLastUpdatedAt(Date.now());
 				});
 			}
 		},
@@ -147,29 +170,27 @@ export function StickySummaryProvider(props: {
 		setRegisteredCount(refCountsRef.current.size);
 	}, []);
 
+	const hasPools = registeredCount > 0;
 	useEffect(() => {
-		if (intervalMs === 'off') return;
-
-		const tick = () => {
-			if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-			if (refCountsRef.current.size === 0) return;
-			void refreshAll();
-		};
-
-		const timerId = window.setInterval(tick, intervalMs);
-
+		const scheduler = createStickyRefreshScheduler({
+			intervalMs,
+			refresh: refreshAllData,
+			active: () => document.visibilityState === 'visible' && refCountsRef.current.size > 0,
+			onDeadline: setNextRefreshAt,
+		});
+		schedulerRef.current = scheduler;
+		scheduler.start();
 		const onVisibility = () => {
-			if (document.visibilityState === 'visible' && refCountsRef.current.size > 0) {
-				void refreshAll();
-			}
+			if (document.visibilityState === 'hidden') scheduler.pause();
+			else if (intervalMs !== 'off') void scheduler.refreshNow();
 		};
 		document.addEventListener('visibilitychange', onVisibility);
-
 		return () => {
-			window.clearInterval(timerId);
 			document.removeEventListener('visibilitychange', onVisibility);
+			scheduler.dispose();
+			if (schedulerRef.current === scheduler) schedulerRef.current = null;
 		};
-	}, [intervalMs, refreshAll]);
+	}, [intervalMs, refreshAllData, hasPools]);
 
 	const value = useMemo<StickySummaryStoreValue>(
 		() => ({
@@ -177,6 +198,8 @@ export function StickySummaryProvider(props: {
 			isRefreshing,
 			lastUpdatedAt,
 			registeredCount,
+			nextRefreshAt,
+			lastRefreshResult,
 			register,
 			unregister,
 			refreshAll,
@@ -187,6 +210,8 @@ export function StickySummaryProvider(props: {
 			isRefreshing,
 			lastUpdatedAt,
 			registeredCount,
+			nextRefreshAt,
+			lastRefreshResult,
 			register,
 			unregister,
 			refreshAll,
@@ -223,7 +248,7 @@ export function useStickySummary(poolId: string | null | undefined): StickyBindi
 }
 
 export function useStickyRefreshControls() {
-	const { refreshAll, isRefreshing, lastUpdatedAt, registeredCount, invalidate } =
+	const { refreshAll, isRefreshing, lastUpdatedAt, registeredCount, nextRefreshAt, lastRefreshResult, invalidate } =
 		useStickySummaryStore();
-	return { refreshAll, isRefreshing, lastUpdatedAt, registeredCount, invalidate };
+	return { refreshAll, isRefreshing, lastUpdatedAt, registeredCount, nextRefreshAt, lastRefreshResult, invalidate };
 }

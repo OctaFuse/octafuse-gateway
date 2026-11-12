@@ -162,9 +162,8 @@ export function RouteWorkspaceHeader(props: Props) {
 							))}
 						</div>
 					</div>
-					<StickyRefreshControl intervalMs={stickyRefreshIntervalMs} />
 				</RouteOptionsDialog>
-				<StickyRefreshControl intervalMs={stickyRefreshIntervalMs} compact />
+				<StickyRefreshControl intervalMs={stickyRefreshIntervalMs} />
 			</div>
 		</div>
 	);

@@ -1,4 +1,18 @@
 {
+	"autoRefresh": {
+		"offShort": "Off",
+		"label": "Auto refresh",
+		"off": "Auto refresh off",
+		"manual": "Manual",
+		"every1m": "Every 1 minute",
+		"every5m": "Every 5 minutes",
+		"every10m": "Every 10 minutes",
+		"refreshing": "Refreshing",
+		"succeeded": "Updated",
+		"failed": "Refresh failed",
+		"nextIn": "Next refresh in {time}",
+		"updatedAgo": "Updated {ago} ago"
+	},
 	"responsive": {
 		"filters": "Filters",
 		"activeFilters": "{count} active"
@@ -1153,15 +1167,9 @@
 			"pathDisplayCompact": "Truncated",
 			"pathDisplayFullHint": "Show complete request paths, wrapping when needed",
 			"pathDisplayCompactHint": "Show request paths on one line with an ellipsis when needed",
-			"stickyRefreshShortLabel": "Auto-refresh",
 			"stickyRefreshLabel": "Sticky data auto-refresh",
-			"stickyRefreshOff": "Auto-refresh off",
-			"stickyRefresh1m": "Every 1 min",
-			"stickyRefresh5m": "Every 5 min",
-			"stickyRefresh10m": "Every 10 min",
 			"stickyRefreshNow": "Refresh sticky",
 			"stickyRefreshEmptyHint": "No sticky-enabled pools on this page",
-			"stickyRefreshUpdatedAgo": "Updated {ago} ago",
 			"moreFilters": "More filters",
 			"clearSearch": "Clear search",
 			"allStatuses": "All statuses",
@@ -3355,6 +3363,8 @@
 		}
 	},
 	"maintenance": {
+		"refreshLabel": "Maintenance status auto refresh",
+		"refreshNow": "Refresh maintenance status",
 		"title": "Maintenance mode",
 		"subtitle": "Reject inference requests with a friendly 503 while you migrate data or do other maintenance. Health checks and read-only listings keep working.",
 		"state": {

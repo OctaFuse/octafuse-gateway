@@ -1,4 +1,18 @@
 {
+	"autoRefresh": {
+		"offShort": "끄기",
+		"label": "자동 새로고침",
+		"off": "자동 새로고침 끄기",
+		"manual": "수동",
+		"every1m": "1분마다",
+		"every5m": "5분마다",
+		"every10m": "10분마다",
+		"refreshing": "새로고침 중",
+		"succeeded": "업데이트됨",
+		"failed": "새로고침 실패",
+		"nextIn": "다음 새로고침까지 {time}",
+		"updatedAgo": "{ago} 전에 업데이트됨"
+	},
 	"responsive": {
 		"filters": "필터",
 		"activeFilters": "{count}개 적용 중"
@@ -1153,15 +1167,9 @@
 			"pathDisplayCompact": "생략",
 			"pathDisplayFullHint": "요청 경로 전체를 표시하고 필요하면 줄바꿈",
 			"pathDisplayCompactHint": "요청 경로를 한 줄로 표시하고 길면 생략",
-			"stickyRefreshShortLabel": "자동 새로고침",
 			"stickyRefreshLabel": "Sticky 데이터 자동 새로고침",
-			"stickyRefreshOff": "자동 새로고침 끄기",
-			"stickyRefresh1m": "1분마다",
-			"stickyRefresh5m": "5분마다",
-			"stickyRefresh10m": "10분마다",
 			"stickyRefreshNow": "Sticky 새로고침",
 			"stickyRefreshEmptyHint": "이 페이지에 Sticky가 켜진 풀이 없습니다",
-			"stickyRefreshUpdatedAgo": "{ago} 전 업데이트",
 			"moreFilters": "추가 필터",
 			"clearSearch": "검색 지우기",
 			"allStatuses": "모든 상태",
@@ -3355,6 +3363,8 @@
 		}
 	},
 	"maintenance": {
+		"refreshLabel": "유지보수 상태 자동 새로고침",
+		"refreshNow": "유지보수 상태 새로고침",
 		"title": "점검 모드",
 		"subtitle": "데이터 이전 등 점검 중에 추론 요청에 친절한 503 응답을 반환합니다. 상태 확인과 읽기 전용 목록은 계속 동작합니다.",
 		"state": {

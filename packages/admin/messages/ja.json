@@ -1,4 +1,18 @@
 {
+	"autoRefresh": {
+		"offShort": "オフ",
+		"label": "自動更新",
+		"off": "自動更新オフ",
+		"manual": "手動",
+		"every1m": "1 分ごと",
+		"every5m": "5 分ごと",
+		"every10m": "10 分ごと",
+		"refreshing": "更新中",
+		"succeeded": "更新済み",
+		"failed": "更新失敗",
+		"nextIn": "次回の更新まで {time}",
+		"updatedAgo": "{ago} 前に更新"
+	},
 	"responsive": {
 		"filters": "絞り込み",
 		"activeFilters": "{count} 件適用中"
@@ -1153,15 +1167,9 @@
 			"pathDisplayCompact": "省略",
 			"pathDisplayFullHint": "リクエストパス全体を表示し、必要に応じて折り返す",
 			"pathDisplayCompactHint": "リクエストパスを1行で表示し、長い場合は省略する",
-			"stickyRefreshShortLabel": "自動更新",
 			"stickyRefreshLabel": "Sticky データの自動更新",
-			"stickyRefreshOff": "自動更新オフ",
-			"stickyRefresh1m": "1分ごと",
-			"stickyRefresh5m": "5分ごと",
-			"stickyRefresh10m": "10分ごと",
 			"stickyRefreshNow": "Sticky を更新",
 			"stickyRefreshEmptyHint": "このページに Sticky 有効なプールはありません",
-			"stickyRefreshUpdatedAgo": "{ago}前に更新",
 			"moreFilters": "詳細フィルター",
 			"clearSearch": "検索をクリア",
 			"allStatuses": "すべての状態",
@@ -3355,6 +3363,8 @@
 		}
 	},
 	"maintenance": {
+		"refreshLabel": "メンテナンス状態の自動更新",
+		"refreshNow": "メンテナンス状態を更新",
 		"title": "メンテナンスモード",
 		"subtitle": "データ移行などのメンテナンス中、推論リクエストにわかりやすい 503 を返します。ヘルスチェックと読み取り専用の一覧は引き続き利用できます。",
 		"state": {
