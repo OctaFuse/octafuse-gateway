@@ -1,7 +1,7 @@
 "use client";
 
 import { AdminContentMark } from '@/components/admin-content-mark';
-import { useId, type ReactNode } from "react";
+import { useId, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { useTranslations } from "next-intl";
@@ -17,6 +17,7 @@ export function AdminDialog({
 	footer,
 	wide = false,
 	size = "lg",
+	fallbackFocusRef,
 }: {
 	open: boolean;
 	title: string;
@@ -27,10 +28,11 @@ export function AdminDialog({
 	footer?: ReactNode;
 	wide?: boolean;
 	size?: "md" | "lg";
+	fallbackFocusRef?: RefObject<HTMLElement | null>;
 }) {
 	const id = useId();
 	const t = useTranslations("common");
-	const ref = useAdminDialog(open, busy, onClose);
+	const ref = useAdminDialog(open, busy, onClose, fallbackFocusRef);
 	if (!open) return null;
 	return createPortal(
 		<div

@@ -1317,6 +1317,8 @@
 			"modelTagTitle": "Model tag: {tag}",
 			"copied": "Copied",
 			"newRouteFor": "New route for {title}",
+			"routeSummary": "{total} routes · {active} enabled",
+			"routeSummaryHint": "Route status within the current filters; excludes provider status and live connectivity",
 			"activeTotalRoutes": "{active} active / {total} total",
 			"noRoutesYet": "No routes yet",
 			"clickToAdd": "Click + to add the first route",

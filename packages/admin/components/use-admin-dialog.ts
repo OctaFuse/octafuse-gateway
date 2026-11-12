@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 
 /** Keep keyboard navigation inside the current admin overlay and restore its trigger. */
 export function useAdminDialog(
 	open: boolean,
 	busy: boolean,
-	onClose: () => void
+	onClose: () => void,
+	fallbackFocusRef?: RefObject<HTMLElement | null>
 ) {
 	const ref = useRef<HTMLDivElement>(null);
 	const current = useRef({ busy, onClose });
@@ -19,6 +20,7 @@ export function useAdminDialog(
 			document.activeElement instanceof HTMLElement
 				? document.activeElement
 				: null;
+		const fallback = fallbackFocusRef?.current;
 		const overflow = document.body.style.overflow;
 		document.body.style.overflow = "hidden";
 		ref.current?.focus();
@@ -68,8 +70,12 @@ export function useAdminDialog(
 		return () => {
 			document.removeEventListener("keydown", onKey);
 			document.body.style.overflow = overflow;
-			if (previous?.isConnected) previous.focus();
+			if (previous?.isConnected && previous.getClientRects().length > 0) {
+				previous.focus();
+			} else {
+				if (fallback?.isConnected) fallback.focus();
+			}
 		};
-	}, [open]);
+	}, [open, fallbackFocusRef]);
 	return ref;
 }

@@ -1317,6 +1317,8 @@
 			"modelTagTitle": "모델 태그: {tag}",
 			"copied": "복사됨",
 			"newRouteFor": "{title}의 새 Route",
+			"routeSummary": "경로 {total}개 · 활성화 {active}개",
+			"routeSummaryHint": "현재 필터 범위의 경로 활성화 상태이며 공급자 상태나 실시간 연결 상태는 포함하지 않습니다",
 			"activeTotalRoutes": "활성 {active}개 / 전체 {total}개",
 			"noRoutesYet": "아직 Route가 없습니다",
 			"clickToAdd": "+를 클릭하여 첫 Route를 추가하세요",

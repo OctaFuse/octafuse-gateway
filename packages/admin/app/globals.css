@@ -520,3 +520,12 @@ textarea::placeholder {
 @media (min-width: 1024px) {
   .admin-nav-item { min-height: 36px; padding-block: 8px; }
 }
+
+/* Labeled controls align with the main filter row; complex audit choices remain on demand. */
+.admin-adaptive-fields .admin-audit-identities {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-adaptive-fields .admin-identity-field { width: 11rem; }
+.admin-adaptive-fields .admin-key-user-field { width: 16rem; }
+.admin-adaptive-fields .admin-adaptive-field { width: 10rem; }

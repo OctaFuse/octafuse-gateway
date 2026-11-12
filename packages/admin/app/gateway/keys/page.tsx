@@ -10,7 +10,6 @@ import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
-  AdjustmentsHorizontalIcon,
   ArrowsUpDownIcon,
   ArrowUpRightIcon,
   CodeBracketIcon,
@@ -31,7 +30,7 @@ import { formatGatewayDateTime } from '@/lib/datetime';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { NewApiKeySecretBanner } from '@/lib/new-api-key-secret-banner';
 import { useFeedback } from '@/components/feedback';
-import { AdminInspector } from '@/components/admin-inspector';
+import { AdaptiveFilterGroup } from '@/components/adaptive-filter-group';
 import { useAdminDialog } from '@/components/use-admin-dialog';
 import { buildKeyCreatePayload, buildKeyEditPayload, type KeyCreationMode } from './key-form';
 import { KeyUserPicker } from './key-user-picker';
@@ -426,7 +425,7 @@ export default function GatewayKeysPage() {
         </div>
       )}
 
-      <section aria-label={t('ui.filters')} className="admin-filter-surface mb-5 flex flex-wrap items-center gap-3">
+      <section aria-label={t('ui.filters')} className="admin-filter-surface mb-5 flex flex-wrap items-end gap-3">
         <div className="relative min-w-0 flex-1 basis-64 sm:max-w-sm">
           <MagnifyingGlassIcon
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
@@ -445,25 +444,15 @@ export default function GatewayKeysPage() {
             autoComplete="off"
           />
         </div>
-        <AdminInspector
-          label={`${t('ui.moreFilters')}${filterUserId.trim() ? ' · 1' : ''}`}
-          size="md"
-          icon={AdjustmentsHorizontalIcon}
-        >
-          <label htmlFor="filter-key-user" className="block text-xs font-medium text-gray-500">
+        <AdaptiveFilterGroup label={t('ui.moreFilters')} activeCount={Number(Boolean(filterUserId.trim()))} inlineAt={1024}>
+          <label className="admin-key-user-field block space-y-2 text-xs text-gray-500">
             {t('fields.userId')}
+            <input id="filter-key-user" value={filterUserId}
+              onChange={(event) => { setFilterUserId(event.target.value); setPage(1); }}
+              placeholder={t('filters.userIdPlaceholder')}
+              className="block h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 font-mono text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-100" />
           </label>
-          <input
-            id="filter-key-user"
-            value={filterUserId}
-            onChange={(e) => {
-              setFilterUserId(e.target.value);
-              setPage(1);
-            }}
-            placeholder={t('filters.userIdPlaceholder')}
-            className={`${inputClass} font-mono text-xs`}
-          />
-        </AdminInspector>
+        </AdaptiveFilterGroup>
         {hasFilters && (
           <button
             type="button"

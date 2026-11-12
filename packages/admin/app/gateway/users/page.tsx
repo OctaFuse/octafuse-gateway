@@ -7,10 +7,9 @@ import { AdminPageTitle } from '@/components/admin-page-title';
 /**
  * 网关用户列表：预算在 `users`；筛选与分页；跳转详情。
  */
-import { AdminInspector } from '@/components/admin-inspector';
+import { AdaptiveFilterGroup } from '@/components/adaptive-filter-group';
 import { useAdminDialog } from '@/components/use-admin-dialog';
 import { buildUserCreatePayload } from './user-detail-form';
-import { FilterTextInput } from '../components/filter-controls';
 import { useTranslations } from 'next-intl';
 import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
@@ -307,7 +306,7 @@ export default function GatewayUsersPage() {
         </button>
       </div>
 
-      <section aria-label={t('ui.filters')} className="admin-filter-surface mb-5 flex flex-wrap items-center gap-3">
+      <section aria-label={t('ui.filters')} className="admin-filter-surface mb-5 flex flex-wrap items-end gap-3">
         <div className="relative min-w-0 flex-1 basis-64 sm:max-w-sm">
           <MagnifyingGlassIcon
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
@@ -343,34 +342,21 @@ export default function GatewayUsersPage() {
               </option>
             ))}
         </select>
-        <AdminInspector
-          label={`${t('ui.moreFilters')}${
-            [filterExternalSystem, filterExternalUserId].filter(Boolean).length
-              ? ' · ' + [filterExternalSystem, filterExternalUserId].filter(Boolean).length
-              : ''
-          }`}
-          size="md"
-          icon={AdjustmentsHorizontalIcon}
+        <AdaptiveFilterGroup
+          label={t('ui.moreFilters')}
+          activeCount={[filterExternalSystem, filterExternalUserId].filter(Boolean).length}
         >
-          <FilterTextInput
-            label={t('filters.externalSystem')}
-            value={filterExternalSystem}
-            onChange={(value) => {
-              setFilterExternalSystem(value);
-              setPage(1);
-            }}
-            placeholder={t('filters.externalSystemPlaceholder')}
-          />
-          <FilterTextInput
-            label={t('filters.externalUserId')}
-            value={filterExternalUserId}
-            onChange={(value) => {
-              setFilterExternalUserId(value);
-              setPage(1);
-            }}
-            placeholder={t('filters.externalUserIdPlaceholder')}
-          />
-        </AdminInspector>
+          {([
+            { label: t('filters.externalSystem'), value: filterExternalSystem, set: setFilterExternalSystem, placeholder: t('filters.externalSystemPlaceholder') },
+            { label: t('filters.externalUserId'), value: filterExternalUserId, set: setFilterExternalUserId, placeholder: t('filters.externalUserIdPlaceholder') },
+          ]).map(field => (
+            <label key={field.label} className="admin-identity-field block space-y-2 text-xs text-gray-500">
+              {field.label}
+              <input autoComplete="off" value={field.value} onChange={event => { field.set(event.target.value); setPage(1); }} placeholder={field.placeholder}
+                className="block h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-100" />
+            </label>
+          ))}
+        </AdaptiveFilterGroup>
         <div className="ml-auto flex items-center gap-2">
           <select
             aria-label={t('ui.sort')}

@@ -10,7 +10,7 @@ import { AdminPageTitle } from '@/components/admin-page-title';
 import { PricingInfoHint } from '@/components/PricingInfoHint';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AdminInspector } from '@/components/admin-inspector';
+import { AdaptiveFilterGroup } from '@/components/adaptive-filter-group';
 import { useAdminDialog } from '@/components/use-admin-dialog';
 import { useFeedback } from '@/components/feedback';
 import { useBusinessTimezoneContext } from '@/components/BusinessTimezoneProvider';
@@ -20,7 +20,6 @@ import { dashboardErrorSummary } from '@/components/dashboard/dashboard-presenta
 import { useLocale, useTranslations } from 'next-intl';
 import { Fragment, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-	AdjustmentsHorizontalIcon,
 	ArrowPathIcon,
 	ChevronRightIcon,
 	ClipboardDocumentIcon,
@@ -648,7 +647,7 @@ export default function GatewayRequestLogsPage() {
 			</div>
 
 			<section aria-label={t('ui.filters')} className="admin-filter-surface mb-5 space-y-3">
-				<div className="flex flex-wrap items-center gap-3">
+				<div className="flex flex-wrap items-end gap-3">
 					<div className="relative min-w-0 flex-1 basis-60 sm:max-w-xs">
 						<MagnifyingGlassIcon
 							className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
@@ -699,66 +698,12 @@ export default function GatewayRequestLogsPage() {
 							</option>
 						))}
 					</select>
-					<AdminInspector
-						label={`${t('ui.moreFilters')}${advancedFilters.length ? ` · ${advancedFilters.length}` : ''}`}
-						size="md"
-						icon={AdjustmentsHorizontalIcon}
-					>
-						<label className="block space-y-2 text-xs text-gray-500">
-							{tCommon('provider')}
-							<select
-								value={filterProviderId}
-								onChange={(e) => {
-									setFilterProviderIds('');
-									setFilterProviderId(e.target.value);
-									setPage(1);
-								}}
-								className={`${selectClass} block w-full`}
-							>
-								<option value="">{tCommon('all')}</option>
-								{providerSelectOptions.map((item) => (
-									<option key={item.id} value={item.id}>
-										{item.label}
-									</option>
-								))}
-							</select>
-						</label>
-						<label className="block space-y-2 text-xs text-gray-500">
-							{t('filters.protocol')}
-							<select
-								value={filterProtocol}
-								onChange={(e) => {
-									setFilterProtocol(e.target.value);
-									setPage(1);
-								}}
-								className={`${selectClass} block w-full`}
-							>
-								<option value="">{tCommon('all')}</option>
-								{UPSTREAM_PROTOCOLS.map((protocol) => (
-									<option key={protocol} value={protocol}>
-										{protocol}
-									</option>
-								))}
-							</select>
-						</label>
-						<label className="block space-y-2 text-xs text-gray-500">
-							{t('filters.routeGroup')}
-							<select
-								value={filterRouteGroup}
-								onChange={(e) => {
-									setFilterRouteGroup(e.target.value);
-									setPage(1);
-								}}
-								className={`${selectClass} block w-full`}
-							>
-								<option value="">{tCommon('all')}</option>
-								{routeGroupSelectOptions.map((item) => (
-									<option key={item.value} value={item.value}>
-										{item.label}
-									</option>
-								))}
-							</select>
-						</label>
+					<AdaptiveFilterGroup
+						label={t('ui.moreFilters')}
+						activeCount={advancedFilters.length}
+						extraCount={[filterProviderIds, filterModelPrefix, filterApiKeyId, filterLogId].filter(Boolean).length}
+						inlineAt={1440}
+						extra={<>
 						<label className="block space-y-2 text-xs text-gray-500">
 							{t('filters.apiKeyId')}
 							<input
@@ -782,8 +727,64 @@ export default function GatewayRequestLogsPage() {
 								placeholder={t('filters.requestIdPlaceholder')}
 								className={`${selectClass} block w-full font-mono text-xs`}
 							/>
+						</label></>}
+					>
+						<label className="admin-adaptive-field block space-y-2 text-xs text-gray-500">
+							{tCommon('provider')}
+							<select
+								value={filterProviderId}
+								onChange={(e) => {
+									setFilterProviderIds('');
+									setFilterProviderId(e.target.value);
+									setPage(1);
+								}}
+								className={`${selectClass} block w-full`}
+							>
+								<option value="">{tCommon('all')}</option>
+								{providerSelectOptions.map((item) => (
+									<option key={item.id} value={item.id}>
+										{item.label}
+									</option>
+								))}
+							</select>
 						</label>
-					</AdminInspector>
+						<label className="admin-adaptive-field block space-y-2 text-xs text-gray-500">
+							{t('filters.protocol')}
+							<select
+								value={filterProtocol}
+								onChange={(e) => {
+									setFilterProtocol(e.target.value);
+									setPage(1);
+								}}
+								className={`${selectClass} block w-full`}
+							>
+								<option value="">{tCommon('all')}</option>
+								{UPSTREAM_PROTOCOLS.map((protocol) => (
+									<option key={protocol} value={protocol}>
+										{protocol}
+									</option>
+								))}
+							</select>
+						</label>
+						<label className="admin-adaptive-field block space-y-2 text-xs text-gray-500">
+							{t('filters.routeGroup')}
+							<select
+								value={filterRouteGroup}
+								onChange={(e) => {
+									setFilterRouteGroup(e.target.value);
+									setPage(1);
+								}}
+								className={`${selectClass} block w-full`}
+							>
+								<option value="">{tCommon('all')}</option>
+								{routeGroupSelectOptions.map((item) => (
+									<option key={item.value} value={item.value}>
+										{item.label}
+									</option>
+								))}
+							</select>
+						</label>
+					</AdaptiveFilterGroup>
 					{hasFilters && (
 						<button
 							type="button"

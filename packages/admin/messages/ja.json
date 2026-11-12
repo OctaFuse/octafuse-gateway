@@ -1317,6 +1317,8 @@
 			"modelTagTitle": "モデルタグ：{tag}",
 			"copied": "コピーしました",
 			"newRouteFor": "{title} の新しい Route",
+			"routeSummary": "ルート {total} 件 · 有効 {active} 件",
+			"routeSummaryHint": "現在の絞り込み範囲のルート有効状態です。プロバイダーの状態や実際の接続状況は含みません",
 			"activeTotalRoutes": "有効 {active} 件 / 全 {total} 件",
 			"noRoutesYet": "Route はまだありません",
 			"clickToAdd": "+ をクリックして最初の Route を追加",

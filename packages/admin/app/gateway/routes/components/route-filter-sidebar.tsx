@@ -1,5 +1,7 @@
 'use client';
 
+import { useRef } from 'react';
+import { useElementWidth } from '@/components/use-element-width';
 import { RouteOptionsDialog } from './route-options-dialog';
 
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -40,6 +42,11 @@ export function RouteFilterSidebar(props: Props) {
 	const tc = useTranslations('common');
 	const tk = useTranslations('providers.kind');
 	const locale = useLocale();
+	const sectionRef = useRef<HTMLElement>(null);
+	const searchRef = useRef<HTMLInputElement>(null);
+	const width = useElementWidth(sectionRef);
+	const layout = width >= 1280 ? 'wide' : width >= 1024 ? 'regular' : 'compact';
+
 	const filters = [
 		{
 			key: 'vendor',
@@ -95,7 +102,7 @@ export function RouteFilterSidebar(props: Props) {
 			className={
 				expanded
 					? 'block min-w-0'
-					: `min-w-0 ${filter.key === 'provider' ? 'hidden w-48 sm:block' : 'hidden w-36 sm:block'}`
+					: `route-filter-inline min-w-0 shrink-0 ${['provider', 'routeGroup'].includes(filter.key) ? 'route-filter-common' : 'route-filter-advanced'} ${filter.key === 'provider' ? 'w-48' : filter.key === 'providerType' ? 'w-44' : filter.key === 'vendor' ? 'w-40' : 'w-36'}`
 			}
 		>
 			<span className={expanded ? 'mb-1.5 block text-xs font-medium text-gray-600' : 'sr-only'}>
@@ -135,7 +142,7 @@ export function RouteFilterSidebar(props: Props) {
 	).length;
 	const mobileCount = filters.filter((filter) => filter.value).length;
 	return (
-		<section className="mb-5 space-y-4" aria-label={t('title')}>
+		<section ref={sectionRef} data-filter-layout={layout} className="route-filters mb-5 space-y-4" aria-label={t('title')}>
 			<div className="flex flex-wrap items-center gap-3">
 				<div className="relative min-w-0 flex-1 basis-64 sm:max-w-sm">
 					<MagnifyingGlassIcon
@@ -143,6 +150,7 @@ export function RouteFilterSidebar(props: Props) {
 						aria-hidden
 					/>
 					<input
+						ref={searchRef}
 						type="search"
 						value={props.searchQuery}
 						onChange={(event) => props.onSearchChange(event.target.value)}
@@ -180,15 +188,18 @@ export function RouteFilterSidebar(props: Props) {
 				{filters
 					.filter((filter) => ['provider', 'routeGroup'].includes(filter.key))
 					.map((filter) => renderFilter(filter))}
-				<div className="hidden sm:block">
-					<RouteOptionsDialog label={tw('moreFilters')} activeCount={advancedCount}>
+				{filters
+					.filter((filter) => ['vendor', 'providerType'].includes(filter.key))
+					.map((filter) => renderFilter(filter))}
+				<div className="route-filter-more-advanced contents">
+					<RouteOptionsDialog label={tw('moreFilters')} activeCount={advancedCount} fallbackFocusRef={searchRef}>
 						{filters
 							.filter((filter) => ['vendor', 'providerType'].includes(filter.key))
 							.map((filter) => renderFilter(filter, true))}
 					</RouteOptionsDialog>
 				</div>
-				<div className="sm:hidden">
-					<RouteOptionsDialog label={tw('moreFilters')} activeCount={mobileCount}>
+				<div className="route-filter-more-all contents">
+					<RouteOptionsDialog label={tw('moreFilters')} activeCount={mobileCount} fallbackFocusRef={searchRef}>
 						{filters.map((filter) => renderFilter(filter, true))}
 					</RouteOptionsDialog>
 				</div>

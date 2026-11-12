@@ -19,7 +19,7 @@ import {
   WalletIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import { AdminInspector } from '@/components/admin-inspector';
+import { AdaptiveFilterGroup } from '@/components/adaptive-filter-group';
 import { useBusinessTimezoneContext } from '@/components/BusinessTimezoneProvider';
 import { readApiJson } from '@/lib/api-json';
 import {
@@ -264,51 +264,13 @@ export default function GatewayAuditLogsPage() {
               {t('ui.customEvents')}
             </option>
           </select>
-          <AdminInspector
-            label={`${t('ui.moreFilters')}${
-              advanced.length + Number(scope === 'custom')
-                ? ` · ${advanced.length + Number(scope === 'custom')}`
-                : ''
-            }`}
+          <AdaptiveFilterGroup
+            label={t('ui.moreFilters')}
+            activeCount={advanced.length + Number(scope === 'custom')}
+            extraCount={advanced.filter(item => !['userId', 'apiKeyId', 'actorId', 'correlationId'].includes(item.key)).length + Number(scope === 'custom')}
+            inlineClassName="order-1 basis-full w-full"
             size="lg"
-            icon={AdjustmentsHorizontalIcon}
-          >
-            <div className="grid gap-3 sm:grid-cols-2">
-              {(
-                [
-                  {
-                    key: 'userId',
-                    label: t('filters.userId'),
-                    placeholder: t('filters.userIdPlaceholder'),
-                  },
-                  {
-                    key: 'apiKeyId',
-                    label: t('filters.apiKeyId'),
-                    placeholder: t('filters.apiKeyPlaceholder'),
-                  },
-                  {
-                    key: 'actorId',
-                    label: t('filters.actorId'),
-                    placeholder: t('filters.actorIdPlaceholder'),
-                  },
-                  {
-                    key: 'correlationId',
-                    label: t('filters.correlationId'),
-                    placeholder: t('filters.correlationPlaceholder'),
-                  },
-                ] as const
-              ).map((field) => (
-                <label key={field.key} className="block space-y-2 text-xs text-gray-500">
-                  {field.label}
-                  <input
-                    value={filters[field.key]}
-                    onChange={(event) => update(field.key, event.target.value)}
-                    placeholder={field.placeholder}
-                    className={`${inputClass} font-mono text-xs`}
-                  />
-                </label>
-              ))}
-            </div>
+            extra={<>
             <AuditFilterSection
               label={t('filters.eventType')}
               options={API_KEY_BUDGET_AUDIT_EVENT_TYPES.map((value) => ({
@@ -366,7 +328,45 @@ export default function GatewayAuditLogsPage() {
                 </button>
               </p>
             )}
-          </AdminInspector>
+            </>}
+          >
+            <div className="admin-audit-identities grid gap-3 sm:grid-cols-2">
+              {(
+                [
+                  {
+                    key: 'userId',
+                    label: t('filters.userId'),
+                    placeholder: t('filters.userIdPlaceholder'),
+                  },
+                  {
+                    key: 'apiKeyId',
+                    label: t('filters.apiKeyId'),
+                    placeholder: t('filters.apiKeyPlaceholder'),
+                  },
+                  {
+                    key: 'actorId',
+                    label: t('filters.actorId'),
+                    placeholder: t('filters.actorIdPlaceholder'),
+                  },
+                  {
+                    key: 'correlationId',
+                    label: t('filters.correlationId'),
+                    placeholder: t('filters.correlationPlaceholder'),
+                  },
+                ] as const
+              ).map((field) => (
+                <label key={field.key} className="block space-y-2 text-xs text-gray-500">
+                  {field.label}
+                  <input
+                    value={filters[field.key]}
+                    onChange={(event) => update(field.key, event.target.value)}
+                    placeholder={field.placeholder}
+                    className={`${inputClass} font-mono text-xs`}
+                  />
+                </label>
+              ))}
+            </div>
+          </AdaptiveFilterGroup>
           {hasFilters && (
             <button
               type="button"

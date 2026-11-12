@@ -1317,6 +1317,8 @@
 			"modelTagTitle": "模型标签：{tag}",
 			"copied": "已复制",
 			"newRouteFor": "为 {title} 新建路由",
+			"routeSummary": "{total} 条路由 · {active} 条已启用",
+			"routeSummaryHint": "统计当前筛选范围内的路由启停，不代表供应商状态或实时连通性",
 			"activeTotalRoutes": "{active} 条活跃 / 共 {total} 条",
 			"noRoutesYet": "暂无路由",
 			"clickToAdd": "点击 + 添加第一条路由",
