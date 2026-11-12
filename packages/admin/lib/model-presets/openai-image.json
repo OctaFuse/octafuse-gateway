@@ -277,7 +277,8 @@
 				"image"
 			]
 		},
-		"released": "2026-04-01"
+		"released": "2026-04-01",
+		"retired": "2027-02-10"
 	},
 	{
 		"id": "gpt-image-1.5",

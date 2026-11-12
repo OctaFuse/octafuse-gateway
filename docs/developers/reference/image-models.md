@@ -8,7 +8,7 @@
 | [Gemini 原生生图](../architecture/gemini-image.md) | Gemini Nano Banana / Flash Image / Pro Image |
 | [火山方舟 Seedream 生图](../architecture/volcengine-image.md) | Seedream 5.0 lite / pro / flash |
 | [DashScope 原生生图](../architecture/dashscope-image.md) | 千问图像、万相 |
-| [MiniMax 生图](../architecture/minimax-image.md) | `image-01`、`image-01-live` |
+| [MiniMax 生图](../architecture/minimax-image.md) | `image-01`、`image-01-live`；H3 Image 为 `MiniMax-H3-Image`、`MiniMax-H3-Image-Highspeed` |
 
 字段细节见 [用户接口 · Images](../api/user.md#images图片生成--编辑)。
 
@@ -31,6 +31,8 @@
 
 失败转移复用 `failoverDispatch`。混合协议的路由池会把同一份请求交给每条路由的适配器各自转换。
 
+MiniMax H3 Image 的目录预设走 OpenAI 兼容 Images API，用 `passthrough` 访问 `https://api.minimax.io/v1` 或 `https://api.minimax.cn/v1`，不使用 `minimax-image`。上游模型名、额外字段和 400 见 [MiniMax 生图](../architecture/minimax-image.md#h3-image-目录预设)。本次只增加导入预设，不改变上述路由。
+
 模型的种类按输出模态判定：`output_modalities` 含 `image` 即为生图模型，不能看输入模态（多模态 LLM 也接受图片）。默认的 `/v1/models` 不含纯生图模型，需要 `kind=image` 或 `kind=all`。
 
 ### OpenAI 入口的参数速查
@@ -50,7 +52,7 @@
 
 静态预设放在 `packages/admin/lib/model-presets/`，生图模型在 `<vendor>-image.json`。在管理后台的模型（Models）页导入预设；同 ID 已存在时不会覆盖，改价需要编辑模型，或对已知型号运行 `node scripts/db/migrate-image-billing-modes.mjs --apply`。
 
-目录 ID 一般与上游的供应商模型名一致。例外是 MiniMax：目录 ID 带 `minimax-` 前缀，路由的供应商模型名填 `image-01` / `image-01-live`。火山方舟用推理接入点时，路由填 `ep-…`。预设不写 `suggested_provider_model_name` 或 `suggested_custom_params`，默认参数由客户端或路由 `custom_params` 注入。退役型号不进预设，库里的旧行需要手工清理。
+目录 ID 一般与上游的供应商模型名一致。例外是 MiniMax：`minimax-image-01` / `minimax-image-01-live` 的上游模型名填 `image-01` / `image-01-live`；`minimax-h3-image` / `minimax-h3-image-highspeed` 填 `MiniMax-H3-Image` / `MiniMax-H3-Image-Highspeed`。火山方舟用推理接入点时，路由填 `ep-…`。预设不写 `suggested_provider_model_name` 或 `suggested_custom_params`，默认参数由客户端或路由 `custom_params` 注入。退役型号不进预设，库里的旧行需要手工清理。
 
 下面三张表由 `npm run docs:image-models` 从预设生成，请勿手改。CNY 一般按 USD × 7 换算，以预设为准。
 
@@ -74,6 +76,8 @@
 | `gemini-3.1-flash-image` | Gemini 3.1 Flash Image | [Google Gemini](../architecture/gemini-image.md) | `token` | 图出 ¥420/1M | 图出 $60/1M | 按 usage | `google-image.json` |
 | `gemini-3.1-flash-lite-image` | Gemini 3.1 Flash Lite Image | [Google Gemini](../architecture/gemini-image.md) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `google-image.json` |
 | `gemini-nano-banana-2.1` | Gemini Nano Banana 2.1 | [Google Gemini](../architecture/gemini-image.md) | `token` | 图出 ¥210/1M | 图出 $30/1M | 按 usage | `google-image.json` |
+| `minimax-h3-image` | MiniMax H3 Image | [MiniMax](../architecture/minimax-image.md) | `token` | 图出 ¥25/1M | 图出 $3.8/1M | 按 usage | `minimax-image.json` |
+| `minimax-h3-image-highspeed` | MiniMax H3 Image Highspeed | [MiniMax](../architecture/minimax-image.md) | `token` | 图出 ¥50/1M | 图出 $7.6/1M | 按 usage | `minimax-image.json` |
 | `minimax-image-01` | MiniMax Image 01 | [MiniMax](../architecture/minimax-image.md) | `per_image` | ¥0.025/张 | $0.0035/张 | 一口价 | `minimax-image.json` |
 | `minimax-image-01-live` | MiniMax Image 01 Live | [MiniMax](../architecture/minimax-image.md) | `per_image` | ¥0.025/张 | $0.0035/张 | 一口价 | `minimax-image.json` |
 | `gpt-image-1-mini` | GPT Image 1 Mini | [OpenAI GPT Image](../architecture/openai-compatible-image.md#openai-gpt-image) | `token` | 图出 ¥56/1M | 图出 $8/1M | 按 usage | `openai-image.json` |
@@ -134,6 +138,10 @@
 | `gemini-3.1-flash-lite-image` | USD | $0.25 | — | $1.5 | $0.25 | — | $30 |
 | `gemini-nano-banana-2.1` | CNY | ¥10.5 | — | ¥52.5 | ¥10.5 | — | ¥210 |
 | `gemini-nano-banana-2.1` | USD | $1.5 | — | $7.5 | $1.5 | — | $30 |
+| `minimax-h3-image` | CNY | ¥15 | — | ¥0 | ¥10 | — | ¥25 |
+| `minimax-h3-image` | USD | $2.3 | — | $0 | $1.5 | — | $3.8 |
+| `minimax-h3-image-highspeed` | CNY | ¥15 | — | ¥0 | ¥20 | — | ¥50 |
+| `minimax-h3-image-highspeed` | USD | $2.3 | — | $0 | $3 | — | $7.6 |
 | `gpt-image-1-mini` | CNY | ¥14 | ¥1.4 | ¥0 | ¥17.5 | ¥1.75 | ¥56 |
 | `gpt-image-1-mini` | USD | $2 | $0.2 | $0 | $2.5 | $0.25 | $8 |
 | `gpt-image-1.5` | CNY | ¥35 | ¥8.75 | ¥70 | ¥56 | ¥14 | ¥224 |
@@ -210,7 +218,7 @@ charged ≈
 
 1. 模型 ID 选目录里的生图模型。
 2. 按上方“入口与路由”表选请求协议、上游协议与适配器。
-3. 供应商模型名一般与目录 ID 相同；MiniMax 去掉 `minimax-` 前缀，火山方舟可填 `ep-…`。
+3. 供应商模型名一般与目录 ID 相同。MiniMax 的 image-01 系列去掉 `minimax-` 前缀；H3 Image 填 `MiniMax-H3-Image` 或 `MiniMax-H3-Image-Highspeed`。火山方舟可填 `ep-…`。
 4. 供应商配好 Key 与对应协议的端点，见各厂商文档。
 5. 可选 `custom_params`，如默认 `watermark: false`；用户显式传入的值优先。
 6. 按业务设置 `charged_factor` / `metered_factor`。

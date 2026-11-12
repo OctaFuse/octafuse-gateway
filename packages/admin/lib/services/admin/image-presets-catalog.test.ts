@@ -23,6 +23,8 @@ const EXPECTED_IMAGE_IDS = [
 	'gpt-image-2.6-sunburst',
 	'grok-imagine-image-2.0',
 	'grok-imagine-image-quality',
+	'minimax-h3-image',
+	'minimax-h3-image-highspeed',
 	'minimax-image-01',
 	'minimax-image-01-live',
 	'qwen-image-2.1-pro',
@@ -182,6 +184,28 @@ describe('static image model presets (*-image.json)', () => {
 		assert.equal(proTier.input_price, 2);
 		assert.equal(proTier.output_price, 12);
 		assert.equal(proTier.image_output_price, 120);
+
+		const h3 = byId.get('minimax-h3-image')!;
+		const h3Usd = asPricing(h3.pricing.usd).tiers?.[0];
+		const h3Cny = asPricing(h3.pricing.cny).tiers?.[0];
+		assert.equal(asPricing(h3.pricing.usd).image_billing_mode, 'token');
+		assert.equal(h3Usd?.input_price, 2.3);
+		assert.equal(h3Usd?.image_input_price, 1.5);
+		assert.equal(h3Usd?.image_output_price, 3.8);
+		assert.equal(h3Cny?.input_price, 15);
+		assert.equal(h3Cny?.image_input_price, 10);
+		assert.equal(h3Cny?.image_output_price, 25);
+		assert.notEqual(h3Cny?.image_output_price, 3.8 * 7);
+
+		const h3Fast = byId.get('minimax-h3-image-highspeed')!;
+		const h3FastUsd = asPricing(h3Fast.pricing.usd).tiers?.[0];
+		const h3FastCny = asPricing(h3Fast.pricing.cny).tiers?.[0];
+		assert.equal(h3FastUsd?.image_input_price, 3);
+		assert.equal(h3FastUsd?.image_output_price, 7.6);
+		assert.equal(h3FastCny?.input_price, 15);
+		assert.equal(h3FastCny?.image_input_price, 20);
+		assert.equal(h3FastCny?.image_output_price, 50);
+		assert.notEqual(h3FastCny?.image_output_price, 7.6 * 7);
 
 		const nanoBanana21 = byId.get('gemini-nano-banana-2.1')!;
 		const nanoBanana21Tier = asPricing(nanoBanana21.pricing.usd).tiers?.[0];
