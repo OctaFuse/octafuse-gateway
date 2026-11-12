@@ -120,7 +120,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(listStaticModelPresets().some((p) => p.id === 'gemini-4-barium'), false);
 	});
 
-	it('includes gemini-4-carbon at the post-intro list price, not the introductory rate', () => {
+	it('includes gemini-4-carbon at the standard list price, not the introductory rate', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gemini-4-carbon');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gemini-4-carbon');
 		assert.ok(usd);
@@ -156,8 +156,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		const note = '人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。';
 		for (const text of [preset!.description, preset!.i18n?.en, preset!.i18n?.zh, preset!.i18n?.ja, preset!.i18n?.ko]) {
 			assert.equal(text?.endsWith(note), true);
-			assert.match(text ?? '', /\$2 \/ \$10 \/ \$0\.10/);
-			assert.match(text ?? '', /2026-11-30/);
+			assert.doesNotMatch(text ?? '', /introductory|入门价|導入価格|도입 가격|2026-11-30|\$2 \/ \$10/);
 			assert.match(text ?? '', /1M/);
 			assert.match(text ?? '', /64K/);
 			assert.doesNotMatch(text ?? '', /1000000|64000|65536|1048576/);
@@ -1752,6 +1751,7 @@ describe('MiniMax H3 Image catalog list prices', () => {
 				assert.match(text ?? '', /4K/);
 				assert.match(text ?? '', /32K/);
 				assert.doesNotMatch(text ?? '', /×7|占位价/);
+				assert.doesNotMatch(text ?? '', /limited-time|限时|期間限定|기간 한정|50% off|五折/);
 				assert.doesNotMatch(text ?? '', /32000|4096|20000000|1000000/);
 			}
 		}
