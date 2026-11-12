@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Minor Changes
+
+- **GPT Image 2 退役日期**：`gpt-image-2` 写上 OpenAI 2026-11-10 公布的停服日 2027-02-10。只记官方停服日，不影响路由与计费。
+
 ## 2.19.0
 
 ### Minor Changes
