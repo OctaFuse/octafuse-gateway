@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowUpRightIcon, CircleStackIcon, Squares2X2Icon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
@@ -8,15 +8,17 @@ import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import type { DashboardModelDistributionRow, DashboardTopUserRow, KpiMetrics } from '@/lib/types';
 import type { GatewayTimeRangeValue } from '@/lib/analytics-range';
+import { useDashboardListMotion } from './use-dashboard-list-motion';
 import { dashboardLogsHref } from './dashboard-links';
 
 type ViewMode = 'models' | 'users';
 export type DashboardModelDistributionChartProps = {
-  modelDistribution: DashboardModelDistributionRow[]; topUsers: DashboardTopUserRow[]; billingCurrency: string; range: GatewayTimeRangeValue; kpi?: KpiMetrics;
+  motionScope?: string; modelDistribution: DashboardModelDistributionRow[]; topUsers: DashboardTopUserRow[]; billingCurrency: string; range: GatewayTimeRangeValue; kpi?: KpiMetrics;
 };
 
-export function DashboardModelDistributionChart({ modelDistribution, topUsers, billingCurrency, range, kpi }: DashboardModelDistributionChartProps) {
+export function DashboardModelDistributionChart({ modelDistribution, topUsers, billingCurrency, range, kpi, motionScope = '' }: DashboardModelDistributionChartProps) {
   const t = useTranslations('dashboard');
+  const rowsRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<ViewMode>('models');
   const rows = useMemo(() => {
     const items = view === 'models' ? modelDistribution.map(row => ({ key: row.model_id, requests: row.request_count, tokens: row.total_tokens, cost: row.charged_cost, value: row.request_count }))
@@ -25,6 +27,7 @@ export function DashboardModelDistributionChart({ modelDistribution, topUsers, b
     const max = Math.max(...sorted.map(row => row.value), 0);
     return sorted.slice(0, 5).map(row => ({ ...row, width: max > 0 ? row.value / max * 100 : 0 }));
   }, [view, modelDistribution, topUsers]);
+  useDashboardListMotion(rowsRef, `${motionScope}:${view}`, JSON.stringify(rows.map(row => row.key)));
   const cacheReadShare = kpi?.inputTokens != null && kpi.inputTokens > 0 && kpi.cacheReadTokens != null
     ? (kpi.cacheReadTokens / kpi.inputTokens * 100).toFixed(1) : '—';
   return <section className="admin-content-panel flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
@@ -35,12 +38,12 @@ export function DashboardModelDistributionChart({ modelDistribution, topUsers, b
       </div>
     </div>
     <p className="mt-2 text-xs leading-5 text-gray-500">{t(view === 'models' ? 'modelBreakdownHint' : 'userBreakdownHint')}</p>
-    {rows.length ? <div className="mt-3 divide-y divide-gray-100">
-      {rows.map((row, index) => <Link key={row.key} href={dashboardLogsHref(range, { [view === 'models' ? 'model_id' : 'user_email']: row.key })} className="group -mx-2 flex min-w-0 items-start gap-3 rounded-lg px-2 py-3 hover:bg-gray-50" aria-label={t('inspectUsage', { name: row.key })}>
+    {rows.length ? <div ref={rowsRef} className="mt-3 divide-y divide-gray-100">
+      {rows.map((row, index) => <Link key={row.key} data-dashboard-item={row.key} href={dashboardLogsHref(range, { [view === 'models' ? 'model_id' : 'user_email']: row.key })} className="group -mx-2 flex min-w-0 items-start gap-3 rounded-lg px-2 py-3 hover:bg-gray-50" aria-label={t('inspectUsage', { name: row.key })}>
         <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gray-100 font-mono text-xs text-gray-500">{index + 1}</span>
         <div className="min-w-0 flex-1"><div className="flex min-w-0 items-center justify-between gap-3"><span className="truncate text-sm text-gray-900" title={row.key}>{row.key}</span><span className="shrink-0 font-mono text-sm tabular-nums text-gray-900">{view === 'models' ? row.requests.toLocaleString() : formatGatewayMoneyCode(row.cost, billingCurrency, 4)}</span></div>
           <div className="mt-1 flex justify-between gap-3 text-xs text-gray-500"><span>{formatCompactTokens(row.tokens)} Token</span><span className="shrink-0 tabular-nums">{view === 'models' ? formatGatewayMoneyCode(row.cost, billingCurrency, 4) : t('requestCount', { count: row.requests })}</span></div>
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-gray-100" aria-hidden><div className={`h-full rounded-full ${index === 0 ? 'bg-blue-500' : 'bg-gray-300'}`} style={{ width: `${row.width}%` }} /></div>
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-gray-100" aria-hidden><div className={`h-full origin-left rounded-full transition-transform duration-500 ease-out motion-reduce:transition-none ${index === 0 ? 'bg-blue-500' : 'bg-gray-300'}`} style={{ transform: `scaleX(${row.width / 100})` }} /></div>
         </div><ArrowUpRightIcon className="mt-1 h-3.5 w-3.5 shrink-0 text-gray-400 group-hover:text-gray-900" aria-hidden />
       </Link>)}
     </div> : <p className="py-10 text-center text-sm text-gray-500">{t('noChartData')}</p>}

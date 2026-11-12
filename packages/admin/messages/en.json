@@ -244,6 +244,17 @@
 		"secretBanner": "New API key — copy it now; the full secret will not be shown again."
 	},
 	"dashboard": {
+		"liveRefresh": {
+			"refreshLabel": "Dashboard auto refresh",
+			"following": "Auto refresh on",
+			"paused": "Auto refresh paused",
+			"pausedRange": "Auto refresh paused for a fixed historical range; refresh manually or choose a quick range",
+			"pausedDialog": "Auto refresh paused while editing the time range",
+			"updatedAt": "Updated {time}",
+			"changeSinceRefresh": "Change since last refresh: {value}",
+			"points": "{value} pp",
+			"activityReady": "{count} new activities · Update"
+		},
 		"title": "Dashboard",
 		"subtitle": "Monitor gateway traffic, usage and spending trends to spot operational issues.",
 		"analysisWindow": "Analysis window",

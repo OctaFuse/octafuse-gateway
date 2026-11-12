@@ -244,6 +244,17 @@
 		"secretBanner": "新 API Key — 请立即复制；完整密钥不会再次显示。"
 	},
 	"dashboard": {
+		"liveRefresh": {
+			"refreshLabel": "仪表盘自动刷新",
+			"following": "自动更新中",
+			"paused": "已暂停自动更新",
+			"pausedRange": "固定历史区间暂停自动刷新，可手动刷新或选择快捷时间范围",
+			"pausedDialog": "调整时间范围时暂停自动刷新",
+			"updatedAt": "更新于 {time}",
+			"changeSinceRefresh": "相对上次刷新 {value}",
+			"points": "{value}pp",
+			"activityReady": "{count} 条新活动 · 更新"
+		},
 		"title": "仪表盘",
 		"subtitle": "查看网关请求、用量和费用趋势，及时发现运行异常。",
 		"analysisWindow": "分析时间范围",

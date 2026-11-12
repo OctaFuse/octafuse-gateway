@@ -244,6 +244,17 @@
 		"secretBanner": "新しい API Key — 今すぐコピーしてください。完全な Secret は再表示されません。"
 	},
 	"dashboard": {
+		"liveRefresh": {
+			"refreshLabel": "ダッシュボードの自動更新",
+			"following": "自動更新中",
+			"paused": "自動更新を一時停止",
+			"pausedRange": "固定の過去期間では自動更新を一時停止します。手動更新またはクイック期間を選択してください",
+			"pausedDialog": "期間の編集中は自動更新を一時停止します",
+			"updatedAt": "更新 {time}",
+			"changeSinceRefresh": "前回更新からの変化: {value}",
+			"points": "{value}pt",
+			"activityReady": "新しいアクティビティ {count} 件 · 更新"
+		},
 		"title": "ダッシュボード",
 		"subtitle": "ゲートウェイのリクエスト、使用量、料金の推移を確認し、運用上の異常を把握します。",
 		"analysisWindow": "分析期間",

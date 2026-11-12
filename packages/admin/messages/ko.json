@@ -244,6 +244,17 @@
 		"secretBanner": "새 API Key — 지금 복사하세요. 전체 Secret은 다시 표시되지 않습니다."
 	},
 	"dashboard": {
+		"liveRefresh": {
+			"refreshLabel": "대시보드 자동 새로고침",
+			"following": "자동 업데이트 중",
+			"paused": "자동 업데이트 일시 중지",
+			"pausedRange": "고정된 과거 기간에서는 자동 새로고침이 일시 중지됩니다. 수동으로 새로고침하거나 빠른 기간을 선택하세요",
+			"pausedDialog": "기간을 편집하는 동안 자동 새로고침이 일시 중지됩니다",
+			"updatedAt": "{time} 업데이트",
+			"changeSinceRefresh": "이전 새로고침 대비 {value}",
+			"points": "{value}pp",
+			"activityReady": "새 활동 {count}개 · 업데이트"
+		},
 		"title": "대시보드",
 		"subtitle": "게이트웨이 요청, 사용량, 요금 추이를 확인하고 운영 이상을 파악하세요.",
 		"analysisWindow": "분석 기간",

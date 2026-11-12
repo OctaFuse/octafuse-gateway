@@ -40,3 +40,8 @@ export const maintenanceRefreshPreference = createAutoRefreshPreference(
 export const requestLogRefreshPreference = createAutoRefreshPreference(
 	'octafuse.admin.requestLogs.refreshIntervalMs', 'octafuse-admin-request-logs-refresh-interval', REQUEST_LOG_REFRESH_INTERVAL_OPTIONS
 );
+
+export const DASHBOARD_REFRESH_INTERVAL_OPTIONS: readonly AutoRefreshIntervalMs[] = ['off', 10_000, 30_000, 60_000, 300_000];
+export const dashboardRefreshPreference = createAutoRefreshPreference(
+	'octafuse.admin.dashboard.refreshIntervalMs', 'octafuse-admin-dashboard-refresh-interval', DASHBOARD_REFRESH_INTERVAL_OPTIONS
+);
