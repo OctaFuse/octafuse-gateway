@@ -16,6 +16,8 @@ export type AutoRefreshState = {
 
 type Props = AutoRefreshState & {
 	intervalMs: AutoRefreshIntervalMs;
+	intervalOptions?: readonly AutoRefreshIntervalMs[];
+	pausedHint?: string;
 	onIntervalChange: (value: AutoRefreshIntervalMs) => void;
 	refresh: () => Promise<void>;
 	label: string;
@@ -32,7 +34,7 @@ function formatAgo(elapsedMs: number): string {
 }
 
 export function AutoRefreshControl(props: Props) {
-	const { intervalMs, disabled = false, disabledHint, onIntervalChange, refresh,
+	const { intervalMs, intervalOptions = AUTO_REFRESH_INTERVAL_OPTIONS, pausedHint, disabled = false, disabledHint, onIntervalChange, refresh,
 		label, refreshLabel, isRefreshing, lastUpdatedAt, nextRefreshAt, lastRefreshResult } = props;
 	const t = useTranslations('autoRefresh');
 	const menuId = useId();
@@ -46,6 +48,7 @@ export function AutoRefreshControl(props: Props) {
 	const positioned = position !== null;
 	const close = () => { setOpen(false); triggerRef.current?.focus(); };
 	const optionLabel = (value: AutoRefreshIntervalMs) => value === 'off' ? t('off')
+		: value === 10_000 || value === 30_000 ? t('everySeconds', { seconds: value / 1000 })
 		: value === 60_000 ? t('every1m') : value === 300_000 ? t('every5m') : t('every10m');
 
 	useLayoutEffect(() => {
@@ -72,16 +75,16 @@ export function AutoRefreshControl(props: Props) {
 
 	useEffect(() => {
 		if (!visible || !positioned) return;
-		optionRefs.current[AUTO_REFRESH_INTERVAL_OPTIONS.indexOf(intervalMs)]?.focus();
+		optionRefs.current[intervalOptions.indexOf(intervalMs)]?.focus();
 		const outside = (event: PointerEvent) => {
 			if (!rootRef.current?.contains(event.target as Node) && !menuRef.current?.contains(event.target as Node)) setOpen(false);
 		};
 		document.addEventListener('pointerdown', outside);
 		return () => document.removeEventListener('pointerdown', outside);
-	}, [visible, intervalMs, positioned]);
+	}, [visible, intervalMs, intervalOptions, positioned]);
 	const automatic = intervalMs !== 'off';
-	const intervalLabel = intervalMs === 60_000 ? t('every1m')
-		: intervalMs === 300_000 ? t('every5m') : t('every10m');
+	const intervalLabel = optionLabel(intervalMs);
+	const paused = automatic && Boolean(pausedHint);
 	const stateLabel = automatic ? intervalLabel : t('off');
 	const [now, setNow] = useState(() => Date.now());
 	useEffect(() => {
@@ -99,20 +102,21 @@ export function AutoRefreshControl(props: Props) {
 	const seconds = automatic && remaining != null ? Math.min(remaining, Number(intervalMs) / 1000) : null;
 	const countdown = seconds == null ? '—:—' : formatAutoRefreshCountdown(seconds);
 	const progress = automatic && seconds != null ? seconds / (Number(intervalMs) / 1000) : 0;
-	const showCountdown = automatic && !disabled;
-	const buttonLabel = disabled ? '—' : automatic ? (isRefreshing ? '—:—' : countdown) : t('offShort');
+	const showCountdown = automatic && !disabled && !paused;
+	const buttonLabel = disabled ? '—' : paused ? t('paused') : automatic ? (isRefreshing ? '—:—' : countdown) : t('offShort');
 	const buttonDescription = `${refreshLabel} · ${disabled ? (disabledHint ?? label) : stateLabel}`;
 	const agoLabel = lastUpdatedAt != null ? t('updatedAgo', { ago: formatAgo(now - lastUpdatedAt) }) : null;
 	const tooltip = [buttonDescription,
+		paused ? pausedHint : null,
 		!disabled && failed ? t('failed') : null,
 		showCountdown && nextRefreshAt != null ? t('nextIn', { time: countdown }) : null,
 		!disabled ? agoLabel : null,
 	].filter(Boolean).join(' · ');
 	const iconTone = disabled ? 'text-gray-400' : failed ? 'text-amber-600'
-		: succeeded ? 'text-emerald-600' : automatic ? 'text-blue-500' : 'text-gray-500';
+		: succeeded ? 'text-emerald-600' : automatic && !paused ? 'text-blue-500' : 'text-gray-500';
 
 	const focusOption = (index: number) => {
-		const count = AUTO_REFRESH_INTERVAL_OPTIONS.length;
+		const count = intervalOptions.length;
 		optionRefs.current[(index + count) % count]?.focus();
 	};
 
@@ -131,7 +135,7 @@ export function AutoRefreshControl(props: Props) {
 			</button>
 			<button ref={triggerRef} type="button" disabled={disabled} aria-haspopup="menu"
 				aria-expanded={visible} aria-controls={visible ? menuId : undefined} aria-label={`${label} · ${stateLabel}`}
-				title={disabled ? disabledHint : `${label} · ${stateLabel}`}
+				title={disabled ? disabledHint : `${label} · ${stateLabel}${paused ? ` · ${pausedHint}` : ''}`}
 				onClick={() => setOpen(current => !current)}
 				onKeyDown={event => {
 					if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setOpen(true); }
@@ -153,7 +157,7 @@ export function AutoRefreshControl(props: Props) {
 						if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); }
 						if (event.key === 'Tab') close();
 					}}>
-					{AUTO_REFRESH_INTERVAL_OPTIONS.map((value, index) => (
+					{intervalOptions.map((value, index) => (
 						<button key={value} ref={element => { optionRefs.current[index] = element; }}
 							type="button" role="menuitemradio" tabIndex={-1} aria-checked={intervalMs === value}
 							onClick={() => { onIntervalChange(value); close(); }}
@@ -161,7 +165,7 @@ export function AutoRefreshControl(props: Props) {
 								if (event.key === 'ArrowDown') { event.preventDefault(); focusOption(index + 1); }
 								if (event.key === 'ArrowUp') { event.preventDefault(); focusOption(index - 1); }
 								if (event.key === 'Home') { event.preventDefault(); focusOption(0); }
-								if (event.key === 'End') { event.preventDefault(); focusOption(AUTO_REFRESH_INTERVAL_OPTIONS.length - 1); }
+								if (event.key === 'End') { event.preventDefault(); focusOption(intervalOptions.length - 1); }
 							}}
 							className="flex min-h-9 w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-50 focus-visible:bg-gray-100 focus-visible:outline-none aria-checked:font-medium aria-checked:text-gray-950">
 							<span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>

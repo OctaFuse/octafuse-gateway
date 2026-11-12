@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AutoRefreshState } from '@/components/AutoRefreshControl';
 import type { AutoRefreshIntervalMs } from './auto-refresh-preference';
-import { createAutoRefreshScheduler } from './auto-refresh-scheduler';
+import { createAutoRefreshScheduler, type AutoRefreshSource } from './auto-refresh-scheduler';
 
 /** The displayed deadline and the network request always use the same scheduler. */
-export function useAutoRefresh({ intervalMs, enabled, refresh }: {
+export function useAutoRefresh({ intervalMs, enabled, paused = false, refresh }: {
 	intervalMs: AutoRefreshIntervalMs;
 	enabled: boolean;
-	refresh: () => Promise<boolean>;
+	paused?: boolean;
+	refresh: (source: AutoRefreshSource) => Promise<boolean>;
 }) {
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
@@ -25,12 +26,12 @@ export function useAutoRefresh({ intervalMs, enabled, refresh }: {
 		return () => { scopeRef.current = scope + 1; };
 	}, [enabled, refresh]);
 
-	const refreshData = useCallback((): Promise<void> => {
+	const refreshData = useCallback((source: AutoRefreshSource): Promise<void> => {
 		if (!enabled) return Promise.resolve();
 		const scope = scopeRef.current;
 		if (pendingRef.current?.scope === scope) return pendingRef.current.promise;
 		setIsRefreshing(true);
-		const promise = Promise.resolve().then(refresh).catch(() => false).then(success => {
+		const promise = Promise.resolve().then(() => refresh(source)).catch(() => false).then(success => {
 			if (scope !== scopeRef.current) return;
 			const finishedAt = Date.now();
 			if (success) setLastUpdatedAt(finishedAt);
@@ -49,7 +50,7 @@ export function useAutoRefresh({ intervalMs, enabled, refresh }: {
 	useEffect(() => {
 		if (!enabled) return;
 		const scheduler = createAutoRefreshScheduler({
-			intervalMs,
+			intervalMs: paused ? 'off' : intervalMs,
 			active: () => document.visibilityState === 'visible',
 			onDeadline: setNextRefreshAt,
 			refresh: refreshData,
@@ -58,7 +59,7 @@ export function useAutoRefresh({ intervalMs, enabled, refresh }: {
 		scheduler.start();
 		const onVisibility = () => {
 			if (document.visibilityState !== 'visible') scheduler.pause();
-			else if (intervalMs !== 'off') void scheduler.refreshNow();
+			else if (!paused && intervalMs !== 'off') void scheduler.refreshNow('automatic');
 		};
 		document.addEventListener('visibilitychange', onVisibility);
 		return () => {
@@ -66,7 +67,7 @@ export function useAutoRefresh({ intervalMs, enabled, refresh }: {
 			scheduler.dispose();
 			if (schedulerRef.current === scheduler) schedulerRef.current = null;
 		};
-	}, [enabled, intervalMs, refreshData]);
+	}, [enabled, intervalMs, paused, refreshData]);
 
 	const refreshNow = useCallback(async () => { await schedulerRef.current?.refreshNow(); }, []);
 	return { isRefreshing: enabled && isRefreshing, lastUpdatedAt, nextRefreshAt: enabled ? nextRefreshAt : null, lastRefreshResult, refreshNow };

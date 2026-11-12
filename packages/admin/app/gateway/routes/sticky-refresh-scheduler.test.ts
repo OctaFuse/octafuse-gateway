@@ -170,3 +170,17 @@ test('automatic refresh without eligible pools has neither a timer nor a stale d
   assert.equal(calls, 0);
   scheduler.dispose();
 });
+
+
+test('manual clicks and timer ticks carry different refresh sources', async () => {
+  const c = clock();
+  const sources: string[] = [];
+  const scheduler = createStickyRefreshScheduler({ ...c, intervalMs: 10_000, active: () => true,
+    onDeadline: () => {}, refresh: async source => { sources.push(source); } });
+  scheduler.start();
+  await scheduler.refreshNow();
+  c.advance(10_000);
+  await scheduler.refreshNow();
+  assert.deepEqual(sources, ['manual', 'automatic']);
+  scheduler.dispose();
+});

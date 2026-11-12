@@ -1,5 +1,7 @@
 {
 	"autoRefresh": {
+		"paused": "一時停止",
+		"everySeconds": "{seconds} 秒ごと",
 		"offShort": "オフ",
 		"label": "自動更新",
 		"off": "自動更新オフ",
@@ -2864,6 +2866,16 @@
 		}
 	},
 	"requestLogs": {
+		"live": {
+			"refreshLabel": "リクエストログの自動更新",
+			"following": "最新のリクエストを追跡中 · 現在の絞り込みを維持",
+			"pausedPage": "過去のページでは自動更新を一時停止します。1 ページ目に戻ると再開します",
+			"pausedDialog": "詳細の閲覧中・絞り込みの編集中は自動更新を一時停止します",
+			"pausedRange": "固定期間では自動更新を一時停止します。手動更新またはクイック期間を選択してください",
+			"pending": "新しいログ {count} 件 · 閲覧位置を維持しています",
+			"received": "新しいログ {count} 件を追加しました",
+			"showLatest": "最新を表示"
+		},
 		"title": "リクエストログ",
 		"subtitle": "時間、ユーザー、モデルでリクエストを絞り込み、呼び出しの詳細、料金、エラーの原因を確認します。",
 		"filters": {

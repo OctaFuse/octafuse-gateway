@@ -9,8 +9,9 @@ import { useElementWidth } from './use-element-width';
  * Keep an open dialog intact while resizing, then return focus to a visible control. */
 export function AdaptiveFilterGroup({
   label, children, extra, activeCount = 0, extraCount = 0,
-  inlineAt = 1280, inlineClassName = 'flex flex-wrap items-end gap-3', size = 'md',
+  inlineAt = 1280, inlineClassName = 'flex flex-wrap items-end gap-3', size = 'md', onOpenChange,
 }: {
+  onOpenChange?: (open: boolean) => void;
   label: string;
   children: ReactNode;
   extra?: ReactNode;
@@ -23,7 +24,8 @@ export function AdaptiveFilterGroup({
   const rootRef = useRef<HTMLDivElement>(null);
   const fallbackFocusRef = useRef<HTMLElement | null>(null);
   const wide = useElementWidth(rootRef, true) >= inlineAt;
-  const [open, setOpen] = useState(false);
+  const [open, setOpenState] = useState(false);
+  const setOpen = (next: boolean) => { setOpenState(next); onOpenChange?.(next); };
   const [includeCommon, setIncludeCommon] = useState(true);
   useLayoutEffect(() => {
     fallbackFocusRef.current = rootRef.current?.parentElement?.querySelector<HTMLElement>('input, select') ?? null;

@@ -1,20 +1,19 @@
-export type AutoRefreshIntervalMs = 'off' | 60_000 | 300_000 | 600_000;
+export type AutoRefreshIntervalMs = 'off' | 10_000 | 30_000 | 60_000 | 300_000 | 600_000;
 
 export const AUTO_REFRESH_INTERVAL_OPTIONS: readonly AutoRefreshIntervalMs[] = ['off', 60_000, 300_000, 600_000];
 
-export function parseAutoRefreshInterval(raw: string | null): AutoRefreshIntervalMs {
-	if (raw === '60000' || raw === '60_000') return 60_000;
-	if (raw === '300000' || raw === '300_000') return 300_000;
-	if (raw === '600000' || raw === '600_000') return 600_000;
-	return 'off';
+export const REQUEST_LOG_REFRESH_INTERVAL_OPTIONS: readonly AutoRefreshIntervalMs[] = ['off', 10_000, 30_000, 60_000, 300_000];
+
+export function parseAutoRefreshInterval(raw: string | null, options = AUTO_REFRESH_INTERVAL_OPTIONS): AutoRefreshIntervalMs {
+	return options.find(value => String(value) === raw?.replace(/_/g, '')) ?? 'off';
 }
 
 /** No stored choice means no periodic requests. Only an explicit selection enables them. */
-export function createAutoRefreshPreference(storageKey: string, event: string) {
+export function createAutoRefreshPreference(storageKey: string, event: string, options = AUTO_REFRESH_INTERVAL_OPTIONS) {
 	return {
 		read: (): AutoRefreshIntervalMs => {
 			if (typeof window === 'undefined') return 'off';
-			try { return parseAutoRefreshInterval(window.localStorage.getItem(storageKey)); }
+			try { return parseAutoRefreshInterval(window.localStorage.getItem(storageKey), options); }
 			catch { return 'off'; }
 		},
 		write: (value: AutoRefreshIntervalMs) => {
@@ -36,4 +35,8 @@ export function createAutoRefreshPreference(storageKey: string, event: string) {
 
 export const maintenanceRefreshPreference = createAutoRefreshPreference(
 	'octafuse.admin.maintenance.refreshIntervalMs', 'octafuse-admin-maintenance-refresh-interval'
+);
+
+export const requestLogRefreshPreference = createAutoRefreshPreference(
+	'octafuse.admin.requestLogs.refreshIntervalMs', 'octafuse-admin-request-logs-refresh-interval', REQUEST_LOG_REFRESH_INTERVAL_OPTIONS
 );

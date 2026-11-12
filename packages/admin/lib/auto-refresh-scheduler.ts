@@ -1,5 +1,7 @@
 import type { AutoRefreshIntervalMs } from './auto-refresh-preference';
 
+export type AutoRefreshSource = 'manual' | 'automatic';
+
 /** A single deadline drives both the next request and its UI countdown. */
 export function createAutoRefreshScheduler({
   intervalMs, refresh, active, onDeadline, now = Date.now,
@@ -7,7 +9,7 @@ export function createAutoRefreshScheduler({
   clearTimer = (timer) => clearTimeout(timer),
 }: {
   intervalMs: AutoRefreshIntervalMs;
-  refresh: () => Promise<void>;
+  refresh: (source: AutoRefreshSource) => Promise<void>;
   active: () => boolean;
   onDeadline: (deadline: number | null) => void;
   now?: () => number;
@@ -28,15 +30,15 @@ export function createAutoRefreshScheduler({
     pause();
     if (intervalMs === 'off' || !active() || pending) return;
     onDeadline(now() + intervalMs);
-    timer = setTimer(() => { void refreshNow().catch(() => {}); }, intervalMs);
+    timer = setTimer(() => { void refreshNow('automatic').catch(() => {}); }, intervalMs);
   };
-  const refreshNow = () => {
+  const refreshNow = (source: AutoRefreshSource = 'manual') => {
     if (disposed) return Promise.resolve();
     if (pending) return pending;
     if (!active()) { pause(); return Promise.resolve(); }
     pause();
     // Assign before refresh starts so overlapping manual/timer requests coalesce.
-    pending = Promise.resolve().then(refresh).finally(() => {
+    pending = Promise.resolve().then(() => refresh(source)).finally(() => {
       pending = null;
       schedule();
     });

@@ -1,5 +1,7 @@
 {
 	"autoRefresh": {
+		"paused": "已暂停",
+		"everySeconds": "每 {seconds} 秒",
 		"offShort": "关闭",
 		"label": "自动刷新",
 		"off": "关闭自动刷新",
@@ -2864,6 +2866,16 @@
 		}
 	},
 	"requestLogs": {
+		"live": {
+			"refreshLabel": "请求日志自动刷新",
+			"following": "正在追踪最新请求 · 保留当前筛选",
+			"pausedPage": "浏览历史分页时暂停自动刷新，返回第一页后恢复",
+			"pausedDialog": "查看详情或调整筛选时暂停自动刷新",
+			"pausedRange": "固定时间范围内暂停自动刷新，可手动刷新或切换快捷时间范围",
+			"pending": "有 {count} 条新日志，列表保持原位",
+			"received": "已加入 {count} 条新日志",
+			"showLatest": "查看最新"
+		},
 		"title": "请求日志",
 		"subtitle": "按时间、用户或模型筛选请求，查看调用详情、费用与错误原因。",
 		"filters": {

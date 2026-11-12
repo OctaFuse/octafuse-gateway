@@ -1,5 +1,7 @@
 {
 	"autoRefresh": {
+		"paused": "일시 중지",
+		"everySeconds": "{seconds}초마다",
 		"offShort": "끄기",
 		"label": "자동 새로고침",
 		"off": "자동 새로고침 끄기",
@@ -2864,6 +2866,16 @@
 		}
 	},
 	"requestLogs": {
+		"live": {
+			"refreshLabel": "요청 로그 자동 새로고침",
+			"following": "최신 요청 추적 중 · 현재 필터 유지",
+			"pausedPage": "이전 페이지에서는 자동 새로고침이 일시 중지됩니다. 첫 페이지로 돌아가면 재개됩니다",
+			"pausedDialog": "상세 정보 확인 또는 필터 수정 중에는 자동 새로고침이 일시 중지됩니다",
+			"pausedRange": "고정 기간에서는 자동 새로고침이 일시 중지됩니다. 수동으로 새로고침하거나 빠른 기간을 선택하세요",
+			"pending": "새 로그 {count}개 · 읽던 위치가 유지됩니다",
+			"received": "새 로그 {count}개 추가됨",
+			"showLatest": "최신 보기"
+		},
 		"title": "요청 로그",
 		"subtitle": "시간, 사용자, 모델로 요청을 필터링하고 호출 상세, 요금, 오류 원인을 확인하세요.",
 		"filters": {

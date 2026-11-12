@@ -1,5 +1,7 @@
 {
 	"autoRefresh": {
+		"paused": "Paused",
+		"everySeconds": "Every {seconds}s",
 		"offShort": "Off",
 		"label": "Auto refresh",
 		"off": "Auto refresh off",
@@ -2864,6 +2866,16 @@
 		}
 	},
 	"requestLogs": {
+		"live": {
+			"refreshLabel": "Request log auto refresh",
+			"following": "Following latest requests · Current filters retained",
+			"pausedPage": "Auto refresh paused on older pages; return to page 1 to resume",
+			"pausedDialog": "Auto refresh paused while viewing details or editing filters",
+			"pausedRange": "Auto refresh paused for a fixed time range; refresh manually or choose a quick range",
+			"pending": "{count} new logs ready · Your reading position is preserved",
+			"received": "Added {count} new logs",
+			"showLatest": "Show latest"
+		},
 		"title": "Request Logs",
 		"subtitle": "Filter requests by time, user or model to inspect call details, charges and errors.",
 		"filters": {
