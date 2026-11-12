@@ -1,5 +1,55 @@
 [
 	{
+		"id": "qwen4-max-preview",
+		"display_name": "Qwen4 Max Preview",
+		"description": "Next-generation flagship multimodal Qwen preview for coding, office productivity, frontend design, and complex agentic tasks. Accepts text, image, and video input, with a 1M context window and about 393K max output shared by thinking and the answer. Thinking is on by default and adjustable with reasoning_effort (low / medium / xhigh, default xhigh); reasoning_effort and thinking_budget cannot be set together. Available only through Token Plan, not pay-as-you-go; the preview runs until 2026-11-25 24:00 (UTC+8) and the model is retired afterwards. Prices are aligned to the previous same-tier model qwen3.8-max for now; Alibaba has not published list prices for Qwen4-Max, so update them at general availability.",
+		"i18n": {
+			"en": "Next-generation flagship multimodal Qwen preview for coding, office productivity, frontend design, and complex agentic tasks. Accepts text, image, and video input, with a 1M context window and about 393K max output shared by thinking and the answer. Thinking is on by default and adjustable with reasoning_effort (low / medium / xhigh, default xhigh); reasoning_effort and thinking_budget cannot be set together. Available only through Token Plan, not pay-as-you-go; the preview runs until 2026-11-25 24:00 (UTC+8) and the model is retired afterwards. Prices are aligned to the previous same-tier model qwen3.8-max for now; Alibaba has not published list prices for Qwen4-Max, so update them at general availability.",
+			"zh": "千问新一代旗舰多模态预览模型，面向编程、办公、前端设计与复杂智能体任务。支持文本、图片和视频输入，上下文 1M，最大输出约 393K（思考与回答共享）。默认开启深度思考，可用 reasoning_effort（low / medium / xhigh，默认 xhigh）调节；reasoning_effort 与 thinking_budget 不能同时设置。仅在 Token Plan 订阅中提供，不支持按量计费；预览期至 2026-11-25 24:00（UTC+8），之后下线。价格暂按同档位上一版 qwen3.8-max 的刊例对齐，官方尚未公布 Qwen4-Max 的刊例价，正式版发布后更新。",
+			"ja": "次世代フラッグシップのマルチモーダル Qwen プレビューモデルで、コーディング、オフィス業務、フロントエンド設計、複雑なエージェント作業に向きます。テキスト・画像・動画を入力でき、コンテキストは 1M、最大出力は約 393K（思考と回答で共有）です。思考は既定でオンで、reasoning_effort（low / medium / xhigh、既定は xhigh）で調整できます。reasoning_effort と thinking_budget は同時に指定できません。Token Plan のサブスクリプションでのみ提供され、従量課金は使えません。プレビュー期間は 2026-11-25 24:00（UTC+8）までで、その後は終了します。価格は当面、同じ階層の前世代 qwen3.8-max の定価に合わせています。Qwen4-Max の定価は未公表のため、正式版の公開後に更新してください。",
+			"ko": "차세대 플래그십 멀티모달 Qwen 프리뷰 모델로, 코딩, 오피스 업무, 프런트엔드 디자인, 복잡한 에이전트 작업에 적합합니다. 텍스트·이미지·동영상 입력을 지원하며 컨텍스트는 1M, 최대 출력은 약 393K(사고와 답변이 공유)입니다. 사고는 기본으로 켜져 있고 reasoning_effort(low / medium / xhigh, 기본값 xhigh)로 조절할 수 있습니다. reasoning_effort와 thinking_budget은 동시에 설정할 수 없습니다. Token Plan 구독으로만 제공되며 종량제는 지원하지 않습니다. 프리뷰 기간은 2026-11-25 24:00(UTC+8)까지이며 이후 종료됩니다. 가격은 우선 같은 등급의 이전 모델 qwen3.8-max 정가에 맞췄습니다. Qwen4-Max 정가가 아직 공개되지 않았으므로 정식 출시 후 갱신하세요."
+		},
+		"vendor": "aliyun",
+		"context_window": 1000000,
+		"max_tokens": 393216,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 2,
+						"output_price": 6,
+						"cache_read_price": 0.25,
+						"cache_write_price": 2.5
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 12,
+						"output_price": 36,
+						"cache_read_price": 1.5,
+						"cache_write_price": 15
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-11-11",
+		"retired": "2026-11-26"
+	},
+	{
 		"id": "qwen3.8-max",
 		"display_name": "Qwen3.8 Max",
 		"description": "A 2.4T-parameter MoE flagship for coding, office productivity, vision, and long-horizon agents. Native multimodal understanding supports long documents and video, with strong end-to-end delivery on professional tasks.",
