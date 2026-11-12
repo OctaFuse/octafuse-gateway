@@ -165,6 +165,42 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(listStaticModelPresets().some((p) => p.id === 'gemini-omni-1.2-flash'), false);
 	});
 
+	it('includes qwen4-max-preview aligned to qwen3.8-max pricing, with its official preview end as retired', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen4-max-preview');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen4-max-preview');
+		const prev = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen3.8-max');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.ok(prev);
+		assert.equal(usd!.kind, 'llm');
+		assert.equal(usd!.display_name, 'Qwen4 Max Preview');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 393216);
+		assert.equal(usd!.pricing_label, prev!.pricing_label);
+		const preset = listStaticModelPresets().find((p) => p.id === 'qwen4-max-preview');
+		const prevPreset = listStaticModelPresets().find((p) => p.id === 'qwen3.8-max');
+		assert.ok(preset);
+		assert.ok(prevPreset);
+		assert.equal(preset!.vendor, 'aliyun');
+		assert.equal(preset!.released, '2026-11-11');
+		assert.equal(preset!.retired, '2026-11-26');
+		assert.deepEqual(preset!.modalities?.input, ['text', 'image', 'video']);
+		assert.deepEqual(preset!.modalities?.output, ['text']);
+		for (const currency of ['USD', 'CNY'] as const) {
+			const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, currency))!);
+			const prevProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(prevPreset!, currency))!);
+			assert.equal(profile?.tiers.length, 1);
+			assert.deepEqual(profile?.tiers, prevProfile?.tiers);
+		}
+		for (const text of [preset!.description, preset!.i18n?.en, preset!.i18n?.zh, preset!.i18n?.ja, preset!.i18n?.ko]) {
+			assert.match(text ?? '', /Token Plan/);
+			assert.match(text ?? '', /qwen3\.8-max/);
+			assert.match(text ?? '', /1M/);
+			assert.match(text ?? '', /393K/);
+			assert.doesNotMatch(text ?? '', /1000000|393216/);
+		}
+	});
+
 	it('includes gemini-3.8-flash with Gemini API Standard list prices', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gemini-3.8-flash');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gemini-3.8-flash');
