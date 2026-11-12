@@ -88,7 +88,7 @@ export const DashboardTokenTrendChart = memo(function DashboardTokenTrendChart({
 			) : (
 				<div className="mt-5 flex flex-1 flex-col">
           {view === 'tokens' && <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">{[{ label: t('inputTokens'), color: '#2563eb' }, { label: t('outputTokens'), color: '#0d9488' }, { label: t('cacheReadTokens'), color: '#d97706' }].map(item => <span key={item.label} className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: item.color }} aria-hidden />{item.label}</span>)}</div>}
-          <div className="h-64 min-h-64 flex-1 sm:h-72 sm:min-h-72">
+          <div className="h-64 min-h-64 flex-1 overflow-hidden sm:h-72 sm:min-h-72">
 					<ResponsiveContainer width="100%" height="100%">
 						<ComposedChart key={view} data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
 							<defs>
