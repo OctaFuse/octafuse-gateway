@@ -46,7 +46,7 @@ export function StickyRefreshControl(props: Props) {
 			title={disabled ? t('stickyRefreshEmptyHint') : t('stickyRefreshLabel')}
 		>
 			{!compact && <>
-			<label className="shrink-0 text-xs text-slate-500" htmlFor="routes-sticky-refresh-interval">
+			<label className="mr-auto shrink-0 text-xs text-slate-500" htmlFor="routes-sticky-refresh-interval">
 				{t('stickyRefreshShortLabel')}
 			</label>
 			<select
@@ -75,7 +75,7 @@ export function StickyRefreshControl(props: Props) {
 				<option value="600000">{t('stickyRefresh10m')}</option>
 			</select>
 			</>}
-			<button
+			{compact && <button
 				type="button"
 				onClick={() => void refreshAll()}
 				disabled={disabled || isRefreshing}
@@ -84,7 +84,7 @@ export function StickyRefreshControl(props: Props) {
 				className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-not-allowed disabled:opacity-60"
 			>
 				<ArrowPathIcon className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-			</button>
+			</button>}
 		</div>
 	);
 }
