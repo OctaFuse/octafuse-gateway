@@ -1310,6 +1310,12 @@ describe('2026-11-03 model catalog巡检 additions', () => {
 		assert.equal(listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gpt-5.2-pro')!.pricing_label, '¥147 / ¥1176 /M');
 	});
 
+	it('marks gpt-image-2 retired on the official shutdown date', () => {
+		const preset = doubaoPreset('gpt-image-2');
+		assert.equal(preset.released, '2026-04-01');
+		assert.equal(preset.retired, '2027-02-10');
+	});
+
 	it('adds gpt-image-1.5 with $10 text output and $32 image output', () => {
 		const preset = doubaoPreset('gpt-image-1.5');
 		assert.equal(preset.display_name, 'GPT Image 1.5');
