@@ -1,3 +1,4 @@
+import { DASHBOARD_ACTIVITY_LIMIT } from '@/lib/dashboard-constants';
 /**
  * 管理后台聚合服务：仪表盘 KPI、全局请求日志列表、`system_config` 读写，以及模型/供应商/用户/可靠性分析 API 的数据装配。
  */
@@ -682,8 +683,8 @@ export async function getAdminStatsService(
 		repos.apiKeys.getApiKeysCount(),
 		repos.users.getUsersCount(),
 		repos.requestLogs.getRequestStatsByRange({ startDate: dayStart, endDate: dayEndExclusive, endExclusive: true }),
-		repos.requestLogs.getRecentLogs(5),
-		repos.requestLogs.getRecentErrors(5),
+		repos.requestLogs.getRecentLogs(DASHBOARD_ACTIVITY_LIMIT),
+		repos.requestLogs.getRecentErrors(DASHBOARD_ACTIVITY_LIMIT),
 		repos.requestLogs.getRequestStatsByRange({ startDate, endDate }),
 		repos.requestLogs.getDistinctActiveUsersCount({ startDate, endDate }),
 		repos.requestLogs.getThroughputLastMinute(),

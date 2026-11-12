@@ -244,6 +244,25 @@
 		"secretBanner": "新 API Key — 请立即复制；完整密钥不会再次显示。"
 	},
 	"dashboard": {
+		"activityDetails": {
+			"provider": "供应商",
+			"providerUnknown": "未记录供应商",
+			"user": "用户",
+			"userUnknown": "未记录用户",
+			"duration": "耗时",
+			"usage": "用量",
+			"cost": "成本",
+			"catalogFactor": "相对目录倍率",
+			"ttft": "首个内容 Token",
+			"routeGroup": "路由组",
+			"tokens": "tok",
+			"images": "张",
+			"seconds": "秒",
+			"characters": "字符",
+			"calls": "次调用",
+			"latestCount": "最新 {count} 条",
+			"viewAll": "查看全部请求"
+		},
 		"liveRefresh": {
 			"refreshLabel": "仪表盘自动刷新",
 			"following": "自动更新中",
@@ -293,7 +312,7 @@
 		"activeAccounts": "已启用账号",
 		"needsAttention": "需要关注",
 		"noRecentErrors": "最近没有错误请求",
-		"recentRequestsHint": "网关最新处理的 5 次请求",
+		"recentRequestsHint": "网关最新处理的 8 次请求",
 		"status": {
 			"idle": "暂无流量",
 			"healthy": "运行正常",

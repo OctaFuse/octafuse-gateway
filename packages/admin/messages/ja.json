@@ -244,6 +244,25 @@
 		"secretBanner": "新しい API Key — 今すぐコピーしてください。完全な Secret は再表示されません。"
 	},
 	"dashboard": {
+		"activityDetails": {
+			"provider": "プロバイダー",
+			"providerUnknown": "プロバイダー未記録",
+			"user": "ユーザー",
+			"userUnknown": "ユーザー未記録",
+			"duration": "所要時間",
+			"usage": "使用量",
+			"cost": "原価",
+			"catalogFactor": "定価に対する倍率",
+			"ttft": "最初のコンテンツトークン",
+			"routeGroup": "ルートグループ",
+			"tokens": "tok",
+			"images": "枚",
+			"seconds": "秒",
+			"characters": "文字",
+			"calls": "回の呼び出し",
+			"latestCount": "最新 {count} 件",
+			"viewAll": "すべてのリクエスト"
+		},
 		"liveRefresh": {
 			"refreshLabel": "ダッシュボードの自動更新",
 			"following": "自動更新中",
@@ -293,7 +312,7 @@
 		"activeAccounts": "有効なアカウント",
 		"needsAttention": "要確認",
 		"noRecentErrors": "最近の失敗リクエストはありません",
-		"recentRequestsHint": "Gateway が直近に処理した 5 件のリクエスト",
+		"recentRequestsHint": "Gateway が直近に処理した 8 件のリクエスト",
 		"status": {
 			"idle": "トラフィックなし",
 			"healthy": "正常",

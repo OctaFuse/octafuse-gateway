@@ -244,6 +244,25 @@
 		"secretBanner": "New API key — copy it now; the full secret will not be shown again."
 	},
 	"dashboard": {
+		"activityDetails": {
+			"provider": "Provider",
+			"providerUnknown": "Provider not recorded",
+			"user": "User",
+			"userUnknown": "User not recorded",
+			"duration": "Duration",
+			"usage": "Usage",
+			"cost": "Cost",
+			"catalogFactor": "Factor vs. catalog price",
+			"ttft": "First content token",
+			"routeGroup": "Route group",
+			"tokens": "tok",
+			"images": "img",
+			"seconds": "s",
+			"characters": "chars",
+			"calls": "call",
+			"latestCount": "Latest {count}",
+			"viewAll": "View all requests"
+		},
 		"liveRefresh": {
 			"refreshLabel": "Dashboard auto refresh",
 			"following": "Auto refresh on",
@@ -293,7 +312,7 @@
 		"activeAccounts": "Enabled accounts",
 		"needsAttention": "Needs attention",
 		"noRecentErrors": "No recent failed requests",
-		"recentRequestsHint": "The five latest requests handled by the gateway",
+		"recentRequestsHint": "The eight latest requests handled by the gateway",
 		"status": {
 			"idle": "No traffic",
 			"healthy": "Healthy",

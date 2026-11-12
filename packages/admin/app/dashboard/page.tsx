@@ -122,7 +122,7 @@ export default function DashboardPage() {
     </div>
     <div className="grid min-w-0 items-stretch gap-5 xl:grid-cols-2">
       <DashboardModelDistributionChart motionScope={scope} modelDistribution={stats?.modelDistribution ?? []} topUsers={stats?.topUsers ?? []} billingCurrency={currency} range={loadedRange} kpi={kpi} />
-      <DashboardActivity logs={stats?.recentLogs ?? []} errors={stats?.recentErrors ?? []} />
+      <DashboardActivity billingCurrency={currency} logs={stats?.recentLogs ?? []} errors={stats?.recentErrors ?? []} />
     </div>
   </div>;
 }
