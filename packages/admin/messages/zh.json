@@ -112,6 +112,10 @@
 		"kindEmbedding": "向量"
 	},
 	"auth": {
+		"title": "登录管理后台",
+		"description": "使用管理员账号管理网关服务",
+		"showPassword": "显示密码",
+		"hidePassword": "隐藏密码",
 		"username": "用户名",
 		"password": "密码",
 		"login": "登录",

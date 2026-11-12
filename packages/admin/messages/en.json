@@ -112,6 +112,10 @@
 		"kindEmbedding": "Embedding"
 	},
 	"auth": {
+		"title": "Sign in to the console",
+		"description": "Manage your gateway with an administrator account",
+		"showPassword": "Show password",
+		"hidePassword": "Hide password",
 		"username": "Username",
 		"password": "Password",
 		"login": "Login",

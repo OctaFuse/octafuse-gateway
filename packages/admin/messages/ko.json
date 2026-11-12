@@ -112,6 +112,10 @@
 		"kindEmbedding": "임베딩"
 	},
 	"auth": {
+		"title": "관리 콘솔 로그인",
+		"description": "관리자 계정으로 게이트웨이를 관리하세요",
+		"showPassword": "비밀번호 표시",
+		"hidePassword": "비밀번호 숨기기",
 		"username": "사용자 이름",
 		"password": "비밀번호",
 		"login": "로그인",

@@ -112,6 +112,10 @@
 		"kindEmbedding": "埋め込み"
 	},
 	"auth": {
+		"title": "管理コンソールにログイン",
+		"description": "管理者アカウントでゲートウェイを管理",
+		"showPassword": "パスワードを表示",
+		"hidePassword": "パスワードを非表示",
 		"username": "ユーザー名",
 		"password": "パスワード",
 		"login": "ログイン",
