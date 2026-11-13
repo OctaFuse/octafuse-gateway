@@ -43,6 +43,7 @@ flowchart LR
 3. **简单发布可直接用 `develop` → `main` PR。** 如果需要冻结版本、继续接收下一周期功能，才从 `develop` 创建 `release/X.Y.Z`；发布分支只接受发布阻断修复、版本说明和 changesets，修复同时同步回 `develop`。
 4. **当前稳定线热修使用 `hotfix/X.Y.Z`**，从 `main` 创建；修复先写入 `CHANGELOG.md` 的 Unreleased，发版前再补 patch changeset 并 PR 回 `main`；正式发版完成后把实际修复同步到 `develop`。
 5. **每次正式发布后把 `main` 同步回 `develop`**，使 Version Packages 产生的版本号和 changelog 进入开发线。优先使用 PR 或普通 merge，不改写共享分支历史。
+   **进入 `main` 的 PR 只能用 “Create a merge commit” 合并**（`protect-main` ruleset 已限制）。Squash 或 Rebase 会让 `main` 上出现 `develop` 里没有的新提交，下一个 `develop` → `main` PR 就会在 `CHANGELOG.md`、`messages/*.json` 等文件上反复冲突。万一 `main` 已有 squash 提交，先在 `develop` 上执行 `git merge origin/main`；若 `main` 内容确为 `develop` 的子集，用 `git merge -s ours origin/main` 保留 `develop` 的文件树。
 6. **旧版本并行维护不在当前自动化范围内。** `main` 升到 `v2.4.0` 后，如仍需单独发布 `v2.3.x`，不能直接套用本文流程；需先增加维护分支发版 workflow，避免从 `main` 错误打旧版本 tag。
 
 ### 预发验证 / 非正式部署

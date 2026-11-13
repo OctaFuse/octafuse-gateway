@@ -14,7 +14,7 @@ const panel = 'admin-content-panel min-w-0 rounded-xl border border-gray-200 bg-
 const heading = 'admin-section-title flex items-center gap-2 text-sm font-medium text-gray-900';
 const percent = (n: number, d: number) => d > 0 ? `${(n / d * 100).toFixed(1)}%` : '—';
 
-/** Totals live in the KPI strip; this panel adds only the relationship between them. */
+/** Compact fee relationships pair with period Token totals in the chart sidebar. */
 export function DashboardCosts({ operations, range, currency, scope }: { operations: Overview; range: GatewayTimeRangeValue; currency: string; scope: string }) {
  const t = useTranslations('dashboard.operations');
  const review = useTranslations('dashboard.review');
@@ -22,16 +22,16 @@ export function DashboardCosts({ operations, range, currency, scope }: { operati
  const money = (value: number) => formatGatewayMoneyCode(value, currency, 4);
  const ratio = (value: number) => c.standard > 0 ? `×${(value / c.standard).toFixed(2)}` : '—';
  const spread = c.charged - c.metered;
- return <section className={`${panel} flex h-full flex-col`} aria-label={review('costEfficiency')}>
+ return <section className="admin-content-panel flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-4 sm:p-5" aria-label={review('costEfficiency')}>
   <h2 className={heading}><BanknotesIcon className="h-4 w-4 text-violet-600" aria-hidden />{review('costEfficiency')}</h2>
-  <div className="mt-5 flex flex-1 flex-col justify-center rounded-lg bg-gray-50 p-4">
+  <div className="mt-4 rounded-lg bg-gray-50 p-3">
    <p className="text-xs text-gray-500">{review('spreadAmount')}</p>
-   <p title={money(spread)} className={`mt-2 truncate whitespace-nowrap font-mono text-2xl tabular-nums ${spread < 0 ? 'text-rose-700' : 'text-gray-950'}`}><DashboardNumber value={spread} format={money} scope={scope} /></p>
+   <p title={money(spread)} className={`mt-1 truncate whitespace-nowrap font-mono text-2xl tabular-nums ${spread < 0 ? 'text-rose-700' : 'text-gray-950'}`}><DashboardNumber value={spread} format={money} scope={scope} /></p>
    <p className="mt-2 text-xs text-gray-500">{review('spreadRate')} <span className="ml-1 whitespace-nowrap font-mono tabular-nums text-gray-700">{percent(spread,c.charged)}</span></p>
-   {c.charged > 0 && <div className="mt-4 flex h-1.5 overflow-hidden rounded-full bg-emerald-200" aria-hidden><span className={`h-full ${spread < 0 ? 'bg-rose-400' : 'bg-gray-400'}`} style={{width:`${Math.min(100,Math.max(0,c.metered/c.charged*100))}%`}} /></div>}
+   {c.charged > 0 && <div className="mt-3 flex h-1 overflow-hidden rounded-full bg-emerald-200" aria-hidden><span className={`h-full ${spread < 0 ? 'bg-rose-400' : 'bg-gray-400'}`} style={{width:`${Math.min(100,Math.max(0,c.metered/c.charged*100))}%`}} /></div>}
   </div>
-  <dl className="mt-4 grid grid-cols-2 gap-4" title={`${t('factorHint')} ${t('catalog')}: ${money(c.standard)}`}>
-   {[{label:review('chargeFactor'),value:c.charged},{label:review('costFactor'),value:c.metered}].map(item => <div className="min-w-0" key={item.label}><dt className="text-xs text-gray-500">{item.label}</dt><dd className="mt-2 whitespace-nowrap font-mono text-lg tabular-nums text-gray-900">{ratio(item.value)}</dd></div>)}
+  <dl className="mt-3 grid grid-cols-2 gap-4" title={`${t('factorHint')} ${t('catalog')}: ${money(c.standard)}`}>
+   {[{label:review('chargeFactor'),value:c.charged},{label:review('costFactor'),value:c.metered}].map(item => <div className="min-w-0" key={item.label}><dt className="text-xs text-gray-500">{item.label}</dt><dd className="mt-1 whitespace-nowrap font-mono text-lg tabular-nums text-gray-900">{ratio(item.value)}</dd></div>)}
   </dl>
   {c.errorCost > 0 && <Link href={dashboardLogsHref(range,{status:'error'})} className="mt-4 flex items-center gap-2 border-t border-gray-100 pt-3 text-xs text-gray-600 hover:text-gray-950"><span className="flex-1">{t('errorCost')}</span><span className="whitespace-nowrap font-mono tabular-nums text-rose-700">{money(c.errorCost)}</span><ArrowUpRightIcon className="h-3 w-3 shrink-0" aria-hidden /></Link>}
  </section>;

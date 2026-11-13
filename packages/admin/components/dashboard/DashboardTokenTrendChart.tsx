@@ -61,13 +61,24 @@ export const DashboardTokenTrendChart = memo(function DashboardTokenTrendChart({
 	const tabs: TrendView[] = ['requests', 'tokens', 'cost', 'latency'];
 
 	return (
-		<div className="admin-content-panel flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
-			<div className="flex flex-wrap items-start justify-between gap-4">
-				<div>
-					<h2 className="admin-section-title flex items-center gap-2 text-sm font-medium text-gray-950"><ChartBarIcon className="h-4 w-4 text-gray-500" aria-hidden />{t('trafficTrend')}</h2>
-					{throughput && <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500" title={review('throughputHint')}><span className="inline-flex items-center gap-1"><BoltIcon className="h-3 w-3" aria-hidden />{review('lastMinute')}</span><span className="whitespace-nowrap font-mono tabular-nums"><DashboardNumber value={throughput.rpm} format={value=>Math.round(value).toLocaleString()} scope={throughput.scope} /> RPM</span><span className="whitespace-nowrap font-mono tabular-nums"><DashboardNumber value={throughput.tpm} format={value=>formatCompactTokens(Math.round(value))} scope={throughput.scope} /> TPM</span></p>}
+		<div className="admin-content-panel dashboard-trend-panel flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
+			<div className="dashboard-trend-header">
+				<div className="dashboard-trend-title flex min-w-0 flex-wrap items-center gap-x-6 gap-y-3">
+					<h2 className="admin-section-title flex shrink-0 items-center gap-2 text-sm font-medium text-gray-950"><ChartBarIcon className="h-4 w-4 text-gray-500" aria-hidden />{t('trafficTrend')}</h2>
+					{throughput && <div className="dashboard-trend-throughput flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-gray-500" title={review('throughputHint')}>
+						<p className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs"><BoltIcon className="h-3 w-3" aria-hidden />{review('lastMinute')}</p>
+						<dl className="flex flex-wrap items-baseline gap-x-4 gap-y-1" aria-label={t('throughput')}>
+							{[
+								{ label: 'RPM', hint: review('rpmHint'), value: throughput.rpm, format: (value: number) => Math.round(value).toLocaleString() },
+								{ label: 'TPM', hint: review('tpmHint'), value: throughput.tpm, format: (value: number) => formatCompactTokens(Math.round(value)) },
+							].map(metric => <div key={metric.label} className="inline-flex items-baseline gap-1.5 whitespace-nowrap">
+								<dt className="order-2 text-xs"><abbr className="cursor-help no-underline" title={metric.hint}>{metric.label}</abbr></dt>
+								<dd className={`order-1 font-mono text-lg font-medium leading-6 tabular-nums ${metric.value > 0 ? 'text-gray-950' : 'text-gray-600'}`} title={Math.round(metric.value).toLocaleString()}><DashboardNumber value={metric.value} format={metric.format} scope={throughput.scope} /></dd>
+							</div>)}
+						</dl>
+					</div>}
 				</div>
-				<div role="group" aria-label={t('trafficTrend')} className="inline-flex max-w-full overflow-x-auto rounded-lg bg-gray-100 p-1">
+				<div role="group" aria-label={t('trafficTrend')} className="dashboard-trend-tabs inline-flex max-w-full overflow-x-auto rounded-lg bg-gray-100 p-1">
 					{tabs.map((tab) => (
 						<button
 							key={tab}
@@ -91,7 +102,8 @@ export const DashboardTokenTrendChart = memo(function DashboardTokenTrendChart({
 			) : (
 				<div className="mt-5 flex flex-1 flex-col">
           {view === 'tokens' && <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">{[{ label: t('inputTokens'), color: '#2563eb' }, { label: t('outputTokens'), color: '#0d9488' }, { label: t('cacheReadTokens'), color: '#d97706' }].map(item => <span key={item.label} className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: item.color }} aria-hidden />{item.label}</span>)}</div>}
-          <div className="h-64 flex-none overflow-hidden sm:h-72">
+          <div className="relative min-h-64 flex-1 overflow-hidden sm:min-h-72">
+            <div className="absolute inset-0">
 					<ResponsiveContainer width="100%" height="100%">
 						<ComposedChart key={view} data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
 							<defs>
@@ -119,6 +131,7 @@ export const DashboardTokenTrendChart = memo(function DashboardTokenTrendChart({
 							{view === 'tokens' ? <Line isAnimationActive={!reducedMotion} animationDuration={450} animationEasing="ease-out" type="monotone" dataKey="cache_read_tokens" name={t('cacheReadTokens')} stroke="#d97706" dot={false} strokeWidth={2} /> : null}
 						</ComposedChart>
 					</ResponsiveContainer>
+            </div>
           </div>
 				</div>
 			)}

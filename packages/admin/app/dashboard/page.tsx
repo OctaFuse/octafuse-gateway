@@ -12,6 +12,7 @@ import { DashboardCosts, DashboardMetricDefinitions, DashboardOperations } from 
 import { dashboardPeriodChange } from '@/components/dashboard/dashboard-comparison';
 import { DashboardActivity } from '@/components/dashboard/DashboardActivity';
 import { DashboardModelDistributionChart } from '@/components/dashboard/DashboardModelDistributionChart';
+import { DashboardTokenSummary } from '@/components/dashboard/DashboardTokenSummary';
 import { DashboardTokenTrendChart } from '@/components/dashboard/DashboardTokenTrendChart';
 import { dashboardLogsHref } from '@/components/dashboard/dashboard-links';
 import { createRangeValue, formatGatewayRangeSummary, type GatewayTimeRangeValue } from '@/lib/analytics-range';
@@ -107,11 +108,14 @@ export default function DashboardPage() {
     <div className={`grid min-w-0 items-stretch gap-5 ${hasTraffic ? 'xl:grid-cols-[minmax(0,1fr)_320px]' : ''}`}>
       <DashboardTokenTrendChart timeseries={stats?.timeseries ?? []} granularity={stats?.granularity ?? 'hour'} billingCurrency={currency} businessTimezone={businessTimezone} onExplore={range.preset === '7d' ? undefined : exploreWeek}
         throughput={hasMetrics ? {rpm:kpi.rpm ?? 0,tpm:kpi.tpm ?? 0,scope} : undefined} />
-      {operations && hasTraffic && <DashboardCosts operations={operations} range={loadedRange} currency={currency} scope={scope} />}
+      {hasTraffic && <div className="grid min-w-0 content-start gap-5 sm:grid-cols-2 xl:grid-cols-1">
+        {operations && <DashboardCosts operations={operations} range={loadedRange} currency={currency} scope={scope} />}
+        <DashboardTokenSummary kpi={kpi} rangeLabel={loadedRangeLabel} scope={scope} />
+      </div>}
     </div>
     {operations && hasTraffic && <DashboardOperations operations={operations} range={loadedRange} />}
     <div className={`grid min-w-0 items-stretch gap-5 ${hasTraffic ? 'xl:grid-cols-2' : ''}`}>
-      {hasTraffic && <DashboardModelDistributionChart motionScope={scope} modelDistribution={stats?.modelDistribution ?? []} topUsers={stats?.topUsers ?? []} billingCurrency={currency} range={loadedRange} kpi={kpi} />}
+      {hasTraffic && <DashboardModelDistributionChart motionScope={scope} modelDistribution={stats?.modelDistribution ?? []} topUsers={stats?.topUsers ?? []} billingCurrency={currency} range={loadedRange} rangeLabel={loadedRangeLabel} />}
       <DashboardActivity billingCurrency={currency} logs={stats?.recentLogs ?? []} errors={stats?.recentErrors ?? []} />
     </div>
     <DashboardMetricDefinitions />
