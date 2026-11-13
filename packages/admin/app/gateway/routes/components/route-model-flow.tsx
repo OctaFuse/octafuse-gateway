@@ -1013,25 +1013,15 @@ export function RouteModelFlow(props: Props) {
 						<span className="min-w-0 font-mono text-xs text-gray-500 [overflow-wrap:anywhere]">{card.model_id}</span>
 						<span className="text-gray-300">·</span>
 						<span className="text-xs text-gray-500">{stats}</span>
+						<span className="border-l border-gray-200 pl-2 text-xs tabular-nums text-gray-500" title={t('routeSummaryHint')}>
+							{t('routeSummary', { active: card.activeCount, total: card.groupRoutes.length })}
+						</span>
 						{tags.slice(0, 4).map((tag) => (
 							<span key={tag} className={`rounded px-1.5 py-0.5 text-xs font-medium ${tagBadgeClass(tag)}`}>
 								{tag}
 							</span>
 						))}
 					</div>
-				</div>
-				<div className="flex shrink-0 flex-col items-end gap-1">
-					<button
-						type="button"
-						onClick={() => onCreate(card.model_id)}
-						className="inline-flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-800 ring-1 ring-inset ring-gray-200 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
-					>
-						<PlusIcon className="h-3.5 w-3.5" />
-						{tFlow('addRoute')}
-					</button>
-					<span className={`rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${card.activeCount > 0 ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-red-50 text-red-700 ring-red-200'}`}>
-						{t('activeTotalRoutes', { active: card.activeCount, total: card.groupRoutes.length })}
-					</span>
 				</div>
 			</header>
 

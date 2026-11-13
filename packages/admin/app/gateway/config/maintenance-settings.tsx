@@ -3,9 +3,9 @@
 /**
  * 维护模式：开启后 Proxy 对推理请求返回友好的 503，可选同时冻结 Admin 写接口。
  * 数据迁移的"核心切换"依赖它冻结写入，也可单独用于任何维护窗口。
- * 作为配置中的独立标签加载；隐藏时停止轮询，保留当前表单草稿。
+ * 作为配置中的独立标签加载；自动刷新默认关闭，隐藏时暂停，保留当前表单草稿。
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { customMaintenanceMinutes } from '../maintenance/maintenance-input';
 import { ClockIcon, PauseCircleIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
@@ -13,12 +13,14 @@ import { ConfigCardShell } from '@/components/ConfigCardShell';
 import { useFeedback } from '@/components/feedback';
 import { readApiJson } from '@/lib/api-json';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
-import { MAINTENANCE_CHANGED_EVENT } from '@/components/layout/MaintenanceBanner';
+import { announceMaintenanceChange } from '@/components/layout/MaintenanceBanner';
+import { AutoRefreshControl } from '@/components/AutoRefreshControl';
+import { maintenanceRefreshPreference } from '@/lib/auto-refresh-preference';
+import { useAutoRefresh } from '@/lib/use-auto-refresh';
 import type { MaintenanceStatus } from '@/lib/services/admin/maintenance-service';
 
 const DURATION_PRESETS = [5, 15, 30, 60] as const;
 const EXTEND_STEPS = [15, 30, 60] as const;
-const REFRESH_MS = 30_000;
 const MESSAGE_TOKEN = '{minutes}';
 
 type Preset = 'none' | 'custom' | (typeof DURATION_PRESETS)[number];
@@ -50,20 +52,22 @@ export function MaintenanceSettings({ visible }: { visible: boolean }) {
 	const [blockAdmin, setBlockAdmin] = useState(true);
 
 	const load = useCallback(async () => {
-		if (savingRef.current) return;
+		if (savingRef.current) return false;
 		const request = ++generation.current;
 		try {
 			const response = await fetch('/api/admin/maintenance', { cache: 'no-store' });
 			const data = await readApiJson<MaintenanceStatus>(response);
-			if (request !== generation.current) return;
+			if (request !== generation.current) return false;
 			if (!response.ok || !data.success || !data.data) {
 				throw new Error(data.message || tCommon('requestFailed'));
 			}
 			setStatus(data.data);
 			setLoadError('');
+			return true;
 		} catch (cause) {
-			if (request !== generation.current) return;
+			if (request !== generation.current) return false;
 			setLoadError(cause instanceof Error ? cause.message : t('loadFailed'));
+			return false;
 		}
 	}, [t, tCommon]);
 
@@ -73,12 +77,13 @@ export function MaintenanceSettings({ visible }: { visible: boolean }) {
 	useEffect(() => {
 		if (!visible) return;
 		void load();
-		const timer = window.setInterval(() => void load(), REFRESH_MS);
 		return () => {
-			window.clearInterval(timer);
 			invalidateLoads();
 		};
 	}, [load, invalidateLoads, visible]);
+
+	const intervalMs = useSyncExternalStore(maintenanceRefreshPreference.subscribe, maintenanceRefreshPreference.read, () => 'off' as const);
+	const refreshState = useAutoRefresh({ intervalMs, enabled: visible && !busy, refresh: load });
 
 	const save = async (body: Record<string, unknown>, successKey: 'enabled' | 'extended' | 'disabled') => {
 		if (savingRef.current) return;
@@ -97,7 +102,7 @@ export function MaintenanceSettings({ visible }: { visible: boolean }) {
 			}
 			setStatus(data.data);
 			setLoadError('');
-			window.dispatchEvent(new Event(MAINTENANCE_CHANGED_EVENT));
+			announceMaintenanceChange();
 			notify(
 				'success',
 				t(`toast.${successKey}`),
@@ -227,12 +232,16 @@ export function MaintenanceSettings({ visible }: { visible: boolean }) {
 							<p className="mt-1 text-sm leading-relaxed text-gray-500">{active ? t('onHint') : t('offHint')}</p>
 						</div>
 					</div>
+					<div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+						<AutoRefreshControl {...refreshState} intervalMs={intervalMs} onIntervalChange={maintenanceRefreshPreference.write}
+							refresh={refreshState.refreshNow} label={t('refreshLabel')} refreshLabel={t('refreshNow')} disabled={busy || !visible} />
 					{active && (
 						<button type="button" disabled={busy} onClick={() => void handleDisable()}
 							className="shrink-0 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40">
 							{busy ? tCommon('saving') : t('actions.disable')}
 						</button>
 					)}
+					</div>
 				</div>
 				{active && (
 					<>

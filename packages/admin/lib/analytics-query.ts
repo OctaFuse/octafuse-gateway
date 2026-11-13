@@ -18,6 +18,7 @@ export function analyticsRangeFromSearch(
 		return null;
 	const range = q.get("range");
 	const preset =
+		range === "custom" ? "custom" :
 		range && isRollingPreset(range)
 			? range === "24h"
 				? "1d"

@@ -520,3 +520,39 @@ textarea::placeholder {
 @media (min-width: 1024px) {
   .admin-nav-item { min-height: 36px; padding-block: 8px; }
 }
+
+/* Labeled controls align with the main filter row; complex audit choices remain on demand. */
+.admin-adaptive-fields .admin-audit-identities {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-adaptive-fields .admin-identity-field { width: 11rem; }
+.admin-adaptive-fields .admin-key-user-field { width: 16rem; }
+.admin-adaptive-fields .admin-adaptive-field { width: 10rem; }
+
+/* Two-line activity records; lower-priority metrics yield to identity on narrow cards. */
+.dashboard-activity-panel {
+  container-name: dashboard-activity;
+  container-type: inline-size;
+}
+.dashboard-activity-record {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.5rem;
+  column-gap: 0.75rem;
+}
+.dashboard-activity-time,
+.dashboard-activity-usage,
+.dashboard-activity-error-provider { display: none; }
+.dashboard-activity-error-meta { display: flex; }
+@container dashboard-activity (min-width: 24rem) {
+  .dashboard-activity-record { grid-template-columns: 4.5rem minmax(0, 1fr) 4.5rem; }
+  .dashboard-activity-time,
+  .dashboard-activity-error-provider { display: block; }
+  .dashboard-activity-inline-time,
+  .dashboard-activity-error-meta { display: none; }
+}
+@container dashboard-activity (min-width: 36rem) {
+  .dashboard-activity-record { grid-template-columns: 4.5rem minmax(0, 1fr) 8.5rem 4.5rem; }
+  .dashboard-activity-usage { display: block; }
+  .dashboard-activity-diagnostic { grid-template-columns: 4.5rem minmax(0, 1fr) 4.5rem; }
+}

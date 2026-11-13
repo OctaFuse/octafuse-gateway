@@ -9,8 +9,7 @@ import { AdminPageTitle } from '@/components/admin-page-title';
  */
 import { PricingInfoHint } from '@/components/PricingInfoHint';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { AdminInspector } from '@/components/admin-inspector';
+import { AdaptiveFilterGroup } from '@/components/adaptive-filter-group';
 import { useAdminDialog } from '@/components/use-admin-dialog';
 import { useFeedback } from '@/components/feedback';
 import { useBusinessTimezoneContext } from '@/components/BusinessTimezoneProvider';
@@ -18,10 +17,9 @@ import { LogRangeControl } from './log-range-control';
 import { readRequestLogFilters, requestLogDuration, requestLogQuery } from './request-log-query';
 import { dashboardErrorSummary } from '@/components/dashboard/dashboard-presentation';
 import { useLocale, useTranslations } from 'next-intl';
-import { Fragment, useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Fragment, useState, useEffect, useMemo, useCallback } from 'react';
 import {
-	AdjustmentsHorizontalIcon,
-	ArrowPathIcon,
+	ArrowUpIcon,
 	ChevronRightIcon,
 	ClipboardDocumentIcon,
 	ClockIcon,
@@ -48,13 +46,15 @@ import {
 import { formatGatewayMoneyCode, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { RequestLogFlow } from './request-log-flow';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
+import { AutoRefreshControl } from '@/components/AutoRefreshControl';
+import { REQUEST_LOG_REFRESH_INTERVAL_OPTIONS, requestLogRefreshPreference } from '@/lib/auto-refresh-preference';
+import { useRequestLogFeed } from './use-request-log-feed';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 
 /** `/api/admin/models` 列表项（tags 解析为数组） */
 type ModelListItem = Omit<GatewayModel, 'tags'> & { tags: string[] };
 
 export default function GatewayRequestLogsPage() {
-	const router = useRouter();
 	const t = useTranslations('requestLogs');
 	const tCommon = useTranslations('common');
 	const tDashboard = useTranslations('dashboard');
@@ -62,20 +62,18 @@ export default function GatewayRequestLogsPage() {
 	const tKind = useTranslations('providers.kind');
 	const tToken = useTranslations('oauthAccessTokensPage');
 	const locale = useLocale();
-	const [logs, setLogs] = useState<GatewayRequestLog[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [total, setTotal] = useState(0);
 	const [page, setPage] = useState(1);
 	/** 同时展开一个请求流程；环节详情由流程组件按需展示。 */
 	const [detailLog, setDetailLog] = useState<GatewayRequestLog | null>(null);
 	const [timingHelpLog, setTimingHelpLog] = useState<GatewayRequestLog | null>(null);
+	const [rangeDialogOpen, setRangeDialogOpen] = useState(false);
+	const [filterDialogOpen, setFilterDialogOpen] = useState(false);
 	const pageSize = 50;
 	const { currency: billingCurrency } = useBillingCurrency();
 	const { businessTimezone, formatDate: formatShortDate, formatTime } = useGatewayDateTime();
 	const { isLoading: timezoneLoading } = useBusinessTimezoneContext();
 	const { notify } = useFeedback();
 	const [filtersReady, setFiltersReady] = useState(false);
-	const [listError, setListError] = useState('');
 	const detailRef = useAdminDialog(Boolean(detailLog), false, () => setDetailLog(null));
 	const timingRef = useAdminDialog(Boolean(timingHelpLog), false, () => setTimingHelpLog(null));
 	const billingCurrencySym = getGatewayCurrencySymbol(billingCurrency);
@@ -129,20 +127,26 @@ export default function GatewayRequestLogsPage() {
 
 	useEffect(() => {
 		if (timezoneLoading || filtersReady) return;
-		const filters = readRequestLogFilters(window.location.search, businessTimezone);
-		setPage(filters.page);
-		setFilterStatus(filters.status);
-		setFilterModel(filters.model);
-		setFilterProviderId(filters.provider);
-		setFilterProviderIds(filters.providerIds ?? '');
-		setFilterModelPrefix(filters.modelPrefix ?? '');
-		setFilterUserEmail(filters.email);
-		setFilterApiKeyId(filters.apiKey);
-		setFilterLogId(filters.requestId);
-		setFilterRouteGroup(filters.routeGroup);
-		setFilterProtocol(filters.protocol);
-		setRangeValue(filters.range);
-		setFiltersReady(true);
+		let cancelled = false;
+		// Restore external URL state after hydration, once the business timezone is available.
+		queueMicrotask(() => {
+			if (cancelled) return;
+			const filters = readRequestLogFilters(window.location.search, businessTimezone);
+			setPage(filters.page);
+			setFilterStatus(filters.status);
+			setFilterModel(filters.model);
+			setFilterProviderId(filters.provider);
+			setFilterProviderIds(filters.providerIds ?? '');
+			setFilterModelPrefix(filters.modelPrefix ?? '');
+			setFilterUserEmail(filters.email);
+			setFilterApiKeyId(filters.apiKey);
+			setFilterLogId(filters.requestId);
+			setFilterRouteGroup(filters.routeGroup);
+			setFilterProtocol(filters.protocol);
+			setRangeValue(filters.range);
+			setFiltersReady(true);
+		});
+		return () => { cancelled = true; };
 	}, [timezoneLoading, filtersReady, businessTimezone]);
 
 	const query = useMemo(
@@ -176,10 +180,6 @@ export default function GatewayRequestLogsPage() {
 			rangeValue,
 		]
 	);
-	useEffect(() => {
-		if (filtersReady) router.replace(`/gateway/request-logs?${query}`, { scroll: false });
-	}, [query, filtersReady, router]);
-
 	const modelById = useMemo(() => {
 		const map = new Map<string, ModelListItem>();
 		for (const model of modelCatalog) {
@@ -264,32 +264,12 @@ export default function GatewayRequestLogsPage() {
 		return rows;
 	}, [routesCatalog, filterRouteGroup, t]);
 
-	const latestLogRequest = useRef(0);
-
-	const fetchLogs = useCallback(async () => {
-		if (!filtersReady) return;
-		const request = ++latestLogRequest.current;
-		setIsLoading(true);
-		setListError('');
-		try {
-			const response = await fetch(`/api/admin/request-logs?${query}`);
-			const data = await readApiJson<GatewayRequestLog[]>(response);
-			if (request !== latestLogRequest.current) return;
-			if (data.success) {
-				setLogs(data.data || []);
-				setTotal(data.total || 0);
-			} else setListError(data.message || t('ui.loadFailed'));
-		} catch (error) {
-			if (request === latestLogRequest.current)
-				setListError(error instanceof Error ? error.message : t('ui.loadFailed'));
-		} finally {
-			if (request === latestLogRequest.current) setIsLoading(false);
-		}
-	}, [query, filtersReady, t]);
-
-	useEffect(() => {
-		fetchLogs();
-	}, [fetchLogs]);
+	const pausedHint = page > 1 ? t('live.pausedPage')
+		: detailLog || timingHelpLog || rangeDialogOpen || filterDialogOpen ? t('live.pausedDialog')
+		: rangeValue.preset === 'custom' && rangeValue.end_date ? t('live.pausedRange') : undefined;
+	const { logs, total, isLoading, error: listError, tableRef, intervalMs, refreshState, fetchLogs,
+		applyPending, pendingCount, newCount } = useRequestLogFeed({ query: query.toString(), preset: rangeValue.preset,
+		timeZone: businessTimezone, ready: filtersReady, paused: Boolean(pausedHint), errorMessage: t('ui.loadFailed') });
 
 	const totalPages = Math.ceil(total / pageSize);
 
@@ -621,8 +601,9 @@ export default function GatewayRequestLogsPage() {
 					<AdminPageTitle>{t('title')}</AdminPageTitle>
 					<p className="mt-1 text-sm text-gray-500">{t('subtitle')}</p>
 				</div>
-				<div className="flex max-w-full items-center gap-2">
+				<div className="flex max-w-full flex-wrap items-center gap-2">
 					<LogRangeControl
+						onOpenChange={setRangeDialogOpen}
 						value={rangeValue}
 						timeZone={businessTimezone}
 						onChange={(range) => {
@@ -630,25 +611,14 @@ export default function GatewayRequestLogsPage() {
 							setPage(1);
 						}}
 					/>
-					<button
-						type="button"
-						disabled={isLoading}
-						aria-label={t('ui.refresh')}
-						title={t('ui.refresh')}
-						onClick={() => {
-							if (rangeValue.preset !== 'custom')
-								setRangeValue(createRangeValue(rangeValue.preset, businessTimezone));
-							else void fetchLogs();
-						}}
-						className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-40"
-					>
-						<ArrowPathIcon className="h-4 w-4" aria-hidden />
-					</button>
+					<AutoRefreshControl {...refreshState} intervalMs={intervalMs} intervalOptions={REQUEST_LOG_REFRESH_INTERVAL_OPTIONS}
+						onIntervalChange={requestLogRefreshPreference.write} refresh={refreshState.refreshNow} pausedHint={pausedHint}
+						disabled={!filtersReady || isLoading} label={t('live.refreshLabel')} refreshLabel={t('ui.refresh')} />
 				</div>
 			</div>
 
 			<section aria-label={t('ui.filters')} className="admin-filter-surface mb-5 space-y-3">
-				<div className="flex flex-wrap items-center gap-3">
+				<div className="flex flex-wrap items-end gap-3">
 					<div className="relative min-w-0 flex-1 basis-60 sm:max-w-xs">
 						<MagnifyingGlassIcon
 							className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
@@ -699,66 +669,13 @@ export default function GatewayRequestLogsPage() {
 							</option>
 						))}
 					</select>
-					<AdminInspector
-						label={`${t('ui.moreFilters')}${advancedFilters.length ? ` · ${advancedFilters.length}` : ''}`}
-						size="md"
-						icon={AdjustmentsHorizontalIcon}
-					>
-						<label className="block space-y-2 text-xs text-gray-500">
-							{tCommon('provider')}
-							<select
-								value={filterProviderId}
-								onChange={(e) => {
-									setFilterProviderIds('');
-									setFilterProviderId(e.target.value);
-									setPage(1);
-								}}
-								className={`${selectClass} block w-full`}
-							>
-								<option value="">{tCommon('all')}</option>
-								{providerSelectOptions.map((item) => (
-									<option key={item.id} value={item.id}>
-										{item.label}
-									</option>
-								))}
-							</select>
-						</label>
-						<label className="block space-y-2 text-xs text-gray-500">
-							{t('filters.protocol')}
-							<select
-								value={filterProtocol}
-								onChange={(e) => {
-									setFilterProtocol(e.target.value);
-									setPage(1);
-								}}
-								className={`${selectClass} block w-full`}
-							>
-								<option value="">{tCommon('all')}</option>
-								{UPSTREAM_PROTOCOLS.map((protocol) => (
-									<option key={protocol} value={protocol}>
-										{protocol}
-									</option>
-								))}
-							</select>
-						</label>
-						<label className="block space-y-2 text-xs text-gray-500">
-							{t('filters.routeGroup')}
-							<select
-								value={filterRouteGroup}
-								onChange={(e) => {
-									setFilterRouteGroup(e.target.value);
-									setPage(1);
-								}}
-								className={`${selectClass} block w-full`}
-							>
-								<option value="">{tCommon('all')}</option>
-								{routeGroupSelectOptions.map((item) => (
-									<option key={item.value} value={item.value}>
-										{item.label}
-									</option>
-								))}
-							</select>
-						</label>
+					<AdaptiveFilterGroup
+						onOpenChange={setFilterDialogOpen}
+						label={t('ui.moreFilters')}
+						activeCount={advancedFilters.length}
+						extraCount={[filterProviderIds, filterModelPrefix, filterApiKeyId, filterLogId].filter(Boolean).length}
+						inlineAt={1440}
+						extra={<>
 						<label className="block space-y-2 text-xs text-gray-500">
 							{t('filters.apiKeyId')}
 							<input
@@ -782,8 +699,64 @@ export default function GatewayRequestLogsPage() {
 								placeholder={t('filters.requestIdPlaceholder')}
 								className={`${selectClass} block w-full font-mono text-xs`}
 							/>
+						</label></>}
+					>
+						<label className="admin-adaptive-field block space-y-2 text-xs text-gray-500">
+							{tCommon('provider')}
+							<select
+								value={filterProviderId}
+								onChange={(e) => {
+									setFilterProviderIds('');
+									setFilterProviderId(e.target.value);
+									setPage(1);
+								}}
+								className={`${selectClass} block w-full`}
+							>
+								<option value="">{tCommon('all')}</option>
+								{providerSelectOptions.map((item) => (
+									<option key={item.id} value={item.id}>
+										{item.label}
+									</option>
+								))}
+							</select>
 						</label>
-					</AdminInspector>
+						<label className="admin-adaptive-field block space-y-2 text-xs text-gray-500">
+							{t('filters.protocol')}
+							<select
+								value={filterProtocol}
+								onChange={(e) => {
+									setFilterProtocol(e.target.value);
+									setPage(1);
+								}}
+								className={`${selectClass} block w-full`}
+							>
+								<option value="">{tCommon('all')}</option>
+								{UPSTREAM_PROTOCOLS.map((protocol) => (
+									<option key={protocol} value={protocol}>
+										{protocol}
+									</option>
+								))}
+							</select>
+						</label>
+						<label className="admin-adaptive-field block space-y-2 text-xs text-gray-500">
+							{t('filters.routeGroup')}
+							<select
+								value={filterRouteGroup}
+								onChange={(e) => {
+									setFilterRouteGroup(e.target.value);
+									setPage(1);
+								}}
+								className={`${selectClass} block w-full`}
+							>
+								<option value="">{tCommon('all')}</option>
+								{routeGroupSelectOptions.map((item) => (
+									<option key={item.value} value={item.value}>
+										{item.label}
+									</option>
+								))}
+							</select>
+						</label>
+					</AdaptiveFilterGroup>
 					{hasFilters && (
 						<button
 							type="button"
@@ -832,9 +805,23 @@ export default function GatewayRequestLogsPage() {
 				</div>
 			)}
 
+			{(intervalMs !== 'off' || pendingCount > 0 || newCount > 0) && (
+				<div className="sticky top-2 z-20 mb-3 flex min-h-10 flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-100 bg-blue-50/95 px-3 py-2 text-xs text-blue-700">
+					<span role="status" className="inline-flex items-center gap-2">
+						<span aria-hidden className={`h-1.5 w-1.5 shrink-0 rounded-full ${pausedHint || intervalMs === 'off' ? 'bg-gray-400' : 'bg-blue-500'}`} />
+						{pendingCount > 0 ? t('live.pending', { count: pendingCount }) : newCount > 0 ? t('live.received', { count: newCount })
+							: pausedHint || t('live.following')}
+					</span>
+					{pendingCount > 0 && <button type="button" onClick={applyPending} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-medium hover:bg-blue-100 focus-visible:outline-blue-600">
+						<ArrowUpIcon className="h-3.5 w-3.5" aria-hidden />{t('live.showLatest')}
+					</button>}
+				</div>
+			)}
+
 			<div className="admin-content-panel admin-table-surface overflow-hidden rounded-xl border border-gray-200 bg-white">
 				<div
-					className={`overflow-x-auto ${isLoading && logs.length > 0 ? 'opacity-60' : ''}`}
+					ref={tableRef}
+					className={`scroll-mt-20 overflow-x-auto ${isLoading && logs.length > 0 ? 'opacity-60' : ''}`}
 					aria-busy={isLoading}
 				>
 					<table className="admin-data-table w-full min-w-[60rem] table-fixed">
@@ -887,6 +874,7 @@ export default function GatewayRequestLogsPage() {
 							{logs.map((log) => (
 								<tr
 									key={log.id}
+									data-request-log-id={log.id}
 									tabIndex={0}
 									onClick={() => setDetailLog(log)}
 									onKeyDown={(event) => {

@@ -19,8 +19,9 @@ import { customLogRange } from './request-log-query';
 export function LogRangeControl({
   value,
   timeZone,
-  onChange,
+  onChange, onOpenChange,
 }: {
+  onOpenChange?: (open: boolean) => void;
   value: GatewayTimeRangeValue;
   timeZone: string;
   onChange: (value: GatewayTimeRangeValue) => void;
@@ -28,7 +29,8 @@ export function LogRangeControl({
   const t = useTranslations('requestLogs.ui');
   const tr = useTranslations('timeRange');
   const common = useTranslations('common');
-  const [open, setOpen] = useState(false);
+  const [open, setOpenState] = useState(false);
+  const setOpen = (next: boolean) => { setOpenState(next); onOpenChange?.(next); };
   const [draft, setDraft] = useState(value);
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');

@@ -1,4 +1,4 @@
-import { createRangeValue, detectRollingPreset, type GatewayTimeRangeValue } from '@/lib/analytics-range';
+import { createRangeValue, detectRollingPreset, GATEWAY_CALENDAR_PRESETS, GATEWAY_TIME_RANGE_PRESETS, type GatewayTimeRangeValue } from '@/lib/analytics-range';
 import { zonedInputToUtcApi } from '@/lib/business-timezone-client';
 import { observedMs } from './request-log-flow-data';
 
@@ -22,8 +22,10 @@ export function readRequestLogFilters(search: string, timeZone: string): Request
 	const start = params.get('start_date');
 	const end = params.get('end_date');
 	const requestId = params.get('id') || '';
+	const requestedPreset = params.get('range_preset');
+	const preset = [...GATEWAY_CALENDAR_PRESETS, ...GATEWAY_TIME_RANGE_PRESETS].find(value => value === requestedPreset);
 	const hasRange = start !== null || end !== null || Boolean(requestId);
-	const range: GatewayTimeRangeValue = hasRange
+	const range: GatewayTimeRangeValue = preset ? { ...createRangeValue(preset, timeZone), ...(start !== null ? { start_date: start } : {}), ...(end !== null ? { end_date: end } : {}) } : hasRange
 		? {
 				preset: start && end ? detectRollingPreset(start, end) ?? 'custom' : 'custom',
 				start_date: start || '',
@@ -55,6 +57,7 @@ export function requestLogQuery(filters: RequestLogFilters): URLSearchParams {
 		start_date: filters.range.start_date,
 		end_date: filters.range.end_date,
 	});
+	if (filters.range.preset !== 'custom') params.set('range_preset', filters.range.preset);
 	for (const [key, value] of Object.entries({
 		status: filters.status,
 		model_id: filters.model,

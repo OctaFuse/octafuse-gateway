@@ -100,7 +100,7 @@ export default function LocaleSwitcher({ variant }: { variant: Variant }) {
 				className={triggerClass[variant]}
 			>
 				<LanguageIcon className="h-4 w-4" aria-hidden />
-				<span className={codeClass[variant]}>{variant === 'header' ? t(locale) : locale}</span>
+				<span className={codeClass[variant]}>{t(locale)}</span>
 				<ChevronDownIcon
 					className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''} ${chevronClass[variant]}`}
 					aria-hidden

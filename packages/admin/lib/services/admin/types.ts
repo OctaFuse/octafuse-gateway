@@ -1,3 +1,4 @@
+import type { DashboardOverview, DashboardOverviewWindow } from '@octafuse/core';
 /**
  * 管理后台 API 的请求/响应 TypeScript 类型（与 Hono 路由 JSON 契约对应）。
  * 下列按路由分组用注释隔开，便于检索。
@@ -500,6 +501,7 @@ export type AdminConfigRow = {
 
 /** `GET /admin/stats` 仪表盘数据结构 */
 export type AdminStatsOutput = {
+	operations: DashboardOverview & { window: DashboardOverviewWindow };
 	gateway: {
 		activeKeysCount: number;
 		keysTotal: number;

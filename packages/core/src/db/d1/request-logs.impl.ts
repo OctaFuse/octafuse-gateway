@@ -1,3 +1,4 @@
+import { queryDashboardOverview } from '../dashboard-overview';
 /**
  * D1：`api_key_request_logs` 读路径与插入语句构造。
  */
@@ -95,6 +96,7 @@ export function buildInsertRequestLogStatement(db: D1Database, params: InsertReq
 export function createD1RequestLogsRepository(db: D1DatabaseClient): RequestLogsRepository & RequestLogsD1Statements {
 	const raw = db.raw;
 	return {
+		async getDashboardOverview(options) { return queryDashboardOverview(async (sql, binds) => (await raw.prepare(sql).bind(...binds).all<Record<string, unknown>>()).results ?? [], options); },
 		buildInsertRequestLogStatement,
 
 		async getRequestLogSummary(options): Promise<RequestLogSummaryRow[]> {

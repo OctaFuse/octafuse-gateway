@@ -118,20 +118,9 @@ function CatalogModelNode({
 					<PencilSquareIcon className="h-3.5 w-3.5" />
 				</button>
 			</div>
-			<div className="mt-2 flex items-center">
-				<span
-					className={`rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
-						card.activeCount > 0
-							? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-							: 'bg-red-50 text-red-700 ring-red-200'
-					}`}
-				>
-					{tCard('activeTotalRoutes', {
-						active: card.activeCount,
-						total: card.groupRoutes.length,
-					})}
-				</span>
-			</div>
+			<p className="mt-2 text-xs leading-5 tabular-nums text-gray-500" title={tCard('routeSummaryHint')}>
+				{tCard('routeSummary', { active: card.activeCount, total: card.groupRoutes.length })}
+			</p>
 		</div>
 	);
 }

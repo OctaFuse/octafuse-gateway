@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode, type RefObject } from 'react';
 import { AdjustmentsHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { useAdminDialog } from '@/components/use-admin-dialog';
@@ -11,16 +11,18 @@ export function RouteOptionsDialog({
 	children,
 	activeCount = 0,
 	compact = false,
+	fallbackFocusRef,
 }: {
 	label: string;
 	children: ReactNode;
 	activeCount?: number;
 	compact?: boolean;
+	fallbackFocusRef?: RefObject<HTMLElement | null>;
 }) {
 	const [open, setOpen] = useState(false);
 	const id = useId();
 	const t = useTranslations('common');
-	const ref = useAdminDialog(open, false, () => setOpen(false));
+	const ref = useAdminDialog(open, false, () => setOpen(false), fallbackFocusRef);
 	return (
 		<>
 			<button

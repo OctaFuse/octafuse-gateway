@@ -1,3 +1,4 @@
+import { queryDashboardOverview } from '../dashboard-overview';
 /**
  * Postgres：`api_key_request_logs`（postgres.js + unsafe）。
  */
@@ -20,6 +21,7 @@ import { buildRequestLogSummaryQuery, mapRequestLogSummaryRows } from '../reques
 export function createPostgresRequestLogsRepository(db: PostgresDatabaseClient): RequestLogsRepository {
 	const pg = db.raw;
 	return {
+		async getDashboardOverview(options) { return queryDashboardOverview(async (sql, binds) => (await pg.unsafe(sqlitePlaceholdersToPg(sql), binds)) as Record<string, unknown>[], options); },
 		async getRequestLogSummary(options): Promise<RequestLogSummaryRow[]> {
 			const { sql, binds } = buildRequestLogSummaryQuery(options, 'postgres');
 			const rows = (await pg.unsafe(

@@ -386,3 +386,21 @@
 .routes-design-workspace .route-provider-pricing-columns {
 	padding-inline-end: 2px;
 }
+
+/* Use the measured content width, including sidebar and workspace padding. Keep
+   overlays outside visibility rules so an open dialog survives a layout change. */
+.routes-design-workspace .route-filters .route-filter-inline,
+.routes-design-workspace .route-filter-more-advanced > button {
+	display: none;
+}
+.routes-design-workspace .route-filters[data-filter-layout='regular'] .route-filter-common,
+.routes-design-workspace .route-filters[data-filter-layout='wide'] .route-filter-inline {
+	display: block;
+}
+.routes-design-workspace .route-filters[data-filter-layout='regular'] .route-filter-more-advanced > button {
+	display: inline-flex;
+}
+.routes-design-workspace .route-filters[data-filter-layout='regular'] .route-filter-more-all > button,
+.routes-design-workspace .route-filters[data-filter-layout='wide'] .route-filter-more-all > button {
+	display: none;
+}

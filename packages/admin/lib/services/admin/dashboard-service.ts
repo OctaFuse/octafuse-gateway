@@ -1,3 +1,5 @@
+import { dashboardOverviewWindow } from './dashboard-window';
+import { DASHBOARD_ACTIVITY_LIMIT } from '@/lib/dashboard-constants';
 /**
  * 管理后台聚合服务：仪表盘 KPI、全局请求日志列表、`system_config` 读写，以及模型/供应商/用户/可靠性分析 API 的数据装配。
  */
@@ -653,7 +655,7 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
  */
 export async function getAdminStatsService(
 	repos: GatewayRepositories,
-	input?: { range?: string; startDate?: string; endDate?: string }
+	input?: { range?: string; startDate?: string; endDate?: string; preset?: string }
 ): Promise<AdminStatsOutput> {
 	const { startDate, endDate, granularity } = resolveStatsDateRange({
 		range: input?.range,
@@ -666,7 +668,9 @@ export async function getAdminStatsService(
 		businessTimeZone
 	);
 
+	const overviewWindow = dashboardOverviewWindow(startDate, endDate, businessTimeZone, input?.preset);
 	const [
+		overview,
 		keysCount,
 		accountsCount,
 		todayStats,
@@ -679,11 +683,12 @@ export async function getAdminStatsService(
 		userRows,
 		timeseries,
 	] = await Promise.all([
+		repos.requestLogs.getDashboardOverview(overviewWindow),
 		repos.apiKeys.getApiKeysCount(),
 		repos.users.getUsersCount(),
 		repos.requestLogs.getRequestStatsByRange({ startDate: dayStart, endDate: dayEndExclusive, endExclusive: true }),
-		repos.requestLogs.getRecentLogs(5),
-		repos.requestLogs.getRecentErrors(5),
+		repos.requestLogs.getRecentLogs(DASHBOARD_ACTIVITY_LIMIT),
+		repos.requestLogs.getRecentErrors(DASHBOARD_ACTIVITY_LIMIT),
 		repos.requestLogs.getRequestStatsByRange({ startDate, endDate }),
 		repos.requestLogs.getDistinctActiveUsersCount({ startDate, endDate }),
 		repos.requestLogs.getThroughputLastMinute(),
@@ -757,13 +762,13 @@ export async function getAdminStatsService(
 		errorRate: todayRequestsCount > 0 ? (todayStats.errorCount / todayRequestsCount) * 100 : 0,
 	};
 	const kpi = {
-		totalRequests: kpiStats.totalRequests,
-		successRate: kpiStats.totalRequests > 0 ? (kpiStats.successCount / kpiStats.totalRequests) * 100 : 0,
-		totalCost: kpiStats.chargedCost,
-		meteredCost: kpiStats.meteredCost,
-		standardCost: kpiStats.standardCost,
+		totalRequests: overview.current.requests,
+		successRate: overview.current.requests > 0 ? (overview.current.success / overview.current.requests) * 100 : 0,
+		totalCost: overview.current.charged,
+		meteredCost: overview.current.metered,
+		standardCost: overview.current.standard,
 		activeUsers,
-		errorRate: kpiStats.totalRequests > 0 ? (kpiStats.errorCount / kpiStats.totalRequests) * 100 : 0,
+		errorRate: overview.current.requests > 0 ? (overview.current.errors / overview.current.requests) * 100 : 0,
 		inputTokens: kpiStats.inputTokens,
 		outputTokens: kpiStats.outputTokens,
 		cacheReadTokens: kpiStats.cacheReadTokens,
@@ -775,6 +780,7 @@ export async function getAdminStatsService(
 	};
 
 	return {
+		operations: { ...overview, window: overviewWindow },
 		gateway: gatewayStats,
 		kpi,
 		modelDistribution,

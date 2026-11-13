@@ -1019,6 +1019,7 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 |------|------|
 | `range` | `1h` / `1d` / `24h` / `7d` / `14d` / `30d`（UI 快捷按钮；`90d` 仍可通过 API 传入）；无 `start_date`+`end_date` 时默认 `1d` |
 | `start_date` / `end_date` | UTC `YYYY-MM-DD HH:mm:ss`；**与 Request Logs / Analytics 相同**；两者同时提供时优先于 `range` |
+| `preset` | 仪表盘对比提示。`today` 且起点等于业务日界时，与前一业务日的相同已过时长比较；其余值比较紧邻之前的等长时段，不影响请求时间窗解析 |
 
 响应 `data` 含：
 
@@ -1029,6 +1030,7 @@ curl -sS "$GATEWAY_URL/v1/images/generations" \
 - **`timeseries`**：按 `granularity`（仅 `range` 时 `1h`/`1d`/`24h`→`hour`，更长→`day`；显式起止时不超过 48 小时为 `hour`）的 Token/请求/成本趋势；含 `cache_hit_rate`。`bucket` 是 `BUSINESS_TIMEZONE` 墙钟（日：`YYYY-MM-DD`，小时：`YYYY-MM-DD HH:MM:SS`），不是 UTC
 - **`granularity`**：`hour` | `day`
 - **`recentLogs`**、**`recentErrors`**
+- **`operations`**：区间运行摘要，基于全部匹配日志聚合，不使用近期活动样本。`window` 返回当前与对比窗口，均为半开区间；结束时间包含 API 所指定的秒，未来结束时间截到当前秒。`current` / `previous` 含请求状态计数、`charged` / `metered` / `standard` / `errorCost` 金额、故障转移请求数与有效记录数、平均上游尝试及样本数。成功请求计时使用原始样本的最近秩中位数与 P95：`ttftP50` / `ttftP95` 仅含有有效首响应计时的成功流式请求，优先首推理 Token，否则首正文 Token；`latencyP50` / `latencyP95` 是成功请求总耗时。两者都返回样本数，无样本为 `null`。`providers` 是按失败数排序的前 5 个上游账号，含总请求、失败及受影响的已识别用户数。`errorCategories` 按最终错误的 HTTP 状态及消息启发式归为限流、超时、鉴权、上游服务、请求参数或其他，不含没有写入请求日志的前置拒绝。
 
 ### `GET /admin/config`
 

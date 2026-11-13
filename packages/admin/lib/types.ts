@@ -1,3 +1,4 @@
+import type { DashboardOverview, DashboardOverviewWindow } from '@octafuse/core';
 /**
  * Gateway Admin 与 Worker 代理 JSON 对齐的 TypeScript 类型（字段名与 API 一致）。
  * 行内英文注释便于与网关迁移、列名对照；业务含义以 octafuse 为准。
@@ -351,6 +352,7 @@ export interface SystemConfigRow {
 }
 
 export interface DashboardStats {
+  operations?: DashboardOverview & { window: DashboardOverviewWindow };
   gateway: {
     activeKeysCount: number;
     keysTotal: number;

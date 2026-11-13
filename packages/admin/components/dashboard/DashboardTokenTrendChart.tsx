@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { ChartBarIcon } from '@heroicons/react/24/outline';
+import { memo, useMemo, useState } from 'react';
+import { BoltIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import {
 	Area,
@@ -16,7 +16,9 @@ import {
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import type { DashboardTimeseriesRow } from '@/lib/types';
+import { useReducedDashboardMotion } from './use-reduced-dashboard-motion';
 import { formatDashboardBucketLabel } from './format-dashboard-bucket';
+import { DashboardNumber } from './DashboardNumber';
 
 type TrendView = 'requests' | 'tokens' | 'cost' | 'latency';
 
@@ -26,10 +28,13 @@ export type DashboardTokenTrendChartProps = {
 	billingCurrency: string;
 	businessTimezone: string;
 	onExplore?: () => void;
+	throughput?: { rpm: number; tpm: number; scope: string };
 };
 
-export function DashboardTokenTrendChart({ timeseries, granularity, billingCurrency, businessTimezone, onExplore }: DashboardTokenTrendChartProps) {
+export const DashboardTokenTrendChart = memo(function DashboardTokenTrendChart({ timeseries, granularity, billingCurrency, businessTimezone, onExplore, throughput }: DashboardTokenTrendChartProps) {
 	const t = useTranslations('dashboard');
+	const review = useTranslations('dashboard.review');
+	const reducedMotion = useReducedDashboardMotion();
 	const [view, setView] = useState<TrendView>('requests');
 
 	const chartData = useMemo(
@@ -60,7 +65,7 @@ export function DashboardTokenTrendChart({ timeseries, granularity, billingCurre
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<h2 className="admin-section-title flex items-center gap-2 text-sm font-medium text-gray-950"><ChartBarIcon className="h-4 w-4 text-gray-500" aria-hidden />{t('trafficTrend')}</h2>
-					<p className="mt-1 text-xs text-gray-500">{t(`trendHints.${view}`)}</p>
+					{throughput && <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500" title={review('throughputHint')}><span className="inline-flex items-center gap-1"><BoltIcon className="h-3 w-3" aria-hidden />{review('lastMinute')}</span><span className="whitespace-nowrap font-mono tabular-nums"><DashboardNumber value={throughput.rpm} format={value=>Math.round(value).toLocaleString()} scope={throughput.scope} /> RPM</span><span className="whitespace-nowrap font-mono tabular-nums"><DashboardNumber value={throughput.tpm} format={value=>formatCompactTokens(Math.round(value))} scope={throughput.scope} /> TPM</span></p>}
 				</div>
 				<div role="group" aria-label={t('trafficTrend')} className="inline-flex max-w-full overflow-x-auto rounded-lg bg-gray-100 p-1">
 					{tabs.map((tab) => (
@@ -86,7 +91,7 @@ export function DashboardTokenTrendChart({ timeseries, granularity, billingCurre
 			) : (
 				<div className="mt-5 flex flex-1 flex-col">
           {view === 'tokens' && <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">{[{ label: t('inputTokens'), color: '#2563eb' }, { label: t('outputTokens'), color: '#0d9488' }, { label: t('cacheReadTokens'), color: '#d97706' }].map(item => <span key={item.label} className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: item.color }} aria-hidden />{item.label}</span>)}</div>}
-          <div className="h-64 min-h-64 flex-1 sm:h-72 sm:min-h-72">
+          <div className="h-64 flex-none overflow-hidden sm:h-72">
 					<ResponsiveContainer width="100%" height="100%">
 						<ComposedChart key={view} data={chartData} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
 							<defs>
@@ -106,12 +111,12 @@ export function DashboardTokenTrendChart({ timeseries, granularity, billingCurre
 								contentStyle={{ borderRadius: 12, borderColor: '#e4e4e7', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)', fontSize: 12 }}
 								formatter={(value: number, name: string) => [valueFormatter(value), name]}
 							/>
-							{view === 'requests' ? <Area isAnimationActive={false} type="monotone" dataKey="requests" name={t('trendTabs.requests')} stroke="#2563eb" fill="url(#dashboardBlue)" strokeWidth={2} /> : null}
-							{view === 'cost' ? <Area isAnimationActive={false} type="monotone" dataKey="cost" name={t('trendTabs.cost')} stroke="#3f3f46" fill="url(#dashboardCost)" strokeWidth={2} /> : null}
-							{view === 'latency' ? <Area isAnimationActive={false} type="monotone" dataKey="latency" name={t('trendTabs.latency')} stroke="#52525b" fill="#f4f4f5" strokeWidth={2} connectNulls /> : null}
-							{view === 'tokens' ? <Line isAnimationActive={false} type="monotone" dataKey="input_tokens" name={t('inputTokens')} stroke="#2563eb" dot={false} strokeWidth={2} /> : null}
-							{view === 'tokens' ? <Line isAnimationActive={false} type="monotone" dataKey="output_tokens" name={t('outputTokens')} stroke="#0d9488" dot={false} strokeWidth={2} /> : null}
-							{view === 'tokens' ? <Line isAnimationActive={false} type="monotone" dataKey="cache_read_tokens" name={t('cacheReadTokens')} stroke="#d97706" dot={false} strokeWidth={2} /> : null}
+							{view === 'requests' ? <Area isAnimationActive={!reducedMotion} animationDuration={450} animationEasing="ease-out" type="monotone" dataKey="requests" name={t('trendTabs.requests')} stroke="#2563eb" fill="url(#dashboardBlue)" strokeWidth={2} /> : null}
+							{view === 'cost' ? <Area isAnimationActive={!reducedMotion} animationDuration={450} animationEasing="ease-out" type="monotone" dataKey="cost" name={t('trendTabs.cost')} stroke="#3f3f46" fill="url(#dashboardCost)" strokeWidth={2} /> : null}
+							{view === 'latency' ? <Area isAnimationActive={!reducedMotion} animationDuration={450} animationEasing="ease-out" type="monotone" dataKey="latency" name={t('trendTabs.latency')} stroke="#52525b" fill="#f4f4f5" strokeWidth={2} connectNulls /> : null}
+							{view === 'tokens' ? <Line isAnimationActive={!reducedMotion} animationDuration={450} animationEasing="ease-out" type="monotone" dataKey="input_tokens" name={t('inputTokens')} stroke="#2563eb" dot={false} strokeWidth={2} /> : null}
+							{view === 'tokens' ? <Line isAnimationActive={!reducedMotion} animationDuration={450} animationEasing="ease-out" type="monotone" dataKey="output_tokens" name={t('outputTokens')} stroke="#0d9488" dot={false} strokeWidth={2} /> : null}
+							{view === 'tokens' ? <Line isAnimationActive={!reducedMotion} animationDuration={450} animationEasing="ease-out" type="monotone" dataKey="cache_read_tokens" name={t('cacheReadTokens')} stroke="#d97706" dot={false} strokeWidth={2} /> : null}
 						</ComposedChart>
 					</ResponsiveContainer>
           </div>
@@ -119,4 +124,4 @@ export function DashboardTokenTrendChart({ timeseries, granularity, billingCurre
 			)}
 		</div>
 	);
-}
+});

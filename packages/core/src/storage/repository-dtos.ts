@@ -304,3 +304,22 @@ export interface ModelProviderReliabilityRow {
 	metered_cost: number;
 	standard_cost: number;
 }
+
+/** Dashboard aggregates over all matching logs, never the recent-activity sample. */
+export interface DashboardPeriodMetrics {
+  requests: number; success: number; errors: number; incomplete: number; cancelled: number;
+  charged: number; metered: number; standard: number; errorCost: number;
+  failoverRequests: number; failoverSamples: number; attemptsSamples: number; avgAttempts: number | null;
+  ttftSamples: number; ttftP50: number | null; ttftP95: number | null;
+  latencySamples: number; latencyP50: number | null; latencyP95: number | null;
+}
+export type DashboardErrorCategory = 'rate_limit' | 'timeout' | 'auth' | 'upstream' | 'request' | 'other';
+export interface DashboardOverview {
+  current: DashboardPeriodMetrics;
+  previous: DashboardPeriodMetrics;
+  providers: Array<{ id: string; name: string | null; requests: number; errors: number; affectedUsers: number }>;
+  errorCategories: Array<{ category: DashboardErrorCategory; count: number }>;
+}
+export interface DashboardOverviewWindow {
+  startDate: string; endDate: string; previousStart: string; previousEnd: string;
+}

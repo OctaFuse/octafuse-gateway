@@ -17,6 +17,7 @@ adminStatsRoutes.get('/', async (c) => {
 		const repos = c.get('repositories');
 		const data = await getAdminStatsService(repos, {
 			range: c.req.query('range') ?? undefined,
+			preset: c.req.query('preset') ?? undefined,
 			startDate: c.req.query('start_date') ?? undefined,
 			endDate: c.req.query('end_date') ?? undefined,
 		});

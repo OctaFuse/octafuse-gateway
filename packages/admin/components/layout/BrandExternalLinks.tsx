@@ -34,7 +34,7 @@ type Variant = 'sidebar' | 'header' | 'login';
 const linkClass: Record<Variant, string> = {
 	header: 'inline-flex h-8 items-center gap-2 rounded-lg px-2 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-950',
 	sidebar: 'inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-950 transition-colors',
-	login: 'inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors',
+	login: 'inline-flex h-10 items-center gap-2 rounded-lg px-3 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400',
 };
 
 export default function BrandExternalLinks({ variant }: { variant: Variant }) {

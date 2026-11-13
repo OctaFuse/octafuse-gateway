@@ -10,3 +10,8 @@ export function dashboardLogsHref(range: Pick<GatewayTimeRangeValue, 'start_date
 export function dashboardLogHref(log: { id: string; created_at?: string }): string {
   return `/gateway/request-logs?${new URLSearchParams({ id: log.id, start_date: '', end_date: '' })}`;
 }
+
+/** Recent activity is global; an explicit unbounded range must not become today's log filter. */
+export function dashboardActivityLogsHref(view: 'recent' | 'errors'): string {
+  return dashboardLogsHref({ start_date: '', end_date: '' }, view === 'errors' ? { status: 'error' } : {});
+}

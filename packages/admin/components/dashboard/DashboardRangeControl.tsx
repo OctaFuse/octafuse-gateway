@@ -8,7 +8,8 @@ import { useTranslations } from 'next-intl';
 import { createRangeValue, GATEWAY_CALENDAR_PRESETS, GATEWAY_TIME_RANGE_PRESETS, type GatewayTimeRangeValue, type GatewayTimeRangePreset } from '@/lib/analytics-range';
 import { formatBusinessTimezoneLabel, utcApiToZonedInput, zonedInputToUtcApi } from '@/lib/business-timezone-client';
 
-export function DashboardRangeControl({ value, label, timeZone, onChange }: {
+export function DashboardRangeControl({ value, label, timeZone, onChange, onOpenChange }: {
+  onOpenChange?: (open: boolean) => void;
   value: GatewayTimeRangeValue; label: string; timeZone: string; onChange: (value: GatewayTimeRangeValue) => void;
 }) {
   const t = useTranslations('dashboard');
@@ -31,12 +32,12 @@ export function DashboardRangeControl({ value, label, timeZone, onChange }: {
     <button type="button" aria-haspopup="dialog" aria-expanded={open} aria-label={t('chooseRange', { range: label })}
       onClick={() => {
         setPreset(value.preset); setStart(utcApiToZonedInput(value.start_date, timeZone)); setEnd(utcApiToZonedInput(value.end_date, timeZone));
-        ref.current?.showModal(); setOpen(true);
+        ref.current?.showModal(); setOpen(true); onOpenChange?.(true);
       }} className="inline-flex min-h-9 max-w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100">
       <CalendarDaysIcon className="h-4 w-4 shrink-0 text-gray-500" aria-hidden />
       <span className="truncate">{label}</span><ChevronDownIcon className="h-3 w-3 shrink-0 text-gray-500" aria-hidden />
     </button>
-    <dialog ref={ref} aria-labelledby={headingId} onClose={() => setOpen(false)}
+    <dialog ref={ref} aria-labelledby={headingId} onClose={() => { setOpen(false); onOpenChange?.(false); }}
       onClick={(event) => { if (event.target === event.currentTarget) ref.current?.close(); }}
       className="admin-content-dialog fixed inset-3 m-auto max-h-[calc(100dvh-24px)] w-[calc(100vw-24px)] sm:inset-6 sm:max-h-[calc(100dvh-48px)] sm:w-[calc(100vw-48px)] max-w-lg overflow-y-auto rounded-2xl border border-gray-200 bg-white p-0 text-gray-900 shadow-panel backdrop:bg-gray-950/20">
       <div className="admin-dialog-header flex items-center justify-between border-b border-gray-100 px-5 py-4">
