@@ -425,7 +425,7 @@
 			"comparePrevious": "직전 동일 길이 기간 대비",
 			"newActivity": "신규",
 			"ttftP95": "첫 응답 P95",
-			"latencyP95": "성공 요청 소요 시간 P95",
+			"latencyP95": "요청 소요 시간 P95",
 			"timingContext": "중앙값 {median} · 표본 {count}개",
 			"ttftHint": "유효 시간이 기록된 성공 스트림: 첫 추론 Token을 우선하고 없으면 첫 본문 Token을 사용합니다. P95는 표본 95%가 이내인 시간입니다. 적은 표본은 참고용입니다.",
 			"latencyHint": "여러 요청 유형을 포함한 성공 요청의 전체 시간. 모델별 백분위 평균이 아닌 원시 표본으로 P95를 계산합니다. 적은 표본은 참고용입니다.",

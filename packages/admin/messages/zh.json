@@ -425,7 +425,7 @@
 			"comparePrevious": "较前一等长时段",
 			"newActivity": "新增",
 			"ttftP95": "首响应 P95",
-			"latencyP95": "成功请求耗时 P95",
+			"latencyP95": "请求耗时 P95",
 			"timingContext": "中位 {median} · {count} 个样本",
 			"ttftHint": "有有效计时的成功流式请求：优先首推理 Token，否则首正文 Token。P95 为 95% 样本不超过的时长；样本较少时仅供参考。",
 			"latencyHint": "成功请求的完整耗时，包含不同请求类型；P95 按原始样本计算，不平均各模型分位数。样本较少时仅供参考。",

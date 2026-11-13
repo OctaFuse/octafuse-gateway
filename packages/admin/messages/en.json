@@ -425,7 +425,7 @@
 			"comparePrevious": "vs preceding equal period",
 			"newActivity": "New",
 			"ttftP95": "First response P95",
-			"latencyP95": "Successful duration P95",
+			"latencyP95": "Request duration P95",
 			"timingContext": "Median {median} · {count} samples",
 			"ttftHint": "Successful measured streams: first reasoning token, otherwise first content token. P95 is the duration not exceeded by 95% of samples. Small samples are indicative only.",
 			"latencyHint": "Complete successful-request duration across request types. P95 is calculated from raw samples, not averaged model percentiles. Small samples are indicative only.",
