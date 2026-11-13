@@ -25,7 +25,7 @@ export const WEB_FETCH_ACTIVE_KEY = 'WEB_FETCH_ACTIVE';
 export const WEB_FETCH_CATALOG_KEY = 'WEB_FETCH_CATALOG';
 
 /** 已实现的抓取引擎（Admin 下拉仅允许这些值） */
-export const WEB_FETCH_PROVIDERS = ['firecrawl', 'tavily', 'jina'] as const;
+export const WEB_FETCH_PROVIDERS = ['firecrawl', 'tavily', 'jina', 'deepseek'] as const;
 export type WebFetchProvider = (typeof WEB_FETCH_PROVIDERS)[number];
 
 export const DEFAULT_WEB_FETCH_PROVIDER: WebFetchProvider = 'firecrawl';

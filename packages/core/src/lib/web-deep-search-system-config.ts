@@ -19,7 +19,7 @@ export const WEB_DEEP_SEARCH_ACTIVE_KEY = 'WEB_DEEP_SEARCH_ACTIVE';
 export const WEB_DEEP_SEARCH_CATALOG_KEY = 'WEB_DEEP_SEARCH_CATALOG';
 
 /** 已实现的 deep search 引擎 */
-export const WEB_DEEP_SEARCH_PROVIDERS = ['firecrawl', 'jina'] as const;
+export const WEB_DEEP_SEARCH_PROVIDERS = ['firecrawl', 'jina', 'deepseek'] as const;
 export type WebDeepSearchProvider = (typeof WEB_DEEP_SEARCH_PROVIDERS)[number];
 
 export const DEFAULT_WEB_DEEP_SEARCH_PROVIDER: WebDeepSearchProvider = 'firecrawl';

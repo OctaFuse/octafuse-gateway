@@ -3,6 +3,7 @@
  */
 
 import type { WebDeepSearchProvider } from '@octafuse/core/lib/web-deep-search-system-config';
+import { deepSearchDeepSeek } from './deepseek';
 import { deepSearchFirecrawl } from './firecrawl';
 import { deepSearchJina } from './jina';
 import { WebDeepSearchProviderError, type WebDeepSearchParams, type WebDeepSearchResult } from './types';
@@ -16,6 +17,8 @@ export async function deepSearchByProvider(
 			return deepSearchFirecrawl(params);
 		case 'jina':
 			return deepSearchJina(params);
+		case 'deepseek':
+			return deepSearchDeepSeek(params);
 		default: {
 			const _exhaustive: never = provider;
 			throw new WebDeepSearchProviderError(

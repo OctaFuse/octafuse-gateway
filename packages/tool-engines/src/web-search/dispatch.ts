@@ -5,6 +5,7 @@
 import type { WebSearchProvider } from '@octafuse/core/lib/web-search-system-config';
 import { searchBochaWeb } from './bocha';
 import { searchCleverSeeWeb } from './cleversee';
+import { searchDeepSeekWeb } from './deepseek';
 import { searchTavilyWeb } from './tavily';
 import { searchTencentWsaWeb } from './tencent-wsa';
 import { WebSearchProviderError, type WebSearchParams, type WebSearchResult } from './types';
@@ -22,6 +23,8 @@ export async function searchWebByProvider(
 			return searchCleverSeeWeb(params);
 		case 'tencent_wsa':
 			return searchTencentWsaWeb(params);
+		case 'deepseek':
+			return searchDeepSeekWeb(params);
 		default: {
 			const _exhaustive: never = provider;
 			throw new WebSearchProviderError(

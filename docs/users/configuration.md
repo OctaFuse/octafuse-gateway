@@ -134,9 +134,9 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 
 - 每种工具以供应商卡片展示各引擎；点击卡片后在右侧抽屉维护凭证与三账本单价：**目录标准价（Standard）/ 用户计费（Charged）/ 供应成本（Metered）**。
 - 当前工具与引擎：
-  - **Web Search**：博查、Tavily、阿里云 CleverSee、腾讯云联网搜索 WSA
-  - **Web Fetch**：Firecrawl、Tavily Extract、Jina Reader
-  - **Web Deep Search**：Firecrawl Search、Jina Search
+  - **Web Search**：博查、Tavily、阿里云 CleverSee、腾讯云联网搜索 WSA、DeepSeek Search
+  - **Web Fetch**：Firecrawl、Tavily Extract、Jina Reader、DeepSeek Fetch
+  - **Web Deep Search**：Firecrawl Search、Jina Search、DeepSeek Search
   - **AI 率检测（AI Detection）**：多引擎 catalog，当前仅腾讯云 TMS 已实现；按 `billingUnitChars` 字符单元计费
 - **仅保存配置**不会切换线上引擎；**保存并启用**会保存当前草稿并把该供应商设为此工具唯一的活跃引擎（Active）。未实现或凭证不完整的引擎不可启用。
 - 卡片会提示活跃、未保存、缺少凭证、暂不可用与亏损定价（`charged < metered`）等状态。清空当前活跃引擎的凭证前，应先切换到另一个凭证完整的引擎。

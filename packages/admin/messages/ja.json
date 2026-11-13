@@ -3708,7 +3708,8 @@
 				"bocha": "Bocha（博查）",
 				"tavily": "Tavily",
 				"cleversee": "Alibaba CleverSee（开析）",
-				"tencent_wsa": "Tencent Cloud WSA"
+				"tencent_wsa": "Tencent Cloud WSA",
+				"deepseek": "DeepSeek Search"
 			},
 			"providerGuide": {
 				"title": "検索エンジンガイド",
@@ -3744,6 +3745,12 @@
 						"summary": "Tencent Cloud Web Search API（WSA）。公式には Sogou Search を基盤としています。",
 						"sources": "Sogou 経由の公開 Web と Tencent エコシステム（Tencent News、Sogou Baike、Penguin アカウント）。上位 tier では VR / 権威性の高い分野別ソースも追加されます。",
 						"bestFor": "中国語 Web 検索で Bocha の代替が必要な場合。Sogou/Tencent コンテンツに強みがあります。"
+					},
+					"deepseek": {
+						"badge": "",
+						"summary": "DeepSeek の独立した Search API で、DeepSeek 自社の検索エンジンを使います。成功したリクエストごとに課金されます（定価は 1,000 回あたり $0.75）。結果が空の場合と失敗は上流で課金されません。",
+						"sources": "DeepSeek 独自の Web インデックスで、関連性・権威性・鮮度で順位付けします。128 文字を超えるクエリはゲートウェイが切り詰めます。ドメイン指定は収まる場合は site: 演算子で送り、収まらない場合はローカルで絞り込みます。",
+						"bestFor": "DeepSeek の API キーをすでに持っていて、中国語・英語の一般的な Web 検索を行う場合。"
 					}
 				}
 			}
@@ -3765,7 +3772,8 @@
 			"providers": {
 				"firecrawl": "Firecrawl",
 				"tavily": "Tavily Extract",
-				"jina": "Jina Reader"
+				"jina": "Jina Reader",
+				"deepseek": "DeepSeek Fetch"
 			}
 		},
 		"webDeepSearch": {
@@ -3781,7 +3789,8 @@
 			"apiKeyPlaceholder": "Provider API Key を貼り付け",
 			"providers": {
 				"firecrawl": "Firecrawl Search",
-				"jina": "Jina Search"
+				"jina": "Jina Search",
+				"deepseek": "DeepSeek Search（本文つき）"
 			}
 		},
 		"aiDetection": {

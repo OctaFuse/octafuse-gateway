@@ -3716,7 +3716,8 @@
 				"bocha": "博查（Bocha）",
 				"tavily": "Tavily",
 				"cleversee": "阿里云 CleverSee（开析）",
-				"tencent_wsa": "腾讯云联网搜索 WSA"
+				"tencent_wsa": "腾讯云联网搜索 WSA",
+				"deepseek": "DeepSeek 搜索"
 			},
 			"providerGuide": {
 				"title": "搜索引擎说明",
@@ -3752,6 +3753,12 @@
 						"summary": "腾讯云联网搜索 API（WSA），官方说明底层来自搜狗搜索。",
 						"sources": "搜狗全网公开页 + 腾讯内容生态（腾讯新闻、搜狗百科、企鹅号等）；高版本含 VR / 权威垂域。",
 						"bestFor": "国内中文检索的博查备选，偏搜狗 / 腾讯内容。"
+					},
+					"deepseek": {
+						"badge": "",
+						"summary": "DeepSeek 独立搜索 API，由 DeepSeek 自研搜索引擎提供。按成功请求计费（刊例价每千次 $0.75），空结果和失败上游不计费。",
+						"sources": "DeepSeek 自有网页索引，按相关性、权威度和时效排序。查询词超过 128 个字符时由 Gateway 截断；域名过滤在能放进查询词时以 site: 语法下发，放不下就改为本地过滤。",
+						"bestFor": "已持有 DeepSeek API Key 的中英文通用网页检索。"
 					}
 				}
 			}
@@ -3773,7 +3780,8 @@
 			"providers": {
 				"firecrawl": "Firecrawl",
 				"tavily": "Tavily Extract",
-				"jina": "Jina Reader"
+				"jina": "Jina Reader",
+				"deepseek": "DeepSeek 抓取"
 			}
 		},
 		"webDeepSearch": {
@@ -3789,7 +3797,8 @@
 			"apiKeyPlaceholder": "粘贴引擎 API Key",
 			"providers": {
 				"firecrawl": "Firecrawl Search",
-				"jina": "Jina Search"
+				"jina": "Jina Search",
+				"deepseek": "DeepSeek 搜索（含正文）"
 			}
 		},
 		"aiDetection": {

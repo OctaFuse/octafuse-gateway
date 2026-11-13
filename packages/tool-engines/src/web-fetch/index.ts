@@ -3,6 +3,7 @@
  */
 
 export { fetchUrlByProvider } from './dispatch';
+export { fetchDeepSeekUrl } from './deepseek';
 export { fetchFirecrawlUrl } from './firecrawl';
 export { fetchJinaUrl } from './jina';
 export { fetchTavilyUrl } from './tavily';

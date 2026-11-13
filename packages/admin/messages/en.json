@@ -3716,7 +3716,8 @@
 				"bocha": "Bocha (博查)",
 				"tavily": "Tavily",
 				"cleversee": "Alibaba CleverSee (开析)",
-				"tencent_wsa": "Tencent Cloud WSA"
+				"tencent_wsa": "Tencent Cloud WSA",
+				"deepseek": "DeepSeek Search"
 			},
 			"providerGuide": {
 				"title": "Search engine guide",
@@ -3752,6 +3753,12 @@
 						"summary": "Tencent Cloud Web Search API (WSA), officially based on Sogou Search.",
 						"sources": "Open web via Sogou plus Tencent ecosystem (Tencent News, Sogou Baike, Penguin accounts). Higher tiers add VR/authority verticals.",
 						"bestFor": "China Chinese web as an alternative to Bocha; strong Sogou/Tencent content mix."
+					},
+					"deepseek": {
+						"badge": "",
+						"summary": "DeepSeek's standalone Search API, powered by DeepSeek's in-house search engine. Billed per successful request (list price $0.75 per 1,000); empty results and failures are not billed upstream.",
+						"sources": "DeepSeek's own web index with relevance, authority and freshness ranking. Queries longer than 128 characters are truncated by the Gateway; domain filters are added as site: operators when they fit, otherwise applied locally.",
+						"bestFor": "Chinese and English general web search when you already hold a DeepSeek API key."
 					}
 				}
 			}
@@ -3773,7 +3780,8 @@
 			"providers": {
 				"firecrawl": "Firecrawl",
 				"tavily": "Tavily Extract",
-				"jina": "Jina Reader"
+				"jina": "Jina Reader",
+				"deepseek": "DeepSeek Fetch"
 			}
 		},
 		"webDeepSearch": {
@@ -3789,7 +3797,8 @@
 			"apiKeyPlaceholder": "Paste provider API key",
 			"providers": {
 				"firecrawl": "Firecrawl Search",
-				"jina": "Jina Search"
+				"jina": "Jina Search",
+				"deepseek": "DeepSeek Search (with content)"
 			}
 		},
 		"aiDetection": {

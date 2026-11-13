@@ -24,6 +24,7 @@ export type WebDeepSearchProviderOption = { value: WebDeepSearchProvider; label:
 export const WEB_DEEP_SEARCH_PROVIDER_DOCS_URL: Record<WebDeepSearchProvider, string> = {
 	firecrawl: 'https://docs.firecrawl.dev/features/search',
 	jina: 'https://jina.ai/reader/',
+	deepseek: 'https://api-docs.deepseek.com/guides/search',
 };
 
 type WebDeepSearchProviderLabelKey = `webDeepSearch.providers.${WebDeepSearchProvider}`;

@@ -653,7 +653,7 @@ Authorization: Bearer <USER_API_KEY>
 
 1. 校验用户 API Key；周期额度与永久额度的总余额不足 → **403** `{ "error": "Budget exceeded" }`
 2. 从 Admin `system_config` 读取搜索配置（无环境变量回退）：
-   - `WEB_SEARCH_ACTIVE`（白名单：`bocha` | `tavily` | `cleversee` | `tencent_wsa`；非法值 → **503**）
+   - `WEB_SEARCH_ACTIVE`（白名单：`bocha` | `tavily` | `cleversee` | `tencent_wsa` | `deepseek`；非法值 → **503**）。`deepseek` 引擎的上游查询词最长 128 个字符，超出部分由 Gateway 截断
    - `WEB_SEARCH_CATALOG`（JSON：按引擎存 `{ "apiKey", "metered", "standard", "charged" }`；可带兼容键 `cost`（= charged）；Active 引擎必须有非空 `apiKey`，否则 **503**）
    - 默认单价（catalog 未写价格时）三列均为 **0.001**，单位随 `BILLING_CURRENCY`
    - 兼容：若尚无 `WEB_SEARCH_CATALOG`，仍可读旧三键 `WEB_SEARCH_PROVIDER` / `WEB_SEARCH_API_KEY` / `WEB_SEARCH_COST`（仅读取，Admin 不再写入）
@@ -713,7 +713,7 @@ Authorization: Bearer <USER_API_KEY>
 
 1. 校验用户 API Key；周期额度与永久额度的总余额不足 → **403** `{ "error": "Budget exceeded" }`
 2. 从 Admin `system_config` 读取抓取配置（无环境变量回退）：
-   - `WEB_FETCH_ACTIVE`（白名单：`firecrawl` | `tavily` | `jina`；默认 `firecrawl`；非法值 → **503**）
+   - `WEB_FETCH_ACTIVE`（白名单：`firecrawl` | `tavily` | `jina` | `deepseek`；默认 `firecrawl`；非法值 → **503**）
    - `WEB_FETCH_CATALOG`（JSON：按引擎存 `{ "apiKey", "metered", "standard", "charged" }`；可带兼容键 `cost`；Active 引擎必须有非空 `apiKey`，否则 **503**）
    - 默认单价（catalog 未写价格时）三列均为 **0.002**，单位随 `BILLING_CURRENCY`
    - 兼容：若尚无 `WEB_FETCH_CATALOG`，仍可读旧三键 `WEB_FETCH_PROVIDER` / `WEB_FETCH_API_KEY` / `WEB_FETCH_COST`（仅读取，Admin 不再写入）
@@ -749,7 +749,7 @@ Authorization: Bearer <USER_API_KEY>
 
 ## Web Deep Search（Agent 工具）
 
-协议无关的产品 API，供「搜 + 读」一体的深度检索（Firecrawl Search / Jina Search）。相对普通 Web Search，结果常含页面正文，延迟与单价更高。**不是** OpenAI / Anthropic / Gemini 推理协议的一部分。
+协议无关的产品 API，供「搜 + 读」一体的深度检索（Firecrawl Search / Jina Search / DeepSeek Search）。相对普通 Web Search，结果常含页面正文，延迟与单价更高。**不是** OpenAI / Anthropic / Gemini 推理协议的一部分。
 
 ### 请求
 
@@ -776,7 +776,7 @@ Authorization: Bearer <USER_API_KEY>
 
 1. 校验用户 API Key；额度不足 → **403** `{ "error": "Budget exceeded" }`
 2. 从 Admin `system_config` 读取配置（无环境变量回退）：
-   - `WEB_DEEP_SEARCH_ACTIVE`（白名单：`firecrawl` \| `jina`；非法值 → **503**）
+   - `WEB_DEEP_SEARCH_ACTIVE`（白名单：`firecrawl` \| `jina` \| `deepseek`；非法值 → **503**）。`deepseek` 引擎的上游查询词最长 128 个字符，超出部分由 Gateway 截断
    - `WEB_DEEP_SEARCH_CATALOG`（JSON：按引擎 `{ "apiKey", "metered", "standard", "charged" }`；可带兼容键 `cost`；Active 必须有非空 `apiKey`，否则 **503**）
    - 默认单价三列均为 **0.01**（catalog 未写价格时），单位随 `BILLING_CURRENCY`
 3. 调用 Active 引擎；**仅成功**后按该引擎单价计入 `users.budget_spent`

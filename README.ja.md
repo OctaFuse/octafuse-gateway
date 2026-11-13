@@ -40,9 +40,9 @@ Octafuse Gateway の中核的な目標は、**一人会社（OPC）や企業向�
     - Volcengine Ark ネイティブエンドポイント（Seedream 画像生成）：`POST /volcengine/api/v3/images/generations`
 4. Protocol の適合と変換：クライアントとアップストリームの Protocol 変換を Route で選択でき、使い慣れた呼び出し方式のまま異なる Provider を利用できます。たとえば、OpenAI Images クライアントから Alibaba Cloud Model Studio の Qwen Image / Wan Image、Volcengine Ark の Seedream、MiniMax の画像モデルを呼び出せます。OpenAI Audio クライアントからは Model Studio と MiniMax の音声認識・音声合成を利用できます。
 5. Agent ツールの接続：`/v1/tools/*` で Agent 向けツールを統一的に提供し、ログ、課金、コスト管理を一元化します。モデルとツールを同じ Gateway から利用できます。
-    - Web 検索（`POST /v1/tools/web-search`）：Bocha、Tavily、Alibaba Cloud CleverSee、Tencent Cloud WSA
-    - Web ページ取得（`POST /v1/tools/web-fetch`）：Firecrawl、Tavily Extract、Jina Reader
-    - 深掘り検索（`POST /v1/tools/web-deep-search`、検索 + 読み取り）：Firecrawl Search、Jina Search
+    - Web 検索（`POST /v1/tools/web-search`）：Bocha、Tavily、Alibaba Cloud CleverSee、Tencent Cloud WSA、DeepSeek Search
+    - Web ページ取得（`POST /v1/tools/web-fetch`）：Firecrawl、Tavily Extract、Jina Reader、DeepSeek Fetch
+    - 深掘り検索（`POST /v1/tools/web-deep-search`、検索 + 読み取り）：Firecrawl Search、Jina Search、DeepSeek Search
     - AI 生成テキスト検出（`POST /v1/tools/ai-detection`）：Tencent Cloud TMS を実装済みで、複数エンジンへ拡張できるカタログを用意しています
     - Agent 向けツールは今後も追加予定で、PR も歓迎します。
 6. AI 機能の統一エンドポイント：接続したモデル、プラットフォーム、ツールは、デプロイ済み Octafuse Gateway の Base URL から提供されます。クライアントが覚える接続先は 1 つだけです。

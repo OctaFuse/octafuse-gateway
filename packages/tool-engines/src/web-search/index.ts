@@ -5,6 +5,7 @@
 export { searchWebByProvider } from './dispatch';
 export { searchBochaWeb } from './bocha';
 export { searchCleverSeeWeb } from './cleversee';
+export { searchDeepSeekWeb } from './deepseek';
 export { searchTavilyWeb } from './tavily';
 export { searchTencentWsaWeb } from './tencent-wsa';
 export {

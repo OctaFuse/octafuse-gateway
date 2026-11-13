@@ -3,6 +3,7 @@
  */
 
 import type { WebFetchProvider } from '@octafuse/core/lib/web-fetch-system-config';
+import { fetchDeepSeekUrl } from './deepseek';
 import { fetchFirecrawlUrl } from './firecrawl';
 import { fetchJinaUrl } from './jina';
 import { fetchTavilyUrl } from './tavily';
@@ -19,6 +20,8 @@ export async function fetchUrlByProvider(
 			return fetchTavilyUrl(params);
 		case 'jina':
 			return fetchJinaUrl(params);
+		case 'deepseek':
+			return fetchDeepSeekUrl(params);
 		default: {
 			const _exhaustive: never = provider;
 			throw new WebFetchProviderError(
