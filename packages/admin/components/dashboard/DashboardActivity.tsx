@@ -10,7 +10,7 @@ import { useDashboardListMotion } from './use-dashboard-list-motion';
 import { formatGatewayMoneyCompact } from '@/lib/format-gateway-currency';
 import { dashboardActivityCostFactor, dashboardActivityDuration, dashboardActivityError, dashboardActivityMoney, dashboardActivityUsage } from './dashboard-activity-details';
 import { dashboardActivityLogsHref, dashboardLogHref } from './dashboard-links';
-import { DASHBOARD_ACTIVITY_LIMIT } from '@/lib/dashboard-constants';
+import { DASHBOARD_ACTIVITY_PREVIEW_LIMIT } from '@/lib/dashboard-constants';
 
 export function DashboardActivity({ logs, errors, billingCurrency: currency }: { logs: GatewayRequestLog[]; errors: GatewayRequestLog[]; billingCurrency: string }) {
   const t = useTranslations('dashboard');
@@ -21,7 +21,7 @@ export function DashboardActivity({ logs, errors, billingCurrency: currency }: {
   const rootRef = useRef<HTMLElement>(null);
   const rowsRef = useRef<HTMLDivElement>(null);
   const [held, setHeld] = useState<{ view: 'recent' | 'errors'; rows: GatewayRequestLog[] } | null>(null);
-  const latest = (view === 'recent' ? logs : errors).slice(0, DASHBOARD_ACTIVITY_LIMIT);
+  const latest = (view === 'recent' ? logs : errors).slice(0, DASHBOARD_ACTIVITY_PREVIEW_LIMIT);
   const rows = held?.view === view ? held.rows : latest;
   const known = new Set(rows.map(row => row.id));
   const pendingCount = latest.filter(row => !known.has(row.id)).length;
@@ -39,16 +39,16 @@ export function DashboardActivity({ logs, errors, billingCurrency: currency }: {
     <div className="flex flex-wrap items-center justify-between gap-3">
       <h2 className="admin-section-title inline-flex items-center gap-2 text-sm font-medium text-gray-900"><ClockIcon className="h-4 w-4 text-gray-500" aria-hidden />{t('activity')}</h2>
       <div className="inline-flex rounded-lg bg-gray-100 p-1" role="group" aria-label={t('activity')}>
-        {(['recent', 'errors'] as const).map(tab => <button key={tab} type="button" aria-pressed={view === tab} onClick={() => { setView(tab); setHeld({ view: tab, rows: (tab === 'recent' ? logs : errors).slice(0, DASHBOARD_ACTIVITY_LIMIT) }); }}
+        {(['recent', 'errors'] as const).map(tab => <button key={tab} type="button" aria-pressed={view === tab} onClick={() => { setView(tab); setHeld({ view: tab, rows: (tab === 'recent' ? logs : errors).slice(0, DASHBOARD_ACTIVITY_PREVIEW_LIMIT) }); }}
           className={`rounded-md px-3 py-1 text-xs transition-colors ${view === tab ? 'bg-white text-gray-950 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>{t(tab === 'recent' ? 'recentRequests' : 'recentErrors')}</button>)}
       </div>
     </div>
     <div className="mt-2 flex min-h-5 flex-wrap items-center justify-between gap-2 text-xs leading-5 text-gray-500">
       <p>{t('activityScope')}</p>
-      {pendingCount > 0 && <button type="button" onClick={() => setHeld({ view, rows: latest })}
+      {pendingCount > 0 && <button type="button" onClick={() => { setHeld({ view, rows: latest }); }}
         className="rounded px-1.5 text-blue-700 hover:bg-blue-50">{t('liveRefresh.activityReady', { count: pendingCount })}</button>}
     </div>
-    {rows.length ? <div ref={rowsRef} className="mt-3 divide-y divide-gray-100">
+    {rows.length ? <div ref={rowsRef} role="region" aria-label={t(view === 'recent' ? 'recentRequests' : 'recentErrors')} className="mt-3 divide-y divide-gray-100">
       {rows.map(log => {
         const name = log.model_name?.trim() || log.model_id || c('unknown');
         const failure = log.status === 'error';
@@ -93,13 +93,13 @@ export function DashboardActivity({ logs, errors, billingCurrency: currency }: {
               </p>}
             {diagnostic && <span className="dashboard-activity-error-meta min-w-0 items-center gap-2 whitespace-nowrap text-[10px] text-gray-500"><span className="min-w-0 flex-1 truncate">{provider}</span><span className="shrink-0 font-mono tabular-nums">{formatDate(log.created_at).slice(5)} {formatTime(log.created_at)}</span></span>}
           </div>
-          {!diagnostic && <div className="dashboard-activity-usage min-w-0 space-y-1 text-right font-mono text-[11px] leading-5 tabular-nums">
+          {!diagnostic && <div className="dashboard-activity-usage min-w-0 space-y-1 text-right font-mono text-[11px] leading-4 tabular-nums">
             <p title={usage.title} className="truncate whitespace-nowrap text-gray-600">{usage.value}</p>
             <p title={`${t('chargedColumn')}: ${billed}${factor ? ` · ${detail('catalogFactor')} ${factor}` : ''}`} className="truncate whitespace-nowrap text-gray-800">
               {billed}{factor && <span className="ml-1 text-[10px] text-gray-400">{factor}</span>}
             </p>
           </div>}
-          <div className="space-y-1 whitespace-nowrap text-right text-[11px] leading-5">
+          <div className="space-y-1 whitespace-nowrap text-right text-[11px] leading-4">
             <span className={`inline-block whitespace-nowrap rounded px-1.5 text-[10px] ${tone}`}>{error?.code || label}</span>
             {duration !== '—' && <span title={timingHint} className="block whitespace-nowrap font-mono tabular-nums text-gray-600">{duration}</span>}
           </div>

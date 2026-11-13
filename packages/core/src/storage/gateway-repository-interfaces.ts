@@ -1,3 +1,4 @@
+import type { DashboardOverview, DashboardOverviewWindow } from './repository-dtos';
 import type {
 	GlobalUserAuditLogRow,
 	ModelRow,
@@ -442,6 +443,7 @@ export type RequestLogSummaryMetrics = {
 export type RequestLogSummaryRow = RequestLogSummaryKey & RequestLogSummaryLabels & RequestLogSummaryMetrics;
 
 export interface RequestLogsRepository {
+	getDashboardOverview(options: DashboardOverviewWindow): Promise<DashboardOverview>;
 	/**
 	 * 按维度聚合区间内请求日志（所有状态都计入）。区间为半开 `[startDate, endDate)`，两端均为 ISO 8601 UTC 时刻。
 	 * 没有日志的分组不返回行；返回行数超过 `limit` 时只保证至多 `limit` 行，调用方可传 `最大值 + 1` 判断是否越界。

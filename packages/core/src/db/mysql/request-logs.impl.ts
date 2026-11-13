@@ -1,3 +1,4 @@
+import { queryDashboardOverview } from '../dashboard-overview';
 /**
  * MySQL：`api_key_request_logs` 读查询。
  */
@@ -27,6 +28,7 @@ import {
 export function createMySqlRequestLogsRepository(db: MySqlDatabaseClient): RequestLogsRepository {
 	const pool = asMySqlPool(db.raw);
 	return {
+		async getDashboardOverview(options) { return queryDashboardOverview(async (sql, binds) => { const [rows] = await pool.query<(RowDataPacket & Record<string, unknown>)[]>(sql, binds); return rows; }, options); },
 		async getRequestLogSummary(options): Promise<RequestLogSummaryRow[]> {
 			const { sql, binds } = buildRequestLogSummaryQuery(options, 'mysql');
 			const [rows] = await pool.query<(RowDataPacket & Record<string, unknown>)[]>(sql, binds);

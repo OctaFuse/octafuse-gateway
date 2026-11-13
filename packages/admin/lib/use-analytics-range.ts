@@ -27,12 +27,19 @@ export function useAnalyticsRange(persistUrl = false) {
 		serverSnapshot
 	);
 	const [ready, setReady] = useState(!persistUrl);
-	// Restore once after hydration so the server and first client render agree.
-	if (persistUrl && hydrated && !ready) {
-		setReady(true);
-		const restored = analyticsRangeFromSearch(window.location.search);
-		if (restored) setValue(restored);
-	}
+	// Read location after navigation commits. During a client navigation render,
+	// window.location can still be the outgoing page's URL.
+	useEffect(() => {
+		if (!persistUrl || !hydrated || ready) return;
+		let cancelled = false;
+		queueMicrotask(() => {
+			if (cancelled) return;
+			const restored = analyticsRangeFromSearch(window.location.search);
+			if (restored) setValue(restored);
+			setReady(true);
+		});
+		return () => { cancelled = true; };
+	}, [persistUrl, hydrated, ready]);
 	useEffect(() => {
 		if (!persistUrl || !ready) return;
 		const url = new URL(window.location.href);

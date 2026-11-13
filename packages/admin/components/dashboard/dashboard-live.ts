@@ -6,7 +6,7 @@ export function dashboardRefreshRange(selected: GatewayTimeRangeValue, timeZone:
 }
 
 export function dashboardStatsQuery(range: GatewayTimeRangeValue) {
-	const query = new URLSearchParams({ start_date: range.start_date, end_date: range.end_date });
+	const query = new URLSearchParams({ start_date: range.start_date, end_date: range.end_date, preset: range.preset });
 	if (isRollingPreset(range.preset)) query.set('range', range.preset);
 	return query;
 }
