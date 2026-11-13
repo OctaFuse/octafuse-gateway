@@ -530,6 +530,21 @@ textarea::placeholder {
 .admin-adaptive-fields .admin-key-user-field { width: 16rem; }
 .admin-adaptive-fields .admin-adaptive-field { width: 10rem; }
 
+/* Throughput stays with the chart title; chart controls wrap by panel width. */
+.dashboard-trend-panel { container-type: inline-size; container-name: dashboard-trend; }
+.dashboard-trend-header {
+  display: grid;
+  grid-template-areas: "title" "tabs";
+  gap: 16px;
+  align-items: center;
+}
+.dashboard-trend-title { grid-area: title; }
+.dashboard-trend-tabs { grid-area: tabs; justify-self: start; }
+@container dashboard-trend (min-width: 28rem) {
+  .dashboard-trend-header { grid-template-areas: "title tabs"; grid-template-columns: minmax(0, 1fr) auto; }
+  .dashboard-trend-tabs { justify-self: end; }
+}
+
 /* Two-line activity records; lower-priority metrics yield to identity on narrow cards. */
 .dashboard-activity-panel {
   container-name: dashboard-activity;
