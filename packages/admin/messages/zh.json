@@ -4235,6 +4235,14 @@
 		"followHint": "与预览同步更新，向上滚动可暂停跟随。"
 	},
 	"mcp": {
+		"workspace": {
+			"directory": "服务目录",
+			"search": "搜索服务或地址",
+			"selectService": "选择 MCP 服务",
+			"catalogPricing": "目录与计费",
+			"copyEndpoint": "复制接入地址",
+			"loading": "正在加载服务"
+		},
 		"clientEndpoint": "客户端接入地址",
 		"sections": {
 			"label": "MCP 管理分区",
@@ -4243,7 +4251,7 @@
 		},
 		"clientAccess": {
 			"title": "客户端接入",
-			"description": "复制客户端配置，或验证网关对外提供的工具目录"
+			"description": "选择服务范围和鉴权方式，复制客户端配置或验证工具目录。"
 		},
 		"title": "MCP 服务",
 		"subtitle": "接入远程服务，管理工具目录、计费与客户端授权",
@@ -4453,7 +4461,8 @@
 		"testSummary": "连接成功：发现 {tools} 个工具、{prompts} 个提示词、{resources} 个资源；测试未更新目录。",
 		"batchEnableTitle": "批量启用目录条目",
 		"batchDisableTitle": "批量停用目录条目",
-		"batchStatusConfirm": "本次将更新 {count} 个条目。启用后，条目可通过已启用的服务对外提供。",
+		"batchEnableConfirm": "将启用 {count} 个条目；服务本身也需启用，客户端才能使用。",
+		"batchDisableConfirm": "将停用 {count} 个条目；客户端将无法通过网关使用这些条目。",
 		"confirmDeleteNamed": "确定删除“{name}”及其全部目录条目？已有客户端将无法再调用该服务。",
 		"selectItem": "选择 {name}",
 		"noDescription": "暂无描述",

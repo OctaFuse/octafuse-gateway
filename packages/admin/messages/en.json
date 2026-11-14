@@ -4235,6 +4235,14 @@
 		"followHint": "Updates with the preview. Scroll up to pause following."
 	},
 	"mcp": {
+		"workspace": {
+			"directory": "Service directory",
+			"search": "Search services or URLs",
+			"selectService": "Select an MCP service",
+			"catalogPricing": "Catalog & pricing",
+			"copyEndpoint": "Copy endpoint URL",
+			"loading": "Loading services"
+		},
 		"clientEndpoint": "Client endpoint",
 		"sections": {
 			"label": "MCP management",
@@ -4243,7 +4251,7 @@
 		},
 		"clientAccess": {
 			"title": "Connect clients",
-			"description": "Connect external MCP clients to the gateway using an API Key or OAuth 2.0. Copy client configuration from the guide, or test the catalog exposed by the gateway."
+			"description": "Choose a service scope and authentication method, then copy a client configuration or test the catalog."
 		},
 		"title": "MCP Servers",
 		"subtitle": "Connect remote MCP servers, review and enable tools, and make them available through a single client endpoint.",
@@ -4453,7 +4461,8 @@
 		"testSummary": "Connected: {tools} tools, {prompts} prompts, {resources} resources found. The catalog was not changed.",
 		"batchEnableTitle": "Enable catalog items",
 		"batchDisableTitle": "Disable catalog items",
-		"batchStatusConfirm": "This updates {count} items. Enabled items are exposed when their server is active.",
+		"batchEnableConfirm": "Enable {count} catalog entries. The service must also be active for clients to use them.",
+		"batchDisableConfirm": "Disable {count} catalog entries. Clients will no longer be able to use them through the gateway.",
 		"confirmDeleteNamed": "Delete “{name}” and its entire catalog? Existing clients will no longer be able to call this server.",
 		"selectItem": "Select {name}",
 		"noDescription": "No description",

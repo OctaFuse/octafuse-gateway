@@ -6,13 +6,7 @@ import { useFeedback } from '@/components/feedback';
 import { readApiJson } from '@/lib/api-json';
 import type { McpPricingRule } from '@octafuse/core';
 import { pricingDraftFromRule, pricingRuleFromDraft, type PricingDraftError } from './mcp-pricing-draft';
-import {
-	EMPTY_FORM,
-	type CatalogItem,
-	type ServerDetail,
-	type ServerForm,
-	type ServerSummary,
-} from './mcp-types';
+import { EMPTY_FORM, type CatalogItem, type ServerDetail, type ServerForm, type ServerSummary } from './mcp-types';
 
 export function useMcpServersState() {
 	const t = useTranslations('mcp');
@@ -86,7 +80,8 @@ export function useMcpServersState() {
 		[]
 	);
 
-	function selectServer(id: string | null) {
+	const selectServer = useCallback((id: string | null) => {
+		if (selected.current === id) return;
 		selected.current = id;
 		++detailRequest.current;
 		setSelectedId(id);
@@ -96,7 +91,7 @@ export function useMcpServersState() {
 		setDetailError(false);
 		setDetailLoading(id != null);
 		setTab('tool');
-	}
+	}, []);
 
 	function openCreate() {
 		setForm({ ...EMPTY_FORM, headers: [{ key: '', value: '' }] });
@@ -131,11 +126,7 @@ export function useMcpServersState() {
 		} catch (error) {
 			notify(
 				'error',
-				error instanceof TypeError
-					? tCommon('networkError')
-					: error instanceof Error
-					? error.message
-					: fallback
+				error instanceof TypeError ? tCommon('networkError') : error instanceof Error ? error.message : fallback
 			);
 			return false;
 		} finally {
@@ -148,9 +139,7 @@ export function useMcpServersState() {
 		const response = await readApiJson<unknown>(
 			await fetch(`/api/admin/mcp-servers${path}`, {
 				method,
-				...(body === undefined
-					? {}
-					: { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+				...(body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
 			})
 		);
 		if (!response.success) throw new Error(response.message || t('actionFailed'));
@@ -224,7 +213,7 @@ export function useMcpServersState() {
 					})
 				);
 			} finally {
-				// A failed sync is persisted upstream; surface that error in the list and drawer too.
+				// A failed sync is persisted upstream; surface that error in the directory and workspace too.
 				await refresh(id);
 			}
 		});
@@ -266,7 +255,7 @@ export function useMcpServersState() {
 			ids.length > 1 &&
 			!(await confirm({
 				title: t(status === 'enabled' ? 'batchEnableTitle' : 'batchDisableTitle'),
-				message: t('batchStatusConfirm', { count: ids.length }),
+				message: t(status === 'enabled' ? 'batchEnableConfirm' : 'batchDisableConfirm', { count: ids.length }),
 				confirmLabel: t(status === 'enabled' ? 'enable' : 'disable'),
 			}))
 		)

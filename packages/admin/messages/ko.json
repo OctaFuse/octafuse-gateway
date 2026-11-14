@@ -4235,6 +4235,14 @@
 		"followHint": "미리보기와 동시에 갱신됩니다. 위로 스크롤하면 자동 스크롤을 일시 중지합니다."
 	},
 	"mcp": {
+		"workspace": {
+			"directory": "서비스 목록",
+			"search": "서비스 또는 주소 검색",
+			"selectService": "MCP 서비스 선택",
+			"catalogPricing": "카탈로그 및 요금",
+			"copyEndpoint": "접속 주소 복사",
+			"loading": "서비스 불러오는 중"
+		},
 		"clientEndpoint": "클라이언트 연결 주소",
 		"sections": {
 			"label": "MCP 관리",
@@ -4243,7 +4251,7 @@
 		},
 		"clientAccess": {
 			"title": "클라이언트 연결",
-			"description": "API Key 또는 OAuth 2.0으로 외부 MCP 클라이언트를 게이트웨이에 연결하세요. 연결 가이드에서 클라이언트 설정을 복사하거나 게이트웨이가 공개하는 카탈로그를 테스트할 수 있습니다."
+			"description": "서비스 범위와 인증 방식을 선택하고 클라이언트 설정을 복사하거나 도구 목록을 확인하세요."
 		},
 		"title": "MCP 서버",
 		"subtitle": "원격 MCP 서버를 연결하고 도구를 검토·활성화한 뒤 단일 엔드포인트로 클라이언트에 제공하세요.",
@@ -4453,7 +4461,8 @@
 		"testSummary": "연결 성공: 도구 {tools}개, 프롬프트 {prompts}개, 리소스 {resources}개 발견. 카탈로그는 변경되지 않았습니다.",
 		"batchEnableTitle": "카탈로그 항목 일괄 활성화",
 		"batchDisableTitle": "카탈로그 항목 일괄 비활성화",
-		"batchStatusConfirm": "항목 {count}개를 변경합니다. 활성화된 항목은 서버가 활성화되면 공개됩니다.",
+		"batchEnableConfirm": "카탈로그 항목 {count}개를 활성화합니다. 클라이언트에서 사용하려면 서비스도 활성화되어 있어야 합니다.",
+		"batchDisableConfirm": "카탈로그 항목 {count}개를 비활성화합니다. 클라이언트는 게이트웨이를 통해 해당 항목을 사용할 수 없게 됩니다.",
 		"confirmDeleteNamed": "“{name}” 및 전체 카탈로그를 삭제하시겠습니까? 기존 클라이언트에서 이 서버를 호출할 수 없게 됩니다.",
 		"selectItem": "{name} 선택",
 		"noDescription": "설명 없음",
