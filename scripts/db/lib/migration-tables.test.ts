@@ -177,8 +177,10 @@ describe('D1 → Postgres ETL 表注册表', () => {
 			users: 'state', // budget_spent、钱包随请求变化
 			api_keys: 'state', // last_used_at 随请求变化
 			oauth_access_tokens: 'state', // 刷新轮换哈希与过期时间，last_used_at 随 MCP 调用变化
+			oauth_clients: 'state', // Proxy 的动态注册与授权会写（含 last_authorized_at）
 			route_pool_sticky_bindings: 'state', // Proxy 每次请求写
 			system_config: 'state', // 维护模式开关存在这里，新环境要继承冻结状态
+			oauth_apps: 'config', // 应用目录只有管理员写
 			providers: 'config',
 			models: 'config',
 			model_tags: 'config',

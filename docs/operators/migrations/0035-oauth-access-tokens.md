@@ -9,7 +9,7 @@
 
 访问令牌与 `api_keys` 完全分开：前缀 `oat_`，只存哈希，会过期，只能访问 `/mcp` 与 `/mcp/*`，访问其它入口返回 403 `gateway.scope_denied`。刷新只轮换哈希与过期时间，行 id 不变；撤销是软删除，清空哈希并保留应用名，供请求日志继续显示。
 
-令牌由授权服务器（SoloEnt 门户）经 Admin API `POST /api/admin/users/:id/oauth-access-tokens` 签发，明文只在响应里出现一次。后台入口在「MCP 服务」页的「OAuth 访问令牌」折叠区，以及用户详情的 API Keys 页签下方，不单独占侧边栏。
+令牌由授权服务器经 Admin API（外部授权服务器模式，如旧版 SoloEnt 门户；内置模式见 0036 由 Gateway 自己签发） `POST /api/admin/users/:id/oauth-access-tokens` 签发，明文只在响应里出现一次。后台入口在「MCP 服务」页的「OAuth 访问令牌」折叠区，以及用户详情的 API Keys 页签下方，不单独占侧边栏。
 
 ## 步骤
 

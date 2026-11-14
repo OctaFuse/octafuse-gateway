@@ -35,6 +35,8 @@ adminOAuthAccessTokensRoutes.get('/', async (c) => {
 			page: c.req.query('page'),
 			page_size: c.req.query('page_size'),
 			client_id: c.req.query('client_id'),
+			app_id: c.req.query('app_id'),
+			client_name: c.req.query('client_name'),
 			user_id: c.req.query('user_id'),
 			email: c.req.query('email'),
 			status: c.req.query('status'),

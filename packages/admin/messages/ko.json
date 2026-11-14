@@ -2823,7 +2823,7 @@
 	},
 	"oauthAccessTokensPage": {
 		"title": "OAuth 액세스 토큰",
-		"subtitle": "OAuth 동의 후 타사 MCP 클라이언트(ChatGPT, Codex 등)에 발급되는 토큰입니다. /mcp 에만 접근할 수 있고 모델 API 는 호출할 수 없으며, 사용자 API 키와 별도로 관리됩니다. 토큰은 1시간 후 만료되며 클라이언트가 리프레시 토큰으로 갱신합니다.",
+		"subtitle": "애플리케이션은 사용자가 연결하는 클라이언트(ChatGPT, Codex 등)입니다. 여러 인스턴스를 등록할 수 있고 사용자별로 권한을 부여합니다. 액세스 토큰은 1시간 유효하며 /mcp에만 접근하고 리프레시 토큰으로 갱신됩니다.",
 		"cleanup": "만료 정리",
 		"cleanupHint": "폐기되었거나 만료된 지 30일이 지난 기록을 삭제합니다",
 		"cleanupTitle": "오래된 토큰 정리",
@@ -2840,7 +2840,8 @@
 		"status": {
 			"active": "유효",
 			"expired": "만료됨",
-			"revoked": "폐기됨"
+			"revoked": "폐기됨",
+			"renewable": "갱신 가능"
 		},
 		"table": {
 			"user": "사용자",
@@ -2867,7 +2868,43 @@
 		"userSectionEmpty": "이 사용자는 타사 앱을 승인하지 않았습니다.",
 		"viewAll": "전체 보기",
 		"logCredential": "OAuth 앱: {name}",
-		"logCredentialUnknown": "OAuth 액세스 토큰 {id}"
+		"logCredentialUnknown": "OAuth 액세스 토큰 {id}",
+		"apps": {
+			"title": "애플리케이션",
+			"empty": "아직 애플리케이션이 없습니다. 추가하거나 프리셋을 가져오세요. 콜백 URL이 어떤 앱과도 일치하지 않는 클라이언트는 등록할 수 없습니다.",
+			"add": "앱 추가",
+			"importPreset": "프리셋 가져오기",
+			"viewGrants": "이 앱의 권한 보기",
+			"disabledBadge": "비활성",
+			"statUsers": "사용자 {count}명",
+			"statClients": "인스턴스 {count}개",
+			"edit": "편집",
+			"enable": "활성화",
+			"disable": "비활성화",
+			"delete": "삭제",
+			"deleteTitle": "앱 삭제",
+			"deleteConfirm": "「{name}」의 유효한 권한 {count}건을 모두 취소하고 등록된 인스턴스의 연결을 해제합니다. 이후 이 앱은 등록할 수 없습니다. 계속할까요?",
+			"deleted": "앱을 삭제했습니다",
+			"unattributedTitle": "소속 없는 권한",
+			"unattributedHint": "내장 인증 서버로 전환하기 전에 발급되어 앱에 연결되지 않은 권한입니다. 전환 후 사용자는 다시 승인해야 합니다. 취소하거나 만료되길 기다리세요.",
+			"unattributedBadge": "소속 없음",
+			"filteringBy": "표시 중: {name}의 권한",
+			"form": {
+				"createTitle": "앱 추가",
+				"editTitle": "앱 편집",
+				"hint": "앱은 등록 시 사용하는 콜백 URL로 식별되며, 이름은 사용자에게 표시됩니다.",
+				"name": "이름",
+				"slug": "식별자",
+				"slugHint": "영문 소문자, 숫자, 하이픈. 생성 후에는 변경할 수 없습니다.",
+				"redirectUris": "허용 콜백 URL(줄마다 하나)",
+				"redirectUrisHint": "정확히 일치해야 합니다. http://127.0.0.1 과 http://[::1] 만 포트를 무시합니다(RFC 8252). localhost는 허용되지 않습니다.",
+				"patterns": "클라이언트 이름 키워드(선택, 줄마다 하나)",
+				"patternsHint": "여러 앱이 같은 콜백 URL을 공유할 때만 필요합니다. 등록 이름에 키워드가 포함된 클라이언트가 이 앱에 배정됩니다. 클라이언트 이름은 그 외 용도로는 신뢰하지 않습니다.",
+				"save": "저장",
+				"saved": "앱을 저장했습니다",
+				"saveFailed": "앱을 저장하지 못했습니다"
+			}
+		}
 	},
 	"keysPage": {
 		"title": "API 키",
@@ -4272,23 +4309,45 @@
 		"viewInvocations": "호출 내역 보기",
 		"oauth": {
 			"title": "OAuth 2.0 로그인(선택)",
-			"hint": "OAuth 2.0만 지원하는 클라이언트(ChatGPT 커넥터 등)용으로, API Key를 복사할 필요가 없습니다. 켜지 않아도 API Key로 연결할 수 있습니다.",
-			"description": "ChatGPT 커넥터 등 MCP 클라이언트에 로그인 인증을 제공하는 포털의 origin입니다(system_config.MCP_OAUTH_AUTHORIZATION_SERVER). 설정하면 /mcp*는 인증되지 않은 요청에 401 + WWW-Authenticate를 반환하고 /.well-known/oauth-protected-resource를 공개합니다. Gateway는 토큰을 직접 발급하지 않습니다. https여야 합니다(http는 localhost만 허용). 비워 두면 비활성화됩니다.",
+			"hint": "OAuth 2.0만 지원하는 클라이언트(ChatGPT 커넥터 등)용입니다. API Key 연결은 그대로 사용할 수 있습니다.",
+			"description": "ChatGPT 커넥터 같은 MCP 클라이언트가 사용자를 로그인시키는 방식입니다. 내장: 이 Gateway가 OAuth 인증 서버(system_config.MCP_OAUTH_ISSUER)가 되어 /mcp*에서만 쓸 수 있는 액세스 토큰을 발급합니다. 외부: Gateway는 클라이언트를 다른 인증 서버(MCP_OAUTH_AUTHORIZATION_SERVER)로 안내하기만 합니다. 끔: OAuth 디스커버리를 공개하지 않습니다. https 필수(localhost만 http 허용).",
 			"label": "인증 서버 origin",
 			"placeholder": "https://soloent.ai",
-			"howTitle": "켜면 이렇게 동작합니다",
-			"how1": "클라이언트가 자격 증명 없이 /mcp에 접근하면 게이트웨이가 401을 반환하고 인증 서버 위치를 알려 줍니다.",
-			"how2": "클라이언트는 인증 서버에서 로그인·승인하고 /mcp에서만 쓸 수 있는 액세스 자격 증명을 받습니다.",
-			"how3": "게이트웨이는 로그인과 자격 증명 발급을 하지 않으며, 기존 API Key 방식은 그대로 동작합니다.",
-			"requirement": "인증 서버는 동적 클라이언트 등록, PKCE(S256), /.well-known/oauth-authorization-server를 지원해야 하며 허용 콜백 주소는 직접 관리합니다. SoloEnt 포털에는 이미 구현되어 있어 https://soloent.ai를 입력하면 되고, 콜백 주소는 포털 관리자 화면의 Integrations → Third-party apps에서 관리합니다.",
-			"statusOn": "켜짐: 인증되지 않은 /mcp 요청은 401을 받고 위 인증 서버로 안내됩니다(리소스 메타데이터: {path}).",
+			"howTitle": "활성화하면",
+			"how1": "클라이언트가 자격 증명 없이 /mcp를 호출하면 게이트웨이가 401을 반환하고 인증 서버 위치를 알려 줍니다.",
+			"how2": "클라이언트가 등록하고 사용자가 로그인해 승인하면 /mcp에서만 쓸 수 있는 액세스 토큰을 받습니다.",
+			"how3": "API Key 방식은 계속 동작하며, 사용자는 언제든 앱 권한을 취소할 수 있습니다.",
+			"requirement": "내장 서버는 동적 클라이언트 등록, PKCE(S256), 리프레시 토큰, /.well-known/oauth-authorization-server 를 지원합니다. 앱은 콜백 URL로 식별되므로 아래 '애플리케이션'에서 먼저 추가하세요.",
+			"statusOn": "활성화됨: 인증되지 않은 /mcp 요청은 401을 받고 위 서버로 안내됩니다(리소스 메타데이터: {path}).",
 			"openGuide": "연결 방법 보기",
 			"metadataLink": "인증 서버 메타데이터",
-			"save": "OAuth 인증 서버 저장",
-			"invalid": "인증 서버가 올바르지 않습니다. https origin을 입력하세요(http는 localhost만 허용).",
+			"save": "OAuth 설정 저장",
+			"invalid": "서버 URL이 올바르지 않습니다. https origin을 입력하세요(localhost만 http 허용).",
 			"enable": "OAuth 2.0 로그인 사용",
-			"required": "먼저 인증 서버 주소를 입력하세요.",
-			"learnMore": "동작 방식과 요건"
+			"required": "먼저 서버 URL을 입력하세요.",
+			"learnMore": "동작 방식과 요구 사항",
+			"modeLabel": "OAuth 모드",
+			"modes": {
+				"builtin": {
+					"title": "내장 인증 서버",
+					"hint": "Gateway가 직접 클라이언트를 등록하고 토큰을 발급·갱신합니다. 로그인과 동의는 내장 API Key 확인 페이지 또는 자체 사이트에서 처리할 수 있습니다."
+				},
+				"external": {
+					"title": "외부 인증 서버",
+					"hint": "Gateway는 리소스 메타데이터만 제공하고 운영 중인 인증 서버로 안내합니다. 기존 구성을 유지할 때 선택하세요."
+				},
+				"off": {
+					"title": "끔",
+					"hint": "OAuth 디스커버리를 공개하지 않으며 클라이언트는 API Key로 연결합니다."
+				}
+			},
+			"issuerLabel": "이 Gateway의 공개 URL(issuer)",
+			"issuerPlaceholder": "https://api.example.com",
+			"issuerHint": "클라이언트가 이 Gateway에 접속하는 origin입니다. 리버스 프록시에서 /oauth/* 와 /.well-known/oauth-authorization-server 를 프록시 서비스로 전달해야 합니다. 비우면 외부 인증 서버로 롤백됩니다.",
+			"consentLabel": "로그인·동의 페이지(선택)",
+			"consentPlaceholder": "https://portal.example.com/oauth/consent",
+			"consentHint": "사용자가 로그인하고 승인하는 곳입니다. Gateway가 request_id를 붙입니다. 비워 두면 내장 페이지에서 API Key로 승인합니다.",
+			"consentInvalid": "동의 페이지 URL이 올바르지 않습니다. 자격 증명이나 프래그먼트가 없는 https URL을 입력하세요(localhost만 http 허용)."
 		},
 		"connectGuide": {
 			"button": "연결 가이드",

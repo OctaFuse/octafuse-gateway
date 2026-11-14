@@ -2823,7 +2823,7 @@
 	},
 	"oauthAccessTokensPage": {
 		"title": "OAuth 访问令牌",
-		"subtitle": "第三方 MCP 客户端（如 ChatGPT、Codex）经 OAuth 授权后获得的令牌，只能访问 /mcp，不能调用模型接口，也与用户 API Key 分开管理。令牌 1 小时过期，客户端用刷新令牌自动续期。",
+		"subtitle": "应用是用户接入的客户端（ChatGPT、Codex 等）。一个应用可注册多个实例，每个用户单独授权。访问令牌 1 小时过期，只能访问 /mcp，客户端用刷新令牌续期。",
 		"cleanup": "清理过期",
 		"cleanupHint": "删除撤销或过期超过 30 天的记录",
 		"cleanupTitle": "清理过期令牌",
@@ -2840,7 +2840,8 @@
 		"status": {
 			"active": "有效",
 			"expired": "已过期",
-			"revoked": "已撤销"
+			"revoked": "已撤销",
+			"renewable": "可续期"
 		},
 		"table": {
 			"user": "用户",
@@ -2867,7 +2868,43 @@
 		"userSectionEmpty": "该用户没有授权过第三方应用。",
 		"viewAll": "查看全部",
 		"logCredential": "OAuth 应用：{name}",
-		"logCredentialUnknown": "OAuth 访问令牌 {id}"
+		"logCredentialUnknown": "OAuth 访问令牌 {id}",
+		"apps": {
+			"title": "应用",
+			"empty": "还没有应用。请添加或导入预设；回调地址不属于任何应用的客户端无法注册。",
+			"add": "添加应用",
+			"importPreset": "导入预设",
+			"viewGrants": "查看该应用的授权",
+			"disabledBadge": "已停用",
+			"statUsers": "{count} 位用户",
+			"statClients": "{count} 个实例",
+			"edit": "编辑",
+			"enable": "启用",
+			"disable": "停用",
+			"delete": "删除",
+			"deleteTitle": "删除应用",
+			"deleteConfirm": "将撤销「{name}」下全部 {count} 条有效授权，并解除已注册实例的归属；该应用之后无法再注册。继续吗？",
+			"deleted": "应用已删除",
+			"unattributedTitle": "未归属的授权",
+			"unattributedHint": "内置授权服务器接管之前签发、未关联任何应用的授权。切换后用户需要重新授权，可直接撤销或等其过期。",
+			"unattributedBadge": "未归属",
+			"filteringBy": "正在查看：{name} 的授权",
+			"form": {
+				"createTitle": "添加应用",
+				"editTitle": "编辑应用",
+				"hint": "应用靠注册时使用的回调地址识别；名称会展示给用户。",
+				"name": "名称",
+				"slug": "标识",
+				"slugHint": "小写字母、数字和连字符，创建后不可修改。",
+				"redirectUris": "允许的回调地址（每行一个）",
+				"redirectUrisHint": "精确匹配。仅 http://127.0.0.1 与 http://[::1] 忽略端口（RFC 8252），不允许 localhost。",
+				"patterns": "客户端名称关键字（可选，每行一个）",
+				"patternsHint": "仅在多个应用共用同一回调地址时需要。注册名称包含关键字的客户端归入此应用。客户端名称除此之外不作任何信任。",
+				"save": "保存",
+				"saved": "应用已保存",
+				"saveFailed": "保存应用失败"
+			}
+		}
 	},
 	"keysPage": {
 		"title": "API 密钥",
@@ -4273,22 +4310,44 @@
 		"oauth": {
 			"title": "OAuth 2.0 授权登录（可选）",
 			"hint": "让支持 OAuth 的客户端通过登录授权接入；API Key 接入不受影响",
-			"description": "为 ChatGPT 连接器等 MCP 客户端提供登录授权的门户地址（system_config.MCP_OAUTH_AUTHORIZATION_SERVER）。设置后，/mcp* 对未认证请求返回 401 + WWW-Authenticate，并公开 /.well-known/oauth-protected-resource；Gateway 自身不签发 token。须为 https（仅 localhost 允许 http）。留空即关闭。",
+			"description": "ChatGPT 连接器等 MCP 客户端如何让用户登录授权。内置：由本 Gateway 担任 OAuth 授权服务器（system_config.MCP_OAUTH_ISSUER），签发只能访问 /mcp* 的访问令牌。外部：Gateway 只把客户端指向另一台授权服务器（MCP_OAUTH_AUTHORIZATION_SERVER）。关闭：不公开 OAuth 发现。须为 https（仅 localhost 允许 http）。",
 			"label": "授权服务器地址",
 			"placeholder": "https://soloent.ai",
 			"howTitle": "开启后的流程",
 			"how1": "客户端不带凭据访问 /mcp 时，网关返回 401，并告诉它授权服务器在哪里。",
-			"how2": "客户端到授权服务器完成登录与授权，换得一个只能访问 /mcp 的访问凭证。",
-			"how3": "网关本身不管登录、不签发凭证；原有的 API Key 方式不受影响。",
-			"requirement": "授权服务器需支持动态客户端注册、PKCE（S256）和 /.well-known/oauth-authorization-server，并自行管理允许的回调地址。SoloEnt 门户已内置：填 https://soloent.ai，回调地址在门户后台「集成接入 → 第三方应用」维护。",
+			"how2": "客户端完成注册，用户登录并同意，客户端换得一个只能访问 /mcp 的访问令牌。",
+			"how3": "原有的 API Key 方式不受影响，用户可随时撤销某个应用的授权。",
+			"requirement": "内置服务器支持动态客户端注册、PKCE（S256）、刷新令牌和 /.well-known/oauth-authorization-server。应用靠回调地址识别：请先在下方「应用」里添加。",
 			"statusOn": "已开启：未授权的 /mcp 请求会收到 401，并被引导到上面的授权服务器（资源元数据：{path}）。",
 			"openGuide": "查看使用方法",
 			"metadataLink": "授权服务器元数据",
-			"save": "保存 OAuth 授权服务器",
-			"invalid": "授权服务器地址无效：请填写 https 地址（仅 localhost 允许 http）。",
+			"save": "保存 OAuth 设置",
+			"invalid": "服务器地址无效：请填写 https 地址（仅 localhost 允许 http）。",
 			"enable": "启用 OAuth 2.0 授权登录",
-			"required": "请先填写授权服务器地址。",
-			"learnMore": "了解工作原理与要求"
+			"required": "请先填写服务器地址。",
+			"learnMore": "了解工作原理与要求",
+			"modeLabel": "OAuth 模式",
+			"modes": {
+				"builtin": {
+					"title": "内置授权服务器",
+					"hint": "由 Gateway 自己登记客户端、签发并刷新令牌。登录与同意可用内置的 API Key 确认页，也可接入你自己的站点。"
+				},
+				"external": {
+					"title": "外部授权服务器",
+					"hint": "Gateway 只提供资源元数据，并把客户端指向你运行的授权服务器。想保留现有部署时选它。"
+				},
+				"off": {
+					"title": "关闭",
+					"hint": "不公开 OAuth 发现，客户端用 API Key 接入。"
+				}
+			},
+			"issuerLabel": "本 Gateway 的公开地址（issuer）",
+			"issuerPlaceholder": "https://api.example.com",
+			"issuerHint": "客户端访问本 Gateway 所用的 origin。反向代理需把 /oauth/* 与 /.well-known/oauth-authorization-server 转发到代理服务。清空即可回滚到外部授权服务器。",
+			"consentLabel": "登录与同意页（可选）",
+			"consentPlaceholder": "https://portal.example.com/oauth/consent",
+			"consentHint": "用户在这里登录并同意。Gateway 会附带 request_id。留空则使用内置页面，用户用 API Key 确认。",
+			"consentInvalid": "同意页地址无效：请填写不含账号密码和片段的 https 地址（仅 localhost 允许 http）。"
 		},
 		"connectGuide": {
 			"button": "接入指南",

@@ -17,7 +17,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 
 浏览器登录会创建数据库 Session，并通过 `admin_session` Cookie 识别为 `console:<username>`。Console 拥有完整业务权限，也是唯一可以管理集成密钥的主体。
 
-集成密钥（Integration Keys）在后台 **系统集成 → 集成密钥（Integration Keys）** 创建。每个外部集成应使用独立、最小权限 Key；Key 主体记录为 `admin_key:<id>`。权限包括 `users.*`、`user_keys.*`、`providers.*`、`models.*`、`routes.*`、`config.*`、`analytics.read`、`logs.read`、`playground.execute`、`mcp.read`、`mcp.write`、`mcp.secrets.read` 和 `maintenance.*`；`*.write` 自动包含对应 `*.read`，`*.secrets.read` 不随 write 授予，`*` 代表全部可委派业务权限，但不包含集成密钥或 Session 管理。
+集成密钥（Integration Keys）在后台 **系统集成 → 集成密钥（Integration Keys）** 创建。每个外部集成应使用独立、最小权限 Key；Key 主体记录为 `admin_key:<id>`。权限包括 `users.*`、`user_keys.*`、`oauth.read`、`oauth.write`、`oauth.consent`、`providers.*`、`models.*`、`routes.*`、`config.*`、`analytics.read`、`logs.read`、`playground.execute`、`mcp.read`、`mcp.write`、`mcp.secrets.read` 和 `maintenance.*`；`*.write` 自动包含对应 `*.read`，`*.secrets.read` 不随 write 授予，`*` 代表全部可委派业务权限，但不包含集成密钥或 Session 管理。
 
 升级迁移会把非空 `system_config.MASTER_KEY` 原值复制为普通全权限 Key `legacy-master`，确保旧调用方继续工作；随后的迁移会删除该配置行。新认证只读取 `admin_api_keys`。请在稳定后为外部系统创建具名 Key，并轮换或吊销 `legacy-master`。
 
@@ -87,6 +87,10 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/routes/pools/:poolId/sticky/bindings/:affinityHash` | DELETE | 强制解绑（不校验 `binding_token`） | Admin UI |
 | `/admin/routes/pools/:poolId/sticky/reset` | POST | bump `sticky_epoch`，使本 pool 全部绑定失效 | Admin UI |
 | `/admin/playground` | POST | Routes：`routeId` 或 `routeDraft` 直连上游；Tools：`toolId`+`provider` 读 catalog 直连引擎（均可测、不计费、不写日志、无 failover） | Admin UI、运维联调 |
+| `/admin/oauth/apps`、`/:id`、`/:id/revoke` | GET, POST, PATCH, DELETE | `oauth_apps` + `oauth_access_tokens` 统计；应用目录与按应用撤销（`oauth.read` / `oauth.write`；`/:id/revoke` 的 `none` 配 `client_name` 撤销「未归属」一组） | Admin UI |
+| `/admin/oauth/clients` | GET | `oauth_clients`（可按 `app_id` 筛选） | Admin UI |
+| `/admin/oauth/authorization-requests/:id`、`/:id/accept`、`/:id/reject` | GET, POST | `oauth_authorization_requests`；同意页读取请求、提交决定（`oauth.consent`；`accept` 的 body 为 `{"user_id"}`，响应 `{"redirect_uri"}`） | 门户同意页 |
+| `/admin/oauth-access-tokens`、`/revoke`、`/cleanup`、`/:id/revoke` | GET, POST | `oauth_access_tokens`（列表支持 `app_id`、`client_name`、`status=active、renewable、expired、revoked`） | Admin UI |
 | `/admin/mcp-servers` | GET, POST | `mcp_servers`（列表脱敏 URL 与鉴权头） | Admin UI |
 | `/admin/mcp-servers/:id` | GET, PATCH, DELETE | `mcp_servers`（`pricing` 为服务默认按次价格） | Admin UI |
 | `/admin/mcp-servers/:id/reveal` | GET | 明文 URL 与鉴权头；需要 `mcp.secrets.read` | Admin UI |

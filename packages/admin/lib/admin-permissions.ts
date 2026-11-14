@@ -21,6 +21,11 @@ export function getAdminAuthorizationDecision(method: string, pathname: string):
 	if (/^\/admin\/providers\/[^/]+\/api-key$/.test(pathname) && normalizedMethod === 'GET') {
 		return { kind: 'permission', permission: 'providers.secrets.read' };
 	}
+	// 内置授权服务器：同意页（门户）只需要 `oauth.consent`，应用目录与授权管理用 `oauth.read|write`。
+	if (/^\/admin\/oauth\/authorization-requests(?:\/|$)/.test(pathname)) {
+		return { kind: 'permission', permission: 'oauth.consent' };
+	}
+	if (pathname.startsWith('/admin/oauth/')) return readOrWrite(normalizedMethod, 'oauth');
 	if (pathname.startsWith('/admin/providers')) return readOrWrite(normalizedMethod, 'providers');
 	if (pathname.startsWith('/admin/models')) return readOrWrite(normalizedMethod, 'models');
 	if (pathname.startsWith('/admin/routes')) return readOrWrite(normalizedMethod, 'routes');

@@ -14,6 +14,7 @@ import { createD1UsersRepository } from '../db/d1/users.impl';
 import { createD1AdminAccessRepository } from '../db/d1/admin-access.impl';
 import { createD1McpServersRepository } from '../db/d1/mcp-servers.impl';
 import { createD1OAuthAccessTokensRepository } from '../db/d1/oauth-access-tokens.impl';
+import { createD1OAuthServerRepository } from '../db/d1/oauth-server.impl';
 
 export function createD1Repositories(client: GatewayDatabaseClient): GatewayRepositories {
 	if (client.driver !== 'd1') {
@@ -35,5 +36,6 @@ export function createD1Repositories(client: GatewayDatabaseClient): GatewayRepo
 		adminAccess: createD1AdminAccessRepository(client),
 		mcpServers: createD1McpServersRepository(client),
 		oauthAccessTokens: createD1OAuthAccessTokensRepository(client),
+		oauthServer: createD1OAuthServerRepository(client),
 	};
 }

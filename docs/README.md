@@ -51,6 +51,7 @@
 | 2.17.0 升级（请求日志 Provider 索引，0033） | [operators/migrations/0033-request-log-provider-index.md](./operators/migrations/0033-request-log-provider-index.md) |
 | 2.18.0 升级（粘性绑定列出用户，0034） | [operators/migrations/0034-sticky-binding-affinity-key.md](./operators/migrations/0034-sticky-binding-affinity-key.md) |
 | 2.18.0 升级（OAuth 访问令牌，0035） | [operators/migrations/0035-oauth-access-tokens.md](./operators/migrations/0035-oauth-access-tokens.md) |
+| 内置 OAuth 授权服务器（0036） | [operators/migrations/0036-oauth-authorization-server.md](./operators/migrations/0036-oauth-authorization-server.md) |
 | 文档规范 | [CONVENTIONS.md](./CONVENTIONS.md) |
 
 ## 文档规范

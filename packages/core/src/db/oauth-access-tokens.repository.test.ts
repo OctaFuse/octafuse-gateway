@@ -1,5 +1,5 @@
 /**
- * 用 node:sqlite 直接跑真实的 D1 迁移（0035）与共享 SQL 仓储，覆盖签发 / 轮换 / 撤销 / 过滤 / 清理。
+ * 用 node:sqlite 直接跑真实的 D1 迁移（0035 + 0036）与共享 SQL 仓储，覆盖签发 / 轮换 / 撤销 / 过滤 / 清理。
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -8,13 +8,16 @@ import { DatabaseSync } from 'node:sqlite';
 import { URL } from 'node:url';
 import { createOAuthAccessTokensSqlRepository, type SqlExec } from './oauth-access-tokens.repository';
 
-const MIGRATION = new URL('../../migrations-d1/0035_oauth_access_tokens.sql', import.meta.url);
+const MIGRATIONS = [
+	new URL('../../migrations-d1/0035_oauth_access_tokens.sql', import.meta.url),
+	new URL('../../migrations-d1/0036_oauth_authorization_server.sql', import.meta.url),
+];
 
 function createRepo() {
 	const db = new DatabaseSync(':memory:');
 	db.exec('CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT);');
 	db.exec('CREATE TABLE api_key_request_logs (id TEXT PRIMARY KEY, api_key_id TEXT);');
-	db.exec(readFileSync(MIGRATION, 'utf8'));
+	for (const migration of MIGRATIONS) db.exec(readFileSync(migration, 'utf8'));
 	db.prepare('INSERT INTO users (id, email) VALUES (?, ?)').run('u1', 'a@example.com');
 	db.prepare('INSERT INTO users (id, email) VALUES (?, ?)').run('u2', 'b@example.com');
 	const exec: SqlExec = async (query, params) => {

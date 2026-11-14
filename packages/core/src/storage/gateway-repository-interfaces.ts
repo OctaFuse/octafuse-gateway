@@ -48,6 +48,7 @@ import type {
 } from '../db/admin-access-types';
 import type { McpServersRepository } from '../db/mcp-servers.repository';
 import type { OAuthAccessTokensRepository } from '../db/oauth-access-tokens.repository';
+import type { OAuthServerRepository } from '../db/oauth-server.repository';
 
 export interface AdminAccessRepository {
 	listApiKeys(): Promise<AdminApiKeyRow[]>;
@@ -75,7 +76,7 @@ export interface AdminAccessRepository {
 	deleteExpiredSessions(nowIso: string): Promise<void>;
 }
 
-export type { McpServersRepository, OAuthAccessTokensRepository };
+export type { McpServersRepository, OAuthAccessTokensRepository, OAuthServerRepository };
 
 /** 管理端分析聚合 */
 export interface AdminAnalyticsRepository {

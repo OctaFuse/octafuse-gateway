@@ -2823,7 +2823,7 @@
 	},
 	"oauthAccessTokensPage": {
 		"title": "OAuth アクセストークン",
-		"subtitle": "OAuth 同意後にサードパーティの MCP クライアント（ChatGPT、Codex など）へ発行されるトークンです。/mcp にのみアクセスでき、モデル API は呼べません。ユーザーの API キーとは別に管理されます。有効期間は 1 時間で、クライアントはリフレッシュトークンで更新します。",
+		"subtitle": "アプリケーションはユーザーが接続するクライアント（ChatGPT、Codex など）です。複数のインスタンスを登録でき、認可はユーザーごとです。アクセストークンは 1 時間有効で /mcp のみ利用でき、リフレッシュトークンで更新されます。",
 		"cleanup": "期限切れを削除",
 		"cleanupHint": "失効または期限切れから 30 日を超えた記録を削除します",
 		"cleanupTitle": "古いトークンの整理",
@@ -2840,7 +2840,8 @@
 		"status": {
 			"active": "有効",
 			"expired": "期限切れ",
-			"revoked": "失効"
+			"revoked": "失効",
+			"renewable": "更新可能"
 		},
 		"table": {
 			"user": "ユーザー",
@@ -2867,7 +2868,43 @@
 		"userSectionEmpty": "このユーザーはサードパーティアプリを認可していません。",
 		"viewAll": "すべて表示",
 		"logCredential": "OAuth アプリ：{name}",
-		"logCredentialUnknown": "OAuth アクセストークン {id}"
+		"logCredentialUnknown": "OAuth アクセストークン {id}",
+		"apps": {
+			"title": "アプリケーション",
+			"empty": "アプリケーションがまだありません。追加するかプリセットをインポートしてください。コールバック URL がどのアプリにも一致しないクライアントは登録できません。",
+			"add": "アプリを追加",
+			"importPreset": "プリセットをインポート",
+			"viewGrants": "このアプリの認可を表示",
+			"disabledBadge": "無効",
+			"statUsers": "{count} ユーザー",
+			"statClients": "{count} インスタンス",
+			"edit": "編集",
+			"enable": "有効化",
+			"disable": "無効化",
+			"delete": "削除",
+			"deleteTitle": "アプリを削除",
+			"deleteConfirm": "「{name}」の有効な認可 {count} 件をすべて取り消し、登録済みインスタンスの紐付けを解除します。以後このアプリは登録できません。続行しますか？",
+			"deleted": "アプリを削除しました",
+			"unattributedTitle": "未所属の認可",
+			"unattributedHint": "内蔵認可サーバーへ切り替える前に発行され、アプリに紐付いていない認可です。切り替え後はユーザーの再認可が必要です。取り消すか、期限切れを待ってください。",
+			"unattributedBadge": "未所属",
+			"filteringBy": "表示中：{name} の認可",
+			"form": {
+				"createTitle": "アプリを追加",
+				"editTitle": "アプリを編集",
+				"hint": "アプリは登録時のコールバック URL で識別されます。名前はユーザーに表示されます。",
+				"name": "名前",
+				"slug": "識別子",
+				"slugHint": "小文字、数字、ハイフン。作成後は変更できません。",
+				"redirectUris": "許可するコールバック URL（1 行に 1 件）",
+				"redirectUrisHint": "完全一致。http://127.0.0.1 と http://[::1] のみポートを無視します（RFC 8252）。localhost は不可です。",
+				"patterns": "クライアント名のキーワード（任意、1 行に 1 件）",
+				"patternsHint": "複数のアプリが同じコールバック URL を共有する場合のみ必要です。登録名にキーワードを含むクライアントがこのアプリに割り当てられます。クライアント名はそれ以外の用途では信頼されません。",
+				"save": "保存",
+				"saved": "アプリを保存しました",
+				"saveFailed": "アプリを保存できませんでした"
+			}
+		}
 	},
 	"keysPage": {
 		"title": "API キー",
@@ -4271,24 +4308,46 @@
 		"edit": "編集",
 		"viewInvocations": "呼び出し履歴を見る",
 		"oauth": {
-			"title": "OAuth 2.0 ログイン（任意）",
-			"hint": "OAuth 2.0 のみ対応のクライアント（ChatGPT コネクタなど）向けで、API Key のコピーは不要です。無効のままでも API Key で接続できます。",
-			"description": "ChatGPT コネクタなどの MCP クライアントにログイン認可を提供するポータルの origin（system_config.MCP_OAUTH_AUTHORIZATION_SERVER）。設定すると、/mcp* は未認証リクエストに 401 + WWW-Authenticate を返し、/.well-known/oauth-protected-resource を公開します。Gateway 自体はトークンを発行しません。https が必須です（http は localhost のみ）。空欄で無効になります。",
-			"label": "認可サーバーの origin",
+			"title": "OAuth 2.0 サインイン（任意）",
+			"hint": "OAuth 2.0 のみ対応のクライアント（ChatGPT コネクタなど）向け。API キーでの接続も引き続き使えます。",
+			"description": "ChatGPT コネクタなどの MCP クライアントがユーザーをサインインさせる方法。内蔵：この Gateway が OAuth 認可サーバーとなり（system_config.MCP_OAUTH_ISSUER）、/mcp* でのみ使えるアクセストークンを発行します。外部：Gateway はクライアントを別の認可サーバーへ案内するだけです（MCP_OAUTH_AUTHORIZATION_SERVER）。オフ：OAuth ディスカバリーを公開しません。https 必須（localhost のみ http 可）。",
+			"label": "認可サーバーのオリジン",
 			"placeholder": "https://soloent.ai",
-			"howTitle": "有効にした後の流れ",
-			"how1": "クライアントが資格情報なしで /mcp にアクセスすると、ゲートウェイは 401 を返し、認可サーバーの場所を伝えます。",
-			"how2": "クライアントは認可サーバーでログイン・認可し、/mcp のみ利用できるアクセス資格情報を受け取ります。",
-			"how3": "ゲートウェイ自体はログインも資格情報の発行も行いません。従来の API Key 方式はそのまま使えます。",
-			"requirement": "認可サーバーは動的クライアント登録、PKCE（S256）、/.well-known/oauth-authorization-server に対応し、許可するコールバック URL を自身で管理する必要があります。SoloEnt ポータルは対応済みで、https://soloent.ai を入力します。コールバックはポータル管理画面の Integrations → Third-party apps で管理します。",
-			"statusOn": "有効：未認証の /mcp リクエストには 401 が返り、上の認可サーバーへ誘導されます（リソースメタデータ：{path}）。",
+			"howTitle": "有効にすると",
+			"how1": "クライアントが認証情報なしで /mcp を呼ぶと、ゲートウェイは 401 を返し、認可サーバーの場所を伝えます。",
+			"how2": "クライアントが登録し、ユーザーがサインインして承認すると、/mcp のみで使えるアクセストークンが発行されます。",
+			"how3": "API キー方式は引き続き使えます。ユーザーはいつでもアプリの認可を取り消せます。",
+			"requirement": "内蔵サーバーは動的クライアント登録、PKCE（S256）、リフレッシュトークン、/.well-known/oauth-authorization-server に対応します。アプリはコールバック URL で識別されるため、下の「アプリケーション」で追加してください。",
+			"statusOn": "有効：未認証の /mcp リクエストには 401 が返り、上記サーバーへ案内されます（リソースメタデータ：{path}）。",
 			"openGuide": "接続方法を見る",
 			"metadataLink": "認可サーバーのメタデータ",
-			"save": "OAuth 認可サーバーを保存",
-			"invalid": "認可サーバーが不正です。https の origin を指定してください（http は localhost のみ）。",
-			"enable": "OAuth 2.0 ログインを有効にする",
-			"required": "先に認可サーバーの URL を入力してください。",
-			"learnMore": "仕組みと要件"
+			"save": "OAuth 設定を保存",
+			"invalid": "サーバー URL が無効です。https のオリジンを指定してください（localhost のみ http 可）。",
+			"enable": "OAuth 2.0 サインインを有効にする",
+			"required": "先にサーバー URL を入力してください。",
+			"learnMore": "仕組みと要件",
+			"modeLabel": "OAuth モード",
+			"modes": {
+				"builtin": {
+					"title": "内蔵認可サーバー",
+					"hint": "Gateway 自身がクライアント登録、トークンの発行と更新を行います。サインインと同意は内蔵の API キー確認ページ、または自社サイトで行えます。"
+				},
+				"external": {
+					"title": "外部認可サーバー",
+					"hint": "Gateway はリソースメタデータを返し、運用中の認可サーバーへ案内するだけです。既存構成を維持する場合に選びます。"
+				},
+				"off": {
+					"title": "オフ",
+					"hint": "OAuth ディスカバリーを公開せず、クライアントは API キーで接続します。"
+				}
+			},
+			"issuerLabel": "この Gateway の公開 URL（issuer）",
+			"issuerPlaceholder": "https://api.example.com",
+			"issuerHint": "クライアントがこの Gateway にアクセスするオリジン。リバースプロキシで /oauth/* と /.well-known/oauth-authorization-server をプロキシサービスへ転送してください。空にすると外部認可サーバーに戻せます。",
+			"consentLabel": "サインイン・同意ページ（任意）",
+			"consentPlaceholder": "https://portal.example.com/oauth/consent",
+			"consentHint": "ユーザーがサインインして承認する場所。Gateway は request_id を付与します。空の場合は内蔵ページを使い、API キーで承認します。",
+			"consentInvalid": "同意ページの URL が無効です。認証情報やフラグメントを含まない https URL を指定してください（localhost のみ http 可）。"
 		},
 		"connectGuide": {
 			"button": "接続ガイド",

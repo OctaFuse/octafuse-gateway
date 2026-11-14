@@ -1,6 +1,6 @@
 /**
  * `GET /.well-known/oauth-protected-resource[/mcp[/{slug}]]`（RFC 9728）。
- * 无需鉴权；未配置 `MCP_OAUTH_AUTHORIZATION_SERVER` 时返回 404，行为与未接入前一致。
+ * 无需鉴权；内置（`MCP_OAUTH_ISSUER`）与外部（`MCP_OAUTH_AUTHORIZATION_SERVER`）模式都未配置时返回 404，行为与未接入前一致。
  */
 import { Hono } from 'hono';
 import type { Env } from '../app';

@@ -2823,7 +2823,7 @@
 	},
 	"oauthAccessTokensPage": {
 		"title": "OAuth access tokens",
-		"subtitle": "Tokens issued to third-party MCP clients (ChatGPT, Codex, …) after OAuth consent. They can only reach /mcp, never model endpoints, and are managed separately from user API keys. Tokens expire after 1 hour; clients renew them with a refresh token.",
+		"subtitle": "Applications are the clients people connect (ChatGPT, Codex, …). Each registers one or more instances and each user authorizes separately. Access tokens last 1 hour, only reach /mcp, and renew with a refresh token.",
 		"cleanup": "Clean up",
 		"cleanupHint": "Delete records revoked or expired more than 30 days ago",
 		"cleanupTitle": "Clean up old tokens",
@@ -2840,7 +2840,8 @@
 		"status": {
 			"active": "Active",
 			"expired": "Expired",
-			"revoked": "Revoked"
+			"revoked": "Revoked",
+			"renewable": "Renewable"
 		},
 		"table": {
 			"user": "User",
@@ -2867,7 +2868,43 @@
 		"userSectionEmpty": "This user has not authorized any third-party app.",
 		"viewAll": "View all",
 		"logCredential": "OAuth app: {name}",
-		"logCredentialUnknown": "OAuth access token {id}"
+		"logCredentialUnknown": "OAuth access token {id}",
+		"apps": {
+			"title": "Applications",
+			"empty": "No applications yet. Add one or import a preset; clients whose callback URL matches no application cannot register.",
+			"add": "Add application",
+			"importPreset": "Import preset",
+			"viewGrants": "Show authorizations of this app",
+			"disabledBadge": "Disabled",
+			"statUsers": "{count} users",
+			"statClients": "{count} instances",
+			"edit": "Edit",
+			"enable": "Enable",
+			"disable": "Disable",
+			"delete": "Delete",
+			"deleteTitle": "Delete application",
+			"deleteConfirm": "This revokes all {count} live authorizations of \"{name}\" and detaches its registered instances; the app can no longer register. Continue?",
+			"deleted": "Application deleted",
+			"unattributedTitle": "Unattributed authorizations",
+			"unattributedHint": "Issued before the built-in server took over and not linked to an application. Users must authorize again after the switch; revoke or let them expire.",
+			"unattributedBadge": "Unattributed",
+			"filteringBy": "Showing authorizations of: {name}",
+			"form": {
+				"createTitle": "Add application",
+				"editTitle": "Edit application",
+				"hint": "An application is recognized by the callback URLs it registers with; the display name is shown to users.",
+				"name": "Name",
+				"slug": "Identifier",
+				"slugHint": "Lowercase letters, digits and hyphens. Cannot be changed later.",
+				"redirectUris": "Allowed callback URLs (one per line)",
+				"redirectUrisHint": "Exact match. Only http://127.0.0.1 and http://[::1] ignore the port (RFC 8252); localhost is not allowed.",
+				"patterns": "Client name keywords (optional, one per line)",
+				"patternsHint": "Needed only when several applications share one callback URL. A client whose registered name contains a keyword is assigned to this app. Client names are not trusted for anything else.",
+				"save": "Save",
+				"saved": "Application saved",
+				"saveFailed": "Could not save the application"
+			}
+		}
 	},
 	"keysPage": {
 		"title": "API Keys",
@@ -4273,22 +4310,44 @@
 		"oauth": {
 			"title": "OAuth 2.0 sign-in (optional)",
 			"hint": "For clients that only speak OAuth 2.0 (such as ChatGPT connectors), so users need not copy an API Key. Without it, clients can still connect with an API Key.",
-			"description": "Origin of the portal that signs users in for MCP clients such as ChatGPT connectors (system_config.MCP_OAUTH_AUTHORIZATION_SERVER). When set, /mcp* answers unauthenticated requests with 401 + WWW-Authenticate and publishes /.well-known/oauth-protected-resource. The Gateway never issues tokens itself. Must be https (http only for localhost). Leave empty to disable.",
+			"description": "How MCP clients such as ChatGPT connectors sign users in. Built-in: this Gateway is the OAuth authorization server (system_config.MCP_OAUTH_ISSUER) and issues access tokens that only work on /mcp*. External: the Gateway only points clients to another authorization server (MCP_OAUTH_AUTHORIZATION_SERVER). Off: no OAuth discovery. Must be https (http only for localhost).",
 			"label": "Authorization server origin",
 			"placeholder": "https://soloent.ai",
 			"howTitle": "What happens once enabled",
 			"how1": "When a client calls /mcp without credentials, the gateway returns 401 and tells it where the authorization server is.",
-			"how2": "The client signs in at the authorization server and receives an access credential that works for /mcp only.",
-			"how3": "The gateway handles no login and issues no credentials; the API Key method keeps working.",
-			"requirement": "The authorization server must support dynamic client registration, PKCE (S256) and /.well-known/oauth-authorization-server, and manages its own allowed callback URLs. The SoloEnt portal has this built in: enter https://soloent.ai, and manage callbacks under Admin → Integrations → Third-party apps.",
+			"how2": "The client registers, the user signs in and approves, and the client receives an access token that works for /mcp only.",
+			"how3": "The API Key method keeps working. Users can revoke an app at any time.",
+			"requirement": "The built-in server supports dynamic client registration, PKCE (S256), refresh tokens and /.well-known/oauth-authorization-server. Apps are recognized by their callback URL: add them under Applications below.",
 			"statusOn": "Enabled: unauthenticated /mcp requests get a 401 that points clients to the server above (resource metadata: {path}).",
 			"openGuide": "How to connect",
 			"metadataLink": "Authorization server metadata",
-			"save": "Save OAuth server",
-			"invalid": "Invalid authorization server: use an https origin (http is allowed for localhost only).",
+			"save": "Save OAuth settings",
+			"invalid": "Invalid server URL: use an https origin (http is allowed for localhost only).",
 			"enable": "Enable OAuth 2.0 sign-in",
-			"required": "Enter the authorization server URL first.",
-			"learnMore": "How it works and requirements"
+			"required": "Enter the server URL first.",
+			"learnMore": "How it works and requirements",
+			"modeLabel": "OAuth mode",
+			"modes": {
+				"builtin": {
+					"title": "Built-in authorization server",
+					"hint": "The Gateway registers clients, issues and refreshes tokens itself. Sign-in and consent can use the built-in API Key page or your own site."
+				},
+				"external": {
+					"title": "External authorization server",
+					"hint": "The Gateway only serves resource metadata and points clients to a server you run. Use this to keep an existing setup."
+				},
+				"off": {
+					"title": "Off",
+					"hint": "No OAuth discovery. Clients connect with an API Key."
+				}
+			},
+			"issuerLabel": "Public URL of this Gateway (issuer)",
+			"issuerPlaceholder": "https://api.example.com",
+			"issuerHint": "The origin clients reach this Gateway at. Your reverse proxy must forward /oauth/* and /.well-known/oauth-authorization-server to the proxy service. Clear it to roll back to the external server.",
+			"consentLabel": "Sign-in and consent page (optional)",
+			"consentPlaceholder": "https://portal.example.com/oauth/consent",
+			"consentHint": "Where users sign in and approve. The Gateway appends request_id. Leave empty to use the built-in page, where users approve with their API Key.",
+			"consentInvalid": "Invalid consent page URL: use an https URL without credentials or fragment (http is allowed for localhost only)."
 		},
 		"connectGuide": {
 			"button": "Connection guide",
