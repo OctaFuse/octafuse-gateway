@@ -22,7 +22,6 @@ type Props = {
 	title: string;
 	subtitle?: string;
 	headerActions?: ReactNode;
-	navigation?: ReactNode;
 	/** 状态变化使原服务行被筛掉时，关闭后仍有可用的焦点目标。 */
 	fallbackFocusRef?: RefObject<HTMLElement>;
 	docsHref?: string;
@@ -47,7 +46,6 @@ export function ToolProviderDrawer({
 	title,
 	subtitle,
 	headerActions,
-	navigation,
 	fallbackFocusRef,
 	docsHref,
 	docsLabel,
@@ -118,10 +116,7 @@ export function ToolProviderDrawer({
 		if (e.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current)) {
 			e.preventDefault();
 			last.focus();
-		} else if (
-			!e.shiftKey &&
-			(document.activeElement === last || document.activeElement === panelRef.current)
-		) {
+		} else if (!e.shiftKey && (document.activeElement === last || document.activeElement === panelRef.current)) {
 			e.preventDefault();
 			first.focus();
 		}
@@ -161,8 +156,8 @@ export function ToolProviderDrawer({
 							<AdminContentMark />
 							{title}
 						</h2>
-						{subtitle ? <p className="mt-1 text-sm text-gray-500">{subtitle}</p> : null}
-						<div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+						<div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+							{subtitle ? <p className="mr-auto text-sm text-gray-500">{subtitle}</p> : null}
 							{docsHref && docsLabel ? (
 								<a
 									href={docsHref}
@@ -202,9 +197,12 @@ export function ToolProviderDrawer({
 						{headerActions}
 					</div>
 				) : null}
-				{navigation}
-				<div className="admin-dialog-body min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 sm:px-6">{children}</div>
-				<div className="admin-dialog-footer shrink-0 border-t border-gray-100 bg-gray-50/60 px-5 py-4 sm:px-6">{footer}</div>
+				<div className="admin-dialog-body min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 sm:px-6">
+					{children}
+				</div>
+				<div className="admin-dialog-footer shrink-0 border-t border-gray-100 bg-gray-50/60 px-5 py-4 sm:px-6">
+					{footer}
+				</div>
 			</div>
 		</div>
 	);

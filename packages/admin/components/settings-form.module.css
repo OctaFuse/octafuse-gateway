@@ -1,0 +1,36 @@
+.form {
+	container-type: inline-size;
+	container-name: settings-form;
+	min-width: 0;
+}
+.field {
+	display: grid;
+	min-width: 0;
+	grid-template-columns: minmax(0, 1fr);
+	align-items: center;
+	gap: 8px;
+}
+.label {
+	min-width: 0;
+	font-size: 13px;
+	font-weight: 500;
+	line-height: 20px;
+	color: #4b5563;
+}
+.control {
+	min-width: 0;
+}
+.note {
+	font-size: 12px;
+	line-height: 20px;
+}
+@container settings-form (min-width: 520px) {
+	.field {
+		grid-template-columns: 128px minmax(0, 1fr);
+		column-gap: 24px;
+	}
+	.control,
+	.note {
+		grid-column: 2;
+	}
+}

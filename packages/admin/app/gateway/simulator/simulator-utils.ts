@@ -1,3 +1,4 @@
+import { normalizeProxyBaseUrl } from '@/lib/proxy-base-url';
 import { canonicalizeRequestOperation, isRouteAdapterCompatible } from '@octafuse/core/route-topology';
 import { normalizeUpstreamProtocol } from '@octafuse/core/upstream-protocol';
 import {
@@ -11,11 +12,7 @@ import {
 	AUDIO_TRANSCRIPTIONS_FILE_URL_BODY_TEMPLATE,
 	DASHSCOPE_MULTIMODAL_ASR_BODY_TEMPLATE,
 } from '@/lib/audio-transcriptions';
-import {
-	VOLCENGINE_IMAGE_BODY_TEMPLATE,
-	imageBodyTemplateFor,
-	type ImageOperation,
-} from '@/lib/image-generations';
+import { VOLCENGINE_IMAGE_BODY_TEMPLATE, imageBodyTemplateFor, type ImageOperation } from '@/lib/image-generations';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
 import type { AudioOperation, GatewayToolId, OpenaiLlmOperation, SimulatorProtocol } from '@/lib/invoke-kind';
 import type { SimulatorGeminiAction } from '@/lib/simulator/endpoint';
@@ -30,13 +27,9 @@ import {
 	isDashScopeRealtimeOperation,
 	type DashScopeRealtimeOperation,
 } from '@/lib/dashscope-realtime-client';
-import {
-	buildElevenLabsRealtimeTemplate,
-	isElevenLabsRealtimeOperation,
-} from '@/lib/elevenlabs-realtime-client';
+import { buildElevenLabsRealtimeTemplate, isElevenLabsRealtimeOperation } from '@/lib/elevenlabs-realtime-client';
 import type { AdminKeyListItem, AdminModelRow, RouteListRow } from './types';
 
-export const LS_PROXY = 'octafuse.simulator.proxyBaseUrl';
 export const LS_PROTOCOL = 'octafuse.simulator.protocol';
 export const LS_OPENAI_LLM_OPERATION = 'octafuse.simulator.openaiLlmOperation';
 export const LS_MODEL_ID = 'octafuse.simulator.modelId';
@@ -145,17 +138,14 @@ export function bodyTemplateForSelection(
 		if (realtimeOperation && isElevenLabsRealtimeOperation(realtimeOperation)) {
 			return buildElevenLabsRealtimeTemplate(realtimeOperation);
 		}
-		return audioOperation === 'speech'
-			? ELEVENLABS_SPEECH_BODY_TEMPLATE
-			: ELEVENLABS_TRANSCRIPTIONS_BODY_TEMPLATE;
+		return audioOperation === 'speech' ? ELEVENLABS_SPEECH_BODY_TEMPLATE : ELEVENLABS_TRANSCRIPTIONS_BODY_TEMPLATE;
 	}
 	if (audioOperation && protocol === 'dashscope') {
 		if (realtimeOperation === 'audio.speech' || realtimeOperation === 'audio.speech.stream') {
 			return buildDashScopeNativeSpeechBodyTemplate(providerModelName);
 		}
 		if (realtimeOperation === 'audio.speech.multimodal') return DASHSCOPE_MULTIMODAL_SPEECH_BODY_TEMPLATE;
-		if (realtimeOperation === 'audio.transcriptions.async')
-			return DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE;
+		if (realtimeOperation === 'audio.transcriptions.async') return DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE;
 		if (audioOperation === 'speech') {
 			return buildDashScopeRealtimeTtsTemplate(providerModelName);
 		}
@@ -258,8 +248,7 @@ export function listElevenLabsAudioClientOperations(
 	audioOperation: AudioOperation
 ): readonly string[] {
 	const httpOperation = audioOperation === 'speech' ? 'audio.speech' : 'audio.transcriptions';
-	const realtimeOperation =
-		audioOperation === 'speech' ? 'audio.speech.realtime' : 'audio.transcriptions.realtime';
+	const realtimeOperation = audioOperation === 'speech' ? 'audio.speech.realtime' : 'audio.transcriptions.realtime';
 	const found: string[] = [];
 	for (const operation of [httpOperation, realtimeOperation]) {
 		if (filterMatchingActiveRoutes(routes, modelId, routeGroup, 'elevenlabs', operation).length > 0) {
@@ -368,8 +357,7 @@ export function isBodyDirty(
 		if (protocol === 'dashscope' && realtimeOperation && isDashScopeRealtimeOperation(realtimeOperation)) {
 			try {
 				const body = JSON.parse(text);
-				if (body?.header && typeof body.header === 'object' && !Array.isArray(body.header))
-					delete body.header.task_id;
+				if (body?.header && typeof body.header === 'object' && !Array.isArray(body.header)) delete body.header.task_id;
 				return JSON.stringify(body);
 			} catch {
 				/* Invalid drafts still differ from the valid template. */
@@ -477,10 +465,7 @@ export function listSupportedClientSurfaces(
 				.trim()
 				.toLowerCase();
 			if (!isSimulatorProtocol(protocol)) continue;
-			const operation = canonicalizeRequestOperation(
-				protocol,
-				String(surface.request_operation ?? '*').trim() || '*'
-			);
+			const operation = canonicalizeRequestOperation(protocol, String(surface.request_operation ?? '*').trim() || '*');
 			const bucket = operationsByProtocol.get(protocol) ?? new Set<string>();
 			bucket.add(operation);
 			operationsByProtocol.set(protocol, bucket);
@@ -617,15 +602,8 @@ export function tryParseProxyBaseUrl(
 ): { ok: true; base: string } | { ok: false; reason: 'empty' | 'invalid' } {
 	const trimmed = raw.trim();
 	if (!trimmed) return { ok: false, reason: 'empty' };
-	try {
-		const u = new URL(trimmed);
-		if (u.protocol !== 'http:' && u.protocol !== 'https:') {
-			return { ok: false, reason: 'invalid' };
-		}
-		return { ok: true, base: trimmed.replace(/\/+$/, '') };
-	} catch {
-		return { ok: false, reason: 'invalid' };
-	}
+	const base = normalizeProxyBaseUrl(trimmed);
+	return base ? { ok: true, base } : { ok: false, reason: 'invalid' };
 }
 
 export function prettyJsonBody(bodyText: string): string {

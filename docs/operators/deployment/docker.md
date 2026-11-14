@@ -2,6 +2,14 @@
 
 本文描述在容器环境同时运行 **`@octafuse/proxy`**（代理服务，对外推理）与 **`@octafuse/admin`**（管理后台，管理 UI + `/api/admin/*`），二者**共用同一关系型库**（Postgres 或 **MySQL 8**）。默认生产仍以 Cloudflare 为主（见 [cloudflare.md](./cloudflare.md)）。
 
+## 管理后台的 Proxy 基础地址
+
+在 **Admin 容器的运行时环境变量**中设置 `GATEWAY_PROXY_URL=https://gateway.example.com`。REST 服务文档、模拟器和 MCP 接入共用此默认地址；修改变量后重启 Admin，无需重新构建镜像。仓库内置 Compose 模板已透传此变量。
+
+填写浏览器可访问的基础地址，可带反向代理路径前缀；不要填容器主机名、凭证、查询参数或 `/v1`、`/mcp` 接口路径。模拟器与 MCP 测试仍直接从浏览器访问 Proxy，跨域部署需保留原有的 CORS 配置。
+
+优先使用当前浏览器的手动覆盖，其次是部署环境变量；只有在 localhost / 回环地址访问 Admin 时才回退到本地 `:8787`。点击「恢复默认地址」可清除浏览器覆盖。旧的独立浏览器配置会作为兼容回退读取（REST、模拟器、MCP 顺序）；首次保存共享地址或恢复默认时清理旧项。API Key 不随地址共享，也不存入此配置。
+
 ## 1. 本文覆盖范围
 
 本文聚焦 **Full self-hosted PG / MySQL**（以及 Hybrid 中代理服务侧容器）的镜像、环境变量、Compose 与迁移。完整拓扑矩阵（含 Cloudflare 全托管）见 **[runtime-data.md](../../developers/architecture/runtime-data.md)**。

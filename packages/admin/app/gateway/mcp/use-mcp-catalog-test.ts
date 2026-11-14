@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useProxyBaseUrlInput } from '@/components/proxy-connection-provider';
 import { useTranslations } from 'next-intl';
 import { readApiJson } from '@/lib/api-json';
 import type { AdminKeyListItem } from '@/lib/services/admin/types';
 import {
-	MCP_CATALOG_PROXY_STORAGE,
-	SIMULATOR_PROXY_STORAGE,
 	buildMcpCatalogRequest,
 	mcpProxyBaseUrl,
 	normalizeMcpApiKey,
@@ -29,7 +28,9 @@ export type McpCatalogTestResponse = {
 
 export function useMcpCatalogTest(initialSlug: string) {
 	const t = useTranslations('mcp.catalogTest');
-	const [baseUrl, setBaseUrl] = useState('');
+	const proxyConnection = useProxyBaseUrlInput();
+	const baseUrl = proxyConnection.value;
+	const setBaseUrl = proxyConnection.setValue;
 	const [slug, setSlug] = useState(initialSlug);
 	const [method, setMethod] = useState<McpCatalogMethod>('tools/list');
 	const [protocolVersion, setProtocolVersion] = useState('2025-06-18');
@@ -53,19 +54,6 @@ export function useMcpCatalogTest(initialSlug: string) {
 	const [loadingKey, setLoadingKey] = useState(false);
 
 	useEffect(() => {
-		let saved: string | null = null;
-		try {
-			saved =
-				localStorage.getItem(MCP_CATALOG_PROXY_STORAGE) || localStorage.getItem(SIMULATOR_PROXY_STORAGE);
-		} catch {
-			/* Storage can be unavailable in private contexts. */
-		}
-		if (saved && mcpProxyBaseUrl(saved)) setBaseUrl(saved);
-		else if (['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)) {
-			const local = new URL(window.location.origin);
-			local.port = '8787';
-			setBaseUrl(local.origin);
-		}
 		return () => {
 			activeRequest.current?.abort();
 			activeRequest.current = null;
@@ -161,11 +149,7 @@ export function useMcpCatalogTest(initialSlug: string) {
 		setResponse(null);
 		setError(null);
 		setSending(true);
-		try {
-			localStorage.setItem(MCP_CATALOG_PROXY_STORAGE, base);
-		} catch {
-			/* Only the URL is persisted. */
-		}
+		proxyConnection.commit();
 		const started = performance.now();
 		const timer = setTimeout(() => controller.abort('timeout'), 30_000);
 		try {
@@ -220,6 +204,11 @@ export function useMcpCatalogTest(initialSlug: string) {
 		id: requestId.current + 1,
 	});
 	return {
+		proxyConnection,
+		resetBaseUrl: () => {
+			proxyConnection.reset();
+			invalidate();
+		},
 		baseUrl,
 		setBaseUrl: (value: string) => {
 			setBaseUrl(value);

@@ -3,11 +3,13 @@
 import { useEffect, useId, useState } from 'react';
 import { CheckIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
+import { useProxyBaseUrlInput } from '@/components/proxy-connection-provider';
+import { ProxyConnectionHint } from '@/components/proxy-connection-hint';
 import { readApiJson } from '@/lib/api-json';
 import type { SystemConfigRow } from '@/lib/types';
 import { MCP_OAUTH_AUTHORIZATION_SERVER_KEY } from '@octafuse/core/lib/mcp-oauth-system-config';
 import type { ServerSummary } from '../mcp-types';
-import { MCP_CATALOG_PROXY_STORAGE, mcpProxyBaseUrl } from '../mcp-catalog-test-utils';
+import { mcpProxyBaseUrl } from '../mcp-catalog-test-utils';
 import {
 	MCP_CONNECT_CLIENTS,
 	MCP_KEY_PLACEHOLDER,
@@ -15,7 +17,6 @@ import {
 	buildMcpConnectSnippets,
 	buildMcpOAuthSnippets,
 	mcpConnectEndpoint,
-	readSavedMcpProxyUrl,
 	mcpConnectServerName,
 	type McpConnectClient,
 } from '../mcp-connect-guide-utils';
@@ -25,8 +26,7 @@ const INPUT =
 	'mt-1.5 block w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100';
 const BUTTON =
 	'inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50';
-const CODE =
-	'overflow-auto whitespace-pre rounded-lg bg-slate-950 p-4 font-mono text-xs leading-6 text-slate-100';
+const CODE = 'overflow-auto whitespace-pre rounded-lg bg-slate-950 p-4 font-mono text-xs leading-6 text-slate-100';
 
 export type McpConnectAuth = 'key' | 'oauth';
 
@@ -45,7 +45,8 @@ export function McpConnectGuideModal({
 	const common = useTranslations('common');
 	const ui = useTranslations('mcp.ui');
 	const guideId = useId();
-	const [baseUrl, setBaseUrl] = useState(readSavedMcpProxyUrl);
+	const proxyConnection = useProxyBaseUrlInput();
+	const baseUrl = proxyConnection.value;
 	const [slug, setSlug] = useState(initialSlug);
 	const [auth, setAuth] = useState<McpConnectAuth>(initialAuth);
 	const [client, setClient] = useState<McpConnectClient>(initialAuth === 'oauth' ? 'chatgpt' : 'cursor');
@@ -61,9 +62,7 @@ export function McpConnectGuideModal({
 				const data = await readApiJson<SystemConfigRow[]>(response);
 				if (cancelled) return;
 				const rows = data.success && Array.isArray(data.data) ? data.data : [];
-				setOauthServer(
-					rows.find((row) => row.key === MCP_OAUTH_AUTHORIZATION_SERVER_KEY)?.value?.trim() ?? ''
-				);
+				setOauthServer(rows.find((row) => row.key === MCP_OAUTH_AUTHORIZATION_SERVER_KEY)?.value?.trim() ?? '');
 			} catch {
 				// The status banner is a hint; leave it hidden when the config cannot be read.
 			}
@@ -92,16 +91,8 @@ export function McpConnectGuideModal({
 	}
 
 	function changeBaseUrl(value: string) {
-		setBaseUrl(value);
+		proxyConnection.setValue(value);
 		setCopied(null);
-		const next = mcpProxyBaseUrl(value);
-		if (next) {
-			try {
-				localStorage.setItem(MCP_CATALOG_PROXY_STORAGE, next);
-			} catch {
-				/* Persisting is best-effort. */
-			}
-		}
 	}
 
 	async function copy() {
@@ -190,12 +181,11 @@ export function McpConnectGuideModal({
 							placeholder="https://proxy.example.com"
 							aria-invalid={urlInvalid}
 							onChange={(event) => changeBaseUrl(event.target.value)}
+							onBlur={proxyConnection.commit}
 							className={INPUT}
 						/>
 						<span
-							className={`mt-1.5 block text-xs font-normal leading-5 ${
-								urlInvalid ? 'text-red-600' : 'text-gray-500'
-							}`}
+							className={`mt-1.5 block text-xs font-normal leading-5 ${urlInvalid ? 'text-red-600' : 'text-gray-500'}`}
 						>
 							{urlInvalid ? t('proxyInvalid') : t('proxyHint')}
 						</span>
@@ -214,17 +204,22 @@ export function McpConnectGuideModal({
 					</label>
 				</div>
 
+				<ProxyConnectionHint
+					source={proxyConnection.source}
+					canReset={proxyConnection.canReset}
+					onReset={() => {
+						proxyConnection.reset();
+						setCopied(null);
+					}}
+				/>
+
 				<div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
 					<span className="text-gray-500">{t('endpoint')}</span>{' '}
 					<code className="break-all font-mono text-gray-900">{mcpConnectEndpoint(effectiveBase, slug)}</code>
 				</div>
 
 				<div>
-					<div
-						role="tablist"
-						aria-label={t('clients')}
-						className="flex flex-wrap gap-1 border-b border-gray-200"
-					>
+					<div role="tablist" aria-label={t('clients')} className="flex flex-wrap gap-1 border-b border-gray-200">
 						{clients.map((id) => (
 							<button
 								key={id}

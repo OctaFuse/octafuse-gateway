@@ -1,4 +1,14 @@
 {
+	"proxyConnection": {
+		"source": {
+			"browser": "ブラウザーの上書き · REST・シミュレーター・MCP で共用",
+			"deployment": "デプロイ設定 GATEWAY_PROXY_URL を使用",
+			"local": "ローカル開発の既定 URL を使用",
+			"unset": "Proxy URL 未設定。GATEWAY_PROXY_URL を設定できます。"
+		},
+		"reset": "既定 URL に戻す",
+		"hint": "REST・シミュレーター・MCP で共用します。既定値は GATEWAY_PROXY_URL。手動変更はこのブラウザーだけに適用します。"
+	},
 	"autoRefresh": {
 		"paused": "一時停止",
 		"everySeconds": "{seconds} 秒ごと",
@@ -1632,10 +1642,7 @@
 				},
 				"dashscope-asr-fun-file": {
 					"purpose": "fun-asr-realtime 系列の非リアルタイムファイル API 用。",
-					"mapping": [
-						"language と prompt は 400 を返します。",
-						"format は MIME または拡張子から推定します。"
-					]
+					"mapping": ["language と prompt は 400 を返します。", "format は MIME または拡張子から推定します。"]
 				},
 				"dashscope-asr-qwen-file-async": {
 					"purpose": "qwen3-asr-flash-filetrans 用。プロバイダーには送信とタスク照会の両方のエンドポイントが必要です。",
@@ -3662,7 +3669,7 @@
 		},
 		"config": {
 			"title": "REST サービス",
-			"subtitle": "検索、Web抽出、コンテンツ検出サービスを管理",
+			"subtitle": "ツールのプロバイダーと料金を設定し、API・Agent の連携ドキュメントを確認します。",
 			"viewInvocations": "呼び出し履歴を表示 →",
 			"saveWebSearch": "Web Search を保存",
 			"saveWebFetch": "Web Fetch を保存",
@@ -3698,10 +3705,9 @@
 			"catalogProvider": "エンジン",
 			"noKey": "Key なし",
 			"needKeyToActivate": "保存する前に、少なくとも 1 つのエンジンに API Key を追加してください。",
-			"providerGuideLink": "エンジンガイド",
 			"providerDocs": "Docs & API Key →",
 			"cost": "成功時の charged（{currency}）",
-			"apiKey": "Provider API Key",
+			"apiKey": "API Key",
 			"apiKeyPlaceholder": "エンジンの API Key を貼り付け",
 			"apiKeyHint": "ツールでトラフィックを受け付けるために必須です。削除した Key は環境変数にフォールバックしません。",
 			"providers": {
@@ -3710,49 +3716,6 @@
 				"cleversee": "Alibaba CleverSee（开析）",
 				"tencent_wsa": "Tencent Cloud WSA",
 				"deepseek": "DeepSeek Search"
-			},
-			"providerGuide": {
-				"title": "検索エンジンガイド",
-				"subtitle": "各エンジンのインデックス / ソースと適した用途。Baidu または Google の API を直接使用するものではありません。",
-				"disclaimer": "いずれも Baidu または Google の公式検索 API を呼び出しません。各社または提携先の Web インデックスを使用しているため、結果 URL が baidu.com、google.com などを指す場合はあります。",
-				"selected": "現在選択中",
-				"docsLink": "Docs & API Key →",
-				"labels": {
-					"sources": "ソース",
-					"bestFor": "適した用途"
-				},
-				"items": {
-					"bocha": {
-						"badge": "中国向け推奨",
-						"summary": "独自の大規模 Web インデックスを持つ AI 向け中国語検索エンジン（中国国内向け Bing Search API 代替として提供）。",
-						"sources": "数億から約 100 億の Web ページと提携コンテンツ（ニュース、百科事典、ショート動画、天気、学術情報など）。Baidu/Google ではありません。",
-						"bestFor": "中国地域のユーザー、中国語クエリ、中国国内のコンプライアンス要件。"
-					},
-					"tavily": {
-						"badge": "国際向け推奨",
-						"summary": "LLM 向けの検索レイヤーで、検索・抽出・ランキングを 1 回の呼び出しで実行します。従来型の SERP 一覧ではなく、Agent / RAG 向けです。",
-						"sources": "独自クローラーとサードパーティ集約（Brave など独立系インデックスとの関連がよく言及されます）。Google/Baidu の公式 API ではありません。",
-						"bestFor": "国際地域、英語での調査、Agent ワークフロー。"
-					},
-					"cleversee": {
-						"badge": "",
-						"summary": "Alibaba CleverSee（开析）の AI ネイティブ Web Search。mainland_china / global の地域モードに対応します。",
-						"sources": "Alibaba 独自の AI 検索インデックス。Docs では Baidu または Google をバックエンドとしているとは説明されていません。Gateway のデフォルトは mainland_china で、ドメイン許可リストを設定すると global に切り替わります。",
-						"bestFor": "Alibaba Cloud 上で中国 / グローバル地域を明示的に切り替える必要がある場合。"
-					},
-					"tencent_wsa": {
-						"badge": "",
-						"summary": "Tencent Cloud Web Search API（WSA）。公式には Sogou Search を基盤としています。",
-						"sources": "Sogou 経由の公開 Web と Tencent エコシステム（Tencent News、Sogou Baike、Penguin アカウント）。上位 tier では VR / 権威性の高い分野別ソースも追加されます。",
-						"bestFor": "中国語 Web 検索で Bocha の代替が必要な場合。Sogou/Tencent コンテンツに強みがあります。"
-					},
-					"deepseek": {
-						"badge": "",
-						"summary": "DeepSeek の独立した Search API で、DeepSeek 自社の検索エンジンを使います。成功したリクエストごとに課金されます（定価は 1,000 回あたり $0.75）。結果が空の場合と失敗は上流で課金されません。",
-						"sources": "DeepSeek 独自の Web インデックスで、関連性・権威性・鮮度で順位付けします。128 文字を超えるクエリはゲートウェイが切り詰めます。ドメイン指定は収まる場合は site: 演算子で送り、収まらない場合はローカルで絞り込みます。",
-						"bestFor": "DeepSeek の API キーをすでに持っていて、中国語・英語の一般的な Web 検索を行う場合。"
-					}
-				}
 			}
 		},
 		"webFetch": {
@@ -3766,7 +3729,7 @@
 			"needKeyToActivate": "保存する前に、少なくとも 1 つの Provider に API Key を追加してください。",
 			"providerDocs": "Docs & API Key →",
 			"cost": "成功時の charged（{currency}）",
-			"apiKey": "Provider API Key",
+			"apiKey": "API Key",
 			"apiKeyPlaceholder": "Provider API Key を貼り付け",
 			"apiKeyHint": "ツールでトラフィックを受け付けるために必須です。削除した Key は環境変数にフォールバックしません。",
 			"providers": {
@@ -3785,7 +3748,7 @@
 			"needKeyToActivate": "保存する前に、少なくとも 1 つの Provider に API Key を追加してください。",
 			"providerDocs": "Docs & API Key →",
 			"cost": "成功時の charged（{currency}）",
-			"apiKey": "Provider API Key",
+			"apiKey": "API Key",
 			"apiKeyPlaceholder": "Provider API Key を貼り付け",
 			"providers": {
 				"firecrawl": "Firecrawl Search",
@@ -3884,8 +3847,145 @@
 			"metered": "供給",
 			"lossHint": "ユーザー課金が供給単価を下回っています（赤字）"
 		},
+		"apiGuide": {
+			"authLabel": "ユーザー認証",
+			"baseRequired": "「接続先 URL」で Proxy URL を設定してください。",
+			"copyCode": "{name} をコピー",
+			"docs": "API ドキュメント",
+			"openDocs": "{name} API ドキュメント",
+			"title": "{name} · API 接続",
+			"copyUrl": "完全な呼び出し URL をコピー",
+			"copyPath": "エンドポイントのパスをコピー",
+			"copyFailed": "コピーに失敗しました。テキストを選択してください",
+			"proxyBase": "Proxy URL",
+			"proxyHint": "REST・シミュレーター・MCP で共用します。既定値は GATEWAY_PROXY_URL。手動変更はこのブラウザーだけに適用します。",
+			"invalidBase": "/v1、API パス、認証情報、クエリのない http(s) ベース URL を指定してください。",
+			"authHint": "ユーザー API Key を使用：Authorization: Bearer USER_API_KEY。Agent に管理キーや上流エンジンの認証情報を渡す必要はありません。",
+			"views": "ドキュメント表示",
+			"reference": "API 仕様",
+			"curl": "cURL サンプル",
+			"agent": "Agent ツール",
+			"request": "リクエスト · JSON",
+			"response": "レスポンス · 200",
+			"required": "必須",
+			"defaultValue": "既定値 {value}",
+			"optionalHint": "? 省略可能",
+			"errors": "主なエラー",
+			"curlHint": "実行前にユーザー API Key を OCTAFUSE_API_KEY に設定してください。有効なエンジンを呼び出し、成功時は保存済みの設定で課金されます。",
+			"agentHint": "名前と引数は Gateway の契約に従います。Agent のプロトコルを選択してください。定義だけでは HTTP リクエストは実行されず、MCP サーバーにもなりません。",
+			"definition": "ツール登録 · JSON",
+			"executor": "ツール実行 · TypeScript / Node.js 18+",
+			"executorHint": "Agent のサーバーで実行します。OCTAFUSE_API_KEY にユーザー API Key を設定し、OCTAFUSE_BASE_URL で URL を上書きできます。引数を渡すと Gateway の data を返します。キーを定義やモデルのコンテキストに含めないでください。",
+			"fields": {
+				"query": "前後の空白を除き 2 文字以上の検索語",
+				"count": "結果数 1〜10 件",
+				"allowed_domains": "対象ドメイン。blocked_domains との併用不可",
+				"blocked_domains": "除外ドメイン。allowed_domains との併用不可",
+				"url": "公開 http(s) URL。localhost・私設 IP・メタデータホストは不可",
+				"text": "検出対象の本文。前後の空白を除き空にできません"
+			},
+			"responseFields": {
+				"results": "検索結果一覧",
+				"title": "ページタイトル",
+				"url": "ページ URL（リダイレクト先の場合あり）",
+				"snippet": "短い概要",
+				"summary": "補足概要",
+				"content": "ページ本文（通常 Markdown）",
+				"cost": "ゲートウェイ課金通貨でのユーザー請求額",
+				"overall_score": "文字数で重み付けした AI 傾向スコア（0〜100）",
+				"total_chars": "検出文字数",
+				"segments": "分割結果：index、chars、score、excerpt",
+				"score": "区間 AI 傾向スコア（0〜100）",
+				"billing_units": "文字数 ÷ 課金単位を切り上げ"
+			},
+			"errorsByStatus": {
+				"400": "パラメーターまたは JSON 形式が無効。",
+				"401": "ユーザー API Key がない、または無効。",
+				"403": "予算不足またはアクセス拒否。",
+				"502": "上流リクエストに失敗。",
+				"503": "ツールが無効、認証情報不足、または設定が無効。"
+			},
+			"agentFlow": "ツール登録 → REST 実行 → 結果を返す",
+			"format": "定義形式",
+			"officialDocs": "公式ドキュメント",
+			"formats": {
+				"generic": "汎用定義（SDK に適合）",
+				"responses": "OpenAI Responses",
+				"chat": "OpenAI Chat Completions",
+				"anthropic": "Anthropic Messages"
+			},
+			"formatHints": {
+				"generic": "独自 Agent 向けです。inputSchema は全 SDK 共通の登録形式ではありません。",
+				"responses": "リクエストの tools 配列に追加します。strict: false を明示し、REST 引数の省略可能性を維持します。",
+				"chat": "function の構造を保ち、tools 配列に追加します。モデルや互換サービスがツール呼び出しに対応している必要があります。",
+				"anthropic": "Messages リクエストの tools 配列に追加します。input_schema は生成される input を定義します。"
+			},
+			"handler": "呼び出し結果を返す",
+			"handlerCode": "呼び出し連携 · TypeScript",
+			"handlerHints": {
+				"generic": "解析済み引数で handleToolCall を呼び出し、結果を Agent フレームワークに渡します。",
+				"responses": "output の function_call のみを渡します。推論項目を含む元のモデル出力を保持し、返却項目を次の input に追加します。",
+				"chat": "message.tool_calls の関数呼び出しのみを渡します。assistant メッセージを保持し、返された tool メッセージを messages に追加します。",
+				"anthropic": "content の tool_use のみを渡します。assistant メッセージを保持し、返却ブロックを直後の user メッセージの content に入れます。"
+			},
+			"agentRuntimeHint": "完全な Agent ループではなく連携用の断片です。SDK で引数を検証し、呼び出し ID を対応させてモデル処理を続けてください。タイムアウトやエラーは実行側で処理し、課金済みの可能性がある呼び出しを無条件に再試行しないでください。説明は用途に合わせて調整し、名前は実行関数と一致させます。"
+		},
+		"workspace": {
+			"documentation": "接続ドキュメント",
+			"providersHelp": "プロバイダー・料金の説明",
+			"noMatches": "一致するツールはありません",
+			"intro": "クライアントは共通のツール API を呼び出し、Gateway が有効なプロバイダーを選択して設定料金を適用します。",
+			"addressSettings": "接続先 URL",
+			"directory": "ツール一覧",
+			"selectTool": "ツールを選択",
+			"configured": "設定済み",
+			"testTool": "ツールをテスト",
+			"appliedProvider": "有効な設定",
+			"setupHint": "有効なプロバイダーなし",
+			"setupAction": "プロバイダーを設定",
+			"views": "ツール作業領域",
+			"tabs": {
+				"providers": "プロバイダー・料金",
+				"api": "API 連携",
+				"agent": "Agent 接続"
+			},
+			"providersHint": "ツールごとに 1 つのプロバイダー（上流エンジン）を有効にし、認証情報と料金を個別に設定します。切り替えてもツール定義と URL は変わりません。変更は保存後に反映されます。",
+			"input": "入力",
+			"output": "出力",
+			"inputs": {
+				"webSearch": "検索語、任意の結果数とドメインフィルター",
+				"webFetch": "読み取る公開ページの URL",
+				"webDeepSearch": "検索語と結果数",
+				"aiDetection": "検出対象の本文"
+			},
+			"outputs": {
+				"webSearch": "ページのタイトル、リンク、概要の一覧",
+				"webFetch": "ページ本文とページ情報",
+				"webDeepSearch": "ページ本文を含む検索結果",
+				"aiDetection": "全体スコア、分割結果、課金単位数"
+			}
+		},
+		"toolGroups": {
+			"webSearch": "ウェブを検索し、タイトル・リンク・概要を取得",
+			"webFetch": "指定したページの本文をモデルで利用できる形式で抽出",
+			"webDeepSearch": "ウェブ検索と本文取得で、詳細な検索・分析を支援",
+			"aiDetection": "テキストが AI 生成された可能性を検出"
+		},
 		"serviceList": {
-			"search": "サービスやツールの種類を検索",
+			"filteredEngineCount": "{visible} / {total} エンジン",
+			"configHint": "このツールのプロバイダーの認証情報と料金を設定します。",
+			"toolConfig": "{name} の設定",
+			"engineHint": "ツールごとに有効なエンジンは 1 つです。認証情報と料金は個別に設定し、保存後に反映されます。",
+			"testActive": "現在のエンジンをテスト",
+			"configureEngine": "{name} を設定",
+			"configure": "設定",
+			"engineCount": "{count} エンジン",
+			"currentEngine": "現在のエンジン · {name}",
+			"enginesForTool": "{name} の上流エンジン",
+			"engines": "プロバイダー",
+			"overview": "{tools} ツール · {engines} 上流エンジン",
+			"tools": "ツール",
+			"search": "ツール・プロバイダーを検索",
 			"toolType": "ツール種類",
 			"status": "状態",
 			"name": "サービス",
@@ -3893,7 +3993,7 @@
 			"allStatuses": "すべての状態",
 			"clearFilters": "絞り込みを解除",
 			"noResults": "一致する REST サービスはありません。",
-			"count": "{total} 件中 {visible} 件を表示",
+			"count": "該当エンジン {visible} / {total} 件",
 			"currency": "請求通貨：{currency}",
 			"openHint": "サービス行をクリックして設定と管理操作を表示",
 			"perRequest": "リクエストごとに課金",
@@ -3901,7 +4001,36 @@
 			"backToConfig": "サービス設定に戻る",
 			"connection": "接続設定",
 			"pricing": "課金ルール",
-			"credentialsRequired": "認証情報を入力すると保存して有効化できます。設定だけ先に保存することもできます。"
+			"credentialsRequired": "認証情報を保存してから一覧で有効化できます",
+			"usageStatus": "利用状態",
+			"actions": "操作",
+			"savedConfigHint": "保存済み設定 · ツールごとに1つのプロバイダーを有効化",
+			"credentialsSaved": "認証情報設定済み",
+			"credentialsMissing": "認証情報なし",
+			"enableEngine": "{name} を有効化",
+			"enable": "有効化",
+			"inUse": "使用中",
+			"standby": "有効化待ち",
+			"needsSetup": "未設定",
+			"needsCredentials": "認証情報に問題",
+			"unavailable": "利用不可",
+			"enableProvider": "このプロバイダーを有効化",
+			"switchHint": "有効化すると、今後のリクエストで {current} の代わりに {name} を使用します。",
+			"firstEnableHint": "有効化すると、このツールは {name} を使用します。",
+			"activeHint": "このツールで使用中です。保存すると接続と料金が更新されます。",
+			"credentialHint": "認証情報を入力すると有効化できます。設定のみの保存も可能です。",
+			"pricingHint": "課金単位ごとに標準価格を設定し、倍率で請求額とコストを決定します。",
+			"saveOnlyHint": "接続と料金を保存します。有効化は一覧の利用状態列で行います。",
+			"usageSelectionHint": "各ツールは1つのプロバイダーを使用します。設定済みの別のプロバイダーを選ぶと切り替わります。",
+			"activateSavedHint": "保存済みの接続と料金設定を使用",
+			"switching": "切り替え中…",
+			"enabledFeedback": "{name} を有効化しました",
+			"activationBlocked": {
+				"missing": "先に認証情報を設定して保存してください",
+				"unsaved": "先にこのプロバイダーの変更を保存または元に戻してください",
+				"unavailable": "このプロバイダーは利用できません"
+			},
+			"engineDetails": "{name} のエンジン説明"
 		},
 		"ui": {
 			"notConfigured": "未設定",
@@ -3911,11 +4040,77 @@
 			"test": "サービスをテスト",
 			"testSavedConfig": "調整画面で保存済みの設定をテスト",
 			"discard": "変更を元に戻す",
-			"draftHint": "変更は保存するまでこのページに保持されます。テストには保存済みの設定を使用します",
-			"saveHint": "このサービスのみ保存します。有効にすると同じ種類のサービスを置き換えます",
+			"draftHint": "未保存。テストには保存済み設定を使用します",
+			"saveHint": "有効化すると、このツールのプロバイダーが切り替わります",
 			"activationFailed": "設定は保存されましたが、有効化に失敗しました：{message}",
 			"loadFailed": "サービス設定を読み込めませんでした",
 			"retry": "再読み込み"
+		},
+		"engineGuide": {
+			"docs": "公式サイト・資料",
+			"integration": "接続時の注意",
+			"items": {
+				"webSearch": {
+					"bocha": {
+						"summary": "Bocha Web Search でページのタイトル、リンク、概要を取得します。",
+						"note": "件数とドメインの許可・拒否リストを上流に渡します。"
+					},
+					"tavily": {
+						"summary": "Tavily Search でウェブ検索結果を取得します。",
+						"note": "検索深度は basic。件数とドメインフィルターに対応します。"
+					},
+					"cleversee": {
+						"summary": "Alibaba Cloud CleverSee でウェブ検索を実行します。",
+						"note": "既定は mainland_china。ドメイン許可リストがある場合は global を使用し、最大30件を渡します。"
+					},
+					"tencent_wsa": {
+						"summary": "Tencent Cloud WSA の検索結果を共通のツール形式で返します。",
+						"note": "サービスの API Key を使用。許可リストの先頭を上流に渡し、その後ゲートウェイで全条件を適用します。"
+					},
+					"deepseek": {
+						"summary": "DeepSeek Search でタイトル、リンク、概要を取得します。",
+						"note": "クエリは128文字まで。ドメイン条件は site: 構文を使用し、長さが足りない場合はローカルで絞り込みます。"
+					}
+				},
+				"webFetch": {
+					"firecrawl": {
+						"summary": "Firecrawl Scrape で指定ページを Markdown として抽出します。",
+						"note": "1回につき1つの URL を取得し、上流のタイトルとページアドレスを返します。"
+					},
+					"tavily": {
+						"summary": "Tavily Extract で指定ページの本文を抽出します。",
+						"note": "1回につき1つの URL を送信し、raw_content、content の順で本文を取得します。"
+					},
+					"jina": {
+						"summary": "Jina Reader でページのタイトル、アドレス、本文を読み取ります。",
+						"note": "Markdown を要求し、設定済みの Jina API Key で認証します。"
+					},
+					"deepseek": {
+						"summary": "DeepSeek Fetch でタイトルと Markdown 本文を読み取ります。",
+						"note": "最終リダイレクト先は返されないため、応答の URL は要求時のアドレスです。"
+					}
+				},
+				"webDeepSearch": {
+					"firecrawl": {
+						"summary": "Firecrawl Search で検索し、結果の Markdown 本文を要求します。",
+						"note": "タイトル、リンク、概要と取得できた本文を共通形式で返します。本文の有無は上流結果に依存します。"
+					},
+					"jina": {
+						"summary": "Jina Search で検索し、結果ページの本文を取得します。",
+						"note": "Markdown を要求し、件数を指定数に制限します。本文がない場合もあります。"
+					},
+					"deepseek": {
+						"summary": "DeepSeek Search の1回の要求で検索と本文取得を行います。",
+						"note": "need_content を有効化し、クエリを128文字までに制限します。本文がない場合もあります。"
+					}
+				},
+				"aiDetection": {
+					"tencent_tms": {
+						"summary": "Tencent Cloud TMS でテキストの AI 生成傾向を検出します。",
+						"note": "SecretId と SecretKey が必要です。Region の既定値は ap-guangzhou、BizType は任意。課金単位の文字数で切り上げます。"
+					}
+				}
+			}
 		}
 	},
 	"pricing": {
@@ -4088,7 +4283,7 @@
 			"title": "クライアント接続ガイド",
 			"subtitle": "クライアントを選んで設定をコピーします。Agent に必要なのはゲートウェイ URL とユーザー API Key だけで、上流のシークレットは不要です。",
 			"proxyUrl": "Proxy URL",
-			"proxyHint": "Proxy のベース URL を入力してください。/mcp は自動で付きます。「公開カタログのテスト」と共有します。",
+			"proxyHint": "REST・シミュレーター・MCP で共用します。既定値は GATEWAY_PROXY_URL。手動変更はこのブラウザーだけに適用します。",
 			"proxyInvalid": "URL が無効です。/mcp パス・認証情報・クエリを含まない http(s) のベース URL を指定してください。",
 			"scope": "サービスの範囲",
 			"allServices": "すべてのサービス（集約）",
@@ -4295,7 +4490,7 @@
 			"title": "公開カタログのテスト",
 			"subtitle": "Proxy に直接リクエストし、Agent が受け取る MCP カタログとレスポンスを確認します。",
 			"proxyUrl": "Proxy のベース URL",
-			"proxyHint": "Proxy のベース URL を入力してください。/mcp は自動追加されます。管理画面の URL や完全な MCP パスは使用しないでください。",
+			"proxyHint": "REST・シミュレーター・MCP で共用します。既定値は GATEWAY_PROXY_URL。手動変更はこのブラウザーだけに適用します。",
 			"scope": "サービスの範囲",
 			"allServices": "すべてのサービス",
 			"disabled": "無効",
@@ -4402,7 +4597,8 @@
 		"title": "課金ルール",
 		"perUnitMode": "単位ごとの課金",
 		"charactersUnit": "{count} 文字",
-		"requestUnit": "回"
+		"requestUnit": "回",
+		"standardLabel": "標準価格"
 	},
 	"remainingUi": {
 		"effectiveFactor": "対象レコードの金額を標準金額で割った実効倍率",

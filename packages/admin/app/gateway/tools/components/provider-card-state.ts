@@ -39,9 +39,7 @@ export function parseDraftMoney(raw: string): number | null {
 
 export function draftPricesOk(d: PriceTripleDraft): boolean {
 	return (
-		parseDraftMoney(d.metered) != null &&
-		parseDraftMoney(d.standard) != null &&
-		parseDraftMoney(d.charged) != null
+		parseDraftMoney(d.metered) != null && parseDraftMoney(d.standard) != null && parseDraftMoney(d.charged) != null
 	);
 }
 
@@ -111,7 +109,7 @@ export function resolveProviderCardActions(input: {
 }): ProviderCardActionFlags {
 	const selectedImplemented = input.selectedImplemented !== false;
 	return {
-		canSaveConfig: input.catalogPricesValid,
+		canSaveConfig: input.catalogPricesValid && (!input.selectedIsActive || input.selectedConfigured),
 		canSaveAndActivate:
 			input.catalogPricesValid && !input.selectedIsActive && selectedImplemented && input.selectedConfigured,
 	};
@@ -187,11 +185,7 @@ export function showConfiguredDot(status: ProviderCardStatusFlags): boolean {
 }
 
 /** A provider dialog saves only its own draft; other providers keep their saved values. */
-export function draftsForProviderSave<T extends Record<string, unknown>>(
-	saved: T,
-	drafts: T,
-	selected: keyof T
-): T {
+export function draftsForProviderSave<T extends Record<string, unknown>>(saved: T, drafts: T, selected: keyof T): T {
 	return cloneDrafts({ ...saved, [selected]: drafts[selected] });
 }
 

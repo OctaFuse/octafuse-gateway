@@ -92,6 +92,8 @@ services:
       DATABASE_DRIVER: mysql
       DATABASE_URL: mysql://octafuse:octafuse@mysql:3306/octafuse
       PORT: "8789"
+      # Browser-accessible Proxy base URL; optional, without /v1 or /mcp.
+      GATEWAY_PROXY_URL: ${GATEWAY_PROXY_URL:-}
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: "changeme"
       # 可选加固：已用 HTTPS 访问 Admin 时可取消注释（见 docs/operators/deployment/docker.md §7.3）

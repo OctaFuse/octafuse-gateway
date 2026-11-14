@@ -19,6 +19,7 @@ interface GlobalWithCloudflare {
 	DB?: D1Database;
 	ADMIN_USERNAME?: string;
 	ADMIN_PASSWORD?: string;
+	GATEWAY_PROXY_URL?: string;
 }
 
 interface ProcessWithEnv {
@@ -54,6 +55,7 @@ export function getCloudflareEnv(request?: Request): CloudflareEnv | undefined {
 				DB: globalEnv.DB,
 				ADMIN_USERNAME: globalEnv.ADMIN_USERNAME as string,
 				ADMIN_PASSWORD: globalEnv.ADMIN_PASSWORD as string,
+				GATEWAY_PROXY_URL: globalEnv.GATEWAY_PROXY_URL,
 			} as CloudflareEnv;
 		}
 	}

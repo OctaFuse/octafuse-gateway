@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **统一 Proxy 接入地址**：Admin 运行时读取 `GATEWAY_PROXY_URL`，REST 文档、模拟器及 MCP 接入/目录测试共用默认地址和浏览器覆盖，支持恢复部署默认并兼容旧地址；界面标明来源，统一校验基础路径，避免带入凭证或接口后缀。Docker 与 Worker 部署模板同步支持。
+
+- **REST 工具工作区**：按工具目录组织生效概要、供应商与计费、接入文档三个平级区域；配置常显，API / Agent 文档独立切换。集中展示统一 URL、参数、响应及可复制的 cURL；Agent 支持通用、OpenAI Responses / Chat Completions、Anthropic Messages 定义格式，配套服务端执行器、常显的结果回传示例和官方文档。代码块统一语法高亮，复制保留原文；说明按需查看，文档按内容区宽度布局。供应商行可展开当前引擎介绍、接入要点和官方入口，点击配置或切换状态不触发展开；供应商列表在使用状态列单选切换已保存配置，配置弹窗仅编辑与保存；未保存修改或缺少凭证时禁止启用，切换不写入草稿，列表价格与生效概要使用已保存配置；弹窗采用统一标签、计费输入与结果列对齐，供应商和凭证归入连接设置，密钥显隐位于输入框右侧，金额与倍率通过货币、乘号前缀和轻量色彩区分，实际扣费与成本就近展示在倍率旁；明确切换影响，配置显式保存，切换保留草稿。
+
 - **DeepSeek 工具引擎**：Web Search、Web Fetch、Web Deep Search 三个 REST 工具新增 `deepseek` 引擎，对接 DeepSeek 独立 Search / Fetch API（`api.deepseek.com/v1/tools/search|fetch`），在管理后台「Tools → Configuration」填入 DeepSeek API Key 并设为 Active 即可，对外接口与计费方式不变。Deep Search 通过 `need_content` 一次请求取到正文。DeepSeek 的查询词最长 128 个字符，超出部分由 Gateway 截断；域名白名单 / 黑名单在能放进查询词时以 `site:` / `-site:` 下发，放不下则多取结果后本地过滤。上游刊例价为每千次成功请求 $0.75，请在计费规则中自行设置标准价与倍率；Gateway 对空结果仍按次计费。
 
 - **Node 运行时安全修复**：升级 `@hono/node-server` 至 2.1.8，并统一直接与 MCP SDK 间接依赖版本，修复请求路径反斜杠解析及异步 WebSocket 升级期间连接重置的漏洞。

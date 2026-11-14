@@ -1,8 +1,9 @@
 'use client';
 
+import { useProxyBaseUrl } from '@/components/proxy-connection-provider';
 import { AdminPageTitle } from '@/components/admin-page-title';
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import { PlusIcon, ClockIcon, ServerStackIcon, CodeBracketIcon, LinkIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -15,23 +16,6 @@ import { McpCatalogTestModal } from './components/mcp-catalog-test-modal';
 import { McpConnectGuideModal, type McpConnectAuth } from './components/mcp-connect-guide-modal';
 import { McpOAuthSettings } from './components/mcp-oauth-settings';
 import { OAuthAccessTokensPanel } from './components/oauth-access-tokens-panel';
-import { readSavedMcpProxyUrl } from './mcp-connect-guide-utils';
-import { mcpProxyBaseUrl } from './mcp-catalog-test-utils';
-
-const PROXY_URL_CHANGED = 'mcp-proxy-url-changed';
-
-function subscribeProxyUrl(onChange: () => void) {
-	window.addEventListener('storage', onChange);
-	window.addEventListener(PROXY_URL_CHANGED, onChange);
-	return () => {
-		window.removeEventListener('storage', onChange);
-		window.removeEventListener(PROXY_URL_CHANGED, onChange);
-	};
-}
-
-function proxyUrlSnapshot() {
-	return mcpProxyBaseUrl(readSavedMcpProxyUrl()) ?? '';
-}
 
 export default function McpServersPage() {
 	const t = useTranslations('mcp');
@@ -41,8 +25,7 @@ export default function McpServersPage() {
 	const [guideOpen, setGuideOpen] = useState(false);
 	const [guideScope, setGuideScope] = useState('');
 	const [guideAuth, setGuideAuth] = useState<McpConnectAuth>('key');
-	const proxyBaseUrl = useSyncExternalStore(subscribeProxyUrl, proxyUrlSnapshot, () => '');
-	const refreshProxyBaseUrl = () => window.dispatchEvent(new Event(PROXY_URL_CHANGED));
+	const proxyBaseUrl = useProxyBaseUrl().url;
 	const [section, setSection] = useState<'services' | 'clients'>('services');
 	const sections = [
 		{ id: 'services', icon: ServerStackIcon, label: t('sections.services') },
@@ -70,10 +53,7 @@ export default function McpServersPage() {
 	}, []);
 
 	useEffect(() => {
-		if (
-			section === 'clients' &&
-			['#mcp-oauth', '#oauth-access-tokens'].includes(window.location.hash)
-		) {
+		if (section === 'clients' && ['#mcp-oauth', '#oauth-access-tokens'].includes(window.location.hash)) {
 			document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: 'start' });
 		}
 	}, [section]);
@@ -110,11 +90,7 @@ export default function McpServersPage() {
 					) : null}
 				</div>
 			</div>
-			<div
-				role="tablist"
-				aria-label={t('sections.label')}
-				className="admin-detail-tabs mb-6 flex flex-wrap gap-1"
-			>
+			<div role="tablist" aria-label={t('sections.label')} className="admin-detail-tabs mb-6 flex flex-wrap gap-1">
 				{sections.map(({ id, label, icon: Icon }, index) => (
 					<button
 						key={id}
@@ -276,7 +252,6 @@ export default function McpServersPage() {
 					initialSlug={catalogScope}
 					onClose={() => {
 						setCatalogScope(null);
-						refreshProxyBaseUrl();
 					}}
 				/>
 			) : null}
@@ -287,7 +262,6 @@ export default function McpServersPage() {
 					initialAuth={guideAuth}
 					onClose={() => {
 						setGuideOpen(false);
-						refreshProxyBaseUrl();
 					}}
 				/>
 			) : null}

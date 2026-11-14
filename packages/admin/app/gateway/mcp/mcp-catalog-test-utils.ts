@@ -1,9 +1,8 @@
+import { normalizeProxyBaseUrl } from '@/lib/proxy-base-url';
 /** Read-only MCP requests and presentation of the actual Proxy response. */
 export const MCP_CATALOG_METHODS = ['tools/list', 'prompts/list', 'resources/list', 'initialize'] as const;
 export type McpCatalogMethod = (typeof MCP_CATALOG_METHODS)[number];
 export const MCP_PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26'] as const;
-export const MCP_CATALOG_PROXY_STORAGE = 'octafuse.mcp.catalog.proxyBaseUrl';
-export const SIMULATOR_PROXY_STORAGE = 'octafuse.simulator.proxyBaseUrl';
 
 type JsonObject = Record<string, unknown>;
 export type McpCatalogEntry = JsonObject;
@@ -18,19 +17,7 @@ export type McpCatalogRequest = {
 	bodyText: string;
 };
 
-export function mcpProxyBaseUrl(raw: string): string | null {
-	try {
-		if (!raw.trim()) return null;
-		const url = new URL(raw.trim());
-		if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash)
-			return null;
-		// The field accepts the Proxy base URL, not an already scoped MCP endpoint.
-		if (/\/mcp(?:\/[^/]+)?\/?$/.test(url.pathname)) return null;
-		return url.toString().replace(/\/+$/, '');
-	} catch {
-		return null;
-	}
-}
+export const mcpProxyBaseUrl = normalizeProxyBaseUrl;
 
 export function normalizeMcpApiKey(raw: string): string {
 	return raw
@@ -124,17 +111,10 @@ export function parseMcpCatalogResponse(
 		};
 	}
 	const field =
-		request.rpcMethod === 'tools/list'
-			? 'tools'
-			: request.rpcMethod === 'prompts/list'
-			? 'prompts'
-			: 'resources';
+		request.rpcMethod === 'tools/list' ? 'tools' : request.rpcMethod === 'prompts/list' ? 'prompts' : 'resources';
 	const entries = result[field];
 	const identity = field === 'resources' ? 'uri' : 'name';
-	if (
-		!Array.isArray(entries) ||
-		entries.some((entry) => !object(entry) || typeof entry[identity] !== 'string')
-	)
+	if (!Array.isArray(entries) || entries.some((entry) => !object(entry) || typeof entry[identity] !== 'string'))
 		return { json, entries: null, rpcError: null, valid: false };
 	return { json, entries, rpcError: null, valid: true };
 }
@@ -150,8 +130,7 @@ export function mcpEntrySlug(entry: McpCatalogEntry, method: McpCatalogMethod): 
 			return null;
 		}
 	}
-	const match =
-		typeof entry.name === 'string' ? /^([a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?)__/.exec(entry.name) : null;
+	const match = typeof entry.name === 'string' ? /^([a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?)__/.exec(entry.name) : null;
 	return match?.[1] ?? null;
 }
 

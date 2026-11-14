@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useProxyBaseUrlInput } from '@/components/proxy-connection-provider';
 import { useLocale, useTranslations } from 'next-intl';
 import { compareProvidersByKindThenName, liveProviderPickerLabel } from '@/lib/provider-kind';
 import type { GatewayProvider } from '@/lib/types';
@@ -20,11 +21,7 @@ import {
 import { embeddingBodyTemplateFor, joinEmbeddingUsageHint } from '@/lib/embeddings';
 import { inferPlaygroundParseMode, type PlaygroundProtocol } from '@/lib/playground/merge-assistant-text';
 import { previewPlaygroundResponse, readPlaygroundTextStream } from '@/lib/playground/response-preview';
-import {
-	normalizeProtocol,
-	parseLastStreamUsage,
-	tryParseUsageSummary,
-} from '@/lib/playground/usage-parsing';
+import { normalizeProtocol, parseLastStreamUsage, tryParseUsageSummary } from '@/lib/playground/usage-parsing';
 import {
 	buildSimulatorRequest,
 	buildSimulatorDashScopeRealtimeUrl,
@@ -79,7 +76,6 @@ import {
 	LS_MODEL_ID,
 	LS_OPENAI_LLM_OPERATION,
 	LS_PROTOCOL,
-	LS_PROXY,
 	LS_ROUTE_GROUP,
 	LS_TOOL_ID,
 	buildModelRoutingString,
@@ -105,7 +101,9 @@ export function useSimulatorPageState() {
 	const locale = useLocale();
 	const { confirm } = useFeedback();
 
-	const [proxyBaseUrl, setProxyBaseUrl] = useState('');
+	const proxyConnection = useProxyBaseUrlInput();
+	const proxyBaseUrl = proxyConnection.value;
+	const setProxyBaseUrl = proxyConnection.setValue;
 	const [protocol, setProtocolState] = useState<SimulatorProtocol>('openai');
 	const [openaiLlmOperation, setOpenaiLlmOperationState] = useState<OpenaiLlmOperation>('chat');
 	const [geminiAction, setGeminiAction] = useState<SimulatorGeminiAction>('streamGenerateContent');
@@ -281,10 +279,7 @@ export function useSimulatorPageState() {
 		return Array.from(set).sort((a, b) => a.localeCompare(b));
 	}, [routes, selectedModelId]);
 
-	const selectedModel = useMemo(
-		() => models.find((m) => m.id === selectedModelId) ?? null,
-		[models, selectedModelId]
-	);
+	const selectedModel = useMemo(() => models.find((m) => m.id === selectedModelId) ?? null, [models, selectedModelId]);
 
 	const selectedModelKind = useMemo(() => kindOfModel(selectedModel), [selectedModel]);
 	const selectedModelIsImage = selectedModelKind === 'image';
@@ -306,8 +301,7 @@ export function useSimulatorPageState() {
 		[routes, selectedModelId, routeGroup, selectedAudioOperation, protocol]
 	);
 	const selectedRealtimeOperation = useMemo(() => {
-		if ((protocol !== 'dashscope' && protocol !== 'elevenlabs') || selectedAudioOperation == null)
-			return null;
+		if ((protocol !== 'dashscope' && protocol !== 'elevenlabs') || selectedAudioOperation == null) return null;
 		if (dashScopeRealtimeOperation && realtimeOperationOptions.includes(dashScopeRealtimeOperation)) {
 			return dashScopeRealtimeOperation;
 		}
@@ -316,14 +310,11 @@ export function useSimulatorPageState() {
 	}, [protocol, selectedAudioOperation, dashScopeRealtimeOperation, realtimeOperationOptions]);
 	/** ElevenLabs 实时路由（`audio.*.realtime`）；HTTP 透传不算。 */
 	const selectedElevenLabsRealtimeOperation =
-		protocol === 'elevenlabs' &&
-		selectedRealtimeOperation &&
-		isElevenLabsRealtimeOperation(selectedRealtimeOperation)
+		protocol === 'elevenlabs' && selectedRealtimeOperation && isElevenLabsRealtimeOperation(selectedRealtimeOperation)
 			? selectedRealtimeOperation
 			: null;
 	// DashScope 实时 ASR 为 `audio.transcriptions.realtime.*`，ElevenLabs 为 `audio.transcriptions.realtime`。
-	const selectedCanUseMicrophone =
-		selectedRealtimeOperation?.startsWith('audio.transcriptions.realtime') ?? false;
+	const selectedCanUseMicrophone = selectedRealtimeOperation?.startsWith('audio.transcriptions.realtime') ?? false;
 	const setDashScopeRealtimeOperationForSelection = useCallback(
 		(operation: string) => {
 			if (!realtimeOperationOptions.includes(operation)) {
@@ -332,14 +323,7 @@ export function useSimulatorPageState() {
 			setDashScopeRealtimeOperation(operation);
 			if (protocol === 'elevenlabs' && selectedAudioOperation) {
 				setBodyText(
-					bodyTemplateForSelection(
-						'elevenlabs',
-						false,
-						'generations',
-						selectedAudioOperation,
-						undefined,
-						operation
-					)
+					bodyTemplateForSelection('elevenlabs', false, 'generations', selectedAudioOperation, undefined, operation)
 				);
 				setBodyError(null);
 				return;
@@ -398,13 +382,7 @@ export function useSimulatorPageState() {
 		() =>
 			isToolKind
 				? []
-				: filterMatchingActiveRoutes(
-						routes,
-						selectedModelId,
-						routeGroup,
-						protocol,
-						requestOperation ?? undefined
-				  ),
+				: filterMatchingActiveRoutes(routes, selectedModelId, routeGroup, protocol, requestOperation ?? undefined),
 		[routes, selectedModelId, routeGroup, protocol, requestOperation, isToolKind]
 	);
 	const customKindLabel = tKind('custom');
@@ -439,11 +417,9 @@ export function useSimulatorPageState() {
 		if (selectedAudioOperation === 'speech' || (selectedModelIsImage && !selectedModelIsAudio)) {
 			return (
 				matchingRoutes.find((candidate) => candidate.upstream_protocol === protocol)?.provider_model_name ??
-				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'dashscope')
-					?.provider_model_name ??
+				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'dashscope')?.provider_model_name ??
 				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'minimax')?.provider_model_name ??
-				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'elevenlabs')
-					?.provider_model_name ??
+				matchingRoutes.find((candidate) => candidate.upstream_protocol === 'elevenlabs')?.provider_model_name ??
 				matchingRoutes[0]?.provider_model_name
 			);
 		}
@@ -480,10 +456,7 @@ export function useSimulatorPageState() {
 			if (matchingRoutes.length === 0) return 'route';
 			if (
 				selectedAudioOperation === 'transcriptions' &&
-				(protocol === 'openai' ||
-					protocol === 'dashscope' ||
-					protocol === 'minimax' ||
-					protocol === 'elevenlabs')
+				(protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax' || protocol === 'elevenlabs')
 			) {
 				const fileUrl = (() => {
 					try {
@@ -498,12 +471,7 @@ export function useSimulatorPageState() {
 					if (!validated.ok) return 'audioFile';
 				}
 			}
-			if (
-				selectedModelIsImage &&
-				!selectedModelIsAudio &&
-				protocol === 'openai' &&
-				imageOperation === 'edits'
-			) {
+			if (selectedModelIsImage && !selectedModelIsAudio && protocol === 'openai' && imageOperation === 'edits') {
 				const validated = validateEditImageFiles(editFiles);
 				if (!validated.ok) return 'editImages';
 			}
@@ -588,10 +556,7 @@ export function useSimulatorPageState() {
 		try {
 			const audioOperation =
 				!isToolKind &&
-				(protocol === 'openai' ||
-					protocol === 'dashscope' ||
-					protocol === 'minimax' ||
-					protocol === 'elevenlabs')
+				(protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax' || protocol === 'elevenlabs')
 					? selectedAudioOperation
 					: null;
 			if (selectedElevenLabsRealtimeOperation && audioOperation) {
@@ -633,10 +598,7 @@ export function useSimulatorPageState() {
 				!isToolKind &&
 				selectedModelIsImage &&
 				!selectedModelIsAudio &&
-				(protocol === 'openai' ||
-					protocol === 'minimax' ||
-					protocol === 'volcengine' ||
-					protocol === 'gemini');
+				(protocol === 'openai' || protocol === 'minimax' || protocol === 'volcengine' || protocol === 'gemini');
 			const built = buildSimulatorRequest({
 				baseUrl: parsed.base,
 				kind: filterKind,
@@ -649,9 +611,7 @@ export function useSimulatorPageState() {
 				apiKey: revealedSk,
 				audioOperation: audioOperation ?? undefined,
 				audioFile: audioOperation === 'transcriptions' ? audioFile : undefined,
-				dashscopeRequestOperation: selectedUsesDashScopeHttpAsr
-					? selectedRealtimeOperation ?? undefined
-					: undefined,
+				dashscopeRequestOperation: selectedUsesDashScopeHttpAsr ? selectedRealtimeOperation ?? undefined : undefined,
 				imageOperation: useImages ? imageOperation : undefined,
 				editImages: useImages && imageOperation === 'edits' ? editFiles : undefined,
 			});
@@ -706,9 +666,7 @@ export function useSimulatorPageState() {
 		const hasRaw = responseText.trim().length > 0;
 		const p = mergedAssistantParts;
 		const reasoningDisplay =
-			p.reasoning ||
-			(sending && hasRaw ? t('receiving') : '') ||
-			(!sending && hasRaw && !p.reasoning ? '—' : '');
+			p.reasoning || (sending && hasRaw ? t('receiving') : '') || (!sending && hasRaw && !p.reasoning ? '—' : '');
 		const bodyDisplay =
 			p.body ||
 			(sending && hasRaw ? t('receiving') : '') ||
@@ -738,8 +696,6 @@ export function useSimulatorPageState() {
 
 	useEffect(() => {
 		try {
-			const u = localStorage.getItem(LS_PROXY);
-			if (u) setProxyBaseUrl(u);
 			const p = localStorage.getItem(LS_PROTOCOL);
 			const llmOpRaw = localStorage.getItem(LS_OPENAI_LLM_OPERATION);
 			const llmOp: OpenaiLlmOperation = llmOpRaw === 'responses' ? 'responses' : 'chat';
@@ -750,30 +706,12 @@ export function useSimulatorPageState() {
 				setProtocolState(p);
 				setBodyText(
 					p === 'openai'
-						? bodyTemplateForSelection(
-								'openai',
-								false,
-								'generations',
-								null,
-								undefined,
-								undefined,
-								undefined,
-								llmOp
-						  )
+						? bodyTemplateForSelection('openai', false, 'generations', null, undefined, undefined, undefined, llmOp)
 						: BODY_TEMPLATES[p]
 				);
 			} else if (llmOp === 'responses') {
 				setBodyText(
-					bodyTemplateForSelection(
-						'openai',
-						false,
-						'generations',
-						null,
-						undefined,
-						undefined,
-						undefined,
-						llmOp
-					)
+					bodyTemplateForSelection('openai', false, 'generations', null, undefined, undefined, undefined, llmOp)
 				);
 			}
 			const storedKind = localStorage.getItem(LS_INVOKE_KIND);
@@ -800,15 +738,6 @@ export function useSimulatorPageState() {
 		}
 		setHydrated(true);
 	}, []);
-
-	useEffect(() => {
-		if (!hydrated) return;
-		try {
-			localStorage.setItem(LS_PROXY, proxyBaseUrl);
-		} catch {
-			// ignore
-		}
-	}, [proxyBaseUrl, hydrated]);
 
 	useEffect(() => {
 		if (!hydrated) return;
@@ -992,10 +921,7 @@ export function useSimulatorPageState() {
 		}
 		if (selectedModelIsImage) {
 			const imageProtocol =
-				protocol === 'dashscope' ||
-				protocol === 'minimax' ||
-				protocol === 'volcengine' ||
-				protocol === 'gemini'
+				protocol === 'dashscope' || protocol === 'minimax' || protocol === 'volcengine' || protocol === 'gemini'
 					? protocol
 					: 'openai';
 			if (protocol !== imageProtocol) setProtocolState(imageProtocol);
@@ -1057,9 +983,7 @@ export function useSimulatorPageState() {
 
 	useEffect(() => {
 		if (isToolKind || !selectedModelId || supportedSurfaces.protocols.length === 0) return;
-		const nextProtocol = supportedSurfaces.protocols.includes(protocol)
-			? protocol
-			: supportedSurfaces.protocols[0];
+		const nextProtocol = supportedSurfaces.protocols.includes(protocol) ? protocol : supportedSurfaces.protocols[0];
 		const nextOpenaiOp =
 			nextProtocol === 'openai' &&
 			supportedSurfaces.openaiLlmOperations.length > 0 &&
@@ -1484,10 +1408,7 @@ export function useSimulatorPageState() {
 
 		const audioOperation =
 			!isToolKind &&
-			(protocol === 'openai' ||
-				protocol === 'dashscope' ||
-				protocol === 'minimax' ||
-				protocol === 'elevenlabs')
+			(protocol === 'openai' || protocol === 'dashscope' || protocol === 'minimax' || protocol === 'elevenlabs')
 				? selectedAudioOperation
 				: null;
 		const useImages =
@@ -1506,8 +1427,7 @@ export function useSimulatorPageState() {
 			}
 		}
 
-		const isDashScopeRealtime =
-			protocol === 'dashscope' && audioOperation != null && !selectedUsesDashScopeHttpAsr;
+		const isDashScopeRealtime = protocol === 'dashscope' && audioOperation != null && !selectedUsesDashScopeHttpAsr;
 		if (isDashScopeRealtime) {
 			const operation = selectedRealtimeOperation;
 			if (!operation || !isDashScopeRealtimeOperation(operation)) {
@@ -1559,8 +1479,7 @@ export function useSimulatorPageState() {
 						});
 					},
 					onMessage: (message) => {
-						const text =
-							typeof message === 'string' ? message : `[binary frame: ${message.byteLength} bytes]`;
+						const text = typeof message === 'string' ? message : `[binary frame: ${message.byteLength} bytes]`;
 						setResponseText((previous) => (previous ? `${previous}\n${text}` : text));
 					},
 					onAudioChunk: (chunk) => {
@@ -1651,8 +1570,7 @@ export function useSimulatorPageState() {
 							contentType: 'application/x-ndjson',
 						});
 					},
-					onMessage: (message) =>
-						setResponseText((previous) => (previous ? `${previous}\n${message}` : message)),
+					onMessage: (message) => setResponseText((previous) => (previous ? `${previous}\n${message}` : message)),
 					onAudioChunk: (chunk) => {
 						if (audioOperation === 'speech') realtimeAudioChunksRef.current.push(chunk);
 					},
@@ -1708,9 +1626,7 @@ export function useSimulatorPageState() {
 				apiKey: revealedSk,
 				audioOperation: audioOperation ?? undefined,
 				audioFile: audioOperation === 'transcriptions' ? audioFile : undefined,
-				dashscopeRequestOperation: selectedUsesDashScopeHttpAsr
-					? selectedRealtimeOperation ?? undefined
-					: undefined,
+				dashscopeRequestOperation: selectedUsesDashScopeHttpAsr ? selectedRealtimeOperation ?? undefined : undefined,
 				imageOperation: useImages ? imageOperation : undefined,
 				editImages: useImages && imageOperation === 'edits' ? editFiles : undefined,
 			});
@@ -1797,10 +1713,7 @@ export function useSimulatorPageState() {
 					if (nestedUrl) msg = `${msg}\nupstream: ${nestedUrl}`;
 					setBodyError(msg);
 				} else if (useImages) {
-					const parsedImg = parseImagesGenerationsResponse(
-						JSON.stringify(j),
-						imageRequestMetaFromBody(bodyObj)
-					);
+					const parsedImg = parseImagesGenerationsResponse(JSON.stringify(j), imageRequestMetaFromBody(bodyObj));
 					setImagePreviews(parsedImg.images);
 					setUsageHint(parsedImg.usageHint);
 				} else {
@@ -1908,6 +1821,7 @@ export function useSimulatorPageState() {
 	return {
 		loadingCatalog,
 		catalogError,
+		proxyConnection,
 		proxyBaseUrl,
 		setProxyBaseUrl,
 		protocol,

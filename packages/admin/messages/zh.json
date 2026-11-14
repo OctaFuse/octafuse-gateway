@@ -1,4 +1,14 @@
 {
+	"proxyConnection": {
+		"source": {
+			"browser": "使用浏览器覆盖 · REST、模拟器与 MCP 共用",
+			"deployment": "使用部署配置 GATEWAY_PROXY_URL",
+			"local": "使用本地开发默认地址",
+			"unset": "未设置 Proxy 地址；可配置 GATEWAY_PROXY_URL"
+		},
+		"reset": "恢复默认地址",
+		"hint": "REST、模拟器与 MCP 共用。默认读取 GATEWAY_PROXY_URL；手动修改仅覆盖当前浏览器。"
+	},
 	"autoRefresh": {
 		"paused": "已暂停",
 		"everySeconds": "每 {seconds} 秒",
@@ -1632,10 +1642,7 @@
 				},
 				"dashscope-asr-fun-file": {
 					"purpose": "适用 fun-asr-realtime 系列的非实时文件接口。",
-					"mapping": [
-						"language 和 prompt 会返回 400。",
-						"format 从 MIME 或文件扩展名推断。"
-					]
+					"mapping": ["language 和 prompt 会返回 400。", "format 从 MIME 或文件扩展名推断。"]
 				},
 				"dashscope-asr-qwen-file-async": {
 					"purpose": "适用 qwen3-asr-flash-filetrans。供应商需配置提交和任务查询两个端点。",
@@ -3662,7 +3669,7 @@
 		},
 		"config": {
 			"title": "REST 服务",
-			"subtitle": "管理搜索、网页提取与内容检测服务",
+			"subtitle": "配置工具供应商与计费，查看 API 与 Agent 接入文档。",
 			"viewInvocations": "查看调用记录 →",
 			"showSecrets": "显示密钥",
 			"hideSecrets": "隐藏密钥",
@@ -3706,10 +3713,9 @@
 			"catalogProvider": "引擎",
 			"noKey": "无 Key",
 			"needKeyToActivate": "请先为至少一个引擎填写 API Key 再保存。",
-			"providerGuideLink": "引擎说明",
 			"providerDocs": "官网与 API Key →",
 			"cost": "用户扣费单价（{currency}）",
-			"apiKey": "引擎 API Key",
+			"apiKey": "API Key",
 			"apiKeyPlaceholder": "粘贴引擎 API Key",
 			"apiKeyHint": "有流量前必须配置；清除后不会回退到环境变量。",
 			"providers": {
@@ -3718,49 +3724,6 @@
 				"cleversee": "阿里云 CleverSee（开析）",
 				"tencent_wsa": "腾讯云联网搜索 WSA",
 				"deepseek": "DeepSeek 搜索"
-			},
-			"providerGuide": {
-				"title": "搜索引擎说明",
-				"subtitle": "各引擎的索引 / 信源与适用场景。均非百度或谷歌官方搜索 API。",
-				"disclaimer": "这些引擎都不是直接调用百度 / 谷歌官方搜索 API，而是各自（或合作方）的网页索引；结果链接里仍可能出现 baidu.com、google.com 等站点。",
-				"selected": "当前已选",
-				"docsLink": "官网与 API Key →",
-				"labels": {
-					"sources": "信源",
-					"bestFor": "更适合"
-				},
-				"items": {
-					"bocha": {
-						"badge": "国内首选",
-						"summary": "面向 AI 的中文搜索引擎，自建大规模网页索引（定位为国内可用的 Bing Search API 替代）。",
-						"sources": "近百亿级网页 + 生态内容（新闻、百科、短视频、天气、学术等）。不是百度 / 谷歌官方 API。",
-						"bestFor": "中国区用户、中文查询、国内合规场景。"
-					},
-					"tavily": {
-						"badge": "国际首选",
-						"summary": "面向 LLM 的检索层：搜索 + 抓取精炼 + 排序一次返回，适合 Agent / RAG，而非传统 SERP 列表。",
-						"sources": "自有爬虫 + 第三方聚合（业界常与 Brave 等独立索引关联）。不是谷歌 / 百度官方 API。",
-						"bestFor": "国际区、英文资料检索、Agent 工作流。"
-					},
-					"cleversee": {
-						"badge": "",
-						"summary": "阿里云 CleverSee（开析）AI 原生联网搜索，支持 mainland_china / global 信源范围。",
-						"sources": "阿里自研 AI 搜索索引；文档未宣称绑定百度或谷歌。Gateway 默认 mainland_china，配置域名白名单时会切到 global。",
-						"bestFor": "需要在阿里云上显式切换「国内 / 全球」检索范围时。"
-					},
-					"tencent_wsa": {
-						"badge": "",
-						"summary": "腾讯云联网搜索 API（WSA），官方说明底层来自搜狗搜索。",
-						"sources": "搜狗全网公开页 + 腾讯内容生态（腾讯新闻、搜狗百科、企鹅号等）；高版本含 VR / 权威垂域。",
-						"bestFor": "国内中文检索的博查备选，偏搜狗 / 腾讯内容。"
-					},
-					"deepseek": {
-						"badge": "",
-						"summary": "DeepSeek 独立搜索 API，由 DeepSeek 自研搜索引擎提供。按成功请求计费（刊例价每千次 $0.75），空结果和失败上游不计费。",
-						"sources": "DeepSeek 自有网页索引，按相关性、权威度和时效排序。查询词超过 128 个字符时由 Gateway 截断；域名过滤在能放进查询词时以 site: 语法下发，放不下就改为本地过滤。",
-						"bestFor": "已持有 DeepSeek API Key 的中英文通用网页检索。"
-					}
-				}
 			}
 		},
 		"webFetch": {
@@ -3774,7 +3737,7 @@
 			"needKeyToActivate": "请先为至少一个引擎填写 API Key 再保存。",
 			"providerDocs": "官网与 API Key →",
 			"cost": "用户扣费单价（{currency}）",
-			"apiKey": "引擎 API Key",
+			"apiKey": "API Key",
 			"apiKeyPlaceholder": "粘贴引擎 API Key",
 			"apiKeyHint": "有流量前必须配置；清除后不会回退到环境变量。",
 			"providers": {
@@ -3793,7 +3756,7 @@
 			"needKeyToActivate": "请先为至少一个引擎填写 API Key 再保存。",
 			"providerDocs": "官网与 API Key →",
 			"cost": "用户扣费单价（{currency}）",
-			"apiKey": "引擎 API Key",
+			"apiKey": "API Key",
 			"apiKeyPlaceholder": "粘贴引擎 API Key",
 			"providers": {
 				"firecrawl": "Firecrawl Search",
@@ -3884,8 +3847,145 @@
 			"noKeyCannotActivate": "未配置 API Key 的引擎不能设为 Active。",
 			"switchActiveBeforeClearingKey": "若要清空当前 Active 引擎的 Key，请先把 Active 切到仍有 Key 的引擎并保存，再清空旧 Key。"
 		},
+		"apiGuide": {
+			"authLabel": "用户鉴权",
+			"baseRequired": "先在「接入地址」中填写 Proxy 地址",
+			"copyCode": "复制 {name}",
+			"docs": "API 文档",
+			"openDocs": "{name} API 文档",
+			"title": "{name} · API 接入",
+			"copyUrl": "复制完整调用 URL",
+			"copyPath": "复制接口路径",
+			"copyFailed": "复制失败，请手动选择文本",
+			"proxyBase": "Proxy 地址",
+			"proxyHint": "REST、模拟器与 MCP 共用。默认读取 GATEWAY_PROXY_URL；手动修改仅覆盖当前浏览器。",
+			"invalidBase": "请填写 http(s) 基础地址，不含 /v1、接口路径、凭证或查询参数。",
+			"authHint": "使用用户 API Key：Authorization: Bearer USER_API_KEY。无需向 Agent 提供管理密钥或上游引擎密钥。",
+			"views": "文档视图",
+			"reference": "接口说明",
+			"curl": "cURL 示例",
+			"agent": "Agent 工具",
+			"request": "请求体 · JSON",
+			"response": "响应 · 200",
+			"required": "必填",
+			"defaultValue": "默认 {value}",
+			"optionalHint": "? 可省略",
+			"errors": "常见错误",
+			"curlHint": "先在终端设置 OCTAFUSE_API_KEY 为用户 API Key，再运行示例。请求会使用当前已启用的引擎，成功调用按生效配置计费。",
+			"agentHint": "名称和参数来自 Gateway 工具契约；按 Agent 所用协议选择格式。定义只供模型生成工具调用，不会自动执行请求，也不是 MCP 服务地址。",
+			"definition": "注册工具 · JSON",
+			"executor": "执行工具 · TypeScript / Node.js 18+",
+			"executorHint": "在 Agent 服务端运行，设置 OCTAFUSE_API_KEY 为用户 API Key；OCTAFUSE_BASE_URL 可覆盖当前地址。将工具参数传入函数，返回 Gateway 的 data。不要把密钥写进工具定义或模型上下文。",
+			"fields": {
+				"query": "搜索词，至少 2 字符（去首尾空白）",
+				"count": "1–10 条结果",
+				"allowed_domains": "限定域名；与 blocked_domains 互斥",
+				"blocked_domains": "排除域名；与 allowed_domains 互斥",
+				"url": "公开 http(s) URL；不支持本地、私网或元数据地址",
+				"text": "检测正文，不能为空（去首尾空白）"
+			},
+			"responseFields": {
+				"results": "搜索结果列表",
+				"title": "页面标题",
+				"url": "页面 URL（可能重定向）",
+				"snippet": "短摘要",
+				"summary": "补充摘要",
+				"content": "网页正文，通常为 Markdown",
+				"cost": "用户扣费（网关计费币种）",
+				"overall_score": "AI 倾向分数，0–100，按字符加权",
+				"total_chars": "检测字符数",
+				"segments": "分段结果：index、chars、score、excerpt",
+				"score": "分段 AI 倾向分数，0–100",
+				"billing_units": "字符数 ÷ 计费粒度，向上取整"
+			},
+			"errorsByStatus": {
+				"400": "请求参数或 JSON 格式无效。",
+				"401": "用户 API Key 缺失或无效。",
+				"403": "额度不足或访问受限。",
+				"502": "上游调用失败。",
+				"503": "工具未启用、凭证缺失或配置无效。"
+			},
+			"agentFlow": "注册工具 → 执行 REST → 回传结果",
+			"format": "定义格式",
+			"officialDocs": "官方文档",
+			"formats": {
+				"generic": "通用定义（需适配）",
+				"responses": "OpenAI Responses",
+				"chat": "OpenAI Chat Completions",
+				"anthropic": "Anthropic Messages"
+			},
+			"formatHints": {
+				"generic": "供自定义 Agent 适配；inputSchema 不是所有 SDK 通用的注册格式。",
+				"responses": "将定义加入请求的 tools 数组。显式使用 strict: false，保留 REST 参数的可选语义。",
+				"chat": "将定义加入请求的 tools 数组；保留 function 包装。使用此协议的模型或兼容服务须支持工具调用。",
+				"anthropic": "将定义加入 Messages 请求的 tools 数组；input_schema 对应模型生成的 input。"
+			},
+			"handler": "回传调用结果",
+			"handlerCode": "调用桥接 · TypeScript",
+			"handlerHints": {
+				"generic": "在你的工具调度器中调用 handleToolCall；arguments 为已解析的参数对象，返回值交给 Agent 框架处理。",
+				"responses": "仅将 output 中的 function_call 项传入此函数；返回项加入下一轮 input，并保留原始模型输出（含推理项）。",
+				"chat": "仅将 message.tool_calls 中的函数调用传入；先保留 assistant 消息，再将返回的 tool 消息追加到 messages。",
+				"anthropic": "仅将 content 中的 tool_use 块传入；保留原始 assistant 消息，把返回块放进紧随其后的 user 消息 content 中。"
+			},
+			"agentRuntimeHint": "以上为接入片段，不是完整 Agent 循环。按 SDK 校验参数、关联调用 ID 并继续请求模型；超时与错误由运行端处理，避免对可能已计费的调用盲目重试。工具描述可按任务调整，名称须与执行器一致。"
+		},
+		"workspace": {
+			"documentation": "接入文档",
+			"providersHelp": "供应商与计费说明",
+			"noMatches": "没有匹配的工具",
+			"intro": "客户端调用统一工具接口；Gateway 负责选择当前供应商并按配置计费。",
+			"addressSettings": "接入地址",
+			"directory": "工具目录",
+			"selectTool": "选择工具",
+			"configured": "已配置",
+			"testTool": "调试工具",
+			"appliedProvider": "生效配置",
+			"setupHint": "尚未启用供应商",
+			"setupAction": "配置供应商",
+			"views": "工具工作区",
+			"tabs": {
+				"providers": "供应商与计费",
+				"api": "API 接入",
+				"agent": "Agent 接入"
+			},
+			"providersHint": "每个工具启用一个供应商（上游引擎），凭证与价格独立配置。切换供应商不会改变工具定义或调用 URL；编辑后须保存才会生效。",
+			"input": "输入",
+			"output": "输出",
+			"inputs": {
+				"webSearch": "搜索词，可选结果数量与域名过滤",
+				"webFetch": "需要读取的公开网页 URL",
+				"webDeepSearch": "搜索词与结果数量",
+				"aiDetection": "需要检测的文本正文"
+			},
+			"outputs": {
+				"webSearch": "网页标题、链接与摘要列表",
+				"webFetch": "网页正文与页面信息",
+				"webDeepSearch": "带网页正文的搜索结果列表",
+				"aiDetection": "整体分数、分段结果与计费单元数"
+			}
+		},
+		"toolGroups": {
+			"webSearch": "搜索网页，返回标题、链接与摘要",
+			"webFetch": "提取指定网页的正文，供模型阅读与处理",
+			"webDeepSearch": "搜索网页并获取正文，供进一步检索与分析",
+			"aiDetection": "检测文本的 AI 生成倾向"
+		},
 		"serviceList": {
-			"search": "搜索服务或工具类型",
+			"filteredEngineCount": "{visible} / {total} 个引擎",
+			"configHint": "配置此工具供应商的连接凭证与计费规则。",
+			"toolConfig": "配置 {name}",
+			"engineHint": "每个工具启用一个引擎；凭证与价格独立配置，保存后生效。",
+			"testActive": "测试当前引擎",
+			"configureEngine": "配置 {name}",
+			"configure": "配置",
+			"engineCount": "{count} 个引擎",
+			"currentEngine": "当前引擎 · {name}",
+			"enginesForTool": "{name} 的上游引擎",
+			"engines": "供应商",
+			"overview": "{tools} 个工具 · {engines} 个上游引擎",
+			"tools": "工具",
+			"search": "搜索工具或供应商",
 			"toolType": "工具类型",
 			"status": "状态",
 			"name": "服务",
@@ -3893,7 +3993,7 @@
 			"allStatuses": "全部状态",
 			"clearFilters": "清除筛选",
 			"noResults": "没有匹配的 REST 服务。",
-			"count": "显示 {visible} / {total} 个服务",
+			"count": "匹配 {visible} / {total} 个引擎",
 			"currency": "计费币种：{currency}",
 			"openHint": "点击服务行查看配置与管理操作",
 			"perRequest": "按请求计费",
@@ -3901,7 +4001,36 @@
 			"backToConfig": "返回服务配置",
 			"connection": "连接设置",
 			"pricing": "计费规则",
-			"credentialsRequired": "补全凭证后可保存并启用；也可以先保存配置。"
+			"credentialsRequired": "保存完整凭证后可在列表启用",
+			"usageStatus": "使用状态",
+			"actions": "操作",
+			"savedConfigHint": "已保存配置 · 每个工具启用一个供应商",
+			"credentialsSaved": "凭证已配置",
+			"credentialsMissing": "缺少凭证",
+			"enableEngine": "启用 {name}",
+			"enable": "启用",
+			"inUse": "使用中",
+			"standby": "待启用",
+			"needsSetup": "待配置",
+			"needsCredentials": "凭证异常",
+			"unavailable": "暂不可用",
+			"enableProvider": "启用此供应商",
+			"switchHint": "启用后，{name} 将替换 {current}，用于此工具的后续请求。",
+			"firstEnableHint": "启用后，此工具的请求将使用 {name}。",
+			"activeHint": "正在处理此工具的请求；保存后更新连接与计费。",
+			"credentialHint": "补齐连接凭证后可启用；也可先保存配置。",
+			"pricingHint": "按计费单元设置标准价，倍率决定实际扣费与成本。",
+			"saveOnlyHint": "保存连接与计费配置；启用请在列表的使用状态列操作。",
+			"usageSelectionHint": "每个工具使用一个供应商，选择其他已配置供应商即可切换",
+			"activateSavedHint": "使用此供应商已保存的连接与计费配置",
+			"switching": "切换中…",
+			"enabledFeedback": "已启用 {name}",
+			"activationBlocked": {
+				"missing": "请先配置并保存连接凭证",
+				"unsaved": "请先保存或还原此供应商的修改",
+				"unavailable": "此供应商暂不可用"
+			},
+			"engineDetails": "{name} 引擎说明"
 		},
 		"ui": {
 			"notConfigured": "待配置",
@@ -3911,11 +4040,77 @@
 			"test": "测试服务",
 			"testSavedConfig": "在调试台测试已保存的配置",
 			"discard": "还原修改",
-			"draftHint": "修改暂存于当前页面，尚未生效；测试使用已保存的配置",
-			"saveHint": "仅保存当前服务；启用后会替换同类工具的当前服务",
+			"draftHint": "尚未保存；调试使用已保存配置",
+			"saveHint": "启用后切换此工具的供应商",
 			"activationFailed": "配置已保存，启用失败：{message}",
 			"loadFailed": "未能读取服务配置，请重试",
 			"retry": "重新加载"
+		},
+		"engineGuide": {
+			"docs": "官网与文档",
+			"integration": "接入要点",
+			"items": {
+				"webSearch": {
+					"bocha": {
+						"summary": "通过博查 Web Search API 返回网页标题、链接与摘要。",
+						"note": "结果数量与域名白名单、黑名单随请求传给上游。"
+					},
+					"tavily": {
+						"summary": "通过 Tavily Search API 获取网页检索结果。",
+						"note": "网关使用 basic 检索深度，支持结果数量与域名过滤。"
+					},
+					"cleversee": {
+						"summary": "通过阿里云 CleverSee（开析）执行联网搜索。",
+						"note": "默认检索 mainland_china；指定域名白名单时切到 global，最多传入 30 个域名。"
+					},
+					"tencent_wsa": {
+						"summary": "通过腾讯云联网搜索 WSA 获取结果，并转换为统一工具响应。",
+						"note": "使用该服务的 API Key；域名白名单首项传给上游，网关再按完整过滤条件筛选结果。"
+					},
+					"deepseek": {
+						"summary": "通过 DeepSeek Search API 返回标题、链接与摘要。",
+						"note": "查询词最多保留 128 个字符；域名过滤使用 site: 语法，长度不足时改为本地过滤。"
+					}
+				},
+				"webFetch": {
+					"firecrawl": {
+						"summary": "通过 Firecrawl Scrape API 将指定网页提取为 Markdown 正文。",
+						"note": "每次抓取一个 URL，并返回上游提供的标题与页面地址。"
+					},
+					"tavily": {
+						"summary": "通过 Tavily Extract API 提取指定网页的正文。",
+						"note": "每次提交一个 URL，优先使用上游 raw_content，其次使用 content。"
+					},
+					"jina": {
+						"summary": "通过 Jina Reader 读取网页，返回标题、页面地址和正文。",
+						"note": "网关请求 Markdown 格式，并使用配置的 Jina API Key 鉴权。"
+					},
+					"deepseek": {
+						"summary": "通过 DeepSeek Fetch API 读取网页标题与 Markdown 正文。",
+						"note": "上游不返回最终跳转地址，因此响应中的 URL 保留请求地址。"
+					}
+				},
+				"webDeepSearch": {
+					"firecrawl": {
+						"summary": "通过 Firecrawl Search API 搜索网页，并请求结果包含 Markdown 正文。",
+						"note": "标题、链接、摘要和可用正文统一返回；正文是否存在取决于上游结果。"
+					},
+					"jina": {
+						"summary": "通过 Jina Search 搜索网页并读取结果正文。",
+						"note": "网关请求 Markdown 格式，按请求数量截取结果；正文可能缺失。"
+					},
+					"deepseek": {
+						"summary": "通过 DeepSeek Search API 在一次请求中搜索并获取正文。",
+						"note": "启用 need_content；查询词最多保留 128 个字符，正文可能缺失。"
+					}
+				},
+				"aiDetection": {
+					"tencent_tms": {
+						"summary": "通过腾讯云 TMS 检测文本的 AI 生成倾向。",
+						"note": "需要 SecretId 与 SecretKey；Region 默认 ap-guangzhou，BizType 可选。计费按配置的字符单元向上取整。"
+					}
+				}
+			}
 		}
 	},
 	"pricing": {
@@ -4088,7 +4283,7 @@
 			"title": "客户端接入指南",
 			"subtitle": "选择客户端，复制配置即可。Agent 只需要网关地址和用户 API Key，不接触上游密钥。",
 			"proxyUrl": "Proxy 地址",
-			"proxyHint": "填写 Proxy 基础地址，会自动加上 /mcp；与“对外目录测试”共用。",
+			"proxyHint": "REST、模拟器与 MCP 共用。默认读取 GATEWAY_PROXY_URL；手动修改仅覆盖当前浏览器。",
 			"proxyInvalid": "地址无效：需为 http(s) 基础地址，不含 /mcp 路径、账号、查询参数。",
 			"scope": "服务范围",
 			"allServices": "全部服务（聚合入口）",
@@ -4295,7 +4490,7 @@
 			"title": "对外目录测试",
 			"subtitle": "实际请求 Proxy，查看 Agent 通过 MCP 获得的目录与响应结构。",
 			"proxyUrl": "Proxy 地址",
-			"proxyHint": "填写 Proxy 基础地址，系统会添加 /mcp 路径；不要填写后台地址或完整 MCP 路径。",
+			"proxyHint": "REST、模拟器与 MCP 共用。默认读取 GATEWAY_PROXY_URL；手动修改仅覆盖当前浏览器。",
 			"scope": "服务范围",
 			"allServices": "全部服务",
 			"disabled": "已停用",
@@ -4402,7 +4597,8 @@
 		"title": "计费规则",
 		"perUnitMode": "按单元收费",
 		"charactersUnit": "{count} 字符",
-		"requestUnit": "次"
+		"requestUnit": "次",
+		"standardLabel": "标准价"
 	},
 	"remainingUi": {
 		"effectiveFactor": "金额 ÷ 标准金额；按当前记录计算的有效倍率",

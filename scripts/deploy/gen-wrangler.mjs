@@ -179,6 +179,11 @@ function generateProxy(names) {
 	writeJson("packages/proxy/wrangler.jsonc", config);
 }
 
+export function collectAdminRuntimeVars(env = process.env) {
+	const proxyUrl = env.GATEWAY_PROXY_URL?.trim();
+	return proxyUrl ? { GATEWAY_PROXY_URL: proxyUrl } : undefined;
+}
+
 function generateAdmin(names) {
 	const base = readBase("packages/admin/wrangler.base.jsonc");
 	const config = {
@@ -199,6 +204,9 @@ function generateAdmin(names) {
 	} else {
 		delete config.routes;
 	}
+
+	const runtimeVars = collectAdminRuntimeVars();
+	if (runtimeVars) config.vars = { ...base.vars, ...runtimeVars };
 
 	writeJson("packages/admin/wrangler.jsonc", config);
 }

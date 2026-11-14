@@ -19,8 +19,7 @@ export default function SimulatorPage() {
 	const tBrand = useTranslations('brand');
 	const tCommon = useTranslations('common');
 	const s = useSimulatorPageState();
-	const llm =
-		!s.isToolKind && !s.selectedModelIsImage && !s.selectedModelIsAudio && !s.selectedModelIsEmbedding;
+	const llm = !s.isToolKind && !s.selectedModelIsImage && !s.selectedModelIsAudio && !s.selectedModelIsEmbedding;
 	const llmFamily = llm
 		? s.protocol === 'openai'
 			? s.openaiLlmOperation === 'responses'
@@ -45,9 +44,7 @@ export default function SimulatorPage() {
 		<div className="admin-content-workspace content-tone-inference flex min-h-0 min-w-0 flex-col overflow-x-hidden bg-gray-50 p-4 sm:p-6 lg:p-8 xl:h-full xl:overflow-hidden">
 			<div className="mb-6 shrink-0">
 				<AdminPageTitle>{t('title')}</AdminPageTitle>
-				<p className="mt-1 max-w-3xl text-sm text-gray-500">
-					{t('subtitle', { product: tBrand('product') })}
-				</p>
+				<p className="mt-1 max-w-3xl text-sm text-gray-500">{t('subtitle', { product: tBrand('product') })}</p>
 			</div>
 
 			<p className="mb-4 flex shrink-0 items-center gap-1.5 text-xs text-gray-500">
@@ -66,6 +63,7 @@ export default function SimulatorPage() {
 				<SimulatorSetupPanel
 					disabled={s.sending}
 					proxyBaseUrl={s.proxyBaseUrl}
+					proxyConnection={s.proxyConnection}
 					onProxyBaseUrlChange={s.setProxyBaseUrl}
 					filterKeyEmail={s.filterKeyEmail}
 					onFilterKeyEmailChange={s.setFilterKeyEmail}
@@ -169,8 +167,7 @@ export default function SimulatorPage() {
 								}
 								showAudioRealtime={
 									s.selectedAudioOperation != null &&
-									((s.protocol === 'dashscope' &&
-										(s.selectedRealtimeOperation?.includes('.realtime.') ?? false)) ||
+									((s.protocol === 'dashscope' && (s.selectedRealtimeOperation?.includes('.realtime.') ?? false)) ||
 										s.selectedElevenLabsRealtimeOperation != null)
 								}
 								audioFile={s.audioFile}
