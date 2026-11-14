@@ -1,4 +1,5 @@
 'use client';
+import { FinancialInput } from './financial-value';
 import { useId, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
@@ -105,20 +106,10 @@ export function ToolPricingEditor({
 								</span>
 							</label>
 							<div className={rows ? `${form.control} grid grid-cols-2 items-center gap-4` : undefined}>
-								<div className={rows ? 'relative min-w-0' : 'contents'}>
-									{rows ? (
-										<span
-											aria-hidden="true"
-											className={`pointer-events-none absolute left-1 top-1 flex h-8 w-8 items-center justify-center rounded-md font-mono font-medium ${
-												key === 'standard' || (free && key === 'chargedFactor')
-													? 'bg-gray-100 text-gray-600'
-													: 'bg-blue-50 text-blue-700'
-											} ${key === 'standard' ? 'text-sm' : 'text-lg'}`}
-										>
-											{key === 'standard' ? getGatewayCurrencySymbol(currency) : '×'}
-										</span>
-									) : null}
-									<input
+								<div className={rows ? 'min-w-0' : 'mt-2'}>
+									<FinancialInput
+										kind={key === 'standard' ? 'amount' : 'factor'}
+										currency={currency}
 										id={`${inputId}-${key}`}
 										type="number"
 										min={0}
@@ -133,13 +124,6 @@ export function ToolPricingEditor({
 											!value.legacyNeedsReview &&
 											(!value[key].trim() || !Number.isFinite(Number(value[key])) || Number(value[key]) < 0)
 										}
-										className={`${rows ? 'h-10' : 'mt-2 ' + (compact ? 'py-2' : 'py-2.5')} ${
-											rows ? '' : 'shadow-sm'
-										} w-full min-w-0 rounded-lg border border-gray-300 bg-white ${
-											rows
-												? `pl-12 pr-3 text-base font-medium ${key === 'standard' ? 'text-gray-900' : 'text-blue-700'}`
-												: 'px-3 text-sm'
-										} font-mono tabular-nums focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100 read-only:bg-gray-100 read-only:text-gray-500`}
 									/>
 								</div>
 								{rows && key === 'standard' ? (

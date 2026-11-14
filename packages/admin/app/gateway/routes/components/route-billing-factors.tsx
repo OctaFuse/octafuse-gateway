@@ -1,5 +1,7 @@
 'use client';
 
+import { MultiplierBadge } from '@/components/financial-value';
+
 import { useState, type ReactNode } from 'react';
 import { BanknotesIcon, CalendarDaysIcon, ChevronDownIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useNow, useTranslations } from 'next-intl';
@@ -236,11 +238,9 @@ export function RouteBillingFactors({
 												title={t('editor.effectiveFactorHint')}
 											>
 												{t('editor.effectiveFactor')}{' '}
-												<span className="font-mono font-medium tabular-nums text-slate-700">
-													{(key === 'charged_factor' ? effective.charged : effective.metered) == null
-														? common('noData')
-														: `×${key === 'charged_factor' ? effective.charged : effective.metered}`}
-												</span>
+												{(key === 'charged_factor' ? effective.charged : effective.metered) == null
+													? common('noData')
+													: <MultiplierBadge compact>{`×${key === 'charged_factor' ? effective.charged : effective.metered}`}</MultiplierBadge>}
 											</p>
 										)}
 										{key === 'provider_factor' &&

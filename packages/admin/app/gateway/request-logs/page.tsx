@@ -1,5 +1,7 @@
 'use client';
 
+import { MultiplierBadge } from '@/components/financial-value';
+
 import { AdminContentMark } from '@/components/admin-content-mark';
 
 import { AdminPageTitle } from '@/components/admin-page-title';
@@ -452,14 +454,14 @@ export default function GatewayRequestLogsPage() {
 			].map((row) => (
 				<Fragment key={row.id}>
 					<span className="self-baseline text-gray-500">{row.label}</span>
-					<span className={`self-baseline whitespace-nowrap ${row.tone}`}>
+					<span className={`self-baseline whitespace-nowrap font-mono font-medium ${row.tone}`}>
 						{formatGatewayMoneyCode(row.amount, billingCurrency, 6)}
 					</span>
 					<span
 						className="min-w-12 self-baseline whitespace-nowrap text-right text-[11px] text-gray-400"
 						title={row.hint}
 					>
-						{formatCostMultiplier(row.amount, standardCost) || '—'}
+						{formatCostMultiplier(row.amount, standardCost) ? <MultiplierBadge compact title={row.hint}>{formatCostMultiplier(row.amount, standardCost)}</MultiplierBadge> : '—'}
 					</span>
 				</Fragment>
 			))}

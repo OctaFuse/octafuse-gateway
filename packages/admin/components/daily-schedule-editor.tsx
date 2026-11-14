@@ -1,5 +1,7 @@
 'use client';
 
+import { FinancialInput } from './financial-value';
+
 import type { ReactNode } from 'react';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import {
@@ -332,14 +334,15 @@ export function DailyScheduleEditor(props: Props) {
 											>
 												{props.factorLabel}
 											</label>
-											<input
+											<FinancialInput
+												kind="factor"
+												compact={!comfortable}
 												type="text"
 												aria-label={props.factorLabel}
 												inputMode="decimal"
 												placeholder="1"
 												value={(w as SingleScheduleFormWindow).factor}
 												onChange={(e) => updateRow(i, { factor: e.target.value })}
-												className={factorInputClass('slate', comfortable)}
 											/>
 										</div>
 									) : (
@@ -354,14 +357,15 @@ export function DailyScheduleEditor(props: Props) {
 												>
 													{props.chargedFactorLabel}
 												</label>
-												<input
+												<FinancialInput
+													kind="factor"
+													compact={!comfortable}
 													type="text"
 													aria-label={props.chargedFactorLabel}
 													inputMode="decimal"
 													placeholder="1"
 													value={(w as DualScheduleFormWindow).charged_factor}
 													onChange={(e) => updateRow(i, { charged_factor: e.target.value })}
-													className={factorInputClass('blue', comfortable)}
 												/>
 											</div>
 											<div className="min-w-0 flex-[0.85]">
@@ -374,14 +378,15 @@ export function DailyScheduleEditor(props: Props) {
 												>
 													{props.meteredFactorLabel}
 												</label>
-												<input
+												<FinancialInput
+													kind="factor"
+													compact={!comfortable}
 													type="text"
 													aria-label={props.meteredFactorLabel}
 													inputMode="decimal"
 													placeholder="1"
 													value={(w as DualScheduleFormWindow).metered_factor}
 													onChange={(e) => updateRow(i, { metered_factor: e.target.value })}
-													className={factorInputClass('emerald', comfortable)}
 												/>
 											</div>
 											<div className="min-w-0 flex-[0.85]">
@@ -394,14 +399,15 @@ export function DailyScheduleEditor(props: Props) {
 												>
 													{props.providerFactorLabel}
 												</label>
-												<input
+												<FinancialInput
+													kind="factor"
+													compact={!comfortable}
 													type="text"
 													aria-label={props.providerFactorLabel}
 													inputMode="decimal"
 													placeholder="1"
 													value={(w as DualScheduleFormWindow).provider_factor ?? ''}
 													onChange={(e) => updateRow(i, { provider_factor: e.target.value })}
-													className={factorInputClass('violet', comfortable)}
 												/>
 											</div>
 										</>

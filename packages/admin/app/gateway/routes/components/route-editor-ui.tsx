@@ -1,5 +1,6 @@
 'use client';
 
+import { FinancialInput } from '@/components/financial-value';
 import type { ReactNode } from 'react';
 import type { ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 
@@ -74,24 +75,5 @@ export function RouteMultiplierInput({
 	onChange: (value: string) => void;
 	placeholder?: string;
 }) {
-	return (
-		<div className="relative min-w-0">
-			<span
-				aria-hidden
-				className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-gray-400"
-			>
-				×
-			</span>
-			<input
-				id={id}
-				type="text"
-				inputMode="decimal"
-				aria-label={label}
-				value={value}
-				onChange={(event) => onChange(event.target.value)}
-				className={`${editorInputClass.replace('h-10', 'h-8')} pl-7 font-mono tabular-nums`}
-				placeholder={placeholder}
-			/>
-		</div>
-	);
+	return <FinancialInput kind="factor" compact id={id} type="text" inputMode="decimal" aria-label={label} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />;
 }

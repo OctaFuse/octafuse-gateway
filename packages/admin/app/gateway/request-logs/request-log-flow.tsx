@@ -1,5 +1,6 @@
 'use client';
 
+import { MultiplierBadge } from '@/components/financial-value';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
@@ -38,14 +39,14 @@ const json = (value: unknown) => JSON.stringify(value, null, 2);
 const buttonClass =
   'rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 hover:border-gray-300 hover:text-gray-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-500';
 
-function Fields({ rows }: { rows: [string, unknown][] }) {
+function Fields({ rows }: { rows: [string, unknown, 'factor'?][] }) {
   return (
     <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
-      {rows.map(([label, value]) => (
+      {rows.map(([label, value, kind]) => (
         <div key={label} className="min-w-0">
           <dt className="text-xs text-gray-500">{label}</dt>
           <dd className="mt-1 break-words font-mono text-xs text-gray-800 [overflow-wrap:anywhere]">
-            {value == null || value === '' ? '—' : String(value)}
+            {value == null || value === '' ? '—' : kind === 'factor' && value !== '—' ? <MultiplierBadge title={label}>{String(value)}</MultiplierBadge> : String(value)}
           </dd>
         </div>
       ))}
@@ -684,6 +685,7 @@ export function RequestLogFlow({
                               maximumFractionDigits: 3,
                             })}`
                           : '—',
+                        'factor',
                       ],
                       [
                         t('ui.meteredFactor'),
@@ -692,6 +694,7 @@ export function RequestLogFlow({
                               maximumFractionDigits: 3,
                             })}`
                           : '—',
+                        'factor',
                       ],
                       ...(log.billing_kind?.startsWith('image')
                         ? ([

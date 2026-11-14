@@ -63,7 +63,7 @@ export function ReadOnlyImagePricing(props: Props) {
 					<ul className="divide-y divide-gray-100 text-sm tabular-nums">
 						<li className="flex items-baseline justify-between gap-3 px-3 py-2">
 							<span className="text-xs text-gray-500">{tBilling('outputDefault')}</span>
-							<span className="font-medium text-gray-900">
+							<span className="font-mono font-medium text-gray-900">
 								{display.perImageDefault ?? display.defaultLine}
 								<span className="ml-1 text-xs font-normal text-gray-400">
 									{display.unit}
@@ -73,7 +73,7 @@ export function ReadOnlyImagePricing(props: Props) {
 						{inputDefault != null && inputDefault !== '' ? (
 							<li className="flex items-baseline justify-between gap-3 px-3 py-2">
 								<span className="text-xs text-gray-500">{tBilling('inputDefault')}</span>
-								<span className="font-medium text-gray-900">
+								<span className="font-mono font-medium text-gray-900">
 									{inputDefault}
 									<span className="ml-1 text-xs font-normal text-gray-400">
 										{display.unit}
@@ -120,7 +120,7 @@ export function ReadOnlyImagePricing(props: Props) {
 								title={`${t(key)} (${rates.unit})`}
 							>
 								<p className="truncate text-xs font-medium text-gray-500">{t(key)}</p>
-								<p className="mt-1 text-sm font-medium tabular-nums text-gray-900">
+								<p className="mt-1 font-mono text-sm font-medium tabular-nums text-gray-900">
 									{rates[key as TokenRateKey]}
 								</p>
 							</div>
@@ -142,7 +142,7 @@ export function ReadOnlyImagePricing(props: Props) {
 								<span className="text-xs text-gray-500" title={t(`${key}Short`)}>
 									{t(key)}
 								</span>
-								<span className="font-medium text-gray-900">
+								<span className="font-mono font-medium text-gray-900">
 									{rates[key as TokenRateKey]}
 								</span>
 							</li>

@@ -1,4 +1,5 @@
 'use client';
+import { MultiplierBadge } from '@/components/financial-value';
 
 import { useRef, useState } from 'react';
 import Link from 'next/link';
@@ -96,7 +97,7 @@ export function DashboardActivity({ logs, errors, billingCurrency: currency }: {
           {!diagnostic && <div className="dashboard-activity-usage min-w-0 space-y-1 text-right font-mono text-[11px] leading-4 tabular-nums">
             <p title={usage.title} className="truncate whitespace-nowrap text-gray-600">{usage.value}</p>
             <p title={`${t('chargedColumn')}: ${billed}${factor ? ` · ${detail('catalogFactor')} ${factor}` : ''}`} className="truncate whitespace-nowrap text-gray-800">
-              {billed}{factor && <span className="ml-1 text-[10px] text-gray-400">{factor}</span>}
+              <span className="font-medium">{billed}</span>{factor && <span className="ml-1"><MultiplierBadge compact title={detail('catalogFactor')}>{factor}</MultiplierBadge></span>}
             </p>
           </div>}
           <div className="space-y-1 whitespace-nowrap text-right text-[11px] leading-4">

@@ -1,5 +1,6 @@
 'use client';
 import { useLocale, useTranslations } from 'next-intl';
+import { MultiplierBadge } from './financial-value';
 import { relativeMoneyFactor } from '@/lib/financial-display';
 import { formatGatewayMoneyCode, formatGatewayMoneyCompact } from '@/lib/format-gateway-currency';
 export function FinancialAmount({
@@ -18,17 +19,16 @@ export function FinancialAmount({
 	const factor = relativeMoneyFactor(value, standard);
 	return (
 		<span className="inline-flex items-baseline gap-1.5 whitespace-nowrap font-mono tabular-nums">
-			<span>
+			<span className="font-medium">
 				{compact ? formatGatewayMoneyCompact(value, currency) : formatGatewayMoneyCode(value, currency, 4)}
 			</span>
 			{factor != null ? (
-				<span title={t('effectiveFactor')} className="text-xs text-gray-500">
+				<MultiplierBadge title={t('effectiveFactor')}>×
 					{new Intl.NumberFormat(locale, {
 						maximumSignificantDigits: 5,
 						notation: factor > 1e6 || (factor > 0 && factor < 0.0001) ? 'scientific' : 'standard',
 					}).format(factor)}
-					×
-				</span>
+				</MultiplierBadge>
 			) : null}
 		</span>
 	);

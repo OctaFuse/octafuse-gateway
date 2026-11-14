@@ -77,20 +77,20 @@ export function ReadOnlyPricingTiersTable({
 									<td className={`whitespace-nowrap ${cellPad} font-mono font-medium tabular-nums text-gray-900`}>
 										{r.rangeLine}
 									</td>
-									<td className={`whitespace-nowrap ${cellPad} text-right font-mono tabular-nums text-gray-800`}>
+									<td className={`whitespace-nowrap ${cellPad} text-right font-mono font-medium tabular-nums text-gray-900`}>
 										{inputPriceLine}
 									</td>
-									<td className={`whitespace-nowrap ${cellPad} text-right font-mono tabular-nums text-gray-800`}>
+									<td className={`whitespace-nowrap ${cellPad} text-right font-mono font-medium tabular-nums text-gray-900`}>
 										{outputPriceLine}
 									</td>
-									<td className={`whitespace-nowrap ${cellPad} text-right font-mono tabular-nums text-gray-800`}>
+									<td className={`whitespace-nowrap ${cellPad} text-right font-mono font-medium tabular-nums text-gray-900`}>
 										{cacheReadPriceLine === dash ? (
 											<span className="text-gray-400">{dash}</span>
 										) : (
 											cacheReadPriceLine
 										)}
 									</td>
-									<td className={`whitespace-nowrap ${cellPad} text-right font-mono tabular-nums text-gray-800`}>
+									<td className={`whitespace-nowrap ${cellPad} text-right font-mono font-medium tabular-nums text-gray-900`}>
 										{cacheWritePriceLine === dash ? (
 											<span className="text-gray-400">{dash}</span>
 										) : (

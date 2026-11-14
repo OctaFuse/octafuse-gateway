@@ -199,7 +199,6 @@ export function ModelModal(props: ModelModalProps) {
 			label: t('pricingProfile'),
 			icon: AdjustmentsHorizontalIcon,
 		},
-		{ key: 'metadata', label: t('metadataTab'), icon: CodeBracketIcon },
 		...(editingModel
 			? [
 					{
@@ -209,6 +208,7 @@ export function ModelModal(props: ModelModalProps) {
 					} as const,
 			  ]
 			: []),
+		{ key: 'metadata', label: t('metadataTab'), icon: CodeBracketIcon },
 	] as const;
 	const pricingPreview = useMemo(
 		() =>
@@ -347,11 +347,35 @@ export function ModelModal(props: ModelModalProps) {
 					<div className="min-w-0">
 						<h2
 							id={`${id}-title`}
-							className="admin-dialog-title text-lg font-medium text-gray-900"
-						><AdminContentMark />
-							{editingModel ? t('editTitle') : t('newTitle')}
+							className="admin-dialog-title flex min-w-0 items-center gap-2 text-lg font-medium text-gray-900"
+						>
+							<AdminContentMark />
+							<span className="shrink-0">{editingModel ? t('editTitle') : t('newTitle')}</span>
+							{editingModel ? (
+								<>
+									<span className="font-normal text-gray-300" aria-hidden>
+										{' '}
+										/{' '}
+									</span>
+									<span
+										className="min-w-0 truncate"
+										title={editingModel.display_name || editingModel.id}
+									>
+										{editingModel.display_name || editingModel.id}
+									</span>
+								</>
+							) : null}
 						</h2>
-						<p className="mt-1.5 text-sm text-gray-500">{t('editHint')}</p>
+						{editingModel ? (
+							<p
+								className="mt-1.5 truncate font-mono text-xs text-gray-500"
+								title={editingModel.id}
+							>
+								{editingModel.id}
+							</p>
+						) : (
+							<p className="mt-1.5 text-sm text-gray-500">{t('editHint')}</p>
+						)}
 						{!editingModel && duplicateSourceModelId ? (
 							<p className="mt-1 text-xs text-gray-500">
 								{t('prefilledFrom', { id: duplicateSourceModelId })}
@@ -368,11 +392,11 @@ export function ModelModal(props: ModelModalProps) {
 						<XMarkIcon className="h-5 w-5" aria-hidden />
 					</button>
 				</header>
-				<div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-5 sm:px-7">
+				<div className="shrink-0 border-b border-gray-200 px-5 sm:px-7">
 					<div
 						role="tablist"
 						aria-label={t('settingsLabel')}
-						className="admin-detail-tabs flex min-w-0 flex-1 gap-5 overflow-x-auto [scrollbar-width:none]"
+						className="flex min-w-0 gap-5 overflow-x-auto [scrollbar-width:none]"
 					>
 						{tabs.map(({ key, label, icon: Icon }) => (
 							<button
@@ -385,42 +409,22 @@ export function ModelModal(props: ModelModalProps) {
 								tabIndex={activeTab === key ? 0 : -1}
 								onClick={() => selectTab(key)}
 								onKeyDown={(event) => navigateTabs(event, key)}
-								className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 pb-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-gray-300 ${
+								className={`inline-flex min-h-12 shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-1 py-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-gray-300 ${
 									activeTab === key
-										? 'border-gray-600 font-medium text-gray-800'
+										? 'border-gray-900 font-medium text-gray-900'
 										: 'border-transparent text-gray-500 hover:text-gray-800'
 								}`}
 							>
 								<Icon className="h-4 w-4" aria-hidden />
 								{label}
 								{key === 'routes' ? (
-									<span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs tabular-nums text-gray-500">
+									<span className="rounded-md bg-gray-100 px-1.5 py-0.5 text-xs tabular-nums text-gray-500">
 										{routesState.ready ? routesState.routes.length : '…'}
 									</span>
 								) : null}
 							</button>
 						))}
 					</div>
-					{activeTab === 'pricing' ? (
-						<button
-							type="button"
-							onClick={() => setShowPricingJson((value) => !value)}
-							aria-label={
-								showPricingJson
-									? t('hidePricingProfileJson')
-									: t('viewPricingProfileJson')
-							}
-							aria-pressed={showPricingJson}
-							className={`mb-2 inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium ${
-								showPricingJson
-									? 'bg-gray-50 text-gray-800'
-									: 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
-							}`}
-						>
-							<CodeBracketIcon className="h-4 w-4" aria-hidden />
-							{showPricingJson ? t('backToForm') : 'JSON'}
-						</button>
-					) : null}
 				</div>
 				{saveError ? (
 					<div
@@ -786,11 +790,47 @@ export function ModelModal(props: ModelModalProps) {
 									</div>
 								</div>
 							) : activeTab === 'pricing' ? (
-								showPricingJson ? (
-									<ModelPricingJsonPreview preview={pricingPreview} />
-								) : (
-									<ModelPricingPanel {...props} />
-								)
+								<>
+									<div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+										<p className="text-xs font-medium text-gray-500">{t('pricingViewLabel')}</p>
+										<div
+											role="group"
+											aria-label={t('pricingViewLabel')}
+											className="inline-flex gap-1 rounded-lg bg-gray-100 p-1"
+										>
+											{(
+												[
+													{
+														json: false,
+														label: t('pricingFormView'),
+														Icon: AdjustmentsHorizontalIcon,
+													},
+													{ json: true, label: t('pricingJsonView'), Icon: CodeBracketIcon },
+												] as const
+											).map(({ json, label, Icon }) => (
+												<button
+													key={String(json)}
+													type="button"
+													aria-pressed={showPricingJson === json}
+													onClick={() => setShowPricingJson(json)}
+													className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 ${
+														showPricingJson === json
+															? 'bg-white text-gray-900 shadow-sm'
+															: 'text-gray-500 hover:text-gray-900'
+													}`}
+												>
+													<Icon className="h-3.5 w-3.5" aria-hidden />
+													{label}
+												</button>
+											))}
+										</div>
+									</div>
+									{showPricingJson ? (
+										<ModelPricingJsonPreview preview={pricingPreview} />
+									) : (
+										<ModelPricingPanel {...props} />
+									)}
+								</>
 							) : activeTab === 'routes' ? (
 								<RelatedRoutesPanel
 									key={editingModel?.id}
