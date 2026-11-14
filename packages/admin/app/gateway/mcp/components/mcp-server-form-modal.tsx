@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import { ArrowDownTrayIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import { ArrowDownTrayIcon, CurrencyDollarIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import {
 	applyMcpImport,
@@ -376,10 +376,16 @@ export function McpServerFormModal({
 						hidden={section !== 'pricing'}
 					>
 						<div className="mb-4">
-							<h3 className="text-sm font-medium text-gray-900">{t('pricing.title')}</h3>
-							<p className="mt-1 text-xs leading-5 text-gray-500">{t('pricing.simpleDefaultHint')}</p>
+							<h3 className="flex items-center gap-2 text-sm font-medium text-gray-900">
+								<span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+									<CurrencyDollarIcon className="h-4 w-4" aria-hidden="true" />
+								</span>
+								{t('pricing.title')}
+							</h3>
+							<p className="mt-2 text-xs leading-5 text-gray-500">{t('pricing.simpleDefaultHint')}</p>
 						</div>
 						<McpPricingEditor
+							layout="rows"
 							value={form.pricing}
 							currency={currency}
 							onChange={(pricing) => onChange({ ...form, pricing })}

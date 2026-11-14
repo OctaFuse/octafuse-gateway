@@ -32,13 +32,16 @@ export function McpPricingDraftSummary({
 export function McpPricingEditor({
 	value,
 	currency,
+	layout = 'columns',
 	onChange,
 }: {
 	value: PricingDraft;
 	currency: string;
+	/** `rows` 与 REST 服务的计费规则保持一致；`columns` 用于目录项内联的窄表单。 */
+	layout?: 'columns' | 'rows';
 	onChange: (value: PricingDraft) => void;
 }) {
-	return <ToolPricingEditor compact value={value} currency={currency} onChange={onChange} />;
+	return <ToolPricingEditor compact layout={layout} value={value} currency={currency} onChange={onChange} />;
 }
 
 export function McpPricingInline({ rule, currency }: { rule: McpPricingRule; currency: string }) {
