@@ -2889,7 +2889,7 @@
 			"deleteConfirm": "「{name}」의 유효한 권한 {count}건을 모두 취소하고 등록된 인스턴스의 연결을 해제합니다. 이후 이 앱은 등록할 수 없습니다. 계속할까요?",
 			"deleted": "앱을 삭제했습니다",
 			"unattributedTitle": "소속 없는 권한",
-			"unattributedHint": "내장 인증 서버로 전환하기 전에 발급되어 앱에 연결되지 않은 권한입니다. 전환 후 사용자는 다시 승인해야 합니다. 취소하거나 만료되길 기다리세요.",
+			"unattributedHint": "앱에 연결되지 않은 기존 승인입니다. 인증 모드를 전환해도 기록은 삭제되지 않으며 상태에 따라 확인하거나 취소할 수 있습니다.",
 			"unattributedBadge": "소속 없음",
 			"filteringBy": "표시 중: {name}의 권한",
 			"form": {
@@ -2907,7 +2907,17 @@
 				"saved": "앱을 저장했습니다",
 				"saveFailed": "앱을 저장하지 못했습니다"
 			}
-		}
+		},
+		"managementTitle": "앱 및 사용자 승인",
+		"globalScope": "Gateway 전체 기록 · 서비스 범위나 인증 서버 URL로 필터링되지 않음",
+		"relationshipHint": "앱은 내장 인증 서버가 허용할 클라이언트를 정의합니다. 하나의 앱에 여러 클라이언트 인스턴스와 사용자가 연결될 수 있습니다. 동의 후 토큰은 Gateway 사용자와 인스턴스를 연결하며 호출에는 해당 사용자의 권한과 예산이 적용됩니다. 서버를 전환해도 기록은 삭제되지 않습니다.",
+		"grantsTitle": "사용자 승인",
+		"grantsHint": "각 기록은 클라이언트 인스턴스에 대한 Gateway 사용자의 승인입니다. 왼쪽에서 앱을 선택해 확인하세요.",
+		"appsRoleHint": "내장 인증 서버의 앱 규칙에 따라 클라이언트가 허용됩니다. 하나의 앱에 여러 인스턴스를 등록할 수 있습니다.",
+		"searchApps": "앱 이름 또는 식별자 검색",
+		"selectApp": "앱 선택",
+		"allGrants": "모든 승인",
+		"noMatchingApps": "일치하는 앱이 없습니다"
 	},
 	"keysPage": {
 		"title": "API 키",
@@ -4282,6 +4292,7 @@
 			"selectService": "MCP 서비스 선택",
 			"catalogPricing": "카탈로그 및 요금",
 			"copyEndpoint": "접속 주소 복사",
+			"editDefaultPricing": "기본 요금 편집",
 			"loading": "서비스 불러오는 중"
 		},
 		"clientEndpoint": "클라이언트 연결 주소",
@@ -4292,7 +4303,14 @@
 		},
 		"clientAccess": {
 			"title": "클라이언트 연결",
-			"description": "서비스 범위와 인증 방식을 선택하고 클라이언트 설정을 복사하거나 도구 목록을 확인하세요."
+			"description": "서비스 범위와 인증 방식을 선택하고 클라이언트 설정을 복사하거나 도구 목록을 확인하세요.",
+			"authCategories": "연결 방식",
+			"keyTitle": "API Key 연결",
+			"oauthTitle": "OAuth 2.0 인증 연결",
+			"guideTitle": "클라이언트 설정",
+			"keyDescription": "Gateway 사용자 API Key로 클라이언트별 설정을 복사하여 연결하세요.",
+			"oauthDescription": "API Key 입력 없이 브라우저에서 로그인하고 연결을 승인합니다.",
+			"documentation": "클라이언트 연결 문서"
 		},
 		"title": "MCP 서버",
 		"subtitle": "원격 MCP 서버를 연결하고 도구를 검토·활성화한 뒤 단일 엔드포인트로 클라이언트에 제공하세요.",
@@ -4347,11 +4365,19 @@
 			},
 			"issuerLabel": "이 Gateway의 공개 URL(issuer)",
 			"issuerPlaceholder": "https://api.example.com",
-			"issuerHint": "클라이언트가 이 Gateway에 접속하는 origin입니다. 리버스 프록시에서 /oauth/* 와 /.well-known/oauth-authorization-server 를 프록시 서비스로 전달해야 합니다. 비우면 외부 인증 서버로 롤백됩니다.",
+			"issuerHint": "클라이언트가 이 Gateway에 접속하는 origin입니다. 리버스 프록시에서 /oauth/* 와 /.well-known/oauth-authorization-server 를 프록시 서비스로 전달해야 합니다.",
 			"consentLabel": "로그인·동의 페이지(선택)",
 			"consentPlaceholder": "https://portal.example.com/oauth/consent",
 			"consentHint": "사용자가 로그인하고 승인하는 곳입니다. Gateway가 request_id를 붙입니다. 비워 두면 내장 페이지에서 API Key로 승인합니다.",
-			"consentInvalid": "동의 페이지 URL이 올바르지 않습니다. 자격 증명이나 프래그먼트가 없는 https URL을 입력하세요(localhost만 http 허용)."
+			"consentInvalid": "동의 페이지 URL이 올바르지 않습니다. 자격 증명이나 프래그먼트가 없는 https URL을 입력하세요(localhost만 http 허용).",
+			"serverTitle": "인증 서버",
+			"configureServer": "인증 서버 설정",
+			"collapseConfig": "설정 접기",
+			"scope": {
+				"builtin": "모든 MCP 서비스에 적용되는 전역 설정입니다. Gateway가 앱 허용, 클라이언트 등록 및 토큰 발급을 관리합니다.",
+				"external": "전역 설정입니다. 로그인과 등록은 외부 서버가 관리하며, 아래에는 Gateway에 저장된 기록만 표시합니다.",
+				"off": "OAuth 검색이 꺼져 있습니다. API Key 연결은 계속 사용할 수 있습니다. 기존 토큰은 자동 취소되지 않으며 아래에서 관리할 수 있습니다."
+			}
 		},
 		"connectGuide": {
 			"button": "연결 가이드",
@@ -4513,7 +4539,7 @@
 		"removeHeader": "이 헤더 제거",
 		"removedHeadersWarning": "저장 시 제거될 헤더: {names}",
 		"advancedSettings": "고급 설정",
-		"defaultPriceHint": "도구는 기본적으로 이 서비스의 호출당 가격을 사용합니다.",
+		"defaultPriceHint": "개별 요금이 없는 도구에 적용됩니다.",
 		"timeoutHint": "1,000~120,000ms, 기본값 30초.",
 		"maxBytesHint": "1,000~8,000,000바이트.",
 		"slugReserved": "builtin은 예약된 식별자입니다. 다른 식별자를 사용하세요.",
@@ -4626,7 +4652,7 @@
 			"pricing": "과금 규칙",
 			"advanced": "고급 설정"
 		},
-		"advancedHint": "일반적으로 기본값을 사용하면 됩니다. 업스트림 응답이 느리거나 큰 경우 조정하세요. 기본 제한 시간은 30초, 최대 응답 크기는 1 MiB입니다.",
+		"advancedHint": "업스트림 응답이 느리거나 응답 크기가 클 때 조정하세요.",
 		"pricing": {
 			"simpleDefaultHint": "개별 가격이 없는 도구에는 이 기본 설정이 적용됩니다.",
 			"needsReview": "설정 확인 필요",

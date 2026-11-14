@@ -15,13 +15,13 @@ import {
 	LinkIcon,
 	ServerStackIcon,
 } from '@heroicons/react/24/outline';
-import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { useTranslations } from 'next-intl';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 import { mcpConnectEndpoint } from '../mcp-connect-guide-utils';
 import type { CatalogItem, ServerDetail } from '../mcp-types';
 import { McpCatalogItemRow } from './mcp-catalog-item-row';
 import type { McpWorkspaceView } from '../mcp-workspace-location';
+import type { McpFormSection } from './mcp-server-form-modal';
 import { McpPricingDetails } from './mcp-pricing-editor';
 
 const TABS = ['tool', 'prompt', 'resource'] as const;
@@ -69,7 +69,7 @@ export function McpServerWorkspace({
 	testResult: { ok: boolean; message: string } | null;
 	onTab: (tab: CatalogItem['kind']) => void;
 	onRetry: () => void;
-	onEdit: () => void;
+	onEdit: (section?: McpFormSection) => void;
 	onToggleServer: () => void;
 	onTest: () => void;
 	onCatalogTest: () => void;
@@ -150,7 +150,9 @@ export function McpServerWorkspace({
 								</span>
 								<div className="min-w-0">
 									<h2 className="break-words text-base font-medium text-gray-950">{server.name}</h2>
-									<p className="mt-1 break-all font-mono text-xs text-gray-400">{server.slug}</p>
+									{server.name !== server.slug ? (
+										<p className="mt-1 break-all font-mono text-xs text-gray-400">{server.slug}</p>
+									) : null}
 								</div>
 							</div>
 							<div className="flex flex-wrap items-center gap-2">
@@ -168,7 +170,12 @@ export function McpServerWorkspace({
 								<button type="button" disabled={busy} onClick={onCatalogTest} className={BUTTON}>
 									{t('catalogTest.title')}
 								</button>
-								<button type="button" disabled={busy} onClick={onEdit} className={BUTTON}>
+								<button
+									type="button"
+									disabled={busy}
+									onClick={() => onEdit('connection')}
+									className={BUTTON}
+								>
 									<PencilSquareIcon className="h-4 w-4" aria-hidden="true" />
 									{t('edit')}
 								</button>
@@ -233,7 +240,8 @@ export function McpServerWorkspace({
 									<span className="text-amber-700">{t('pendingBadge', { count: pendingCount })}</span>
 								) : null}
 								<span>
-									{t('lastSync')} · {server.lastSyncedAt ? formatDateTime(server.lastSyncedAt) : t('neverSynced')}
+									{t('lastSync')} ·{' '}
+									{server.lastSyncedAt ? formatDateTime(server.lastSyncedAt) : t('neverSynced')}
 								</span>
 							</div>
 							<button
@@ -315,16 +323,9 @@ export function McpServerWorkspace({
 						</div>
 						<div className="min-w-0 p-4 sm:p-5">
 							{section === 'connection' ? (
-								<div className="grid gap-6 lg:grid-cols-2">
+								<div className="space-y-5">
 									<section>
-										<div className="flex items-center justify-between">
-											<h3 className="text-sm font-medium text-gray-900">{t('connectionSettings')}</h3>
-											<button type="button" disabled={busy} onClick={onTest} className={BUTTON}>
-												<SignalIcon className="h-4 w-4" aria-hidden="true" />
-												{t(action?.startsWith('test:') ? 'testing' : 'test')}
-											</button>
-										</div>
-										<dl className="mt-4 space-y-4 text-sm">
+										<dl className="mt-4 grid gap-4 sm:grid-cols-2 text-sm">
 											<div>
 												<dt className="text-xs text-gray-500">{t('url')}</dt>
 												<dd className="mt-1 break-all font-mono text-xs leading-6 text-gray-700">
@@ -337,7 +338,7 @@ export function McpServerWorkspace({
 													{server.authHeaderNames.length ? server.authHeaderNames.join(', ') : t('noAuthHeaders')}
 												</dd>
 											</div>
-											<div className="grid grid-cols-2 gap-4">
+											<>
 												<div>
 													<dt className="text-xs text-gray-500">{t('timeout')}</dt>
 													<dd className="mt-1 font-mono text-xs text-gray-700">{server.timeoutMs.toLocaleString()}</dd>
@@ -348,39 +349,29 @@ export function McpServerWorkspace({
 														{server.maxResponseBytes.toLocaleString()}
 													</dd>
 												</div>
-											</div>
+											</>
 										</dl>
-										<button
-											type="button"
-											disabled={busy}
-											onClick={onReveal}
-											className="mt-4 text-xs font-medium text-gray-800 hover:underline disabled:opacity-50"
-										>
-											{t(revealed ? 'hide' : 'reveal')}
-										</button>
+										<div className="mt-4 flex flex-wrap items-center gap-4">
+											<button
+												type="button"
+												disabled={busy}
+												onClick={onReveal}
+												className="text-xs font-medium text-gray-800 hover:underline disabled:opacity-50"
+											>
+												{t(revealed ? 'hide' : 'reveal')}
+											</button>
+											<button type="button" disabled={busy} onClick={onTest} className={BUTTON}>
+												<SignalIcon className="h-4 w-4" aria-hidden="true" />
+												{t(action?.startsWith('test:') ? 'testing' : 'test')}
+											</button>
+										</div>
 										{revealed ? (
 											<pre className="mt-3 overflow-auto rounded-lg bg-gray-50 p-3 font-mono text-xs text-gray-700">
 												{JSON.stringify(revealed.authHeaders, null, 2)}
 											</pre>
 										) : null}
 									</section>
-									<section className="border-t border-gray-100 pt-6 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-										<h3 className="text-sm font-medium text-gray-900">
-											{t('defaultPrices')} · {getGatewayCurrencySymbol(currency)}
-										</h3>
-										<p className="mt-1 text-xs leading-5 text-gray-400">{t('defaultPriceHint')}</p>
-										{server.pricing ? (
-											<McpPricingDetails rule={server.pricing} currency={currency} />
-										) : (
-											<p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-xs text-red-700">
-												{t('pricing.invalidStored')}
-											</p>
-										)}
-									</section>
-									<div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4 lg:col-span-2">
-										<button type="button" disabled={busy} onClick={onEdit} className={BUTTON}>
-											{t('editSettings')}
-										</button>
+									<div className="flex justify-end border-t border-gray-100 pt-4">
 										<button
 											type="button"
 											disabled={busy}
@@ -421,6 +412,36 @@ export function McpServerWorkspace({
 											</button>
 										))}
 									</div>
+									{tab === 'tool' ? (
+										<section className="mb-5 rounded-lg bg-gray-50 p-4">
+											<div className="flex flex-wrap items-center justify-between gap-2">
+												<h3 className="text-sm font-medium text-gray-900">{t('defaultPrices')}</h3>
+												<button
+													type="button"
+													disabled={busy}
+													onClick={() => onEdit('pricing')}
+													aria-label={t('workspace.editDefaultPricing')}
+													className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 hover:underline disabled:opacity-50"
+												>
+													<PencilSquareIcon className="h-3.5 w-3.5" aria-hidden="true" />
+													{t('edit')}
+												</button>
+											</div>
+											<p className="mt-1 text-xs leading-5 text-gray-400">
+												{t('defaultPriceHint')}
+											</p>
+											{server.pricing ? (
+												<McpPricingDetails rule={server.pricing} currency={currency} />
+											) : (
+												<p
+													role="alert"
+													className="mt-4 rounded-lg bg-red-50 p-3 text-xs text-red-700"
+												>
+													{t('pricing.invalidStored')}
+												</p>
+											)}
+										</section>
+									) : null}
 									<div className="mb-3 flex gap-2">
 										<div className="relative min-w-0 flex-1">
 											<MagnifyingGlassIcon

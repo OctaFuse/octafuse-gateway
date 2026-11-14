@@ -42,7 +42,7 @@ export function McpCatalogItemRow({
 
 	return (
 		<li
-			className={`p-4 transition ${selected ? 'bg-gray-50/70' : 'bg-white'} ${
+			className={`p-4 transition-colors ${selected ? 'bg-gray-50/70' : 'bg-white'} ${
 				item.status === 'removed' ? 'opacity-60' : ''
 			}`}
 		>
@@ -57,7 +57,12 @@ export function McpCatalogItemRow({
 				/>
 				<div className="min-w-0 flex-1">
 					<div className="flex flex-wrap items-center gap-2">
-						<span className="break-all font-mono text-sm font-medium text-gray-900">{item.upstreamKey}</span>
+						<span
+							className="break-all font-mono text-sm font-medium text-gray-900"
+							title={item.upstreamKey}
+						>
+							{item.exposedName}
+						</span>
 						{item.reviewState === 'new' && item.status !== 'removed' ? (
 							<span className="rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
 								{t('reviewNew')}
@@ -69,28 +74,46 @@ export function McpCatalogItemRow({
 							</span>
 						) : null}
 					</div>
-					<p className="mt-1 break-all font-mono text-xs text-gray-500">{item.exposedName}</p>
-					<p
-						className={`mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 ${
-							expandedDescription ? '' : 'line-clamp-2'
-						}`}
-					>
-						{description}
-					</p>
-					{longDescription ? (
-						<button
-							type="button"
-							aria-expanded={expandedDescription}
-							onClick={() => setExpandedDescription(!expandedDescription)}
-							className="mt-1 text-xs font-medium text-gray-400 hover:text-gray-700"
-						>
-							{t(expandedDescription ? 'collapseDescription' : 'expandDescription')}
-						</button>
+
+					{!(
+						item.reviewState === 'changed' &&
+						item.pendingDefinition &&
+						item.status !== 'removed'
+					) ? (
+						<>
+							<p
+								className={`mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 ${
+									expandedDescription ? '' : 'line-clamp-2'
+								}`}
+							>
+								{description}
+							</p>
+							{longDescription ? (
+								<button
+									type="button"
+									aria-expanded={expandedDescription}
+									onClick={() => setExpandedDescription(!expandedDescription)}
+									className="mt-1 text-xs font-medium text-gray-400 hover:text-gray-700"
+								>
+									{t(expandedDescription ? 'collapseDescription' : 'expandDescription')}
+								</button>
+							) : null}
+						</>
 					) : null}
 				</div>
-				<div className="flex shrink-0 flex-col items-end gap-2">
-					<span className={`text-xs ${item.status === 'enabled' ? 'text-emerald-600' : 'text-gray-400'}`}>
-						{t(item.status === 'enabled' ? 'enabled' : item.status === 'removed' ? 'removed' : 'disabled')}
+				<div className="flex shrink-0 items-center gap-2">
+					<span
+						className={`text-xs ${
+							item.status === 'enabled' ? 'text-emerald-600' : 'text-gray-400'
+						}`}
+					>
+						{t(
+							item.status === 'enabled'
+								? 'enabled'
+								: item.status === 'removed'
+								? 'removed'
+								: 'disabled'
+						)}
 					</span>
 					{item.status !== 'removed' ? (
 						<button
@@ -154,7 +177,7 @@ export function McpCatalogItemRow({
 				</div>
 			) : null}
 			<div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-				<details className="min-w-0">
+				<details className="min-w-0 open:w-full">
 					<summary className="cursor-pointer text-xs font-medium text-gray-500 hover:text-gray-900">
 						{t('viewDefinition')}
 					</summary>
@@ -164,14 +187,14 @@ export function McpCatalogItemRow({
 				</details>
 				{item.kind === 'tool' && item.status !== 'removed' ? (
 					<div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-						{effective ? (
+						{custom && effective ? (
 							<McpPricingInline rule={effective} currency={currency} />
-						) : (
+						) : custom ? (
 							<span className="text-red-600">{t('pricing.invalidStored')}</span>
-						)}
-						<span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">
-							{t(custom ? 'custom' : 'inheritedPrice')}
-						</span>
+						) : null}
+						{custom ? (
+							<span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">{t('custom')}</span>
+						) : null}
 						<button
 							type="button"
 							disabled={busy}

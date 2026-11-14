@@ -10,9 +10,156 @@
 	gap: 16px;
 }
 
-/* Leave room for the token table, its padding and the OAuth settings column. */
-@container mcp-client-workspace (min-width: 1360px) {
-	.authorization {
-		grid-template-columns: 340px minmax(0, 1fr);
+/* The access method is a local content tab, below the main workspace navigation. */
+.authNavigation {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 24px;
+	padding: 0 24px;
+	border: 1px solid #e3e6ec;
+	border-bottom-color: #eef0f3;
+	border-radius: 14px 14px 0 0;
+	background: #fff;
+}
+
+.authLabel {
+	color: #6b7280;
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.authTab {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: -1px;
+	padding: 16px 0 14px;
+	border-bottom: 2px solid transparent;
+	color: #6b7280;
+	font-size: 13px;
+	font-weight: 500;
+	white-space: nowrap;
+	transition: color 150ms ease, border-color 150ms ease;
+}
+
+.authTab:hover {
+	color: #242b37;
+}
+
+.authTab[aria-selected='true'] {
+	border-bottom-color: #242b37;
+	color: #242b37;
+}
+
+.authTab:focus-visible {
+	outline: 2px solid #6b7280;
+	outline-offset: 4px;
+	border-radius: 2px;
+}
+
+.clients .authPanel .guidePanel {
+	border-top: 0;
+	border-radius: 0 0 14px 14px;
+}
+
+@container mcp-client-workspace (max-width: 600px) {
+	.authNavigation {
+		gap: 16px;
+		padding: 0 16px;
+	}
+
+	.authLabel {
+		display: none;
+	}
+}
+
+.grantsPanel {
+	border: 1px solid #e3e6ec;
+	border-radius: 14px;
+	background: #fff;
+}
+
+.grantsWorkspace {
+	display: grid;
+	min-width: 0;
+}
+
+.appDirectory {
+	min-width: 0;
+	padding: 20px;
+	border-bottom: 1px solid #eef0f3;
+	background: #f8f9fb;
+}
+
+.appList {
+	display: grid;
+	gap: 4px;
+}
+
+.appItem {
+	position: relative;
+	width: 100%;
+	min-width: 0;
+	padding: 12px;
+	border: 1px solid transparent;
+	border-radius: 8px;
+	text-align: left;
+	transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.appItem:hover {
+	background: #eef1f4;
+}
+
+.appItemSelected,
+.appItemSelected:hover {
+	border-color: #d5e7e3;
+	background: #edf6f3;
+}
+
+.appItemSelected::before {
+	position: absolute;
+	top: 12px;
+	bottom: 12px;
+	left: -1px;
+	width: 3px;
+	border-radius: 0 3px 3px 0;
+	background: #0f766e;
+	content: '';
+}
+
+.appItem:focus-visible {
+	outline: 2px solid #6b7280;
+	outline-offset: 2px;
+}
+
+.grantsDetail {
+	padding: 20px;
+}
+
+@container mcp-client-workspace (min-width: 1000px) {
+	.grantsWorkspace {
+		grid-template-columns: 272px minmax(0, 1fr);
+	}
+
+	.appDirectory {
+		border-right: 1px solid #eef0f3;
+		border-bottom: 0;
+		border-radius: 0 0 0 14px;
+	}
+
+	.grantsDetail {
+		padding: 24px;
+	}
+}
+
+@container mcp-client-workspace (max-width: 999px) {
+	.appList {
+		grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+	}
+
+	.legacyApps {
+		grid-column: 1 / -1;
 	}
 }

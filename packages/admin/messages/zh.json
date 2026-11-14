@@ -2889,7 +2889,7 @@
 			"deleteConfirm": "将撤销「{name}」下全部 {count} 条有效授权，并解除已注册实例的归属；该应用之后无法再注册。继续吗？",
 			"deleted": "应用已删除",
 			"unattributedTitle": "未归属的授权",
-			"unattributedHint": "内置授权服务器接管之前签发、未关联任何应用的授权。切换后用户需要重新授权，可直接撤销或等其过期。",
+			"unattributedHint": "未关联应用的历史授权。切换授权模式不会清除这些记录，可按状态查看或撤销。",
 			"unattributedBadge": "未归属",
 			"filteringBy": "正在查看：{name} 的授权",
 			"form": {
@@ -2907,7 +2907,17 @@
 				"saved": "应用已保存",
 				"saveFailed": "保存应用失败"
 			}
-		}
+		},
+		"managementTitle": "应用与用户授权",
+		"globalScope": "全网关记录 · 不按当前服务范围或授权服务器地址筛选",
+		"relationshipHint": "应用定义内置授权服务器允许接入的客户端；一个应用可有多个客户端实例和用户。用户同意后，令牌绑定网关用户与具体实例，调用按该用户的权限与额度处理。切换授权服务器不会删除这些记录。",
+		"grantsTitle": "用户授权",
+		"grantsHint": "每条记录是网关用户对某个客户端实例的授权。选择左侧应用可查看对应记录。",
+		"appsRoleHint": "内置授权服务器按应用规则接纳客户端；同一应用可注册多个实例。",
+		"searchApps": "搜索应用名称或标识",
+		"selectApp": "选择应用",
+		"allGrants": "全部授权",
+		"noMatchingApps": "没有匹配的应用"
 	},
 	"keysPage": {
 		"title": "API 密钥",
@@ -4282,6 +4292,7 @@
 			"selectService": "选择 MCP 服务",
 			"catalogPricing": "目录与计费",
 			"copyEndpoint": "复制接入地址",
+			"editDefaultPricing": "编辑默认价格",
 			"loading": "正在加载服务"
 		},
 		"clientEndpoint": "客户端接入地址",
@@ -4292,7 +4303,14 @@
 		},
 		"clientAccess": {
 			"title": "客户端接入",
-			"description": "选择服务范围和鉴权方式，复制客户端配置或验证工具目录。"
+			"description": "选择服务范围和鉴权方式，复制客户端配置或验证工具目录。",
+			"authCategories": "接入方式",
+			"keyTitle": "API Key 接入",
+			"oauthTitle": "OAuth 2.0 授权接入",
+			"guideTitle": "客户端配置",
+			"keyDescription": "使用网关用户 API Key，复制对应客户端的配置即可接入。",
+			"oauthDescription": "客户端通过浏览器登录并授权，无需填写 API Key。",
+			"documentation": "客户端接入文档"
 		},
 		"title": "MCP 服务",
 		"subtitle": "接入远程服务，管理工具目录、计费与客户端授权",
@@ -4347,11 +4365,19 @@
 			},
 			"issuerLabel": "本 Gateway 的公开地址（issuer）",
 			"issuerPlaceholder": "https://api.example.com",
-			"issuerHint": "客户端访问本 Gateway 所用的 origin。反向代理需把 /oauth/* 与 /.well-known/oauth-authorization-server 转发到代理服务。清空即可回滚到外部授权服务器。",
+			"issuerHint": "客户端访问本 Gateway 所用的 origin。反向代理需把 /oauth/* 与 /.well-known/oauth-authorization-server 转发到代理服务。",
 			"consentLabel": "登录与同意页（可选）",
 			"consentPlaceholder": "https://portal.example.com/oauth/consent",
 			"consentHint": "用户在这里登录并同意。Gateway 会附带 request_id。留空则使用内置页面，用户用 API Key 确认。",
-			"consentInvalid": "同意页地址无效：请填写不含账号密码和片段的 https 地址（仅 localhost 允许 http）。"
+			"consentInvalid": "同意页地址无效：请填写不含账号密码和片段的 https 地址（仅 localhost 允许 http）。",
+			"serverTitle": "授权服务器",
+			"configureServer": "配置授权服务器",
+			"collapseConfig": "收起配置",
+			"scope": {
+				"builtin": "全局配置，适用于所有 MCP 服务。应用准入、客户端注册与令牌签发由 Gateway 管理。",
+				"external": "全局配置，客户端登录与注册由外部服务器管理。下方仅展示网关保存的应用和授权记录。",
+				"off": "OAuth 授权发现已关闭，API Key 接入仍可用。已有令牌不会自动撤销，可在下方管理。"
+			}
 		},
 		"connectGuide": {
 			"button": "接入指南",
@@ -4513,7 +4539,7 @@
 		"removeHeader": "移除此认证头",
 		"removedHeadersWarning": "保存后将移除认证头：{names}",
 		"advancedSettings": "高级设置",
-		"defaultPriceHint": "工具默认使用此服务的按次价格。",
+		"defaultPriceHint": "未单独设价的工具使用此价格。",
 		"timeoutHint": "范围 1,000–120,000 毫秒，默认 30 秒。",
 		"maxBytesHint": "范围 1,000–8,000,000 字节。",
 		"slugReserved": "builtin 为保留标识，请使用其他标识。",
@@ -4626,7 +4652,7 @@
 			"pricing": "计费规则",
 			"advanced": "高级设置"
 		},
-		"advancedHint": "通常使用默认值即可，仅在上游响应较慢或返回内容较大时调整。默认超时 30 秒，最大响应 1 MiB。",
+		"advancedHint": "仅在上游响应较慢或返回内容较大时调整。",
 		"pricing": {
 			"simpleDefaultHint": "未配置独立价格的工具采用这里的默认设置。",
 			"needsReview": "配置待检查",

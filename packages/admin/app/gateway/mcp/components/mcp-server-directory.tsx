@@ -140,7 +140,11 @@ export function McpServerDirectory({
 							<span className="block truncate text-sm font-medium text-gray-900" title={server.name}>
 								{server.name}
 							</span>
-							<span className="mt-0.5 block truncate font-mono text-xs text-gray-400">{server.slug}</span>
+							{server.name !== server.slug ? (
+								<span className="mt-0.5 block truncate font-mono text-xs text-gray-400">
+									{server.slug}
+								</span>
+							) : null}
 							<span
 								className={`mt-2 flex flex-wrap items-center gap-1.5 text-xs ${
 									server.status === 'active' ? 'text-emerald-700' : 'text-gray-500'

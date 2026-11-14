@@ -14,7 +14,6 @@ export function McpAdvancedSettings({
 	return (
 		<section className="space-y-5">
 			<div>
-				<h3 className="text-sm font-medium text-gray-900">{t('formTabs.advanced')}</h3>
 				<p className="mt-1 text-xs leading-5 text-gray-500">{t('advancedHint')}</p>
 			</div>
 			<div className="grid gap-4 sm:grid-cols-2">

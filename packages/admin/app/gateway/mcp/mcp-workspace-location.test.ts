@@ -17,6 +17,16 @@ describe('MCP workspace location', () => {
 			assert.equal(readMcpWorkspaceLocation('?server=team&view=connection', hash).section, 'clients');
 		}
 	});
+	it('opens the OAuth category for authorization deep links', () => {
+		for (const hash of ['#mcp-oauth', '#oauth-access-tokens']) {
+			const location = readMcpWorkspaceLocation('?server=team&scope=team', hash);
+			assert.equal(location.section, 'clients');
+			assert.equal(location.auth, 'oauth');
+			assert.equal(location.scope, 'team');
+		}
+		assert.equal(readMcpWorkspaceLocation('', '#mcp-client-guide').auth, 'key');
+	});
+
 	it('falls back to the catalog for unknown views and empty service IDs', () => {
 		assert.deepEqual(readMcpWorkspaceLocation('?server=%20%20&view=unknown', '#unrelated'), {
 			server: null,

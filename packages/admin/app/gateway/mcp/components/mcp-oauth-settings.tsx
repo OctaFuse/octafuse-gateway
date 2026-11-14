@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ConfigCardShell } from '@/components/ConfigCardShell';
+import { InfoHintPopover } from '@/components/InfoHintPopover';
+import { ChevronDownIcon, Cog6ToothIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import type { SystemConfigRow } from '@/lib/types';
 import {
@@ -38,12 +39,18 @@ const MODES: readonly Mode[] = ['builtin', 'external', 'off'];
  * - 关闭：留空，不暴露 OAuth 发现。
  * 回滚到外部模式只需清空 issuer。
  */
-export function McpOAuthSettings({ onOpenGuide, onSaved }: {
+export function McpOAuthSettings({
+	onOpenGuide,
+	onSaved,
+	className = '',
+}: {
+	className?: string;
 	onOpenGuide: () => void;
 	/** 回传当前生效的授权服务器根地址（内置为 issuer，外部为外部地址，关闭为空串） */
 	onSaved: (value: string) => void;
 }) {
 	const t = useTranslations('mcp.oauth');
+	const mcp = useTranslations('mcp');
 	const tUx = useTranslations('config.ux');
 	const ui = useTranslations('mcp.ui');
 	const tCommon = useTranslations('common');
@@ -54,6 +61,19 @@ export function McpOAuthSettings({ onOpenGuide, onSaved }: {
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState('');
 	const [notice, setNotice] = useState('');
+	const [expanded, setExpanded] = useState(false);
+	useEffect(() => {
+		const followAnchor = () => {
+			if (window.location.hash === '#mcp-oauth') setExpanded(true);
+		};
+		followAnchor();
+		window.addEventListener('hashchange', followAnchor);
+		window.addEventListener('popstate', followAnchor);
+		return () => {
+			window.removeEventListener('hashchange', followAnchor);
+			window.removeEventListener('popstate', followAnchor);
+		};
+	}, []);
 
 	const effectiveServer = (values: Values) =>
 		values.mode === 'builtin' ? values.issuer : values.mode === 'external' ? values.authorizationServer : '';
@@ -74,7 +94,7 @@ export function McpOAuthSettings({ onOpenGuide, onSaved }: {
 				const values: Values = {
 					mode: resolved.mode,
 					issuer: resolved.mode === 'builtin' ? resolved.issuer : '',
-					consentUrl: resolved.mode === 'builtin' ? (resolved.consentUrl ?? '') : '',
+					consentUrl: resolved.mode === 'builtin' ? resolved.consentUrl ?? '' : '',
 					authorizationServer:
 						resolved.mode === 'external' ? resolved.authorizationServer : read(MCP_OAUTH_AUTHORIZATION_SERVER_KEY),
 				};
@@ -188,61 +208,112 @@ export function McpOAuthSettings({ onOpenGuide, onSaved }: {
 		setDraft((current) => ({ ...current, ...patch }));
 	};
 
-	return (
-		<div className="min-w-0 self-start">
-			<ConfigCardShell
-				id="mcp-oauth"
-				title={t('title')}
-				description={t('hint')}
-				hint={<p>{t('description')}</p>}
-				footer={
-					loadFailed ? (
-						<div
-							role="alert"
-							className="flex flex-wrap items-center justify-between gap-3 text-sm text-red-700"
-						>
-							<span>{error}</span>
-							<button
-								type="button"
-								disabled={loading}
-								onClick={() => void load()}
-								className="font-medium underline disabled:opacity-40"
-							>
-								{ui('retry')}
-							</button>
-						</div>
-					) : dirty || error ? (
-						<div className="flex flex-wrap items-center justify-between gap-3">
-							<span className={`text-xs ${error ? 'text-red-600' : 'text-amber-700'}`} role="status">
-								{error || tUx('unsaved')}
-							</span>
-							<div className="flex items-center gap-2">
-								<button
-									type="button"
-									disabled={saving}
-									onClick={() => {
-										setDraft(saved);
-										setError('');
-									}}
-									className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-								>
-									{tUx('discard')}
-								</button>
-								<button
-									type="button"
-									disabled={saving || loading || !dirty || missing}
-									onClick={() => void save()}
-									aria-label={t('save')}
-									className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
-								>
-									{saving ? tCommon('saving') : tCommon('save')}
-								</button>
-							</div>
-						</div>
-					) : undefined
-				}
+	const footer = loadFailed ? (
+		<div
+			role="alert"
+			className="flex flex-wrap items-center justify-between gap-3 text-sm text-red-700"
+		>
+			<span>{error}</span>
+			<button
+				type="button"
+				disabled={loading}
+				onClick={() => void load()}
+				className="font-medium underline disabled:opacity-40"
 			>
-				<div role="radiogroup" aria-label={t('modeLabel')} className="space-y-2">
+				{ui('retry')}
+			</button>
+		</div>
+	) : dirty || error ? (
+		<div className="flex flex-wrap items-center justify-between gap-3">
+			<span className={`text-xs ${error ? 'text-red-600' : 'text-amber-700'}`} role="status">
+				{error || tUx('unsaved')}
+			</span>
+			<div className="flex items-center gap-2">
+				<button
+					type="button"
+					disabled={saving}
+					onClick={() => {
+						setDraft(saved);
+						setError('');
+					}}
+					className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+				>
+					{mcp('discard')}
+				</button>
+				<button
+					type="button"
+					disabled={saving || loading || !dirty || missing}
+					onClick={() => void save()}
+					aria-label={t('save')}
+					className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+				>
+					{saving ? tCommon('saving') : tCommon('save')}
+				</button>
+			</div>
+		</div>
+	) : undefined;
+	return (
+		<section
+			id="mcp-oauth"
+			aria-labelledby="mcp-oauth-title"
+			className={`${className} admin-content-panel min-w-0 scroll-mt-4 border border-gray-200 bg-white p-4 sm:p-6`}
+		>
+			<header className="flex flex-wrap items-start justify-between gap-4">
+				<div className="min-w-0 flex-1">
+					<div className="flex flex-wrap items-center gap-2">
+						<ShieldCheckIcon className="h-4 w-4 text-gray-500" aria-hidden="true" />
+						<h2 id="mcp-oauth-title" className="text-base font-medium text-gray-900">{t('serverTitle')}</h2>
+						<InfoHintPopover label={t('serverTitle')} portal openOnHover align="start">
+							{t('description')}
+						</InfoHintPopover>
+						{!loading && !loadFailed ? (
+							<span
+								className={`rounded-md px-2 py-0.5 text-xs ${
+									saved.mode === 'off'
+										? 'bg-gray-100 text-gray-500'
+										: 'bg-emerald-50 text-emerald-700'
+								}`}
+							>
+								{t(`modes.${saved.mode}.title`)}
+							</span>
+						) : null}
+						{dirty ? <span className="text-xs text-amber-700">{tUx('unsaved')}</span> : null}
+					</div>
+					{loading ? (
+						<p role="status" className="mt-2 text-xs text-gray-500">
+							{tCommon('loading')}
+						</p>
+					) : !loadFailed ? (
+						<>
+							{savedServer ? (
+								<code className="mt-2 block break-all text-sm text-gray-800">{savedServer}</code>
+							) : null}
+							<p className="mt-2 text-xs leading-5 text-gray-500">{t(`scope.${saved.mode}`)}</p>
+						</>
+					) : null}
+				</div>
+				<button
+					type="button"
+					aria-expanded={expanded}
+					aria-controls="mcp-oauth-configuration"
+					onClick={() => setExpanded(!expanded)}
+					className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
+				>
+					<Cog6ToothIcon className="h-4 w-4" aria-hidden="true" />
+					{t(expanded ? 'collapseConfig' : 'configureServer')}
+					<ChevronDownIcon
+						className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`}
+						aria-hidden="true"
+					/>
+				</button>
+			</header>
+			{loadFailed && !expanded ? <div className="mt-4">{footer}</div> : null}
+			<div
+				id="mcp-oauth-configuration"
+				hidden={!expanded}
+				className="mt-5 border-t border-gray-100 pt-5"
+			>
+				<div role="radiogroup" aria-label={t('modeLabel')} className="grid gap-3 md:grid-cols-3">
 					{MODES.map((mode) => (
 						<label
 							key={mode}
@@ -272,7 +343,7 @@ export function McpOAuthSettings({ onOpenGuide, onSaved }: {
 					</p>
 				) : null}
 				{draft.mode === 'builtin' ? (
-					<div className="mt-4 space-y-3">
+					<div className="mt-4 grid gap-4 md:grid-cols-2">
 						<div>
 							<label htmlFor="mcp-oauth-issuer" className="mb-1 block text-sm font-medium text-gray-700">
 								{t('issuerLabel')}
@@ -368,7 +439,8 @@ export function McpOAuthSettings({ onOpenGuide, onSaved }: {
 						</details>
 					</div>
 				) : null}
-			</ConfigCardShell>
-		</div>
+				{footer ? <div className="mt-5 border-t border-gray-100 pt-4">{footer}</div> : null}
+			</div>
+		</section>
 	);
 }

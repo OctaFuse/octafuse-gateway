@@ -46,7 +46,13 @@ function CatalogDescription({ text }: { text: string }) {
 	);
 }
 
-function CatalogGroups({ response, servers }: { response: McpCatalogTestResponse; servers: ServerSummary[] }) {
+function CatalogGroups({
+	response,
+	servers,
+}: {
+	response: McpCatalogTestResponse;
+	servers: ServerSummary[];
+}) {
 	const t = useTranslations('mcp.catalogTest');
 	const [search, setSearch] = useState('');
 	const query = search.trim().toLocaleLowerCase();
@@ -93,8 +99,10 @@ function CatalogGroups({ response, servers }: { response: McpCatalogTestResponse
 						<h3 className="text-sm font-medium text-gray-900">
 							{servers.find((s) => s.slug === group.slug)?.name ?? group.slug ?? t('unknownService')}
 						</h3>
-						{group.slug ? (
-							<code className="rounded bg-white px-2 py-0.5 text-xs text-gray-500">{group.slug}</code>
+						{group.slug && servers.find((s) => s.slug === group.slug)?.name !== group.slug ? (
+							<code className="rounded bg-white px-2 py-0.5 text-xs text-gray-500">
+								{group.slug}
+							</code>
 						) : null}
 						<span className="ml-auto text-xs text-gray-500">{t('itemCount', { count: group.entries.length })}</span>
 					</div>
@@ -109,7 +117,9 @@ function CatalogGroups({ response, servers }: { response: McpCatalogTestResponse
 								) : typeof entry.uri === 'string' && typeof entry.name === 'string' ? (
 									<p className="text-sm text-gray-700">{entry.name}</p>
 								) : null}
-								{typeof entry.description === 'string' ? <CatalogDescription text={entry.description} /> : null}
+								{typeof entry.description === 'string' ? (
+									<CatalogDescription text={entry.description} />
+								) : null}
 								{typeof entry.mimeType === 'string' ? (
 									<code className="text-xs text-gray-500">{entry.mimeType}</code>
 								) : null}
@@ -184,7 +194,9 @@ export function McpCatalogTestModal({
 							disabled={state.sending || state.loadingKey}
 							className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
 						>
-							{state.sending ? <ArrowPathIcon aria-hidden="true" className="h-4 w-4 animate-spin" /> : null}
+							{state.sending ? (
+								<ArrowPathIcon aria-hidden="true" className="h-4 w-4 animate-spin" />
+							) : null}
 							{state.sending ? t('sending') : t('send')}
 						</button>
 					</div>
@@ -236,7 +248,7 @@ export function McpCatalogTestModal({
 										<option value="">{t('allServices')}</option>
 										{servers.map((server) => (
 											<option key={server.id} value={server.slug}>
-												{server.name} ({server.slug}){server.status !== 'active' ? ` · ${t('disabled')}` : ''}
+												{server.name}{server.name !== server.slug ? ` (${server.slug})` : ''}{server.status !== 'active' ? ` · ${t('disabled')}` : ''}
 											</option>
 										))}
 									</select>

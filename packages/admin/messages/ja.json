@@ -2889,7 +2889,7 @@
 			"deleteConfirm": "「{name}」の有効な認可 {count} 件をすべて取り消し、登録済みインスタンスの紐付けを解除します。以後このアプリは登録できません。続行しますか？",
 			"deleted": "アプリを削除しました",
 			"unattributedTitle": "未所属の認可",
-			"unattributedHint": "内蔵認可サーバーへ切り替える前に発行され、アプリに紐付いていない認可です。切り替え後はユーザーの再認可が必要です。取り消すか、期限切れを待ってください。",
+			"unattributedHint": "アプリに関連付けられていない過去の認可です。認可モードを切り替えても削除されず、状態ごとの確認や取り消しができます。",
 			"unattributedBadge": "未所属",
 			"filteringBy": "表示中：{name} の認可",
 			"form": {
@@ -2907,7 +2907,17 @@
 				"saved": "アプリを保存しました",
 				"saveFailed": "アプリを保存できませんでした"
 			}
-		}
+		},
+		"managementTitle": "アプリとユーザー認可",
+		"globalScope": "Gateway 全体の記録 · サービス範囲や認可サーバー URL で絞り込みません",
+		"relationshipHint": "アプリは内蔵認可サーバーが許可するクライアントを定義します。1 つのアプリに複数のクライアントインスタンスとユーザーを関連付けられます。同意後、トークンは Gateway ユーザーとインスタンスを結び、呼び出しにはそのユーザーの権限と予算が適用されます。サーバーを切り替えても記録は削除されません。",
+		"grantsTitle": "ユーザー認可",
+		"grantsHint": "各記録は Gateway ユーザーからクライアントインスタンスへの認可です。左のアプリを選択して確認できます。",
+		"appsRoleHint": "内蔵認可サーバーはアプリのルールでクライアントを許可します。1 つのアプリに複数のインスタンスを登録できます。",
+		"searchApps": "アプリ名または識別子で検索",
+		"selectApp": "アプリを選択",
+		"allGrants": "すべての認可",
+		"noMatchingApps": "該当するアプリはありません"
 	},
 	"keysPage": {
 		"title": "API キー",
@@ -4282,6 +4292,7 @@
 			"selectService": "MCP サービスを選択",
 			"catalogPricing": "カタログと料金",
 			"copyEndpoint": "接続先 URL をコピー",
+			"editDefaultPricing": "デフォルト料金を編集",
 			"loading": "サービスを読み込み中"
 		},
 		"clientEndpoint": "クライアント接続先",
@@ -4292,7 +4303,14 @@
 		},
 		"clientAccess": {
 			"title": "クライアント接続",
-			"description": "サービス範囲と認証方式を選び、クライアント設定のコピーやカタログの確認ができます。"
+			"description": "サービス範囲と認証方式を選び、クライアント設定のコピーやカタログの確認ができます。",
+			"authCategories": "接続方法",
+			"keyTitle": "API Key 接続",
+			"oauthTitle": "OAuth 2.0 認可接続",
+			"guideTitle": "クライアント設定",
+			"keyDescription": "Gateway のユーザー API Key を使い、クライアント用の設定をコピーして接続します。",
+			"oauthDescription": "API Key を入力せず、ブラウザーでログインして接続を認可します。",
+			"documentation": "クライアント接続ドキュメント"
 		},
 		"title": "MCP サーバー",
 		"subtitle": "リモート MCP サーバーを接続し、ツールを確認・有効化して、共通のエンドポイントからクライアントに提供します。",
@@ -4347,11 +4365,19 @@
 			},
 			"issuerLabel": "この Gateway の公開 URL（issuer）",
 			"issuerPlaceholder": "https://api.example.com",
-			"issuerHint": "クライアントがこの Gateway にアクセスするオリジン。リバースプロキシで /oauth/* と /.well-known/oauth-authorization-server をプロキシサービスへ転送してください。空にすると外部認可サーバーに戻せます。",
+			"issuerHint": "クライアントがこの Gateway にアクセスするオリジン。リバースプロキシで /oauth/* と /.well-known/oauth-authorization-server をプロキシサービスへ転送してください。",
 			"consentLabel": "サインイン・同意ページ（任意）",
 			"consentPlaceholder": "https://portal.example.com/oauth/consent",
 			"consentHint": "ユーザーがサインインして承認する場所。Gateway は request_id を付与します。空の場合は内蔵ページを使い、API キーで承認します。",
-			"consentInvalid": "同意ページの URL が無効です。認証情報やフラグメントを含まない https URL を指定してください（localhost のみ http 可）。"
+			"consentInvalid": "同意ページの URL が無効です。認証情報やフラグメントを含まない https URL を指定してください（localhost のみ http 可）。",
+			"serverTitle": "認可サーバー",
+			"configureServer": "認可サーバーを設定",
+			"collapseConfig": "設定を閉じる",
+			"scope": {
+				"builtin": "すべての MCP サービスに適用される共通設定です。Gateway がアプリの許可、クライアント登録、トークン発行を管理します。",
+				"external": "共通設定です。ログインと登録は外部サーバーが管理し、以下には Gateway に保存された記録を表示します。",
+				"off": "OAuth の検出は無効です。API Key 接続は利用できます。既存のトークンは自動失効せず、以下で管理できます。"
+			}
 		},
 		"connectGuide": {
 			"button": "接続ガイド",
@@ -4513,7 +4539,7 @@
 		"removeHeader": "このヘッダーを削除",
 		"removedHeadersWarning": "保存時に削除されるヘッダー：{names}",
 		"advancedSettings": "詳細設定",
-		"defaultPriceHint": "ツールは既定でこのサービスの呼び出し単価を使用します。",
+		"defaultPriceHint": "個別料金のないツールに適用されます。",
 		"timeoutHint": "1,000〜120,000ミリ秒。既定値は30秒です。",
 		"maxBytesHint": "1,000〜8,000,000バイト。",
 		"slugReserved": "builtinは予約済みです。別の識別子を指定してください。",
@@ -4626,7 +4652,7 @@
 			"pricing": "課金ルール",
 			"advanced": "詳細設定"
 		},
-		"advancedHint": "通常は既定値を使用できます。上流の応答が遅い場合や応答が大きい場合に調整してください。既定のタイムアウトは30秒、最大応答は1 MiBです。",
+		"advancedHint": "上流の応答が遅い場合や、大きなレスポンスを扱う場合に調整します。",
 		"pricing": {
 			"simpleDefaultHint": "個別の価格が設定されていないツールは、この既定設定を使用します。",
 			"needsReview": "設定を確認してください",
