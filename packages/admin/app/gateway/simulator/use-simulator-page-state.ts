@@ -56,6 +56,7 @@ import {
 	audioOperationForKind,
 	isAudioKind,
 	isInvokeKind,
+	isModelKindFilter,
 	normalizeLegacyKindParam,
 	parseGatewayToolId,
 	resolveRequestOperation,
@@ -74,6 +75,7 @@ import {
 	LS_INVOKE_KIND,
 	LS_KEY_ID,
 	LS_MODEL_ID,
+	LS_MODEL_KIND,
 	LS_OPENAI_LLM_OPERATION,
 	LS_PROTOCOL,
 	LS_ROUTE_GROUP,
@@ -118,8 +120,9 @@ export function useSimulatorPageState() {
 	const [loadingCatalog, setLoadingCatalog] = useState(true);
 	const [catalogError, setCatalogError] = useState<string | null>(null);
 
-	/** llm|image|audio|tool；tool 时走 `/v1/tools/*`，隐藏 model/route */
+	/** Tool mode uses `/v1/tools/*`; model mode keeps its own last selected type. */
 	const [filterKind, setFilterKind] = useState<InvokeKind>(DEFAULT_INVOKE_KIND);
+	const lastModelKindRef = useRef<ModelKindFilter>('llm');
 	const [filterModel, setFilterModel] = useState('');
 	const [selectedModelId, setSelectedModelId] = useState('');
 	const [selectedToolId, setSelectedToolId] = useState<GatewayToolId>(GATEWAY_TOOL_IDS[0] ?? 'web-search');
@@ -234,6 +237,8 @@ export function useSimulatorPageState() {
 	const setFilterKindAndClear = useCallback(
 		(next: InvokeKind) => {
 			if (next === filterKind) return;
+			if (next !== 'tool') lastModelKindRef.current = next;
+			else if (filterKind !== 'tool') lastModelKindRef.current = filterKind;
 			setFilterKind(next);
 			setFilterModel('');
 			setSelectedModelId('');
@@ -241,7 +246,7 @@ export function useSimulatorPageState() {
 			if (next === 'tool') {
 				setBodyText(bodyTemplateForTool(selectedToolId));
 				setBodyError(null);
-			} else if (filterKind === 'tool') {
+			} else {
 				setBodyText(
 					bodyTemplateForSelection(
 						protocol,
@@ -258,6 +263,14 @@ export function useSimulatorPageState() {
 			}
 		},
 		[filterKind, selectedToolId, protocol, imageOperation, openaiLlmOperation]
+	);
+
+	const setSimulatorMode = useCallback(
+		(mode: 'models' | 'tools') => {
+			if (sending) return;
+			setFilterKindAndClear(mode === 'tools' ? 'tool' : lastModelKindRef.current);
+		},
+		[sending, setFilterKindAndClear]
 	);
 
 	const selectTool = useCallback((id: string) => {
@@ -279,9 +292,16 @@ export function useSimulatorPageState() {
 		return Array.from(set).sort((a, b) => a.localeCompare(b));
 	}, [routes, selectedModelId]);
 
-	const selectedModel = useMemo(() => models.find((m) => m.id === selectedModelId) ?? null, [models, selectedModelId]);
+	const selectedModel = useMemo(
+		() => (isToolKind ? null : models.find((m) => m.id === selectedModelId) ?? null),
+		[models, selectedModelId, isToolKind]
+	);
 
-	const selectedModelKind = useMemo(() => kindOfModel(selectedModel), [selectedModel]);
+	// Before a model is selected, use the active category for templates and controls too.
+	const selectedModelKind = useMemo(
+		() => (selectedModel ? kindOfModel(selectedModel) : isToolKind ? 'llm' : (filterKind as ModelKindFilter)),
+		[selectedModel, filterKind, isToolKind]
+	);
 	const selectedModelIsImage = selectedModelKind === 'image';
 	const selectedModelIsEmbedding = selectedModelKind === 'embedding';
 
@@ -398,8 +418,12 @@ export function useSimulatorPageState() {
 		() =>
 			[...matchingRoutes].sort((a, b) =>
 				compareProvidersByKindThenName(
-					providersById.get(a.provider_id) ?? { name: a.provider_name ?? a.provider_id },
-					providersById.get(b.provider_id) ?? { name: b.provider_name ?? b.provider_id },
+					providersById.get(a.provider_id) ?? {
+						name: a.provider_name ?? a.provider_id,
+					},
+					providersById.get(b.provider_id) ?? {
+						name: b.provider_name ?? b.provider_id,
+					},
 					locale,
 					customKindLabel
 				)
@@ -714,18 +738,19 @@ export function useSimulatorPageState() {
 					bodyTemplateForSelection('openai', false, 'generations', null, undefined, undefined, undefined, llmOp)
 				);
 			}
+			const savedModelKind = localStorage.getItem(LS_MODEL_KIND);
+			if (savedModelKind && isModelKindFilter(savedModelKind)) lastModelKindRef.current = savedModelKind;
 			const storedKind = localStorage.getItem(LS_INVOKE_KIND);
 			const kindRaw = storedKind ? normalizeLegacyKindParam(storedKind) : storedKind;
 			if (kindRaw && isInvokeKind(kindRaw)) {
 				setFilterKind(kindRaw);
+				if (kindRaw !== 'tool') lastModelKindRef.current = kindRaw;
 			}
 			const toolRaw = localStorage.getItem(LS_TOOL_ID);
 			const toolParsed = parseGatewayToolId(toolRaw);
-			if (toolParsed) {
-				setSelectedToolId(toolParsed);
-				if (kindRaw === 'tool') {
-					setBodyText(bodyTemplateForTool(toolParsed));
-				}
+			if (toolParsed) setSelectedToolId(toolParsed);
+			if (kindRaw === 'tool') {
+				setBodyText(bodyTemplateForTool(toolParsed ?? GATEWAY_TOOL_IDS[0] ?? 'web-search'));
 			}
 			const mid = localStorage.getItem(LS_MODEL_ID);
 			if (mid) setSelectedModelId(mid);
@@ -790,6 +815,10 @@ export function useSimulatorPageState() {
 		if (!hydrated) return;
 		try {
 			localStorage.setItem(LS_INVOKE_KIND, filterKind);
+			if (filterKind !== 'tool') {
+				lastModelKindRef.current = filterKind;
+				localStorage.setItem(LS_MODEL_KIND, filterKind);
+			}
 		} catch {
 			// ignore
 		}
@@ -877,6 +906,10 @@ export function useSimulatorPageState() {
 
 	/** Image / Audio models: force openai + kind template; leaving restores chat template. */
 	useEffect(() => {
+		if (isToolKind) {
+			prevSelectedSpecialKindRef.current = 'none';
+			return;
+		}
 		if (selectedAudioOperation) {
 			const audioProtocol =
 				protocol === 'dashscope' || protocol === 'minimax' || protocol === 'elevenlabs'
@@ -979,6 +1012,7 @@ export function useSimulatorPageState() {
 		imageOperation,
 		openaiLlmOperation,
 		setAudioInputMode,
+		isToolKind,
 	]);
 
 	useEffect(() => {
@@ -1857,6 +1891,7 @@ export function useSimulatorPageState() {
 		filterKind,
 		setFilterKind: setFilterKindAndClear,
 		isToolKind,
+		setSimulatorMode,
 		kindCounts,
 		filterModel,
 		setFilterModel,

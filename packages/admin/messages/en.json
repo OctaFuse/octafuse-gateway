@@ -154,7 +154,8 @@
 		"navigation": "Main navigation",
 		"groups": {
 			"overview": "Overview",
-			"inference": "Inference",
+			"models": "Models",
+			"testing": "Testing",
 			"user": "User",
 			"tools": "Tools",
 			"analytics": "Analytics",
@@ -2309,9 +2310,6 @@
 		"audioInputMode": "Audio input",
 		"audioInputFile": "Audio file",
 		"audioInputMicrophone": "Browser microphone",
-		"mode": "Mode",
-		"modeRoutes": "Routes",
-		"modeTools": "Tools",
 		"toolsSubtitle": "Test requests and results with a tool and engine",
 		"toolsSection": "Tool & engine",
 		"toolsHint": "Test tools and service engines with configured credentials",
@@ -2406,7 +2404,13 @@
 		"kindEmbedding": "Embedding",
 		"actualRequest": "Actual request"
 	},
+	"modelToolMode": {
+		"label": "Call type",
+		"models": "Models",
+		"tools": "Tools"
+	},
 	"simulator": {
+		"toolsSubtitle": "Use a user API key to call tools and verify authentication, billing and invocation logs.",
 		"title": "Simulator",
 		"subtitle": "Use a user API key to simulate client requests and verify authentication, routing and failover.",
 		"connection": "Connection",

@@ -4,10 +4,10 @@ import { AdminContentMark } from '@/components/admin-content-mark';
 import { useTranslations } from 'next-intl';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import type { GatewayToolDefinition } from '@/lib/gateway-tools';
-import type { InvokeKind } from '@/lib/invoke-kind';
+import { MODEL_KIND_FILTERS, type InvokeKind } from '@/lib/invoke-kind';
 import type { KeyboardEvent } from 'react';
 import { AdminInspector } from '@/components/admin-inspector';
-import { CheckIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
+import { CheckIcon, ArrowsRightLeftIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import type { SimulatorProtocol } from '@/lib/simulator/endpoint';
 import { inputClass, labelClass, panelClass } from '../simulator-utils';
 import type { AdminModelRow, RouteListRow } from '../types';
@@ -38,7 +38,14 @@ type Props = {
 	filterKind: InvokeKind;
 	protocol: SimulatorProtocol;
 	onFilterKindChange: (kind: InvokeKind) => void;
-	kindCounts: { llm: number; image: number; asr: number; tts: number; embedding: number; tool: number };
+	kindCounts: {
+		llm: number;
+		image: number;
+		asr: number;
+		tts: number;
+		embedding: number;
+		tool: number;
+	};
 	isToolKind: boolean;
 	gatewayTools: readonly GatewayToolDefinition[];
 	selectedToolId: string;
@@ -92,44 +99,48 @@ export function SimulatorRoutingPanel({
 	const tTools = useTranslations('tools.catalog');
 
 	return (
-		<section className={`${panelClass} flex min-h-0 flex-1 flex-col`}>
+		<section className={`${panelClass} flex min-h-0 flex-col ${isToolKind ? '' : 'flex-1'}`}>
 			<div className="flex items-center justify-between gap-2">
-				<h2 className="flex items-center gap-2 text-sm font-medium text-gray-900"><AdminContentMark icon={ArrowsRightLeftIcon} compact />{t('routingTarget')}</h2>
+				<h2 className="flex items-center gap-2 text-sm font-medium text-gray-900">
+					<AdminContentMark icon={isToolKind ? WrenchScrewdriverIcon : ArrowsRightLeftIcon} compact />
+					{t(isToolKind ? 'tool' : 'routingTarget')}
+				</h2>
 				<span className="truncate font-mono text-xs text-gray-500" title={modelRoutingString}>
 					{isToolKind ? (selectedToolId ? `/v1/tools/${selectedToolId}` : '') : modelRoutingString || ''}
 				</span>
 			</div>
-			<div role="group" aria-label={t('kind')} className="flex flex-wrap gap-1">
-				{(['llm', 'image', 'asr', 'tts', 'embedding', 'tool'] as const).map((kind) => (
-					<button
-						key={kind}
-						type="button"
-						disabled={disabled}
-						aria-pressed={filterKind === kind}
-						onClick={() => onFilterKindChange(kind)}
-						className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs disabled:opacity-50 ${
-							filterKind === kind ? 'bg-gray-950 font-medium text-white' : 'text-gray-600 hover:bg-gray-100'
-						}`}
-					>
-						{t(
-							{
-								llm: 'kindLlm',
-								image: 'kindImage',
-								asr: 'kindAsr',
-								tts: 'kindTts',
-								embedding: 'kindEmbedding',
-								tool: 'kindTool',
-							}[kind]
-						)}
-						<span className="font-mono tabular-nums opacity-60">{kindCounts[kind]}</span>
-					</button>
-				))}
-			</div>
+			{!isToolKind ? (
+				<div role="group" aria-label={t('kind')} className="flex flex-wrap gap-1">
+					{MODEL_KIND_FILTERS.map((kind) => (
+						<button
+							key={kind}
+							type="button"
+							disabled={disabled}
+							aria-pressed={filterKind === kind}
+							onClick={() => onFilterKindChange(kind)}
+							className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs disabled:opacity-50 ${
+								filterKind === kind ? 'bg-gray-950 font-medium text-white' : 'text-gray-600 hover:bg-gray-100'
+							}`}
+						>
+							{t(
+								{
+									llm: 'kindLlm',
+									image: 'kindImage',
+									asr: 'kindAsr',
+									tts: 'kindTts',
+									embedding: 'kindEmbedding',
+								}[kind]
+							)}
+							<span className="font-mono tabular-nums opacity-60">{kindCounts[kind]}</span>
+						</button>
+					))}
+				</div>
+			) : null}
 
 			{isToolKind ? (
 				<div className="flex min-h-0 flex-1 flex-col">
 					<div
-						className="h-56 min-h-0 flex-none overflow-y-auto overscroll-contain rounded-lg bg-white xl:h-auto xl:flex-1"
+						className="max-h-96 min-h-0 overflow-y-auto overscroll-contain rounded-lg bg-white"
 						role="listbox"
 						aria-label={t('tool')}
 					>
@@ -145,8 +156,7 @@ export function SimulatorRoutingPanel({
 									onKeyDown={onListboxKeyDown}
 									tabIndex={
 										active ||
-										(!gatewayTools.some((tool) => tool.id === selectedToolId) &&
-											tool.id === gatewayTools[0]?.id)
+										(!gatewayTools.some((tool) => tool.id === selectedToolId) && tool.id === gatewayTools[0]?.id)
 											? 0
 											: -1
 									}
@@ -225,7 +235,10 @@ export function SimulatorRoutingPanel({
 							)}
 						</div>
 						<p className="mt-1 text-xs text-gray-500">
-							{t('modelCount', { total: modelsInKindTotal, filtered: filteredModels.length })}
+							{t('modelCount', {
+								total: modelsInKindTotal,
+								filtered: filteredModels.length,
+							})}
 						</p>
 					</div>
 
@@ -274,7 +287,9 @@ export function SimulatorRoutingPanel({
 							</div>
 						) : null}
 						<AdminInspector
-							label={t('matchingRoutesSummary', { count: matchingRoutes.length })}
+							label={t('matchingRoutesSummary', {
+								count: matchingRoutes.length,
+							})}
 							size="md"
 							hint={t('matchingRoutesHint')}
 							disabled={!selectedModelId}
@@ -282,10 +297,7 @@ export function SimulatorRoutingPanel({
 							{matchingRoutes.length ? (
 								<ul className="divide-y divide-gray-100">
 									{matchingRoutes.map((route) => (
-										<li
-											key={route.id}
-											className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
-										>
+										<li key={route.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
 											<span>{providerLabelFor(route) || '—'}</span>
 											<span className="font-mono text-xs text-gray-500">
 												P{route.priority} · {route.route_group || 'default'}

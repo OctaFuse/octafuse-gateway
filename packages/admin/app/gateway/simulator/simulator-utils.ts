@@ -36,6 +36,7 @@ export const LS_MODEL_ID = 'octafuse.simulator.modelId';
 export const LS_ROUTE_GROUP = 'octafuse.simulator.routeGroup';
 export const LS_KEY_ID = 'octafuse.simulator.keyId';
 export const LS_INVOKE_KIND = 'octafuse.simulator.invokeKind';
+export const LS_MODEL_KIND = 'octafuse.simulator.modelKind';
 export const LS_TOOL_ID = 'octafuse.simulator.toolId';
 
 export const KEYS_PAGE_SIZE = 200;

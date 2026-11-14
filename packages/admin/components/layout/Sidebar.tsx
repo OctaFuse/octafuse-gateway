@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * 左侧导航：Dashboard、推理与路由、Tools、分析、系统集成、系统（含 Config 与 Logout）；底部外链与版本号。
+ * 左侧导航：概览、模型、工具、测试、用户、分析与系统；底部显示版本号。
  */
 import Link from "next/link";
 import BrandMark from "@/components/brand-mark";

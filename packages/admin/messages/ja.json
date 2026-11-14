@@ -154,7 +154,8 @@
 		"navigation": "メインナビゲーション",
 		"groups": {
 			"overview": "概要",
-			"inference": "推論",
+			"models": "モデル",
+			"testing": "テスト",
 			"user": "ユーザー",
 			"tools": "ツール",
 			"analytics": "分析",
@@ -2309,9 +2310,6 @@
 		"audioInputMode": "音声入力",
 		"audioInputFile": "音声ファイル",
 		"audioInputMicrophone": "ブラウザのマイク",
-		"mode": "モード",
-		"modeRoutes": "Routes",
-		"modeTools": "Tools",
 		"toolsSubtitle": "ツールとエンジンのリクエストと実行結果を確認",
 		"toolsSection": "ツールとエンジン",
 		"toolsHint": "設定済みの認証情報でツールとエンジンをテスト",
@@ -2406,7 +2404,13 @@
 		"kindEmbedding": "埋め込み",
 		"actualRequest": "実際のリクエスト"
 	},
+	"modelToolMode": {
+		"label": "呼び出し種別",
+		"models": "モデル",
+		"tools": "ツール"
+	},
 	"simulator": {
+		"toolsSubtitle": "ユーザーの API キーでツールを呼び出し、認証・課金・呼び出しログを検証します。",
 		"title": "シミュレーター",
 		"subtitle": "ユーザーの API キーでクライアントのリクエストを再現し、認証、ルーティング、フェイルオーバーを検証します。",
 		"connection": "接続設定",
@@ -2516,15 +2520,15 @@
 		"audioPreview": "合成音声",
 		"downloadAudio": "音声をダウンロード",
 		"audioResponseReceived": "{bytes} バイトの合成音声を受信しました。",
-		"kindTool": "Tools",
+		"kindTool": "ツール",
 		"tool": "ツール",
 		"toolHint": "選択した API キーで Proxy POST /v1/tools/{id} を呼び出します（認証・課金・ログ）。",
-		"toolNoRoutes": "Agent Tools は model_routes に束縛されません。このモードではモデルとルートグループを非表示にします。",
+		"toolNoRoutes": "ゲートウェイのツールはモデルルートに紐づきません。ツールモードではモデルとルートグループを表示しません。",
 		"toolEndpoint": "Proxy パス",
-		"toolProtocolHidden": "Tools は常に JSON POST /v1/tools/* です。プロトコル選択は不要です。",
+		"toolProtocolHidden": "ツールは JSON POST /v1/tools/* を使用します。プロトコルの選択は不要です。",
 		"readyNeedTool": "ツールを選択してください。",
 		"errSelectTool": "送信前にツールを選択してください。",
-		"openToolsInvocations": "Tools Invocations を開く",
+		"openToolsInvocations": "ツールの呼び出し履歴を表示",
 		"clientHint": "実クライアントと同じ経路です。Proxy Base URL とユーザー API キーを使い、認証・failover・課金・リクエストログが適用されます。",
 		"routingTargetHint": "クライアントが送る catalog モデルと Route group を選びます。上流は Proxy が選び、ここでは単一 Route を固定しません。",
 		"noMatchingModels": "現在の検索に一致するモデルはありません。",
@@ -4204,7 +4208,7 @@
 			},
 			"simulator": {
 				"title": "シミュレーターの課金",
-				"body": "シミュレーターは選択したAPI Keyで実際のゲートウェイリクエストを送信し、課金とログ記録を行います。\n応答内の使用量は使用量の表示のみです。請求額と原価額はリクエストログで、Agent ToolsはTools呼び出し記録で確認してください。"
+				"body": "シミュレーターは選択したAPI Keyで実際のゲートウェイリクエストを送信し、課金とログ記録を行います。\n応答内の使用量は使用量の表示のみです。請求額と原価額はリクエストログで、ツールの呼び出しは呼び出し履歴で確認してください。"
 			}
 		}
 	},

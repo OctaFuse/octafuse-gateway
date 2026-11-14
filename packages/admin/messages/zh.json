@@ -154,9 +154,10 @@
 		"navigation": "主导航",
 		"groups": {
 			"overview": "概览",
-			"inference": "推理",
+			"models": "模型",
+			"testing": "测试",
 			"user": "用户",
-			"tools": "Tools",
+			"tools": "工具",
 			"analytics": "分析",
 			"integration": "系统集成",
 			"system": "系统"
@@ -2309,9 +2310,6 @@
 		"audioInputMode": "音频输入",
 		"audioInputFile": "音频文件",
 		"audioInputMicrophone": "浏览器麦克风",
-		"mode": "模式",
-		"modeRoutes": "路由",
-		"modeTools": "Tools",
 		"toolsSubtitle": "选择工具与引擎，验证请求与执行结果",
 		"toolsSection": "工具与引擎",
 		"toolsHint": "使用已配置的凭证测试工具与服务引擎",
@@ -2406,7 +2404,13 @@
 		"kindEmbedding": "向量",
 		"actualRequest": "实际请求"
 	},
+	"modelToolMode": {
+		"label": "调用类型",
+		"models": "模型",
+		"tools": "工具"
+	},
 	"simulator": {
+		"toolsSubtitle": "使用用户 API 密钥调用工具，验证鉴权、计费与调用日志。",
 		"title": "模拟器",
 		"subtitle": "使用用户 API 密钥模拟客户端请求，验证网关鉴权、路由和故障转移。",
 		"connection": "连接配置",
@@ -2516,15 +2520,15 @@
 		"audioPreview": "合成音频",
 		"downloadAudio": "下载音频",
 		"audioResponseReceived": "已收到 {bytes} 字节的合成音频。",
-		"kindTool": "Tools",
+		"kindTool": "工具",
 		"tool": "工具",
 		"toolHint": "使用所选 API Key 调用 Proxy POST /v1/tools/{id}（鉴权、计费、请求日志）。",
-		"toolNoRoutes": "Agent Tools 不绑定 model_routes；此模式下隐藏模型与路由组。",
+		"toolNoRoutes": "网关工具不绑定模型路由；工具模式不显示模型与路由组。",
 		"toolEndpoint": "Proxy 路径",
-		"toolProtocolHidden": "Tools 固定走 JSON POST /v1/tools/*，无需选择协议。",
+		"toolProtocolHidden": "工具使用 JSON POST /v1/tools/*，无需选择协议。",
 		"readyNeedTool": "请选择工具。",
 		"errSelectTool": "发送前请先选择工具。",
-		"openToolsInvocations": "打开 Tools 调用记录",
+		"openToolsInvocations": "查看工具调用记录",
 		"clientHint": "与真实客户端相同：Proxy Base URL + 用户 API Key。鉴权、故障转移、计费和请求日志都会生效。",
 		"routingTargetHint": "选择客户端会发送的目录模型与路由组。上游由代理服务决定，这里不会钉死单条路由。",
 		"noMatchingModels": "没有符合当前搜索的模型。",
@@ -4204,7 +4208,7 @@
 			},
 			"simulator": {
 				"title": "模拟器计费说明",
-				"body": "模拟器使用所选 API Key 发起真实网关请求，会执行计费和日志记录。\n响应中的用量只是用量展示；实际计费金额与成本金额请在请求日志中核对，Agent Tools 请查看 Tools 调用记录。"
+				"body": "模拟器使用所选 API Key 发起真实网关请求，会执行计费和日志记录。\n响应中的用量只是用量展示；实际计费金额与成本金额请在请求日志中核对，工具调用请查看工具调用记录。"
 			}
 		}
 	},
