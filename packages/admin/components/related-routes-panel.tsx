@@ -88,9 +88,12 @@ export function RelatedRoutesPanel({
 	state,
 	disabled,
 	perspective = 'provider',
+	embedded = false,
 }: {
 	state: RelatedRoutesState;
 	perspective?: 'provider' | 'model';
+	/** Flat presentation inside an existing dialog surface. */
+	embedded?: boolean;
 	disabled: boolean;
 }) {
 	const isModelView = perspective === 'model';
@@ -143,8 +146,8 @@ export function RelatedRoutesPanel({
 	}, [allSelected, filtered, selectedIds]);
 
 	return (
-		<div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-			<div className="flex flex-wrap items-center gap-3 border-b border-gray-200 bg-gray-50/70 px-4 py-3">
+		<div className={embedded ? 'min-w-0 overflow-hidden' : 'overflow-hidden rounded-xl border border-gray-200 bg-white'}>
+			<div className={`flex flex-wrap items-center gap-3 border-b border-gray-200 ${embedded ? 'pb-4' : 'bg-gray-50/70 px-4 py-3'}`}>
 				{state.routes.length > 0 ? (
 					<div className="relative min-w-0 flex-1 sm:max-w-sm">
 						<MagnifyingGlassIcon

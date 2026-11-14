@@ -57,8 +57,8 @@ export function ModelPricingPanel({
 		cacheWrite: t('pricingColumns.cacheWrite'),
 	};
 	return (
-		<div className="space-y-6">
-			<div className="admin-content-panel min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white p-4 sm:p-5">
+		<div className="divide-y divide-gray-100">
+			<div className="min-w-0 pb-6">
 				{isAudioModel && audioPricingDraft && onAudioPricingDraftChange ? (
 					<div className="space-y-3">
 						<div className="space-y-1.5">
@@ -268,25 +268,17 @@ export function ModelPricingPanel({
 				)}
 			</div>
 			{onCatalogScheduleWindowsChange ? (
-				<details
-					open={catalogScheduleWindows.length > 0}
-					className="rounded-xl border border-gray-200 bg-white"
-				>
-					<summary className="cursor-pointer px-4 py-4 text-sm font-medium text-gray-700 sm:px-5">
-						{t('catalogSchedule')}
-						<span className="ml-3 text-xs font-normal text-gray-500">
-							{catalogScheduleWindows.length
-								? t('scheduleWindowCount', {
-										count: catalogScheduleWindows.length,
-								  })
-								: t('optionalSetting')}
-						</span>
-					</summary>
-					<div className="min-w-0 overflow-hidden p-4 pt-0 sm:p-5 sm:pt-0">
+				<section className="min-w-0 pt-6">
+					<div className="min-w-0">
 						<div className="mb-3">
 							<div className="flex items-start justify-between gap-2">
 								<h4 className="flex items-center gap-2 text-sm font-medium text-gray-800">
 									{t('catalogSchedule')}
+									<span className="text-xs font-normal text-gray-500">
+										{catalogScheduleWindows.length
+											? t('scheduleWindowCount', { count: catalogScheduleWindows.length })
+											: t('optionalSetting')}
+									</span>
 									<InfoHintPopover
 										label={t('catalogSchedule')}
 										openOnHover
@@ -342,7 +334,7 @@ export function ModelPricingPanel({
 							}}
 						/>
 					</div>
-				</details>
+				</section>
 			) : null}
 		</div>
 	);

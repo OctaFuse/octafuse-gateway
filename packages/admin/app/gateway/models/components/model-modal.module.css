@@ -1,0 +1,51 @@
+.dialog .body {
+	padding: 0;
+	background: #fff;
+	scrollbar-width: thin;
+	scrollbar-color: #d4d7dc transparent;
+}
+.panel {
+	padding: 24px;
+}
+.basicLayout {
+	display: grid;
+	grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+	gap: 32px;
+}
+.mainColumn {
+	min-width: 0;
+}
+.section {
+	min-width: 0;
+	display: grid;
+	gap: 12px;
+}
+.section + .section {
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid #eceef2;
+}
+.modalities {
+	min-width: 0;
+}
+.aside {
+	min-width: 0;
+	align-self: start;
+	display: grid;
+	gap: 24px;
+	padding: 20px;
+	border-radius: 12px;
+	background: #f8f9fb;
+}
+@media (max-width: 767px) {
+	.panel {
+		padding: 20px;
+	}
+	.basicLayout {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 24px;
+	}
+	.aside {
+		padding: 16px;
+	}
+}

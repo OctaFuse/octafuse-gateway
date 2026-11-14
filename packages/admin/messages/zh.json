@@ -988,7 +988,7 @@
 		"import": {
 			"title": "从静态目录导入",
 			"subtitle": "选择模型导入，已有相同 ID 的模型不会被覆盖。价格以 {currency} 显示。",
-			"searchPlaceholder": "搜索 Model ID 或显示名称",
+			"searchPlaceholder": "搜索 模型 ID 或显示名称",
 			"clearSearch": "清除搜索",
 			"clearSelection": "清除选择",
 			"reloadCatalog": "重新加载目录",
@@ -1005,7 +1005,7 @@
 			"catalogEmpty": "目录为空",
 			"noMatch": "没有匹配该筛选条件的模型",
 			"selectColumn": "选择",
-			"modelId": "Model ID",
+			"modelId": "模型 ID",
 			"displayName": "显示名称",
 			"vendor": "模型厂商",
 			"context": "上下文",
@@ -1029,7 +1029,7 @@
 		"modal": {
 			"editTitle": "编辑模型",
 			"newTitle": "新建模型",
-			"prefilledFrom": "已从 {id} 预填。Model ID 已加上 -copy 后缀，保存前请确认。",
+			"prefilledFrom": "已从 {id} 预填。模型 ID 已加上 -copy 后缀，保存前请确认。",
 			"copyDisplayName": "{name}（副本）",
 			"kind": "类型",
 			"kindLlm": "大语言模型",
@@ -1040,7 +1040,7 @@
 			"kindHintImage": "文生图模型：OUTPUT 含 image、Image token 单价，无上下文 / Max Tokens。",
 			"kindHintAsr": "输入音频、输出文字，支持按秒或 Token 计费。",
 			"kindHintTts": "输入文字、输出音频，使用按字符计费。",
-			"modelIdRequired": "Model ID *",
+			"modelIdRequired": "模型 ID *",
 			"modelIdPlaceholder": "gpt-4o",
 			"displayName": "显示名称",
 			"displayNamePlaceholder": "GPT-4o",
@@ -1160,7 +1160,7 @@
 				"cacheRead": "缓存读取",
 				"cacheWrite": "缓存写入"
 			},
-			"modelIdRequiredError": "请填写 Model ID",
+			"modelIdRequiredError": "请填写 模型 ID",
 			"invalidMetadata": "元数据须为有效的 JSON 对象"
 		},
 		"metadata": {
