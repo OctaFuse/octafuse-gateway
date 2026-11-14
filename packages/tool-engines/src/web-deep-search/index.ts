@@ -3,6 +3,7 @@
  */
 
 export { deepSearchByProvider } from './dispatch';
+export { deepSearchDeepSeek } from './deepseek';
 export { deepSearchFirecrawl } from './firecrawl';
 export { deepSearchJina } from './jina';
 export {

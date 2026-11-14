@@ -1,0 +1,18 @@
+.clients {
+	container-type: inline-size;
+	container-name: mcp-client-workspace;
+}
+
+.authorization {
+	display: grid;
+	min-width: 0;
+	align-items: start;
+	gap: 16px;
+}
+
+/* Leave room for the token table, its padding and the OAuth settings column. */
+@container mcp-client-workspace (min-width: 1360px) {
+	.authorization {
+		grid-template-columns: 340px minmax(0, 1fr);
+	}
+}

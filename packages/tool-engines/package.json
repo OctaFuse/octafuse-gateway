@@ -5,7 +5,8 @@
 	"type": "module",
 	"description": "Shared Tool engine clients (web-search / web-fetch / web-deep-search / ai-detection). Source-only; consume via bundlers.",
 	"scripts": {
-		"typecheck": "tsc -p tsconfig.json --noEmit"
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"test:unit": "tsx --test src/deepseek/deepseek.test.ts"
 	},
 	"exports": {
 		"./web-search": "./src/web-search/index.ts",

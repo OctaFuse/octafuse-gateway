@@ -25,7 +25,7 @@ export const WEB_SEARCH_ACTIVE_KEY = 'WEB_SEARCH_ACTIVE';
 export const WEB_SEARCH_CATALOG_KEY = 'WEB_SEARCH_CATALOG';
 
 /** 已实现的搜索引擎（Admin 下拉仅允许这些值） */
-export const WEB_SEARCH_PROVIDERS = ['bocha', 'tavily', 'cleversee', 'tencent_wsa'] as const;
+export const WEB_SEARCH_PROVIDERS = ['bocha', 'tavily', 'cleversee', 'tencent_wsa', 'deepseek'] as const;
 export type WebSearchProvider = (typeof WEB_SEARCH_PROVIDERS)[number];
 
 export const DEFAULT_WEB_SEARCH_PROVIDER: WebSearchProvider = 'bocha';

@@ -1,0 +1,22 @@
+.content {
+	container-type: inline-size;
+	container-name: rest-tool-content;
+	min-width: 0;
+}
+
+.columns {
+	display: grid;
+	min-width: 0;
+	align-items: start;
+	gap: 16px;
+}
+
+@container rest-tool-content (min-width: 920px) {
+	.columns {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.fullWidth {
+		grid-column: 1 / -1;
+	}
+}

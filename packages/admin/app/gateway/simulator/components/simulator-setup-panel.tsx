@@ -1,5 +1,7 @@
 'use client';
 
+import { ProxyConnectionHint } from '@/components/proxy-connection-hint';
+import type { useProxyBaseUrlInput } from '@/components/proxy-connection-provider';
 import { AdminInspector } from '@/components/admin-inspector';
 import { ArrowPathIcon, KeyIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
@@ -9,6 +11,7 @@ import type { AdminKeyListItem } from '../types';
 type Props = {
 	disabled: boolean;
 	proxyBaseUrl: string;
+	proxyConnection: ReturnType<typeof useProxyBaseUrlInput>;
 	onProxyBaseUrlChange: (v: string) => void;
 	filterKeyEmail: string;
 	onFilterKeyEmailChange: (v: string) => void;
@@ -27,6 +30,7 @@ type Props = {
 export function SimulatorSetupPanel({
 	disabled,
 	proxyBaseUrl,
+	proxyConnection,
 	onProxyBaseUrlChange,
 	filterKeyEmail,
 	onFilterKeyEmailChange,
@@ -58,9 +62,7 @@ export function SimulatorSetupPanel({
 			>
 				<option value="">{t('select')}</option>
 				{selectedKeyId && !keys.some((key) => key.id === selectedKeyId) && (
-					<option value={selectedKeyId}>
-						{t('selectedKeyOutsideFilter', { id: selectedKeyId.slice(0, 8) })}
-					</option>
+					<option value={selectedKeyId}>{t('selectedKeyOutsideFilter', { id: selectedKeyId.slice(0, 8) })}</option>
 				)}
 				{keys.map((key) => (
 					<option key={key.id} value={key.id}>
@@ -71,7 +73,10 @@ export function SimulatorSetupPanel({
 		</div>
 	);
 	return (
-		<section aria-label={t('connection')} className="admin-editor-panel admin-content-panel shrink-0 rounded-xl border border-gray-200 bg-white p-4">
+		<section
+			aria-label={t('connection')}
+			className="admin-editor-panel admin-content-panel shrink-0 rounded-xl border border-gray-200 bg-white p-4"
+		>
 			<div className="flex flex-wrap items-end gap-3">
 				<div className="min-w-0 flex-1 basis-64">
 					<label htmlFor="simulator-proxy" className={labelClass}>
@@ -84,6 +89,7 @@ export function SimulatorSetupPanel({
 						placeholder="http://127.0.0.1:8787"
 						value={proxyBaseUrl}
 						onChange={(event) => onProxyBaseUrlChange(event.target.value)}
+						onBlur={proxyConnection.commit}
 						className={inputClass}
 						autoComplete="off"
 						title={t('localDevHint')}
@@ -126,13 +132,19 @@ export function SimulatorSetupPanel({
 					)}
 				</AdminInspector>
 			</div>
+
+			<ProxyConnectionHint
+				source={proxyConnection.source}
+				canReset={proxyConnection.canReset}
+				onReset={proxyConnection.reset}
+				disabled={disabled}
+			/>
+
 			<div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
 				{selectedKeyId && (
 					<span
 						role="status"
-						className={`inline-flex items-center gap-1.5 ${
-							revealedSk && !revealLoading ? 'text-emerald-700' : ''
-						}`}
+						className={`inline-flex items-center gap-1.5 ${revealedSk && !revealLoading ? 'text-emerald-700' : ''}`}
 					>
 						<KeyIcon className="h-3.5 w-3.5" aria-hidden />
 						{revealLoading ? t('loadingKey') : revealedSk ? t('keyReady') : t('errSelectKey')}

@@ -24,13 +24,7 @@ export type AdminNavNameKey =
 	| 'config'
 	| 'maintenance';
 
-export type AdminNavGroupKey =
-	| 'overview'
-	| 'inference'
-	| 'user'
-	| 'tools'
-	| 'analytics'
-	| 'system';
+export type AdminNavGroupKey = 'overview' | 'models' | 'testing' | 'user' | 'tools' | 'analytics' | 'system';
 
 export interface AdminNavRoute {
 	nameKey: AdminNavNameKey;
@@ -48,11 +42,24 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
 		items: [{ nameKey: 'dashboard', href: '/dashboard' }],
 	},
 	{
-		groupKey: 'inference',
+		groupKey: 'models',
 		items: [
 			{ nameKey: 'providers', href: '/gateway/providers' },
 			{ nameKey: 'models', href: '/gateway/models' },
 			{ nameKey: 'routes', href: '/gateway/routes' },
+		],
+	},
+	{
+		groupKey: 'tools',
+		items: [
+			{ nameKey: 'toolsConfig', href: '/gateway/tools' },
+			{ nameKey: 'mcpServers', href: '/gateway/mcp' },
+			{ nameKey: 'toolInvocations', href: '/gateway/tools/invocations' },
+		],
+	},
+	{
+		groupKey: 'testing',
+		items: [
 			{ nameKey: 'playground', href: '/gateway/playground' },
 			{ nameKey: 'simulator', href: '/gateway/simulator' },
 		],
@@ -64,14 +71,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
 			{ nameKey: 'apiKeys', href: '/gateway/keys' },
 			{ nameKey: 'requestLogs', href: '/gateway/request-logs' },
 			{ nameKey: 'auditLogs', href: '/gateway/audit-logs' },
-		],
-	},
-	{
-		groupKey: 'tools',
-		items: [
-			{ nameKey: 'toolsConfig', href: '/gateway/tools' },
-			{ nameKey: 'mcpServers', href: '/gateway/mcp' },
-			{ nameKey: 'toolInvocations', href: '/gateway/tools/invocations' },
 		],
 	},
 	{

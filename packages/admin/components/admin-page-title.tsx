@@ -7,7 +7,8 @@ import { ADMIN_NAV_ICONS } from "./layout/admin-nav-icons";
 
 const TONES = {
 	overview: "bg-blue-50 text-blue-700",
-	inference: "bg-blue-50 text-blue-700",
+	models: "bg-blue-50 text-blue-700",
+	testing: "bg-blue-50 text-blue-700",
 	user: "bg-emerald-50 text-emerald-700",
 	tools: "bg-teal-50 text-teal-700",
 	analytics: "bg-indigo-50 text-indigo-700",

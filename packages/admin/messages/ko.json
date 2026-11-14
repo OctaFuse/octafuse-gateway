@@ -1,4 +1,14 @@
 {
+	"proxyConnection": {
+		"source": {
+			"browser": "브라우저 재정의 · REST, 시뮬레이터, MCP에서 공유",
+			"deployment": "배포 설정 GATEWAY_PROXY_URL 사용",
+			"local": "로컬 개발 기본 URL 사용",
+			"unset": "Proxy URL이 없습니다. GATEWAY_PROXY_URL을 설정하세요."
+		},
+		"reset": "기본 URL 복원",
+		"hint": "REST, 시뮬레이터, MCP가 공유합니다. 기본값은 GATEWAY_PROXY_URL이며 수동 변경은 현재 브라우저에만 적용됩니다."
+	},
 	"autoRefresh": {
 		"paused": "일시 중지",
 		"everySeconds": "{seconds}초마다",
@@ -144,7 +154,8 @@
 		"navigation": "기본 탐색",
 		"groups": {
 			"overview": "개요",
-			"inference": "추론",
+			"models": "모델",
+			"testing": "테스트",
 			"user": "사용자",
 			"tools": "도구",
 			"analytics": "분석",
@@ -425,7 +436,7 @@
 			"comparePrevious": "직전 동일 길이 기간 대비",
 			"newActivity": "신규",
 			"ttftP95": "첫 응답 P95",
-			"latencyP95": "성공 요청 소요 시간 P95",
+			"latencyP95": "요청 소요 시간 P95",
 			"timingContext": "중앙값 {median} · 표본 {count}개",
 			"ttftHint": "유효 시간이 기록된 성공 스트림: 첫 추론 Token을 우선하고 없으면 첫 본문 Token을 사용합니다. P95는 표본 95%가 이내인 시간입니다. 적은 표본은 참고용입니다.",
 			"latencyHint": "여러 요청 유형을 포함한 성공 요청의 전체 시간. 모델별 백분위 평균이 아닌 원시 표본으로 P95를 계산합니다. 적은 표본은 참고용입니다.",
@@ -1632,10 +1643,7 @@
 				},
 				"dashscope-asr-fun-file": {
 					"purpose": "fun-asr-realtime 계열의 비실시간 파일 API용입니다.",
-					"mapping": [
-						"language와 prompt는 400을 반환합니다.",
-						"format은 MIME 또는 파일 확장자에서 추론합니다."
-					]
+					"mapping": ["language와 prompt는 400을 반환합니다.", "format은 MIME 또는 파일 확장자에서 추론합니다."]
 				},
 				"dashscope-asr-qwen-file-async": {
 					"purpose": "qwen3-asr-flash-filetrans용입니다. 공급자에 제출과 작업 조회 엔드포인트가 모두 필요합니다.",
@@ -2302,9 +2310,6 @@
 		"audioInputMode": "오디오 입력",
 		"audioInputFile": "오디오 파일",
 		"audioInputMicrophone": "브라우저 마이크",
-		"mode": "모드",
-		"modeRoutes": "Routes",
-		"modeTools": "Tools",
 		"toolsSubtitle": "도구와 엔진의 요청 및 실행 결과 확인",
 		"toolsSection": "도구 및 엔진",
 		"toolsHint": "설정된 인증 정보로 도구와 서비스 엔진 테스트",
@@ -2399,7 +2404,13 @@
 		"kindEmbedding": "임베딩",
 		"actualRequest": "실제 요청"
 	},
+	"modelToolMode": {
+		"label": "호출 유형",
+		"models": "모델",
+		"tools": "도구"
+	},
 	"simulator": {
+		"toolsSubtitle": "사용자 API 키로 도구를 호출하여 인증, 과금 및 호출 로그를 확인합니다.",
 		"title": "시뮬레이터",
 		"subtitle": "사용자 API 키로 클라이언트 요청을 재현하고 인증, 라우팅, 장애 조치를 검증하세요.",
 		"connection": "연결 설정",
@@ -2509,15 +2520,15 @@
 		"audioPreview": "합성 오디오",
 		"downloadAudio": "오디오 다운로드",
 		"audioResponseReceived": "합성 오디오 {bytes}바이트를 수신했습니다.",
-		"kindTool": "Tools",
+		"kindTool": "도구",
 		"tool": "도구",
 		"toolHint": "선택한 API 키로 Proxy POST /v1/tools/{id}를 호출합니다(인증·과금·로그).",
-		"toolNoRoutes": "Agent Tools는 model_routes에 묶이지 않습니다. 이 모드에서는 모델과 라우트 그룹을 숨깁니다.",
+		"toolNoRoutes": "게이트웨이 도구는 모델 라우트에 연결되지 않습니다. 도구 모드에서는 모델과 라우트 그룹을 표시하지 않습니다.",
 		"toolEndpoint": "Proxy 경로",
-		"toolProtocolHidden": "Tools는 항상 JSON POST /v1/tools/* 입니다. 프로토콜 선택은 적용되지 않습니다.",
+		"toolProtocolHidden": "도구는 JSON POST /v1/tools/*를 사용하며 프로토콜을 선택할 필요가 없습니다.",
 		"readyNeedTool": "도구를 선택하세요.",
 		"errSelectTool": "전송 전에 도구를 선택하세요.",
-		"openToolsInvocations": "Tools Invocations 열기",
+		"openToolsInvocations": "도구 호출 내역 보기",
 		"clientHint": "실제 클라이언트와 같습니다. Proxy Base URL + 사용자 API 키이며 인증, failover, 과금, 요청 로그가 모두 적용됩니다.",
 		"routingTargetHint": "클라이언트가 보낼 catalog 모델과 Route group을 고릅니다. 업스트림은 Proxy가 고르며, 여기서는 단일 Route를 고정하지 않습니다.",
 		"noMatchingModels": "현재 검색과 일치하는 모델이 없습니다.",
@@ -3662,7 +3673,7 @@
 		},
 		"config": {
 			"title": "REST 서비스",
-			"subtitle": "검색, 웹 추출 및 콘텐츠 감지 서비스 관리",
+			"subtitle": "도구 공급자와 요금을 설정하고 API 및 Agent 연동 문서를 확인합니다.",
 			"viewInvocations": "호출 내역 보기 →",
 			"saveWebSearch": "Web Search 저장",
 			"saveWebFetch": "Web Fetch 저장",
@@ -3698,54 +3709,17 @@
 			"catalogProvider": "엔진",
 			"noKey": "Key 없음",
 			"needKeyToActivate": "저장하기 전에 하나 이상의 엔진에 API Key를 추가하세요.",
-			"providerGuideLink": "엔진 안내",
 			"providerDocs": "Docs 및 API Key →",
 			"cost": "성공 시 charged ({currency})",
-			"apiKey": "Provider API Key",
+			"apiKey": "API Key",
 			"apiKeyPlaceholder": "엔진 API Key 붙여넣기",
 			"apiKeyHint": "Tool에서 트래픽을 받으려면 필요합니다. 삭제된 Key는 환경 변수로 대체되지 않습니다.",
 			"providers": {
 				"bocha": "Bocha (博查)",
 				"tavily": "Tavily",
 				"cleversee": "Alibaba CleverSee (开析)",
-				"tencent_wsa": "Tencent Cloud WSA"
-			},
-			"providerGuide": {
-				"title": "검색 엔진 안내",
-				"subtitle": "엔진별 인덱스 / 소스와 적합한 사용 사례입니다. Baidu 또는 Google API를 직접 호출하지 않습니다.",
-				"disclaimer": "어떤 엔진도 Baidu 또는 Google의 공식 검색 API를 호출하지 않습니다. 각 엔진은 자체 또는 파트너 웹 인덱스를 사용하며 결과 URL은 baidu.com, google.com 등을 가리킬 수 있습니다.",
-				"selected": "현재 선택됨",
-				"docsLink": "Docs 및 API Key →",
-				"labels": {
-					"sources": "소스",
-					"bestFor": "권장 용도"
-				},
-				"items": {
-					"bocha": {
-						"badge": "중국 지역 권장",
-						"summary": "자체 대규모 웹 인덱스를 갖춘 AI 중심 중국어 검색 엔진으로, 중국 내 Bing Search API 대안으로 제공됩니다.",
-						"sources": "수억 개에서 약 100억 개의 웹페이지와 파트너 콘텐츠(뉴스, 백과사전, 숏폼 비디오, 날씨, 학술 등)를 사용합니다. Baidu/Google은 아닙니다.",
-						"bestFor": "중국 지역 사용자, 중국어 검색, 중국 내 규정 준수."
-					},
-					"tavily": {
-						"badge": "글로벌 권장",
-						"summary": "LLM 중심 검색 계층으로 검색 + 추출 + 순위를 한 번의 호출로 제공합니다. 일반 SERP 목록이 아닌 Agent/RAG용으로 설계되었습니다.",
-						"sources": "자체 크롤러와 타사 집계(Brave 같은 독립 인덱스와 연계되는 경우가 많음)를 사용합니다. 공식 Google/Baidu API가 아닙니다.",
-						"bestFor": "글로벌 지역, 영어 자료 조사, Agent 워크플로."
-					},
-					"cleversee": {
-						"badge": "",
-						"summary": "mainland_china / global 지역 모드를 지원하는 Alibaba CleverSee (开析) AI 네이티브 Web Search입니다.",
-						"sources": "Alibaba 자체 AI 검색 인덱스를 사용합니다. 문서에는 Baidu 또는 Google 백엔드를 사용한다고 명시되어 있지 않습니다. Gateway 기본값은 mainland_china이며 도메인 Allowlist를 사용하면 global로 전환됩니다.",
-						"bestFor": "Alibaba Cloud에서 중국 / 글로벌 지역을 명시적으로 전환해야 할 때."
-					},
-					"tencent_wsa": {
-						"badge": "",
-						"summary": "공식적으로 Sogou Search를 기반으로 하는 Tencent Cloud Web Search API (WSA)입니다.",
-						"sources": "Sogou의 공개 웹과 Tencent 생태계(Tencent News, Sogou Baike, Penguin 계정)를 사용합니다. 상위 요금제는 VR/권위 있는 전문 소스를 추가로 제공합니다.",
-						"bestFor": "Bocha를 대체할 중국어 웹 검색이 필요하거나 Sogou/Tencent 콘텐츠 조합이 중요한 경우."
-					}
-				}
+				"tencent_wsa": "Tencent Cloud WSA",
+				"deepseek": "DeepSeek Search"
 			}
 		},
 		"webFetch": {
@@ -3759,13 +3733,14 @@
 			"needKeyToActivate": "저장하기 전에 하나 이상의 Provider에 API Key를 추가하세요.",
 			"providerDocs": "Docs 및 API Key →",
 			"cost": "성공 시 charged ({currency})",
-			"apiKey": "Provider API Key",
+			"apiKey": "API Key",
 			"apiKeyPlaceholder": "Provider API Key 붙여넣기",
 			"apiKeyHint": "Tool에서 트래픽을 받으려면 필요합니다. 삭제된 Key는 환경 변수로 대체되지 않습니다.",
 			"providers": {
 				"firecrawl": "Firecrawl",
 				"tavily": "Tavily Extract",
-				"jina": "Jina Reader"
+				"jina": "Jina Reader",
+				"deepseek": "DeepSeek Fetch"
 			}
 		},
 		"webDeepSearch": {
@@ -3777,11 +3752,12 @@
 			"needKeyToActivate": "저장하기 전에 하나 이상의 Provider에 API Key를 추가하세요.",
 			"providerDocs": "Docs 및 API Key →",
 			"cost": "성공 시 charged ({currency})",
-			"apiKey": "Provider API Key",
+			"apiKey": "API Key",
 			"apiKeyPlaceholder": "Provider API Key 붙여넣기",
 			"providers": {
 				"firecrawl": "Firecrawl Search",
-				"jina": "Jina Search"
+				"jina": "Jina Search",
+				"deepseek": "DeepSeek Search (본문 포함)"
 			}
 		},
 		"aiDetection": {
@@ -3875,8 +3851,145 @@
 			"metered": "공급",
 			"lossHint": "사용자 과금이 공급 단가보다 낮습니다(적자)"
 		},
+		"apiGuide": {
+			"authLabel": "사용자 인증",
+			"baseRequired": "「연결 URL」에서 Proxy URL을 설정하세요.",
+			"copyCode": "{name} 복사",
+			"docs": "API 문서",
+			"openDocs": "{name} API 문서",
+			"title": "{name} · API 연동",
+			"copyUrl": "전체 호출 URL 복사",
+			"copyPath": "엔드포인트 경로 복사",
+			"copyFailed": "복사하지 못했습니다. 텍스트를 직접 선택하세요",
+			"proxyBase": "Proxy URL",
+			"proxyHint": "REST, 시뮬레이터, MCP가 공유합니다. 기본값은 GATEWAY_PROXY_URL이며 수동 변경은 현재 브라우저에만 적용됩니다.",
+			"invalidBase": "/v1, API 경로, 인증 정보, 쿼리가 없는 http(s) 기본 URL을 입력하세요.",
+			"authHint": "사용자 API Key 사용: Authorization: Bearer USER_API_KEY. Agent에 관리 키나 업스트림 엔진 인증 정보를 제공할 필요가 없습니다.",
+			"views": "문서 보기",
+			"reference": "API 사양",
+			"curl": "cURL 예제",
+			"agent": "Agent 도구",
+			"request": "요청 · JSON",
+			"response": "응답 · 200",
+			"required": "필수",
+			"defaultValue": "기본값 {value}",
+			"optionalHint": "? 선택 항목",
+			"errors": "주요 오류",
+			"curlHint": "실행 전에 OCTAFUSE_API_KEY에 사용자 API Key를 설정하세요. 활성 엔진을 호출하며 성공 시 저장된 설정으로 과금됩니다.",
+			"agentHint": "이름과 인수는 Gateway 계약을 따릅니다. Agent 프로토콜을 선택하세요. 정의만으로 HTTP 요청이 실행되거나 MCP 서버가 생성되지는 않습니다.",
+			"definition": "도구 등록 · JSON",
+			"executor": "도구 실행 · TypeScript / Node.js 18+",
+			"executorHint": "Agent 서버에서 실행합니다. OCTAFUSE_API_KEY에 사용자 API Key를 설정하며 OCTAFUSE_BASE_URL로 URL을 바꿀 수 있습니다. 인수를 전달하면 Gateway data를 반환합니다. 키를 도구 정의나 모델 컨텍스트에 넣지 마세요.",
+			"fields": {
+				"query": "앞뒤 공백 제거 후 2자 이상인 검색어",
+				"count": "결과 1~10개",
+				"allowed_domains": "허용 도메인. blocked_domains와 함께 사용 불가",
+				"blocked_domains": "제외 도메인. allowed_domains와 함께 사용 불가",
+				"url": "공개 http(s) URL. localhost, 사설 IP 및 메타데이터 호스트 불가",
+				"text": "검사할 본문. 앞뒤 공백 제거 후 비어 있으면 안 됨"
+			},
+			"responseFields": {
+				"results": "검색 결과 목록",
+				"title": "페이지 제목",
+				"url": "페이지 URL(리디렉션될 수 있음)",
+				"snippet": "짧은 요약",
+				"summary": "추가 요약",
+				"content": "페이지 본문(일반적으로 Markdown)",
+				"cost": "게이트웨이 청구 통화의 사용자 청구액",
+				"overall_score": "문자 수 가중 AI 생성 가능성 점수(0~100)",
+				"total_chars": "검사한 문자 수",
+				"segments": "구간별 결과: index, chars, score, excerpt",
+				"score": "구간 AI 생성 가능성 점수(0~100)",
+				"billing_units": "문자 수 ÷ 과금 단위를 올림"
+			},
+			"errorsByStatus": {
+				"400": "잘못된 매개변수 또는 JSON 형식.",
+				"401": "사용자 API Key가 없거나 유효하지 않음.",
+				"403": "예산 부족 또는 접근 거부.",
+				"502": "업스트림 요청 실패.",
+				"503": "도구 비활성, 인증 정보 누락 또는 잘못된 설정."
+			},
+			"agentFlow": "도구 등록 → REST 실행 → 결과 반환",
+			"format": "정의 형식",
+			"officialDocs": "공식 문서",
+			"formats": {
+				"generic": "범용 정의(SDK에 맞게 수정)",
+				"responses": "OpenAI Responses",
+				"chat": "OpenAI Chat Completions",
+				"anthropic": "Anthropic Messages"
+			},
+			"formatHints": {
+				"generic": "사용자 지정 Agent용입니다. inputSchema는 모든 SDK의 공통 등록 형식이 아닙니다.",
+				"responses": "요청의 tools 배열에 추가합니다. strict: false를 명시하여 REST 인수의 선택적 의미를 유지합니다.",
+				"chat": "function 구조를 유지하여 tools 배열에 추가합니다. 모델 또는 호환 서비스가 도구 호출을 지원해야 합니다.",
+				"anthropic": "Messages 요청의 tools 배열에 추가합니다. input_schema는 모델이 생성하는 input을 정의합니다."
+			},
+			"handler": "호출 결과 반환",
+			"handlerCode": "도구 호출 연결 · TypeScript",
+			"handlerHints": {
+				"generic": "디스패처에서 파싱된 인수로 handleToolCall을 호출하고 결과를 Agent 프레임워크에 전달합니다.",
+				"responses": "output의 function_call 항목만 전달합니다. 추론 항목을 포함한 원래 모델 출력을 보존하고 반환 항목을 다음 input에 추가합니다.",
+				"chat": "message.tool_calls의 함수 호출만 전달합니다. assistant 메시지를 보존하고 반환된 tool 메시지를 messages에 추가합니다.",
+				"anthropic": "content의 tool_use 블록만 전달합니다. assistant 메시지를 보존하고 반환 블록을 바로 다음 user 메시지의 content에 넣습니다."
+			},
+			"agentRuntimeHint": "완전한 Agent 루프가 아닌 연결 코드 조각입니다. SDK에서 인수를 검증하고 호출 ID를 연결한 뒤 모델 요청을 계속하세요. 타임아웃과 오류는 실행 측에서 처리하며 과금되었을 수 있는 호출을 무조건 재시도하지 마세요. 설명은 작업에 맞게 수정하고 이름은 실행 함수와 일치시킵니다."
+		},
+		"workspace": {
+			"documentation": "연동 문서",
+			"providersHelp": "공급자 및 요금 설명",
+			"noMatches": "일치하는 도구가 없습니다",
+			"intro": "클라이언트는 통합 도구 API를 호출하고, Gateway가 활성 공급자를 선택하여 설정 요금을 적용합니다.",
+			"addressSettings": "연결 URL",
+			"directory": "도구 목록",
+			"selectTool": "도구 선택",
+			"configured": "설정됨",
+			"testTool": "도구 테스트",
+			"appliedProvider": "적용 중인 설정",
+			"setupHint": "활성 공급자 없음",
+			"setupAction": "공급자 설정",
+			"views": "도구 작업 영역",
+			"tabs": {
+				"providers": "공급자 및 요금",
+				"api": "API 연동",
+				"agent": "Agent 연동"
+			},
+			"providersHint": "도구마다 하나의 공급자(업스트림 엔진)를 활성화하고 인증 정보와 요금을 개별 설정합니다. 공급자를 바꿔도 도구 정의와 호출 URL은 유지됩니다. 변경은 저장 후 적용됩니다.",
+			"input": "입력",
+			"output": "출력",
+			"inputs": {
+				"webSearch": "검색어, 선택적 결과 수 및 도메인 필터",
+				"webFetch": "읽을 공개 웹 페이지 URL",
+				"webDeepSearch": "검색어 및 결과 수",
+				"aiDetection": "검사할 본문"
+			},
+			"outputs": {
+				"webSearch": "페이지 제목, 링크 및 요약 목록",
+				"webFetch": "페이지 본문 및 페이지 정보",
+				"webDeepSearch": "페이지 본문이 포함된 검색 결과",
+				"aiDetection": "전체 점수, 구간별 결과 및 과금 단위 수"
+			}
+		},
+		"toolGroups": {
+			"webSearch": "웹을 검색하여 제목, 링크 및 요약 반환",
+			"webFetch": "모델이 읽고 처리할 수 있도록 지정한 웹 페이지의 본문 추출",
+			"webDeepSearch": "웹 검색과 본문 수집으로 추가 검색 및 분석 지원",
+			"aiDetection": "텍스트의 AI 생성 가능성 감지"
+		},
 		"serviceList": {
-			"search": "서비스 또는 도구 유형 검색",
+			"filteredEngineCount": "엔진 {visible} / {total}개",
+			"configHint": "이 도구 공급자의 인증 정보와 요금 규칙을 설정합니다.",
+			"toolConfig": "{name} 설정",
+			"engineHint": "도구마다 하나의 엔진을 활성화합니다. 인증 정보와 요금은 개별 설정하며 저장 후 적용됩니다.",
+			"testActive": "현재 엔진 테스트",
+			"configureEngine": "{name} 설정",
+			"configure": "설정",
+			"engineCount": "엔진 {count}개",
+			"currentEngine": "현재 엔진 · {name}",
+			"enginesForTool": "{name}의 업스트림 엔진",
+			"engines": "공급자",
+			"overview": "도구 {tools}개 · 업스트림 엔진 {engines}개",
+			"tools": "도구",
+			"search": "도구 또는 공급자 검색",
 			"toolType": "도구 유형",
 			"status": "상태",
 			"name": "서비스",
@@ -3884,7 +3997,7 @@
 			"allStatuses": "모든 상태",
 			"clearFilters": "필터 초기화",
 			"noResults": "일치하는 REST 서비스가 없습니다.",
-			"count": "{total}개 중 {visible}개 표시",
+			"count": "일치하는 엔진 {visible} / {total}개",
 			"currency": "청구 통화: {currency}",
 			"openHint": "서비스 행을 클릭하여 설정 및 관리 작업 보기",
 			"perRequest": "요청당 과금",
@@ -3892,7 +4005,36 @@
 			"backToConfig": "서비스 설정으로 돌아가기",
 			"connection": "연결 설정",
 			"pricing": "과금 규칙",
-			"credentialsRequired": "인증 정보를 입력하면 저장 후 활성화할 수 있습니다. 설정만 먼저 저장할 수도 있습니다."
+			"credentialsRequired": "인증 정보를 저장한 후 목록에서 활성화할 수 있습니다",
+			"usageStatus": "사용 상태",
+			"actions": "작업",
+			"savedConfigHint": "저장된 설정 · 도구별 공급업체 하나 활성화",
+			"credentialsSaved": "인증 정보 설정됨",
+			"credentialsMissing": "인증 정보 없음",
+			"enableEngine": "{name} 활성화",
+			"enable": "활성화",
+			"inUse": "사용 중",
+			"standby": "활성화 대기",
+			"needsSetup": "설정 필요",
+			"needsCredentials": "인증 정보 오류",
+			"unavailable": "사용 불가",
+			"enableProvider": "이 공급업체 활성화",
+			"switchHint": "활성화하면 이 도구의 이후 요청에서 {current} 대신 {name}을(를) 사용합니다.",
+			"firstEnableHint": "활성화하면 이 도구의 요청에서 {name}을(를) 사용합니다.",
+			"activeHint": "이 도구에서 사용 중입니다. 저장하면 연결 및 요금이 업데이트됩니다.",
+			"credentialHint": "인증 정보를 입력하면 활성화할 수 있습니다. 설정만 먼저 저장할 수도 있습니다.",
+			"pricingHint": "과금 단위별 표준 가격을 설정하고 배율로 청구액과 비용을 결정합니다.",
+			"saveOnlyHint": "연결 및 요금 설정을 저장합니다. 활성화는 목록의 사용 상태 열에서 선택하세요.",
+			"usageSelectionHint": "각 도구는 공급업체 하나를 사용합니다. 설정된 다른 공급업체를 선택하면 전환됩니다.",
+			"activateSavedHint": "이 공급업체의 저장된 연결 및 요금 설정 사용",
+			"switching": "전환 중…",
+			"enabledFeedback": "{name} 활성화됨",
+			"activationBlocked": {
+				"missing": "먼저 인증 정보를 설정하고 저장하세요",
+				"unsaved": "먼저 이 공급업체의 변경 사항을 저장하거나 되돌리세요",
+				"unavailable": "이 공급업체는 사용할 수 없습니다"
+			},
+			"engineDetails": "{name} 엔진 설명"
 		},
 		"ui": {
 			"notConfigured": "미설정",
@@ -3902,11 +4044,77 @@
 			"test": "서비스 테스트",
 			"testSavedConfig": "디버그 콘솔에서 저장된 설정 테스트",
 			"discard": "변경 되돌리기",
-			"draftHint": "저장 전 변경 사항은 현재 페이지에 유지됩니다. 테스트에는 저장된 설정을 사용합니다",
-			"saveHint": "현재 서비스만 저장합니다. 활성화하면 같은 유형의 기존 서비스를 대체합니다",
+			"draftHint": "저장되지 않은 변경. 테스트는 저장된 설정을 사용합니다",
+			"saveHint": "활성화하면 이 도구의 공급자가 전환됩니다",
 			"activationFailed": "설정은 저장되었지만 활성화에 실패했습니다: {message}",
 			"loadFailed": "서비스 설정을 불러오지 못했습니다",
 			"retry": "다시 불러오기"
+		},
+		"engineGuide": {
+			"docs": "공식 사이트·문서",
+			"integration": "연결 참고",
+			"items": {
+				"webSearch": {
+					"bocha": {
+						"summary": "Bocha Web Search로 페이지 제목, 링크, 요약을 가져옵니다.",
+						"note": "결과 수와 도메인 허용·차단 목록을 업스트림에 전달합니다."
+					},
+					"tavily": {
+						"summary": "Tavily Search로 웹 검색 결과를 가져옵니다.",
+						"note": "basic 검색 깊이를 사용하며 결과 수와 도메인 필터를 지원합니다."
+					},
+					"cleversee": {
+						"summary": "Alibaba Cloud CleverSee로 웹 검색을 실행합니다.",
+						"note": "기본 지역은 mainland_china입니다. 도메인 허용 목록이 있으면 global로 전환하고 최대 30개를 전달합니다."
+					},
+					"tencent_wsa": {
+						"summary": "Tencent Cloud WSA 검색 결과를 통합 도구 응답으로 반환합니다.",
+						"note": "서비스 API Key를 사용합니다. 허용 목록의 첫 도메인을 업스트림에 전달한 뒤 게이트웨이에서 전체 필터를 적용합니다."
+					},
+					"deepseek": {
+						"summary": "DeepSeek Search로 제목, 링크, 요약을 가져옵니다.",
+						"note": "검색어를 128자로 제한합니다. 도메인 조건은 site: 구문을 사용하고 길이가 부족하면 로컬에서 필터링합니다."
+					}
+				},
+				"webFetch": {
+					"firecrawl": {
+						"summary": "Firecrawl Scrape로 지정한 페이지의 Markdown 본문을 추출합니다.",
+						"note": "요청마다 URL 하나를 가져오고 업스트림이 제공한 제목과 페이지 주소를 반환합니다."
+					},
+					"tavily": {
+						"summary": "Tavily Extract로 지정한 페이지 본문을 추출합니다.",
+						"note": "요청마다 URL 하나를 보내며 raw_content를 우선 사용하고 없으면 content를 사용합니다."
+					},
+					"jina": {
+						"summary": "Jina Reader로 페이지 제목, 주소, 본문을 읽습니다.",
+						"note": "Markdown을 요청하고 설정된 Jina API Key로 인증합니다."
+					},
+					"deepseek": {
+						"summary": "DeepSeek Fetch로 페이지 제목과 Markdown 본문을 읽습니다.",
+						"note": "최종 리디렉션 주소를 반환하지 않으므로 응답 URL은 요청 주소를 유지합니다."
+					}
+				},
+				"webDeepSearch": {
+					"firecrawl": {
+						"summary": "Firecrawl Search로 검색하고 결과에 Markdown 본문을 요청합니다.",
+						"note": "제목, 링크, 요약과 제공된 본문을 통합 형식으로 반환합니다. 본문 유무는 업스트림 결과에 따라 다릅니다."
+					},
+					"jina": {
+						"summary": "Jina Search로 검색하고 결과 페이지의 본문을 읽습니다.",
+						"note": "Markdown을 요청하고 지정한 결과 수로 제한합니다. 본문이 없을 수도 있습니다."
+					},
+					"deepseek": {
+						"summary": "DeepSeek Search 요청 한 번으로 검색과 본문 조회를 수행합니다.",
+						"note": "need_content를 활성화하고 검색어를 128자로 제한합니다. 본문이 없을 수도 있습니다."
+					}
+				},
+				"aiDetection": {
+					"tencent_tms": {
+						"summary": "Tencent Cloud TMS로 텍스트의 AI 생성 경향을 검사합니다.",
+						"note": "SecretId와 SecretKey가 필요합니다. Region 기본값은 ap-guangzhou이며 BizType은 선택입니다. 설정된 문자 과금 단위로 올림합니다."
+					}
+				}
+			}
 		}
 	},
 	"pricing": {
@@ -4000,7 +4208,7 @@
 			},
 			"simulator": {
 				"title": "시뮬레이터 과금 설명",
-				"body": "시뮬레이터는 선택한 API Key로 실제 게이트웨이 요청을 보내며 과금과 로그 기록이 적용됩니다.\n응답의 사용량은 사용량 정보일 뿐입니다. 청구/원가 금액은 요청 로그에서, Agent Tools는 Tools 호출 기록에서 확인하세요."
+				"body": "시뮬레이터는 선택한 API Key로 실제 게이트웨이 요청을 보내며 과금과 로그 기록이 적용됩니다.\n응답의 사용량은 사용량 정보일 뿐입니다. 청구/원가 금액은 요청 로그에서, 도구 호출은 호출 내역에서 확인하세요."
 			}
 		}
 	},
@@ -4027,6 +4235,14 @@
 		"followHint": "미리보기와 동시에 갱신됩니다. 위로 스크롤하면 자동 스크롤을 일시 중지합니다."
 	},
 	"mcp": {
+		"workspace": {
+			"directory": "서비스 목록",
+			"search": "서비스 또는 주소 검색",
+			"selectService": "MCP 서비스 선택",
+			"catalogPricing": "카탈로그 및 요금",
+			"copyEndpoint": "접속 주소 복사",
+			"loading": "서비스 불러오는 중"
+		},
 		"clientEndpoint": "클라이언트 연결 주소",
 		"sections": {
 			"label": "MCP 관리",
@@ -4035,7 +4251,7 @@
 		},
 		"clientAccess": {
 			"title": "클라이언트 연결",
-			"description": "API Key 또는 OAuth 2.0으로 외부 MCP 클라이언트를 게이트웨이에 연결하세요. 연결 가이드에서 클라이언트 설정을 복사하거나 게이트웨이가 공개하는 카탈로그를 테스트할 수 있습니다."
+			"description": "서비스 범위와 인증 방식을 선택하고 클라이언트 설정을 복사하거나 도구 목록을 확인하세요."
 		},
 		"title": "MCP 서버",
 		"subtitle": "원격 MCP 서버를 연결하고 도구를 검토·활성화한 뒤 단일 엔드포인트로 클라이언트에 제공하세요.",
@@ -4079,7 +4295,7 @@
 			"title": "클라이언트 연결 가이드",
 			"subtitle": "클라이언트를 선택하고 설정을 복사하세요. Agent에는 게이트웨이 URL과 사용자 API Key만 필요하며 업스트림 비밀 값은 필요 없습니다.",
 			"proxyUrl": "Proxy URL",
-			"proxyHint": "Proxy 기본 URL을 입력하세요. /mcp는 자동으로 추가됩니다. “공개 카탈로그 테스트”와 공유됩니다.",
+			"proxyHint": "REST, 시뮬레이터, MCP가 공유합니다. 기본값은 GATEWAY_PROXY_URL이며 수동 변경은 현재 브라우저에만 적용됩니다.",
 			"proxyInvalid": "잘못된 URL입니다. /mcp 경로, 인증 정보, 쿼리가 없는 http(s) 기본 URL을 사용하세요.",
 			"scope": "서비스 범위",
 			"allServices": "전체 서비스(집계)",
@@ -4245,7 +4461,8 @@
 		"testSummary": "연결 성공: 도구 {tools}개, 프롬프트 {prompts}개, 리소스 {resources}개 발견. 카탈로그는 변경되지 않았습니다.",
 		"batchEnableTitle": "카탈로그 항목 일괄 활성화",
 		"batchDisableTitle": "카탈로그 항목 일괄 비활성화",
-		"batchStatusConfirm": "항목 {count}개를 변경합니다. 활성화된 항목은 서버가 활성화되면 공개됩니다.",
+		"batchEnableConfirm": "카탈로그 항목 {count}개를 활성화합니다. 클라이언트에서 사용하려면 서비스도 활성화되어 있어야 합니다.",
+		"batchDisableConfirm": "카탈로그 항목 {count}개를 비활성화합니다. 클라이언트는 게이트웨이를 통해 해당 항목을 사용할 수 없게 됩니다.",
 		"confirmDeleteNamed": "“{name}” 및 전체 카탈로그를 삭제하시겠습니까? 기존 클라이언트에서 이 서버를 호출할 수 없게 됩니다.",
 		"selectItem": "{name} 선택",
 		"noDescription": "설명 없음",
@@ -4286,7 +4503,7 @@
 			"title": "공개 카탈로그 테스트",
 			"subtitle": "Proxy에 직접 요청하여 Agent가 받는 MCP 카탈로그와 응답 구조를 확인합니다.",
 			"proxyUrl": "Proxy 기본 URL",
-			"proxyHint": "Proxy 기본 URL을 입력하세요. /mcp 경로는 자동 추가됩니다. 관리 페이지 주소나 전체 MCP 경로는 입력하지 마세요.",
+			"proxyHint": "REST, 시뮬레이터, MCP가 공유합니다. 기본값은 GATEWAY_PROXY_URL이며 수동 변경은 현재 브라우저에만 적용됩니다.",
 			"scope": "서비스 범위",
 			"allServices": "전체 서비스",
 			"disabled": "비활성",
@@ -4393,7 +4610,8 @@
 		"title": "과금 규칙",
 		"perUnitMode": "단위별 과금",
 		"charactersUnit": "{count} 문자",
-		"requestUnit": "회"
+		"requestUnit": "회",
+		"standardLabel": "표준 가격"
 	},
 	"remainingUi": {
 		"effectiveFactor": "현재 기록의 금액을 기준 금액으로 나눈 실효 배율",

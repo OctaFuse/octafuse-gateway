@@ -32,6 +32,7 @@ export const WEB_FETCH_PROVIDER_DOCS_URL: Record<WebFetchProvider, string> = {
 	firecrawl: 'https://docs.firecrawl.dev/',
 	tavily: 'https://docs.tavily.com/documentation/api-reference/endpoint/extract',
 	jina: 'https://jina.ai/reader/',
+	deepseek: 'https://api-docs.deepseek.com/guides/search',
 };
 
 type WebFetchProviderLabelKey = `webFetch.providers.${WebFetchProvider}`;

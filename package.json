@@ -48,7 +48,7 @@
 		"docs:image-models": "node scripts/docs/gen-image-models.mjs",
 		"test:docs": "node --test scripts/docs/*.test.mjs",
 		"test:db-scripts": "tsx --test scripts/db/lib/*.test.ts",
-		"test:unit": "npm run test:deploy && npm run test:docs && npm run test:db-scripts && npm run test:critical-writes && npm run test:unit -w @octafuse/core && npm run test:unit -w @octafuse/proxy && npm run test:unit -w @octafuse/admin",
+		"test:unit": "npm run test:deploy && npm run test:docs && npm run test:db-scripts && npm run test:critical-writes && npm run test:unit -w @octafuse/core && npm run test:unit -w @octafuse/tool-engines && npm run test:unit -w @octafuse/proxy && npm run test:unit -w @octafuse/admin",
 		"typecheck": "npm run typecheck -w @octafuse/core && npm run typecheck -w @octafuse/tool-engines && npm run typecheck -w @octafuse/proxy && npm run typecheck:admin",
 		"test:critical-writes": "tsx --test scripts/smoke/test-critical-write-paths.ts scripts/smoke/*.test.ts"
 	},

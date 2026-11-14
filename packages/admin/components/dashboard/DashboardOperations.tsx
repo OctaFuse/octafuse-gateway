@@ -8,6 +8,7 @@ import type { GatewayTimeRangeValue } from '@/lib/analytics-range';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { dashboardLogsHref } from './dashboard-links';
 import { DashboardNumber } from './DashboardNumber';
+import { InfoHintPopover } from '@/components/InfoHintPopover';
 
 type Overview = NonNullable<DashboardStats['operations']>;
 const panel = 'admin-content-panel min-w-0 rounded-xl border border-gray-200 bg-white p-5 sm:p-6';
@@ -23,7 +24,7 @@ export function DashboardCosts({ operations, range, currency, scope }: { operati
  const ratio = (value: number) => c.standard > 0 ? `×${(value / c.standard).toFixed(2)}` : '—';
  const spread = c.charged - c.metered;
  return <section className="admin-content-panel flex min-w-0 flex-col rounded-xl border border-gray-200 bg-white p-4 sm:p-5" aria-label={review('costEfficiency')}>
-  <h2 className={heading}><BanknotesIcon className="h-4 w-4 text-violet-600" aria-hidden />{review('costEfficiency')}</h2>
+  <div className="flex items-center gap-2"><h2 className={heading}><BanknotesIcon className="h-4 w-4 text-violet-600" aria-hidden />{review('costEfficiency')}</h2><InfoHintPopover label={review('costEfficiency')} openOnHover openOnFocus portal align="start"><div className="space-y-2 leading-6"><p>{t('costBasis')}</p><p>{t('factorHint')}</p></div></InfoHintPopover></div>
   <div className="mt-4 rounded-lg bg-gray-50 p-3">
    <p className="text-xs text-gray-500">{review('spreadAmount')}</p>
    <p title={money(spread)} className={`mt-1 truncate whitespace-nowrap font-mono text-2xl tabular-nums ${spread < 0 ? 'text-rose-700' : 'text-gray-950'}`}><DashboardNumber value={spread} format={money} scope={scope} /></p>
@@ -51,11 +52,11 @@ export function DashboardOperations({ operations, range }: { operations: Overvie
    <div className="flex items-center justify-between gap-3"><h2 className={heading}><ExclamationTriangleIcon className="h-4 w-4 text-amber-600" aria-hidden />{t('quality')}</h2><Link href={reliabilityHref} className="inline-flex shrink-0 items-center gap-1 text-xs text-gray-500 hover:text-gray-950">{t('reliability')}<ArrowUpRightIcon className="h-3 w-3" aria-hidden /></Link></div>
    <div className={`mt-4 grid flex-1 gap-4 ${detailed ? 'grid-rows-[auto_minmax(0,1fr)]' : c.errors > 0 ? 'sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] sm:items-center' : 'sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center'}`}>
     <div className="grid grid-cols-2 gap-4">
-     <div><p className="text-xs text-gray-500">{t('failover')}</p><p className="mt-2 whitespace-nowrap font-mono text-2xl tabular-nums text-gray-950">{percent(c.failoverRequests,c.failoverSamples)}</p><p title={t('coverage',{count:c.failoverSamples,total:c.requests})} className="mt-1 whitespace-nowrap font-mono text-[11px] tabular-nums text-gray-500">{c.failoverSamples > 0 ? `${c.failoverRequests} / ${c.failoverSamples}` : review('noObservations')}</p></div>
+     <div><p className="flex items-center gap-1 text-xs text-gray-500">{t('failover')}<InfoHintPopover label={t('failover')} openOnHover openOnFocus portal align="start"><p className="leading-6">{review('coverageDefinition')}</p></InfoHintPopover></p><p className="mt-2 whitespace-nowrap font-mono text-2xl tabular-nums text-gray-950">{percent(c.failoverRequests,c.failoverSamples)}</p><p title={t('coverage',{count:c.failoverSamples,total:c.requests})} className="mt-1 whitespace-nowrap font-mono text-[11px] tabular-nums text-gray-500">{c.failoverSamples > 0 ? `${c.failoverRequests} / ${c.failoverSamples}` : review('noObservations')}</p></div>
      <div><p className="text-xs text-gray-500">{t('attempts')}</p><p className="mt-2 whitespace-nowrap font-mono text-2xl tabular-nums text-gray-950">{c.avgAttempts?.toFixed(2) ?? '—'}</p><p className="mt-1 whitespace-nowrap text-[11px] text-gray-500">{c.attemptsSamples > 0 ? t('attemptSamples',{count:c.attemptsSamples}) : review('noObservations')}</p></div>
     </div>
     {c.errors > 0 ? <div className={`min-w-0 border-t border-gray-100 pt-4 ${detailed ? 'flex flex-col justify-center' : 'sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0'}`}>
-     <div className="flex items-center justify-between gap-3 text-xs"><h3 className="font-medium text-gray-700">{t('errors')}</h3><Link href={errorHref} className="inline-flex items-center gap-1 whitespace-nowrap text-gray-500 hover:text-gray-950">{review('errorLogs')}<ArrowUpRightIcon className="h-3 w-3" aria-hidden /></Link></div>
+     <div className="flex items-center justify-between gap-3 text-xs"><div className="flex items-center gap-1"><h3 className="font-medium text-gray-700">{t('errors')}</h3><InfoHintPopover label={t('errors')} openOnHover openOnFocus portal align="start"><p className="leading-6">{t('classificationHint')}</p></InfoHintPopover></div><Link href={errorHref} className="inline-flex items-center gap-1 whitespace-nowrap text-gray-500 hover:text-gray-950">{review('errorLogs')}<ArrowUpRightIcon className="h-3 w-3" aria-hidden /></Link></div>
      <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-gray-100" aria-hidden>{operations.errorCategories.map(row => <span key={row.category} className={tones[row.category]} style={{width:`${row.count/c.errors*100}%`}} />)}</div>
      <dl className={`mt-3 grid grid-cols-2 gap-x-4 gap-y-2 ${detailed ? 'sm:grid-cols-3' : ''}`}>{operations.errorCategories.map(row => <div key={row.category} className="flex min-w-0 items-center gap-2 text-xs" title={`${t(`categories.${row.category}`)} · ${percent(row.count,c.errors)}`}><span className={`h-1.5 w-1.5 shrink-0 rounded-full ${tones[row.category]}`} aria-hidden /><dt className="truncate text-gray-600">{t(`categories.${row.category}`)}</dt><dd className="ml-auto whitespace-nowrap font-mono tabular-nums text-gray-900">{row.count}</dd></div>)}</dl>
     </div> : <p className="text-xs text-gray-500">{t('noErrors')}</p>}
@@ -63,7 +64,7 @@ export function DashboardOperations({ operations, range }: { operations: Overvie
    {otherStates.length > 0 && <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-gray-100 pt-3 text-xs">{otherStates.map(status => <Link key={status} className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-950" href={dashboardLogsHref(range,{status})}>{t(status)}<span className="font-mono tabular-nums text-amber-700">{c[status]}</span><ArrowUpRightIcon className="h-3 w-3" aria-hidden /></Link>)}</div>}
   </section>
   {operations.providers.length > 0 && <section className={`${panel} h-full`} aria-label={t('providers')}>
-   <div className="flex flex-wrap items-center justify-between gap-2"><h2 title={t('providerHint')} className={heading}><ServerStackIcon className="h-4 w-4 text-rose-600" aria-hidden />{t('providers')}</h2><span className="text-[11px] text-gray-500">{review('providerColumns')}</span></div>
+   <div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2"><h2 className={heading}><ServerStackIcon className="h-4 w-4 text-rose-600" aria-hidden />{t('providers')}</h2><InfoHintPopover label={t('providers')} openOnHover openOnFocus portal align="start"><div className="space-y-2 leading-6"><p>{t('providerHint')}</p><p>{t('providerBasis')}</p></div></InfoHintPopover></div><span className="text-[11px] text-gray-500">{review('providerColumns')}</span></div>
    <div className="mt-3 divide-y divide-gray-100">{operations.providers.map((row,index) => {
     const content = <><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-rose-50 font-mono text-xs text-rose-600">{index+1}</span>
      <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-gray-900" title={row.name || ''}>{row.name || t('unknownProvider')}</p>{row.affectedUsers > 0 && <p className="mt-1 truncate text-[11px] text-gray-500">{t('affected',{count:row.affectedUsers})}</p>}</div>
@@ -75,11 +76,4 @@ export function DashboardOperations({ operations, range }: { operations: Overvie
    })}</div>
   </section>}
  </div>;
-}
-
-/** Definitions stay available without turning each panel into a paragraph of instructions. */
-export function DashboardMetricDefinitions() {
- const t = useTranslations('dashboard.operations');
- const review = useTranslations('dashboard.review');
- return <details className="text-xs text-gray-500"><summary className="w-fit cursor-pointer rounded py-1 hover:text-gray-900">{review('definitions')}</summary><dl className="mt-3 grid gap-3 rounded-lg border border-gray-200 bg-white p-4 sm:grid-cols-2">{[['costEfficiency','costBasis'],['timing','ttftHint'],['duration','latencyHint'],['failoverDefinition','coverageDefinition'],['errorsDefinition','classificationHint'],['providersDefinition','providerBasis']].map(([label,hint]) => <div key={hint}><dt className="font-medium text-gray-700">{review(label)}</dt><dd className="mt-1 leading-5">{hint === 'coverageDefinition' ? review(hint) : hint === 'costBasis' ? `${t(hint)} ${t('factorHint')}` : t(hint)}</dd></div>)}</dl></details>;
 }

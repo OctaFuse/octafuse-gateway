@@ -1,22 +1,18 @@
 'use client';
 
 import { AdminPageTitle } from '@/components/admin-page-title';
+import { ModelToolModeSwitch } from '@/components/model-tool-mode-switch';
 
 /**
  * Playground：选定单条 model_route，编辑 JSON 请求体，直连上游验证连通性（不计费、不入库）。
  */
 import { PricingInfoHint } from '@/components/PricingInfoHint';
-import { BeakerIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import { Suspense } from 'react';
 import { useTranslations } from 'next-intl';
 import { PlaygroundRequestPanel } from './components/playground-request-panel';
 import { PlaygroundResponsePanel } from './components/playground-response-panel';
 import { PlaygroundSetupPanel } from './components/playground-setup-panel';
-import {
-	PlaygroundToolsSetup,
-	PlaygroundToolsWorkspace,
-	usePlaygroundToolsState,
-} from './playground-tools-panel';
+import { PlaygroundToolsSetup, PlaygroundToolsWorkspace, usePlaygroundToolsState } from './playground-tools-panel';
 import { usePlaygroundPageState } from './use-playground-page-state';
 
 function PlaygroundPageInner() {
@@ -25,9 +21,7 @@ function PlaygroundPageInner() {
 	const tCommon = useTranslations('common');
 	const s = usePlaygroundPageState();
 	const tools = usePlaygroundToolsState(s.initialToolId, s.initialProvider);
-	const llm = s.selected
-		? !s.selectedIsImage && !s.selectedIsAudio && !s.selectedIsEmbedding
-		: s.filterKind === 'llm';
+	const llm = s.selected ? !s.selectedIsImage && !s.selectedIsAudio && !s.selectedIsEmbedding : s.filterKind === 'llm';
 
 	if (s.loadingRoutes && s.playgroundMode === 'routes') {
 		return (
@@ -48,31 +42,11 @@ function PlaygroundPageInner() {
 							: t('subtitle', { product: tBrand('product') })}
 					</p>
 				</div>
-				<div className="inline-flex shrink-0 rounded-lg bg-gray-100 p-1" role="group" aria-label={t('mode')}>
-					{(
-						[
-							{ id: 'routes' as const, label: t('modeRoutes'), icon: BeakerIcon },
-							{ id: 'tools' as const, label: t('modeTools'), icon: WrenchScrewdriverIcon },
-						] as const
-					).map((opt) => {
-						const active = s.playgroundMode === opt.id;
-						return (
-							<button
-								key={opt.id}
-								type="button"
-								disabled={s.sending || tools.sending}
-								onClick={() => s.setPlaygroundMode(opt.id)}
-								aria-pressed={active}
-								className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium ${
-									active ? 'bg-white text-gray-950 shadow-sm' : 'text-gray-500 hover:text-gray-950'
-								}`}
-							>
-								<opt.icon className="h-4 w-4" aria-hidden />
-								{opt.label}
-							</button>
-						);
-					})}
-				</div>
+				<ModelToolModeSwitch
+					value={s.playgroundMode === 'tools' ? 'tools' : 'models'}
+					onChange={(mode) => s.setPlaygroundMode(mode === 'tools' ? 'tools' : 'routes')}
+					disabled={s.sending || tools.sending}
+				/>
 			</div>
 			<p className="mb-4 flex shrink-0 items-center gap-1.5 text-xs text-gray-500">
 				{t('usageNote')}

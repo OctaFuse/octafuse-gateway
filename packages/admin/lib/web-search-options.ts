@@ -33,6 +33,7 @@ export const WEB_SEARCH_PROVIDER_DOCS_URL: Record<WebSearchProvider, string> = {
 	tavily: 'https://app.tavily.com/',
 	cleversee: 'https://help.aliyun.com/zh/product/3037946.html',
 	tencent_wsa: 'https://cloud.tencent.com/product/wsa',
+	deepseek: 'https://api-docs.deepseek.com/guides/search',
 };
 
 type WebSearchProviderLabelKey = `webSearch.providers.${WebSearchProvider}`;

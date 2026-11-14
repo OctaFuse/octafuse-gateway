@@ -15,7 +15,10 @@ import {
  * `system_config.MCP_OAUTH_AUTHORIZATION_SERVER`：所有 `/mcp*` 入口共用的 OAuth 授权服务器（如门户）。
  * 全局设置，不属于某个 MCP 服务；留空即关闭 OAuth 发现。
  */
-export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
+export function McpOAuthSettings({ onOpenGuide, onSaved }: {
+	onOpenGuide: () => void;
+	onSaved: (value: string) => void;
+}) {
 	const t = useTranslations('mcp.oauth');
 	const tUx = useTranslations('config.ux');
 	const ui = useTranslations('mcp.ui');
@@ -41,6 +44,7 @@ export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
 					data.data.find((row) => row.key === MCP_OAUTH_AUTHORIZATION_SERVER_KEY)?.value?.trim() ?? '';
 				setLoadFailed(false);
 				setSaved(value);
+				onSaved(value);
 				setDraft(value);
 				setEnabled(value !== '');
 			} else {
@@ -53,7 +57,7 @@ export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
 		} finally {
 			setLoading(false);
 		}
-	}, [tCommon]);
+	}, [tCommon, onSaved]);
 
 	useEffect(() => {
 		void load();
@@ -97,6 +101,7 @@ export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
 			const data = await readApiJson(response);
 			if (data.success) {
 				setSaved(normalized);
+				onSaved(normalized);
 				setDraft(normalized);
 				setEnabled(normalized !== '');
 				setNotice(data.message || tCommon('configUpdated'));
@@ -119,7 +124,7 @@ export function McpOAuthSettings({ onOpenGuide }: { onOpenGuide: () => void }) {
 	};
 
 	return (
-		<div className="h-full [&>section]:h-full">
+		<div className="min-w-0 self-start">
 			<ConfigCardShell
 				id="mcp-oauth"
 				title={t('title')}

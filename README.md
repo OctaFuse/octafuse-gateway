@@ -42,9 +42,9 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
     - 火山方舟原生端点（Seedream 生图）：`POST /volcengine/api/v3/images/generations`
 4. 协议适配与转换：可在路由中选择客户端与上游的协议转换关系，让应用继续使用熟悉的调用方式接入不同供应商。例如，可直接用 OpenAI 图片接口调用阿里云百炼的千问 / 万相、火山方舟的 Seedream 和 MiniMax 图像模型，或用 OpenAI 语音接口调用百炼与 MiniMax 的语音识别和语音合成。
 5. 智能体工具接入：通过 `/v1/tools/*` 统一接入各种供 Agent 使用的工具，并提供日志、计费、成本管控，以方便 Agent 同时从 Gateway 接入模型和工具。当前预置工具如下：
-    - 联网搜索（`POST /v1/tools/web-search`）：博查、Tavily、阿里云 CleverSee、腾讯云联网搜索 WSA
-    - 网页抓取（`POST /v1/tools/web-fetch`）：Firecrawl、Tavily Extract、Jina Reader
-    - 深度搜索（`POST /v1/tools/web-deep-search`，搜+读一体）：Firecrawl Search、Jina Search
+    - 联网搜索（`POST /v1/tools/web-search`）：博查、Tavily、阿里云 CleverSee、腾讯云联网搜索 WSA、DeepSeek Search
+    - 网页抓取（`POST /v1/tools/web-fetch`）：Firecrawl、Tavily Extract、Jina Reader、DeepSeek Fetch
+    - 深度搜索（`POST /v1/tools/web-deep-search`，搜+读一体）：Firecrawl Search、Jina Search、DeepSeek Search
     - AI 率检测（`POST /v1/tools/ai-detection`）：当前已实现腾讯云 TMS，并预留多引擎扩展目录
     - 更多工具持续接入中，也欢迎 PR 继续丰富智能体常用工具。
 6. AI 能力统一出口：所有接入的模型、平台和工具都通过 Octafuse Gateway 的 Base URL 对外提供服务。客户端只需配置一个网关地址，不必分别记住每个平台和工具的访问地址。

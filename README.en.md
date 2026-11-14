@@ -40,9 +40,9 @@ Its core capabilities include:
     - Volcengine Ark native endpoint (Seedream image generation): `POST /volcengine/api/v3/images/generations`
 4. Protocol adaptation and conversion: Choose how client requests map to upstream protocols, so applications can use familiar interfaces across different providers. For example, OpenAI Images clients can call Alibaba Cloud Model Studio Qwen Image / Wan Image, Volcengine Ark Seedream, and MiniMax image models, and OpenAI Audio clients can call Model Studio and MiniMax speech recognition and synthesis.
 5. Agent tool access: Use `/v1/tools/*` to expose tools to agents with centralized logging, billing, and cost control, so models and tools share one Gateway:
-    - Web search (`POST /v1/tools/web-search`): Bocha, Tavily, Alibaba Cloud CleverSee, Tencent Cloud WSA
-    - Web fetch (`POST /v1/tools/web-fetch`): Firecrawl, Tavily Extract, Jina Reader
-    - Deep search (`POST /v1/tools/web-deep-search`, search + read): Firecrawl Search, Jina Search
+    - Web search (`POST /v1/tools/web-search`): Bocha, Tavily, Alibaba Cloud CleverSee, Tencent Cloud WSA, DeepSeek Search
+    - Web fetch (`POST /v1/tools/web-fetch`): Firecrawl, Tavily Extract, Jina Reader, DeepSeek Fetch
+    - Deep search (`POST /v1/tools/web-deep-search`, search + read): Firecrawl Search, Jina Search, DeepSeek Search
     - AI-content detection (`POST /v1/tools/ai-detection`): Tencent Cloud TMS is implemented, with a multi-engine catalog ready for expansion
     - More Agent tools are planned, and contributions are welcome.
 6. Unified AI capability endpoint: All connected models, platforms, and tools are exposed through the deployed Octafuse Gateway Base URL, so clients only need to remember one endpoint.

@@ -1,4 +1,14 @@
 {
+	"proxyConnection": {
+		"source": {
+			"browser": "Browser override · shared by REST, Simulator and MCP",
+			"deployment": "Deployment default: GATEWAY_PROXY_URL",
+			"local": "Local development default",
+			"unset": "No Proxy URL. Set GATEWAY_PROXY_URL."
+		},
+		"reset": "Restore default URL",
+		"hint": "Shared by REST, Simulator and MCP. Defaults to GATEWAY_PROXY_URL; manual changes override only this browser."
+	},
 	"autoRefresh": {
 		"paused": "Paused",
 		"everySeconds": "Every {seconds}s",
@@ -144,7 +154,8 @@
 		"navigation": "Main navigation",
 		"groups": {
 			"overview": "Overview",
-			"inference": "Inference",
+			"models": "Models",
+			"testing": "Testing",
 			"user": "User",
 			"tools": "Tools",
 			"analytics": "Analytics",
@@ -425,7 +436,7 @@
 			"comparePrevious": "vs preceding equal period",
 			"newActivity": "New",
 			"ttftP95": "First response P95",
-			"latencyP95": "Successful duration P95",
+			"latencyP95": "Request duration P95",
 			"timingContext": "Median {median} · {count} samples",
 			"ttftHint": "Successful measured streams: first reasoning token, otherwise first content token. P95 is the duration not exceeded by 95% of samples. Small samples are indicative only.",
 			"latencyHint": "Complete successful-request duration across request types. P95 is calculated from raw samples, not averaged model percentiles. Small samples are indicative only.",
@@ -1632,10 +1643,7 @@
 				},
 				"dashscope-asr-fun-file": {
 					"purpose": "For the non-realtime file API of the fun-asr-realtime family.",
-					"mapping": [
-						"language and prompt return 400.",
-						"format is inferred from the MIME type or filename extension."
-					]
+					"mapping": ["language and prompt return 400.", "format is inferred from the MIME type or filename extension."]
 				},
 				"dashscope-asr-qwen-file-async": {
 					"purpose": "For qwen3-asr-flash-filetrans. The provider needs both the submit and task query endpoints.",
@@ -2302,9 +2310,6 @@
 		"audioInputMode": "Audio input",
 		"audioInputFile": "Audio file",
 		"audioInputMicrophone": "Browser microphone",
-		"mode": "Mode",
-		"modeRoutes": "Routes",
-		"modeTools": "Tools",
 		"toolsSubtitle": "Test requests and results with a tool and engine",
 		"toolsSection": "Tool & engine",
 		"toolsHint": "Test tools and service engines with configured credentials",
@@ -2399,7 +2404,13 @@
 		"kindEmbedding": "Embedding",
 		"actualRequest": "Actual request"
 	},
+	"modelToolMode": {
+		"label": "Call type",
+		"models": "Models",
+		"tools": "Tools"
+	},
 	"simulator": {
+		"toolsSubtitle": "Use a user API key to call tools and verify authentication, billing and invocation logs.",
 		"title": "Simulator",
 		"subtitle": "Use a user API key to simulate client requests and verify authentication, routing and failover.",
 		"connection": "Connection",
@@ -3662,7 +3673,7 @@
 		},
 		"config": {
 			"title": "REST Services",
-			"subtitle": "Manage search, web extraction and content detection services",
+			"subtitle": "Configure tool providers and pricing, and view API and Agent integration guides.",
 			"viewInvocations": "View invocations →",
 			"showSecrets": "Show API keys",
 			"hideSecrets": "Hide API keys",
@@ -3706,54 +3717,17 @@
 			"catalogProvider": "Engine",
 			"noKey": "no key",
 			"needKeyToActivate": "Add an API key to at least one engine before saving.",
-			"providerGuideLink": "Engine guide",
 			"providerDocs": "Docs & API key →",
 			"cost": "Charged per success ({currency})",
-			"apiKey": "Provider API key",
+			"apiKey": "API Key",
 			"apiKeyPlaceholder": "Paste engine API key",
 			"apiKeyHint": "Required for the tool to accept traffic. Cleared keys fall back to nothing (no env).",
 			"providers": {
 				"bocha": "Bocha (博查)",
 				"tavily": "Tavily",
 				"cleversee": "Alibaba CleverSee (开析)",
-				"tencent_wsa": "Tencent Cloud WSA"
-			},
-			"providerGuide": {
-				"title": "Search engine guide",
-				"subtitle": "Index / sources and when to pick each engine. Not a direct Baidu or Google API.",
-				"disclaimer": "None of these call Baidu or Google official search APIs. Each uses its own or partner web index; result URLs may still point at baidu.com, google.com, etc.",
-				"selected": "Currently selected",
-				"docsLink": "Docs & API key →",
-				"labels": {
-					"sources": "Sources",
-					"bestFor": "Best for"
-				},
-				"items": {
-					"bocha": {
-						"badge": "China preferred",
-						"summary": "AI-oriented Chinese search engine with its own large web index (positioned as a domestic Bing Search API alternative).",
-						"sources": "Hundreds of millions to ~10B web pages plus partner content (news, encyclopedia, short video, weather, academic, etc.). Not Baidu/Google.",
-						"bestFor": "China-region users, Chinese queries, domestic compliance."
-					},
-					"tavily": {
-						"badge": "International preferred",
-						"summary": "LLM-oriented retrieval layer: search + extract + rank in one call. Built for agents/RAG, not a classic SERP dump.",
-						"sources": "Own crawler plus third-party aggregation (often associated with independent indexes such as Brave). Not an official Google/Baidu API.",
-						"bestFor": "International region, English research, agent workflows."
-					},
-					"cleversee": {
-						"badge": "",
-						"summary": "Alibaba CleverSee (开析) AI-native web search with mainland_china / global region modes.",
-						"sources": "Alibaba’s own AI search index. Docs do not claim Baidu or Google backends. Gateway default is mainland_china; domain allow-lists switch to global.",
-						"bestFor": "When you need an explicit China vs global region switch on Alibaba Cloud."
-					},
-					"tencent_wsa": {
-						"badge": "",
-						"summary": "Tencent Cloud Web Search API (WSA), officially based on Sogou Search.",
-						"sources": "Open web via Sogou plus Tencent ecosystem (Tencent News, Sogou Baike, Penguin accounts). Higher tiers add VR/authority verticals.",
-						"bestFor": "China Chinese web as an alternative to Bocha; strong Sogou/Tencent content mix."
-					}
-				}
+				"tencent_wsa": "Tencent Cloud WSA",
+				"deepseek": "DeepSeek Search"
 			}
 		},
 		"webFetch": {
@@ -3767,13 +3741,14 @@
 			"needKeyToActivate": "Add an API key to at least one provider before saving.",
 			"providerDocs": "Docs & API key →",
 			"cost": "Charged per success ({currency})",
-			"apiKey": "Provider API key",
+			"apiKey": "API Key",
 			"apiKeyPlaceholder": "Paste provider API key",
 			"apiKeyHint": "Required for the tool to accept traffic. Cleared keys fall back to nothing (no env).",
 			"providers": {
 				"firecrawl": "Firecrawl",
 				"tavily": "Tavily Extract",
-				"jina": "Jina Reader"
+				"jina": "Jina Reader",
+				"deepseek": "DeepSeek Fetch"
 			}
 		},
 		"webDeepSearch": {
@@ -3785,11 +3760,12 @@
 			"needKeyToActivate": "Add an API key to at least one provider before saving.",
 			"providerDocs": "Docs & API key →",
 			"cost": "Charged per success ({currency})",
-			"apiKey": "Provider API key",
+			"apiKey": "API Key",
 			"apiKeyPlaceholder": "Paste provider API key",
 			"providers": {
 				"firecrawl": "Firecrawl Search",
-				"jina": "Jina Search"
+				"jina": "Jina Search",
+				"deepseek": "DeepSeek Search (with content)"
 			}
 		},
 		"aiDetection": {
@@ -3875,8 +3851,145 @@
 			"noKeyCannotActivate": "Cannot activate a provider without an API key.",
 			"switchActiveBeforeClearingKey": "Switch Active to another engine that still has a key before clearing the current engine’s key, then save again to clear it."
 		},
+		"apiGuide": {
+			"authLabel": "User authentication",
+			"baseRequired": "Set the Proxy URL in Connection URL first.",
+			"copyCode": "Copy {name}",
+			"docs": "API docs",
+			"openDocs": "{name} API docs",
+			"title": "{name} · API integration",
+			"copyUrl": "Copy full request URL",
+			"copyPath": "Copy endpoint path",
+			"copyFailed": "Copy failed; select the text manually",
+			"proxyBase": "Proxy URL",
+			"proxyHint": "Shared by REST, Simulator and MCP. Defaults to GATEWAY_PROXY_URL; manual changes override only this browser.",
+			"invalidBase": "Use an http(s) base URL without /v1, an endpoint, credentials or query parameters.",
+			"authHint": "Use a user API key: Authorization: Bearer USER_API_KEY. Agents do not need admin keys or upstream engine credentials.",
+			"views": "Documentation views",
+			"reference": "API reference",
+			"curl": "cURL example",
+			"agent": "Agent tool",
+			"request": "Request · JSON",
+			"response": "Response · 200",
+			"required": "Required",
+			"defaultValue": "Default {value}",
+			"optionalHint": "? Optional",
+			"errors": "Common errors",
+			"curlHint": "Set OCTAFUSE_API_KEY to a user API key before running the example. Requests use the active engine and successful calls are billed using the saved configuration.",
+			"agentHint": "Names and arguments follow the Gateway contract. Choose your Agent protocol. Definitions let the model request a tool; they do not execute HTTP requests or expose an MCP server.",
+			"definition": "Register tool · JSON",
+			"executor": "Execute tool · TypeScript / Node.js 18+",
+			"executorHint": "Run on your Agent server. Set OCTAFUSE_API_KEY to a user API key; OCTAFUSE_BASE_URL overrides the displayed URL. Pass tool arguments to the function; it returns Gateway data. Keep credentials out of definitions and model context.",
+			"fields": {
+				"query": "Search query; at least 2 characters after trimming",
+				"count": "1–10 results",
+				"allowed_domains": "Allow these domains; omit blocked_domains",
+				"blocked_domains": "Exclude these domains; omit allowed_domains",
+				"url": "Public http(s) URL; no localhost, private IPs or metadata hosts",
+				"text": "Text to analyze; non-empty after trimming"
+			},
+			"responseFields": {
+				"results": "Search results",
+				"title": "Page title",
+				"url": "Page URL, possibly redirected",
+				"snippet": "Short excerpt",
+				"summary": "Additional summary",
+				"content": "Page content, usually Markdown",
+				"cost": "User charge in the gateway billing currency",
+				"overall_score": "Character-weighted AI likelihood, 0–100",
+				"total_chars": "Characters analyzed",
+				"segments": "Segments: index, chars, score, excerpt",
+				"score": "Segment AI likelihood, 0–100",
+				"billing_units": "Character count ÷ billing unit size, rounded up"
+			},
+			"errorsByStatus": {
+				"400": "Invalid parameters or JSON body.",
+				"401": "Missing or invalid user API key.",
+				"403": "Insufficient budget or access denied.",
+				"502": "Upstream request failed.",
+				"503": "Tool inactive, credentials missing or invalid configuration."
+			},
+			"agentFlow": "Register tool → Execute REST → Return result",
+			"format": "Definition format",
+			"officialDocs": "Official docs",
+			"formats": {
+				"generic": "Generic (adapt to SDK)",
+				"responses": "OpenAI Responses",
+				"chat": "OpenAI Chat Completions",
+				"anthropic": "Anthropic Messages"
+			},
+			"formatHints": {
+				"generic": "For custom Agent adapters. inputSchema is not a universal SDK registration format.",
+				"responses": "Add the definition to the request tools array. Explicit strict: false preserves optional REST arguments.",
+				"chat": "Add the definition to the request tools array, keeping the function wrapper. The model or compatible service must support tool calling.",
+				"anthropic": "Add the definition to the Messages request tools array. input_schema describes the generated input."
+			},
+			"handler": "Return tool results",
+			"handlerCode": "Tool-call bridge · TypeScript",
+			"handlerHints": {
+				"generic": "Call handleToolCall from your dispatcher with parsed arguments, then pass its result to your Agent framework.",
+				"responses": "Pass only function_call items from output. Append the returned item to the next input, preserving the original model output including reasoning items.",
+				"chat": "Pass only function calls from message.tool_calls. Preserve the assistant message, then append the returned tool message to messages.",
+				"anthropic": "Pass only tool_use blocks from content. Preserve the assistant message; place returned blocks in the next user message content."
+			},
+			"agentRuntimeHint": "Integration fragments, not a complete Agent loop. Validate arguments, match call IDs and continue model requests through your SDK. Handle timeouts and errors in the runtime; avoid blindly retrying potentially billed calls. Tailor descriptions to your task and keep names aligned with the executor."
+		},
+		"workspace": {
+			"documentation": "Integration documentation",
+			"providersHelp": "Provider and pricing help",
+			"noMatches": "No matching tools",
+			"intro": "Clients use a stable tool API; Gateway calls the active provider and applies your pricing.",
+			"addressSettings": "Connection URL",
+			"directory": "Tool directory",
+			"selectTool": "Choose a tool",
+			"configured": "Configured",
+			"testTool": "Debug tool",
+			"appliedProvider": "Active configuration",
+			"setupHint": "No active provider",
+			"setupAction": "Configure provider",
+			"views": "Tool workspace",
+			"tabs": {
+				"providers": "Providers & pricing",
+				"api": "API integration",
+				"agent": "Agent integration"
+			},
+			"providersHint": "One active provider (upstream engine) per tool, with separate credentials and pricing. Switching providers keeps the tool definition and request URL unchanged. Edits take effect after saving.",
+			"input": "Input",
+			"output": "Output",
+			"inputs": {
+				"webSearch": "Search query, optional result count and domain filters",
+				"webFetch": "Public page URL to read",
+				"webDeepSearch": "Search query and result count",
+				"aiDetection": "Text to analyze"
+			},
+			"outputs": {
+				"webSearch": "Page titles, links and snippets",
+				"webFetch": "Page content and metadata",
+				"webDeepSearch": "Search results with page content",
+				"aiDetection": "Overall score, segments and billable units"
+			}
+		},
+		"toolGroups": {
+			"webSearch": "Search the web for titles, links and snippets",
+			"webFetch": "Extract page content for models to read and process",
+			"webDeepSearch": "Search the web and retrieve page content for further analysis",
+			"aiDetection": "Assess whether text may be AI-generated"
+		},
 		"serviceList": {
-			"search": "Search services or tool types",
+			"filteredEngineCount": "{visible} / {total} engines",
+			"configHint": "Configure this tool provider’s credentials and pricing.",
+			"toolConfig": "Configure {name}",
+			"engineHint": "One active engine per tool. Credentials and pricing are configured separately and take effect after saving.",
+			"testActive": "Test current engine",
+			"configureEngine": "Configure {name}",
+			"configure": "Configure",
+			"engineCount": "{count} engines",
+			"currentEngine": "Current engine · {name}",
+			"enginesForTool": "Upstream engines for {name}",
+			"engines": "Provider",
+			"overview": "{tools} tools · {engines} upstream engines",
+			"tools": "Tools",
+			"search": "Search tools or providers",
 			"toolType": "Tool type",
 			"status": "Status",
 			"name": "Service",
@@ -3884,7 +3997,7 @@
 			"allStatuses": "All statuses",
 			"clearFilters": "Clear filters",
 			"noResults": "No matching REST services.",
-			"count": "Showing {visible} of {total} services",
+			"count": "Matching {visible} / {total} engines",
 			"currency": "Billing currency: {currency}",
 			"openHint": "Click a service row for configuration and management",
 			"perRequest": "Billed per request",
@@ -3892,7 +4005,36 @@
 			"backToConfig": "Back to configuration",
 			"connection": "Connection",
 			"pricing": "Billing rules",
-			"credentialsRequired": "Complete the credentials to save and activate, or save the configuration first."
+			"credentialsRequired": "Save the credentials, then activate this provider in the list",
+			"usageStatus": "Usage",
+			"actions": "Actions",
+			"savedConfigHint": "Saved settings · One active provider per tool",
+			"credentialsSaved": "Credentials saved",
+			"credentialsMissing": "Missing credentials",
+			"enableEngine": "Enable {name}",
+			"enable": "Enable",
+			"inUse": "In use",
+			"standby": "Ready",
+			"needsSetup": "Needs setup",
+			"needsCredentials": "Credential issue",
+			"unavailable": "Unavailable",
+			"enableProvider": "Enable provider",
+			"switchHint": "Enabling {name} replaces {current} for subsequent requests to this tool.",
+			"firstEnableHint": "Once enabled, requests to this tool will use {name}.",
+			"activeHint": "Serving this tool. Saving updates its connection and pricing.",
+			"credentialHint": "Complete the credentials to enable this provider, or save the configuration first.",
+			"pricingHint": "Set a standard price per billing unit. Multipliers determine charges and costs.",
+			"saveOnlyHint": "Save connection and pricing settings here. Activate providers in the Usage column.",
+			"usageSelectionHint": "Each tool uses one provider. Select another configured provider to switch.",
+			"activateSavedHint": "Use this provider’s saved connection and pricing settings",
+			"switching": "Switching…",
+			"enabledFeedback": "Enabled {name}",
+			"activationBlocked": {
+				"missing": "Configure and save credentials first",
+				"unsaved": "Save or discard this provider’s changes first",
+				"unavailable": "This provider is unavailable"
+			},
+			"engineDetails": "{name} engine details"
 		},
 		"ui": {
 			"notConfigured": "Not configured",
@@ -3902,11 +4044,77 @@
 			"test": "Test service",
 			"testSavedConfig": "Test the saved configuration in Playground",
 			"discard": "Revert changes",
-			"draftHint": "Changes stay on this page until saved; tests use the saved configuration",
-			"saveHint": "Save this service only; activating it replaces the active service of the same type",
+			"draftHint": "Unsaved changes; debugging uses saved configuration",
+			"saveHint": "Activation switches the provider for this tool",
 			"activationFailed": "Configuration saved, but activation failed: {message}",
 			"loadFailed": "Could not load service configuration",
 			"retry": "Reload"
+		},
+		"engineGuide": {
+			"docs": "Website & docs",
+			"integration": "Integration notes",
+			"items": {
+				"webSearch": {
+					"bocha": {
+						"summary": "Returns page titles, links and snippets through Bocha Web Search.",
+						"note": "Result limits and domain allowlists or blocklists are passed upstream."
+					},
+					"tavily": {
+						"summary": "Retrieves web results through Tavily Search.",
+						"note": "The gateway uses basic search depth and supports result limits and domain filters."
+					},
+					"cleversee": {
+						"summary": "Runs web searches through Alibaba Cloud CleverSee.",
+						"note": "Uses mainland_china by default; a domain allowlist selects global, with up to 30 domains."
+					},
+					"tencent_wsa": {
+						"summary": "Retrieves Tencent Cloud WSA search results in the unified tool response.",
+						"note": "Uses the service API Key. The first allowed domain is sent upstream; the gateway then applies the full domain filter."
+					},
+					"deepseek": {
+						"summary": "Returns titles, links and snippets through DeepSeek Search.",
+						"note": "Queries are truncated to 128 characters. Domain filters use site: syntax, with local filtering when the query has no room."
+					}
+				},
+				"webFetch": {
+					"firecrawl": {
+						"summary": "Extracts a page as Markdown through Firecrawl Scrape.",
+						"note": "Fetches one URL per call and returns the title and page address supplied upstream."
+					},
+					"tavily": {
+						"summary": "Extracts page content through Tavily Extract.",
+						"note": "Submits one URL per call, preferring raw_content and falling back to content."
+					},
+					"jina": {
+						"summary": "Reads page titles, addresses and content through Jina Reader.",
+						"note": "Requests Markdown and authenticates with the configured Jina API Key."
+					},
+					"deepseek": {
+						"summary": "Reads page titles and Markdown through DeepSeek Fetch.",
+						"note": "The upstream does not return the final redirect address, so the response retains the requested URL."
+					}
+				},
+				"webDeepSearch": {
+					"firecrawl": {
+						"summary": "Searches through Firecrawl Search and requests Markdown content with results.",
+						"note": "Returns normalized titles, links, snippets and available content. Content availability depends on the upstream result."
+					},
+					"jina": {
+						"summary": "Searches and reads result content through Jina Search.",
+						"note": "Requests Markdown and limits the returned result count. Content may be absent."
+					},
+					"deepseek": {
+						"summary": "Searches and retrieves content in one DeepSeek Search request.",
+						"note": "Enables need_content and truncates queries to 128 characters. Content may be absent."
+					}
+				},
+				"aiDetection": {
+					"tencent_tms": {
+						"summary": "Detects AI-generated text signals through Tencent Cloud TMS.",
+						"note": "Requires SecretId and SecretKey. Region defaults to ap-guangzhou; BizType is optional. Billing rounds characters up to the configured unit."
+					}
+				}
+			}
 		}
 	},
 	"pricing": {
@@ -4027,6 +4235,14 @@
 		"followHint": "Updates with the preview. Scroll up to pause following."
 	},
 	"mcp": {
+		"workspace": {
+			"directory": "Service directory",
+			"search": "Search services or URLs",
+			"selectService": "Select an MCP service",
+			"catalogPricing": "Catalog & pricing",
+			"copyEndpoint": "Copy endpoint URL",
+			"loading": "Loading services"
+		},
 		"clientEndpoint": "Client endpoint",
 		"sections": {
 			"label": "MCP management",
@@ -4035,7 +4251,7 @@
 		},
 		"clientAccess": {
 			"title": "Connect clients",
-			"description": "Connect external MCP clients to the gateway using an API Key or OAuth 2.0. Copy client configuration from the guide, or test the catalog exposed by the gateway."
+			"description": "Choose a service scope and authentication method, then copy a client configuration or test the catalog."
 		},
 		"title": "MCP Servers",
 		"subtitle": "Connect remote MCP servers, review and enable tools, and make them available through a single client endpoint.",
@@ -4079,7 +4295,7 @@
 			"title": "Client setup guide",
 			"subtitle": "Pick a client and copy the config. Agents only need the gateway URL and a user API Key, never upstream secrets.",
 			"proxyUrl": "Proxy URL",
-			"proxyHint": "Enter the Proxy base URL; /mcp is added automatically. Shared with “Test exposed catalog”.",
+			"proxyHint": "Shared by REST, Simulator and MCP. Defaults to GATEWAY_PROXY_URL; manual changes override only this browser.",
 			"proxyInvalid": "Invalid URL: use an http(s) base URL without the /mcp path, credentials or query.",
 			"scope": "Service scope",
 			"allServices": "All services (aggregate)",
@@ -4245,7 +4461,8 @@
 		"testSummary": "Connected: {tools} tools, {prompts} prompts, {resources} resources found. The catalog was not changed.",
 		"batchEnableTitle": "Enable catalog items",
 		"batchDisableTitle": "Disable catalog items",
-		"batchStatusConfirm": "This updates {count} items. Enabled items are exposed when their server is active.",
+		"batchEnableConfirm": "Enable {count} catalog entries. The service must also be active for clients to use them.",
+		"batchDisableConfirm": "Disable {count} catalog entries. Clients will no longer be able to use them through the gateway.",
 		"confirmDeleteNamed": "Delete “{name}” and its entire catalog? Existing clients will no longer be able to call this server.",
 		"selectItem": "Select {name}",
 		"noDescription": "No description",
@@ -4286,7 +4503,7 @@
 			"title": "Test exposed catalog",
 			"subtitle": "Request the Proxy directly to inspect the MCP catalog and response seen by agents.",
 			"proxyUrl": "Proxy base URL",
-			"proxyHint": "Enter the Proxy base URL. The /mcp path is added automatically. Use the Proxy address rather than the Admin address.",
+			"proxyHint": "Shared by REST, Simulator and MCP. Defaults to GATEWAY_PROXY_URL; manual changes override only this browser.",
 			"scope": "Service scope",
 			"allServices": "All services",
 			"disabled": "Disabled",
@@ -4393,7 +4610,8 @@
 		"title": "Pricing rule",
 		"perUnitMode": "Per-unit billing",
 		"charactersUnit": "{count} characters",
-		"requestUnit": "request"
+		"requestUnit": "request",
+		"standardLabel": "Standard price"
 	},
 	"remainingUi": {
 		"effectiveFactor": "Amount divided by the standard amount for these records",

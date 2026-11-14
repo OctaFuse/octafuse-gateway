@@ -102,6 +102,13 @@ describe('provider-card-state', () => {
 		);
 	});
 
+	it('does not offer saving cleared credentials on an active provider', () => {
+		assert.deepEqual(
+			resolveProviderCardActions({ catalogPricesValid: true, selectedIsActive: true, selectedConfigured: false }),
+			{ canSaveConfig: false, canSaveAndActivate: false }
+		);
+	});
+
 	it('wouldClearSavedActiveCredentials detects clearing previous active key', () => {
 		assert.equal(
 			wouldClearSavedActiveCredentials({

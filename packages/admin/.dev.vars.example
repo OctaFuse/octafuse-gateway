@@ -3,3 +3,6 @@
 # Cloudflare 运行时仅支持 D1（由 wrangler 绑定 DB），不要在这里配置 DATABASE_URL。
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin
+
+# Public Proxy base URL used by Admin connection guides and Simulator.
+# GATEWAY_PROXY_URL=https://gateway.example.com

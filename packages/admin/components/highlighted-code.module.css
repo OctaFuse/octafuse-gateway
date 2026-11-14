@@ -1,0 +1,51 @@
+.block {
+	margin: 0;
+	min-width: 0;
+	overflow-x: auto;
+	border: 1px solid #303036;
+	border-radius: 8px;
+	background: #18181b;
+	padding: 12px;
+	color: #e2e8f0;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+	font-size: 12px;
+	line-height: 20px;
+	tab-size: 2;
+}
+
+.block:focus-visible {
+	outline: 2px solid #64748b;
+	outline-offset: 2px;
+}
+
+.var,
+.type,
+.class {
+	color: #8ad5e6;
+}
+.str,
+.insert {
+	color: #a7d7ae;
+}
+.num,
+.bool {
+	color: #f9c784;
+}
+.kwd,
+.section {
+	color: #c4b5fd;
+}
+.func {
+	color: #93c5fd;
+}
+.cmnt {
+	color: #94a3b8;
+}
+.oper,
+.esc {
+	color: #cbd5e1;
+}
+.err,
+.deleted {
+	color: #fda4af;
+}
