@@ -14,6 +14,7 @@ import { createPostgresUsersRepository } from '../db/postgres/users.impl';
 import { createPostgresAdminAccessRepository } from '../db/postgres/admin-access.impl';
 import { createPostgresMcpServersRepository } from '../db/postgres/mcp-servers.impl';
 import { createPostgresOAuthAccessTokensRepository } from '../db/postgres/oauth-access-tokens.impl';
+import { createPostgresOAuthServerRepository } from '../db/postgres/oauth-server.impl';
 
 export function createPostgresRepositories(client: GatewayDatabaseClient): GatewayRepositories {
 	if (client.driver !== 'postgres') {
@@ -35,5 +36,6 @@ export function createPostgresRepositories(client: GatewayDatabaseClient): Gatew
 		adminAccess: createPostgresAdminAccessRepository(client),
 		mcpServers: createPostgresMcpServersRepository(client),
 		oauthAccessTokens: createPostgresOAuthAccessTokensRepository(client),
+		oauthServer: createPostgresOAuthServerRepository(client),
 	};
 }

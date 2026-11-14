@@ -38,6 +38,10 @@ function makeRepos(overrides: Record<string, unknown> = {}) {
 	};
 	const repos = {
 		users: { getById: async (id: string) => (id === USER ? { id: USER } : null) },
+		oauthServer: {
+			deleteUnusedClients: track('deleteUnusedClients', 0),
+			deleteExpiredRequests: track('deleteExpiredRequests', undefined),
+		},
 		oauthAccessTokens: {
 			issue: track('issue', { row: row(), rotated: false }),
 			rotate: track('rotate', row()),

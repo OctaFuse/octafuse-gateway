@@ -8,7 +8,11 @@ import { BILLING_CURRENCY_KEY, tryParseGatewaySupportedBillingCurrencyInput } fr
 import { MAINTENANCE_MODE_KEY } from '@octafuse/core/lib/maintenance-mode';
 import {
 	MCP_OAUTH_AUTHORIZATION_SERVER_KEY,
+	MCP_OAUTH_CONSENT_URL_KEY,
+	MCP_OAUTH_ISSUER_KEY,
 	normalizeMcpOAuthAuthorizationServer,
+	normalizeMcpOAuthConsentUrl,
+	normalizeMcpOAuthIssuer,
 } from '@octafuse/core/lib/mcp-oauth-system-config';
 import {
 	parseWebSearchActiveInput,
@@ -433,6 +437,22 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 		if (normalized === null) {
 			throw badRequest(
 				'MCP_OAUTH_AUTHORIZATION_SERVER must be an https origin (http allowed for localhost), or empty to disable'
+			);
+		}
+		value = normalized;
+	}
+	if (key === MCP_OAUTH_ISSUER_KEY) {
+		const normalized = normalizeMcpOAuthIssuer(value);
+		if (normalized === null) {
+			throw badRequest('MCP_OAUTH_ISSUER must be an https origin (http allowed for localhost), or empty to disable');
+		}
+		value = normalized;
+	}
+	if (key === MCP_OAUTH_CONSENT_URL_KEY) {
+		const normalized = normalizeMcpOAuthConsentUrl(value);
+		if (normalized === null) {
+			throw badRequest(
+				'MCP_OAUTH_CONSENT_URL must be an https URL without credentials or fragment (http allowed for localhost), or empty'
 			);
 		}
 		value = normalized;

@@ -29,6 +29,8 @@ export function isMaintenanceExemptRequest(method: string, path: string): boolea
 	if (path === '/.well-known/oauth-protected-resource' || path.startsWith('/.well-known/oauth-protected-resource/')) {
 		return method === 'GET' || method === 'HEAD';
 	}
+	// 内置授权服务器元数据（RFC 8414）：同样只读发现文档。
+	if (path === '/.well-known/oauth-authorization-server') return method === 'GET' || method === 'HEAD';
 	if (method !== 'GET' && method !== 'HEAD') return false;
 	if (path === '/v1/models' || path.startsWith('/v1/models/')) return true;
 	if (path === '/v1/me' || path === '/v1/me/') return true;

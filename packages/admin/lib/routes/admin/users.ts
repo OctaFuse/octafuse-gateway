@@ -22,6 +22,7 @@ import {
 	applyAdminBudgetTransition,
 } from '@/lib/services/admin/users-service';
 import { issueOAuthAccessToken, listUserOAuthAccessTokens } from '@/lib/services/admin/oauth-access-tokens-service';
+import { revokeUserOAuthGrants } from '@/lib/services/admin/oauth-server-service';
 import {
 	getAdminUserDisplayDiscounts,
 	parseDisplayDiscountRouteGroupsQuery,
@@ -193,6 +194,15 @@ adminUsersRoutes.get('/:id/oauth-access-tokens', async (c) => {
 		return c.json(normalizeApiTimeFields({ success: true as const, data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to list user access tokens');
+	}
+});
+
+adminUsersRoutes.post('/:id/oauth-access-tokens/revoke', async (c) => {
+	try {
+		const data = await revokeUserOAuthGrants(c.get('repositories'), c.req.param('id'));
+		return c.json({ success: true as const, data });
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to revoke user access tokens');
 	}
 });
 

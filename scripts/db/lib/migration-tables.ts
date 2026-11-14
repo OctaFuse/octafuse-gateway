@@ -78,6 +78,9 @@ export const ETL_TABLES = [
 	{ name: 'api_keys', kind: 'state', conflictKeys: ['id'] },
 	// 访问令牌随授权 / 刷新改写；last_used_at 随每次 MCP 调用改写，不参与一致性校验。
 	{ name: 'oauth_access_tokens', kind: 'state', conflictKeys: ['id'], checkIgnoreColumns: ['last_used_at'] },
+	// 内置 OAuth：应用目录只有管理员写；动态注册实例由客户端注册请求写入，last_authorized_at 随授权改写，不参与一致性校验。
+	{ name: 'oauth_apps', kind: 'config', conflictKeys: ['id'] },
+	{ name: 'oauth_clients', kind: 'state', conflictKeys: ['client_id'], checkIgnoreColumns: ['last_authorized_at'] },
 	{ name: 'providers', kind: 'config', conflictKeys: ['id'] },
 	{ name: 'models', kind: 'config', conflictKeys: ['id'] },
 	{ name: 'model_tags', kind: 'config', conflictKeys: ['model_id', 'tag'] },
@@ -112,6 +115,7 @@ export type EtlTableName = (typeof ETL_TABLES)[number]['name'];
 /** 明确不迁移的表及原因。 */
 export const ETL_EXCLUDED_TABLES: Readonly<Record<string, string>> = {
 	admin_sessions: '后台登录会话，到新环境让管理员重新登录即可',
+	oauth_authorization_requests: '授权请求与一次性授权码，10 分钟内过期；切换时未完成的授权让客户端重新发起即可',
 };
 
 /** 迁移工具自己的元数据表，不属于业务表（测试解析时忽略）。 */

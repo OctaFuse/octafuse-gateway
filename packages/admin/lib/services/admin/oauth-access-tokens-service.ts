@@ -103,6 +103,10 @@ export type ListOAuthAccessTokensQuery = {
 	page?: string | null;
 	page_size?: string | null;
 	client_id?: string | null;
+	/** 应用 id；`none` = 未归属 */
+	app_id?: string | null;
+	/** 与 `app_id=none` 搭配，按旧授权的客户端名称筛选 */
+	client_name?: string | null;
 	user_id?: string | null;
 	email?: string | null;
 	status?: string | null;
@@ -119,8 +123,8 @@ export async function listOAuthAccessTokens(
 	query: ListOAuthAccessTokensQuery
 ): Promise<{ items: OAuthAccessTokenListItem[]; total: number; page: number; page_size: number }> {
 	const status = query.status?.trim();
-	if (status && status !== 'active' && status !== 'expired' && status !== 'revoked') {
-		throw badRequest('status must be one of: active, expired, revoked');
+	if (status && status !== 'active' && status !== 'renewable' && status !== 'expired' && status !== 'revoked') {
+		throw badRequest('status must be one of: active, renewable, expired, revoked');
 	}
 	const page = positiveInt(query.page, 1, Number.MAX_SAFE_INTEGER);
 	const pageSize = positiveInt(query.page_size, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
@@ -128,6 +132,8 @@ export async function listOAuthAccessTokens(
 		page,
 		pageSize,
 		clientId: query.client_id?.trim() || undefined,
+		appId: query.app_id?.trim() || undefined,
+		clientName: query.client_name?.trim() || undefined,
 		userId: query.user_id?.trim() || undefined,
 		userEmail: query.email?.trim() || undefined,
 		status: (status as OAuthAccessTokenStatus | undefined) || undefined,
@@ -170,7 +176,10 @@ export async function revokeOAuthAccessTokensBy(
 	return id ? { revoked: 1, token_id: id } : { revoked: 0 };
 }
 
-/** 清理撤销 / 过期超过 N 天（默认 30）的记录；刚过期的仍可能通过刷新续期，不会被删。 */
+/**
+ * 清理撤销 / 过期超过 N 天（默认 30）的记录；刚过期的仍可能通过刷新续期，不会被删。
+ * 同时清理超过 N 天仍未完成授权的注册实例与过期的授权请求。
+ */
 export async function cleanupOAuthAccessTokens(
 	repos: GatewayRepositories,
 	input: { older_than_days?: unknown }
@@ -188,5 +197,7 @@ export async function cleanupOAuthAccessTokens(
 		days = input.older_than_days;
 	}
 	const cutoff = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
+	await repos.oauthServer.deleteUnusedClients(cutoff);
+	await repos.oauthServer.deleteExpiredRequests(cutoff);
 	return { deleted: await repos.oauthAccessTokens.deleteStale(cutoff) };
 }

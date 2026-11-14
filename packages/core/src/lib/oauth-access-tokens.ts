@@ -16,7 +16,11 @@ export const DEFAULT_OAUTH_ACCESS_TOKEN_TTL_SECONDS = 3600;
 export const MIN_OAUTH_ACCESS_TOKEN_TTL_SECONDS = 60;
 export const MAX_OAUTH_ACCESS_TOKEN_TTL_SECONDS = 30 * 24 * 3600;
 
-export type OAuthAccessTokenStatus = 'active' | 'expired' | 'revoked';
+/**
+ * active：访问令牌有效；renewable：访问令牌已过期但刷新令牌仍有效（授权依然有效，客户端会自动续期）；
+ * expired：两者都过期（或没有刷新令牌的旧授权访问令牌过期）；revoked：已撤销。
+ */
+export type OAuthAccessTokenStatus = 'active' | 'renewable' | 'expired' | 'revoked';
 
 const SCOPES_INVALID = `scopes must be a non-empty array of: ${OAUTH_ACCESS_TOKEN_SCOPES.join(', ')}`;
 
@@ -99,13 +103,15 @@ export function isPathAllowedForOAuthAccessTokenScopes(scopes: readonly string[]
 }
 
 export function oauthAccessTokenStatus(
-	row: { revoked_at: string | null; expires_at: string | null },
+	row: { revoked_at: string | null; expires_at: string | null; refresh_expires_at?: string | null },
 	nowMs: number = Date.now()
 ): OAuthAccessTokenStatus {
 	if (row.revoked_at) return 'revoked';
-	if (row.expires_at) {
-		const expires = Date.parse(row.expires_at);
-		if (Number.isFinite(expires) && expires <= nowMs) return 'expired';
+	const expires = row.expires_at ? Date.parse(row.expires_at) : Number.NaN;
+	if (!row.expires_at || !Number.isFinite(expires) || expires > nowMs) return 'active';
+	if (row.refresh_expires_at) {
+		const refreshExpires = Date.parse(row.refresh_expires_at);
+		if (Number.isFinite(refreshExpires) && refreshExpires > nowMs) return 'renewable';
 	}
-	return 'active';
+	return 'expired';
 }

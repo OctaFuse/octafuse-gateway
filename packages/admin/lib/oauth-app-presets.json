@@ -1,0 +1,32 @@
+[
+  {
+    "slug": "chatgpt",
+    "name": "ChatGPT",
+    "redirect_uris": ["https://chatgpt.com/connector_platform_oauth_redirect"],
+    "client_name_patterns": []
+  },
+  {
+    "slug": "claude",
+    "name": "Claude",
+    "redirect_uris": ["https://claude.ai/api/mcp/auth_callback"],
+    "client_name_patterns": []
+  },
+  {
+    "slug": "codex",
+    "name": "Codex",
+    "redirect_uris": ["http://127.0.0.1/callback"],
+    "client_name_patterns": ["codex"]
+  },
+  {
+    "slug": "doubao",
+    "name": "豆包",
+    "redirect_uris": ["http://127.0.0.1/callback"],
+    "client_name_patterns": ["doubao", "豆包"]
+  },
+  {
+    "slug": "workbuddy",
+    "name": "WorkBuddy",
+    "redirect_uris": ["http://127.0.0.1/oauth/callback"],
+    "client_name_patterns": []
+  }
+]

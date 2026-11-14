@@ -19,6 +19,8 @@ import { webFetchRoutes } from './routes/v1/tools/web-fetch';
 import { webDeepSearchRoutes } from './routes/v1/tools/web-deep-search';
 import { aiDetectionRoutes } from './routes/v1/tools/ai-detection';
 import { oauthProtectedResourceRoutes } from './routes/oauth-protected-resource';
+import { oauthServerMetadataRoutes, oauthServerRoutes } from './routes/oauth-server';
+import { oauthConsentRoutes } from './routes/oauth-consent';
 import { toolsPricingRoutes } from './routes/v1/tools/pricing';
 import { mcpRoutes } from './routes/mcp';
 import { imageRoutes } from './routes/v1/images';
@@ -213,6 +215,10 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 	app.route('/v1/tools/pricing', toolsPricingRoutes);
 	app.route('/mcp', mcpRoutes);
 	app.route('/.well-known/oauth-protected-resource', oauthProtectedResourceRoutes);
+	// 内置授权服务器（`MCP_OAUTH_ISSUER` 非空才启用，否则全部 404）。
+	app.route('/.well-known/oauth-authorization-server', oauthServerMetadataRoutes);
+	app.route('/oauth/consent', oauthConsentRoutes);
+	app.route('/oauth', oauthServerRoutes);
 	app.route('/catalog', catalogRoutes);
 
 	app.get('/', (c) => c.json({ name: 'octafuse-proxy', version: proxyAppVersion }));

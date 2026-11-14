@@ -12,6 +12,8 @@ erDiagram
     api_keys ||--o{ api_key_request_logs : "api_key_id 可空"
     users ||--o{ oauth_access_tokens : authorizes
     oauth_access_tokens ||--o{ api_key_request_logs : "oauth_access_token_id 可空"
+    oauth_apps ||--o{ oauth_clients : "应用 → 注册实例"
+    oauth_apps ||--o{ oauth_access_tokens : "app_id 可空"
 
     users {
         text id PK
@@ -51,8 +53,12 @@ erDiagram
         text user_id FK "ON DELETE CASCADE"
         text client_id "授权服务器注册的应用"
         text client_name
+        text app_id "所属应用（oauth_apps.id），旧授权为 NULL"
         text token_hash "SHA-256，UNIQUE，撤销后为 NULL"
         text token_hint "末 4 位"
+        text refresh_token_hash "SHA-256，UNIQUE，内置授权服务器签发时才有"
+        text prev_refresh_token_hash "上一枚刷新令牌，用于重放检测"
+        text refresh_expires_at
         text scopes "JSON 数组，默认仅 mcp"
         text expires_at
         text last_used_at
@@ -98,7 +104,9 @@ erDiagram
 6. **`charged_cost_factors`**：可选 JSON，键为目录 `models.id`。值为 ≥ 0 的数字时覆盖该模型全部分组；值为对象时按路由组（Route group）匹配，键是分组名或 `"*"`（未单独配置的分组）。分组名 trim 后小写，仅含 `"*"` 时写入折叠成数字。`null` / `{}` 落库为 NULL。鉴权 JOIN 会带上该列。LLM / Images / Audio 在路由 Charged 有效倍率之后，按本次分组查找用户倍率，再按全局 `system_config.USER_CHARGED_COST_FACTOR_MODE`（`multiply` 叠乘 / `min` 取较小）合成最终用户费用；该分组未命中不改金额。智能体工具不应用。
 7. **`users.rate_limit` / `api_keys.rate_limit`**：形状相同的 JSON（当前仅 `rpm`）。用户层是该用户所有 Key 的合计窗口；Key 层是单把钥匙的额外帽子。两层都按**从当前时刻回溯 60 秒**独立计数（不是 UTC 自然分钟）。两层独立：不把用户配置复制到新建 Key，不要求 `key.rpm <= user.rpm`。`NULL` / 空 = 该层不限；`rpm: 0` 拒绝该层计次请求。同时设置时，单把 Key 的有效上限约为 `min(keyRpm, 用户池剩余)`。
 
-8. **`oauth_access_tokens`**：OAuth 授权服务器代用户签发给第三方 MCP 客户端的凭证，与 `api_keys` 完全分开。前缀 `oat_`、只存 SHA-256 哈希、会过期、只能访问 `/mcp*`；`api_keys` 因此不需要 `scopes`，也不需要为 OAuth 客户端做任何分类判断。一行 = 一次授权（用户 × 应用）；刷新只轮换哈希与过期时间，行 id 不变；撤销为软删除（清空哈希、保留 `client_name`）。同一用户对同一应用只保留一条未撤销记录。
+8. **`oauth_access_tokens`**：OAuth 授权服务器代用户签发给第三方 MCP 客户端的凭证，与 `api_keys` 完全分开。前缀 `oat_`、只存 SHA-256 哈希、会过期、只能访问 `/mcp*`；`api_keys` 因此不需要 `scopes`，也不需要为 OAuth 客户端做任何分类判断。一行 = 一次授权（用户 × 应用）；刷新只轮换哈希与过期时间，行 id 不变；撤销为软删除（清空哈希、保留 `client_name`）。同一用户对同一应用只保留一条未撤销记录。内置授权服务器签发的行带 `app_id`、刷新令牌哈希与过期时间；外部授权服务器经 Admin API 签发的旧行 `app_id` 与刷新列为空，后台显示为「未归属」。
+
+9. **`oauth_apps` / `oauth_clients` / `oauth_authorization_requests`**（内置授权服务器，迁移 0036）：`oauth_apps` 是管理员维护的应用目录（回调与名称模式，决定哪些客户端可注册）；`oauth_clients` 是动态注册的实例（`octa_…` client_id，归属某个应用或未归属）；`oauth_authorization_requests` 是 10 分钟内有效的授权请求，同意后写入一次性授权码哈希。三者都不含用户密钥材料。
 
 ## 请求日志与审计
 

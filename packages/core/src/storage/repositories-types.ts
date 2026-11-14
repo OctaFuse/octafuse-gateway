@@ -5,6 +5,7 @@ import type {
 	ApiKeysRepository,
 	McpServersRepository,
 	OAuthAccessTokensRepository,
+	OAuthServerRepository,
 	ModelRoutesRepository,
 	ModelRoutingRepository,
 	ModelsRepository,
@@ -36,6 +37,7 @@ export interface GatewayRepositories {
 	readonly adminAccess: AdminAccessRepository;
 	readonly mcpServers: McpServersRepository;
 	readonly oauthAccessTokens: OAuthAccessTokensRepository;
+	readonly oauthServer: OAuthServerRepository;
 }
 
 /** 统一取 Hono 上下文中的 `GatewayDatabaseClient`。 */

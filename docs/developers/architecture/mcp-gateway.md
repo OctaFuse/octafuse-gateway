@@ -88,19 +88,67 @@
 
 `/mcp` 跳过额度预检，余额为 0 时仍可列出清单。每分钟请求数只统计 `tools/call`。
 
-## OAuth 授权发现
+## OAuth 授权
 
-网关本身是 MCP 的资源服务器（Resource Server），不实现授权服务器。需要让 ChatGPT 这类只支持 OAuth 的客户端接入时，把 `system_config.MCP_OAUTH_AUTHORIZATION_SERVER` 设为授权服务器的 https 源（例如门户 `https://soloent.ai`），空字符串表示关闭。可在 Admin「MCP 服务」页顶部的「OAuth 2.0 授权登录（可选）」卡片（开关 + 授权服务器地址）设置，也可用 `PUT /api/admin/config`。OAuth 与 API Key 并存：客户端能在请求头里带 `sk-` Key 时不需要 OAuth；Admin「接入指南」用「API Key / OAuth 授权」切换展示两种配置。
+Gateway 是 MCP 的资源服务器，同时可以内置 OAuth 授权服务器，让 ChatGPT、Claude、Codex 这类只支持 OAuth 的客户端无需复制 API Key 就能接入。OAuth 与 API Key 并存：客户端能在请求头带 `sk-` Key 时不需要 OAuth。
 
-配置后：
+### 三种模式
 
-- `GET /.well-known/oauth-protected-resource`、`/.well-known/oauth-protected-resource/mcp`、`/.well-known/oauth-protected-resource/mcp/{slug}` 返回 RFC 9728 元数据（`resource`、`authorization_servers`、`scopes_supported: ["mcp"]`）。维护模式下仍可读取。
-- `/mcp*` 的 401 响应带 `WWW-Authenticate: Bearer resource_metadata="<origin>/.well-known/oauth-protected-resource<path>"`。其它入口的 401 不变。
-- 授权服务器签发的 access token 是 **OAuth 访问令牌**，不是用户的 `sk-` Key。它存在独立的 `oauth_access_tokens` 表：前缀 `oat_`，库里只有 SHA-256 哈希，默认 1 小时过期，只能访问 `/mcp` 与 `/mcp/*`，用在其它入口会返回 403 `gateway.scope_denied`。`sk-` Key 与访问令牌在 `/mcp*` 都能用，Proxy 按前缀区分，不读任何 metadata。
-- 过期或已撤销的访问令牌在 `/mcp*` 返回 401，并带 `WWW-Authenticate: Bearer error="invalid_token", resource_metadata="…"`，客户端据此用刷新令牌换新令牌。刷新令牌与 OAuth 授权状态由授权服务器（门户）保存，网关不解析。
-- 令牌由授权服务器通过 Admin API 签发与轮换（`POST /api/admin/users/:id/oauth-access-tokens`、`POST /api/admin/oauth-access-tokens/:id/rotate`），明文只在响应里出现一次。设计上一行对应一次授权（用户 × 应用），串行重新授权会轮换原记录；当前仓储先查后写、没有用户与应用的唯一约束，并发签发仍可能产生多条。撤销是软删除，保留应用名供日志显示。
+由 `system_config` 决定，Admin「MCP 服务」页顶部「OAuth 2.0 授权登录（可选）」卡片可切换，也可用 `PUT /api/admin/config`：
+
+| 模式 | 配置 | 行为 |
+|------|------|------|
+| 内置 | `MCP_OAUTH_ISSUER` 非空（本 Gateway 的公开 https 源，localhost 可用 http） | Gateway 自己是授权服务器：动态注册、授权、换令牌、刷新、撤销。`MCP_OAUTH_AUTHORIZATION_SERVER` 被忽略 |
+| 外部 | 仅 `MCP_OAUTH_AUTHORIZATION_SERVER` | Gateway 只公开资源元数据，把客户端指向外部授权服务器；令牌由外部服务器经 Admin API 签发 |
+| 关闭 | 两者都为空 | 不公开 OAuth 发现 |
+
+回滚到外部模式只需清空 `MCP_OAUTH_ISSUER`。内置模式下可选 `MCP_OAUTH_CONSENT_URL`：指向你自己的登录与同意页；留空则使用 Gateway 内置确认页（用户粘贴自己的 `sk-` Key 证明身份并点同意，Key 不存储不回显）。
+
+### 对象模型
+
+- **应用（`oauth_apps`）**：运营在 Admin 维护的目录条目，如 ChatGPT、Codex。字段含 `slug`、`name`、允许的回调地址 `redirect_uris`、可选的客户端名称关键字 `client_name_patterns`、`enabled`。Admin 提供 ChatGPT、Claude、Codex、豆包、WorkBuddy 预设。
+- **注册实例（`oauth_clients`）**：客户端动态注册（RFC 7591）得到的 `client_id`（前缀 `octa_`）。一个应用下可以有很多实例，Admin 与用户界面按应用汇总，不再按 `client_id` 列出。7 天未使用的实例会被清理。
+- **授权（`oauth_access_tokens`）**：一行 = 一次授权（用户 × 应用实例），含访问令牌哈希（`oat_`，1 小时）、刷新令牌哈希（`ort_`，30 天，一次性）和 `app_id`。
+- **授权请求（`oauth_authorization_requests`）**：`/oauth/authorize` 落库的待决请求（10 分钟有效），同意后写入一次性授权码（10 分钟，用后作废）。
+
+归属规则：注册时按回调地址匹配启用的应用（精确匹配；仅 `http://127.0.0.1`、`http://[::1]` 忽略端口，RFC 8252）；多个应用共用一个回调地址时，再用客户端名称关键字区分，都不命中且没有「无关键字」的应用则拒绝注册。`client_name` 由客户端自报，只作展示，不参与任何信任判断。
+
+### 端点（Proxy）
+
+- `GET /.well-known/oauth-authorization-server`：RFC 8414 元数据，声明 PKCE `S256`、`authorization_code` 与 `refresh_token`、支持 `iss`（RFC 9207）。
+- `POST /oauth/register`：动态注册，仅公开客户端（`token_endpoint_auth_method=none`）。
+- `GET /oauth/authorize`：校验参数后落授权请求，跳转到同意页（`MCP_OAUTH_CONSENT_URL` 或内置页），附 `request_id`。仅 PKCE `S256`；提供 `resource`（RFC 8707）时须是本 Gateway 的 `/mcp` 或 `/mcp/{slug}`。
+- `GET|POST /oauth/consent`：内置确认页（配置了外部同意页时返回 404）。
+- `POST /oauth/token`：授权码换令牌、刷新令牌轮换。已使用过的刷新令牌再次出现（重放）视为泄露，整个授权被撤销。
+- `POST /oauth/revoke`：RFC 7009，接受访问令牌或刷新令牌，撤销的都是整个授权。
+- `GET /.well-known/oauth-protected-resource[/mcp[/{slug}]]`：RFC 9728 资源元数据，`authorization_servers` 指向授权服务器，`scopes_supported: ["mcp"]`。维护模式下仍可读取。
+
+反向代理需要把 `/oauth/*` 与 `/.well-known/oauth-authorization-server` 转发到 Proxy。授权服务器接口有按 IP 的限流。
+
+### 同意页（门户集成）
+
+外部同意页只负责登录与让用户确认，不再保存 OAuth 状态：
+
+1. Gateway 把用户带到 `MCP_OAUTH_CONSENT_URL?request_id=…`。
+2. 同意页确认用户登录后，用集成密钥（权限 `oauth.consent`）调用 `GET /api/admin/oauth/authorization-requests/:id` 取客户端与应用名称展示。
+3. 用户决定后调用 `POST …/accept`（body `{"user_id": "<路由 id>"}`，如 `ext:soloent:<uuid>`）或 `POST …/reject`，响应里的 `redirect_uri` 即要 303 跳回客户端的完整地址（含 `code`、`state`、`iss`）。
+
+授权请求不存在、已过期或已处理时返回带稳定 `code` 的错误。
+
+### 令牌与调用
+
+- 访问令牌是 **OAuth 访问令牌**，不是用户的 `sk-` Key，存在独立表，前缀 `oat_`，只存 SHA-256 哈希，默认 1 小时过期，只能访问 `/mcp` 与 `/mcp/*`，用在其它入口返回 403 `gateway.scope_denied`。`sk-` Key 与访问令牌在 `/mcp*` 都能用，Proxy 按前缀区分，不读任何 metadata。
+- `/mcp*` 的 401 带 `WWW-Authenticate: Bearer resource_metadata="<origin>/.well-known/oauth-protected-resource<path>"`；令牌过期或已撤销时再带 `error="invalid_token"`，客户端据此刷新。其它入口的 401 不变。
 - 访问令牌的调用写请求日志时 `api_key_id` 为空、`oauth_access_token_id` 指向令牌，Admin 请求日志显示「OAuth 应用：名称」。调用按令牌所属用户的预算与钱包扣费，每分钟请求数只受用户级限制。
-- 运维：Admin「MCP 服务」页的「OAuth 访问令牌」折叠区按应用 / 用户 / 状态筛选（旧地址 `/gateway/oauth-access-tokens` 会跳转到这里），支持撤销单条、撤销某应用全部授权和清理过期记录；用户详情的 API Keys 页签下方列出该用户的授权。接口见 `/api/admin/oauth-access-tokens*`，权限沿用 `user_keys.read` / `user_keys.write`。
+- 外部模式下，令牌由授权服务器经 Admin API 签发与轮换（`POST /api/admin/users/:id/oauth-access-tokens`、`POST /api/admin/oauth-access-tokens/:id/rotate`），明文只在响应里出现一次；这类授权没有刷新令牌。
+- 撤销是软删除，清空哈希并保留应用名，供日志显示。
+
+### 运维
+
+- Admin「MCP 服务」页：「OAuth 访问令牌」折叠区按应用汇总（用户数、实例数、有效授权、最近使用），可新增 / 编辑 / 停用 / 删除应用、从预设导入、撤销某应用全部授权、清理过期记录；授权明细可按应用 / 用户 / 状态（有效、可续期、已过期、已撤销）筛选。旧地址 `/gateway/oauth-access-tokens` 会跳转到这里；用户详情的 API Keys 页签下方列出该用户的授权。
+- 由外部授权服务器签发、没有归属应用的旧授权显示为「未归属」，按客户端名称成组，可单独撤销。
+- 接口：`/api/admin/oauth/apps*`、`/api/admin/oauth/clients`、`/api/admin/oauth/authorization-requests/*`、`/api/admin/oauth-access-tokens*`、`POST /api/admin/users/:id/oauth-access-tokens/revoke`。权限：`oauth.read` / `oauth.write`（应用目录与授权管理）、`oauth.consent`（仅同意页所需的三个授权请求接口）、`user_keys.read` / `user_keys.write`（按用户的授权）。
+- 从外部模式切换到内置模式的步骤见 [0036 迁移说明](../../operators/migrations/0036-oauth-authorization-server.md)。
 
 ## 错误
 
