@@ -4,6 +4,11 @@ import { DASHBOARD_ACTIVITY_LIMIT } from '@/lib/dashboard-constants';
  * 管理后台聚合服务：仪表盘 KPI、全局请求日志列表、`system_config` 读写，以及模型/供应商/用户/可靠性分析 API 的数据装配。
  */
 import type { GatewayRepositories, RequestLogSummaryDimension, RequestLogSummaryRow } from '@octafuse/core';
+import { resolveModelKind } from '@octafuse/core/db/model-kind';
+import type { RequestLogMatchGroup } from '@octafuse/core/db/request-log-filters';
+import { UNCLASSIFIED_PROVIDER_KIND_FILTER } from '@/lib/provider-kind';
+import { MAX_REQUEST_LOG_FILTER_IDS, MAX_REQUEST_LOG_KINDS, parseRequestLogKinds } from '@/lib/request-log-kind';
+import { requestLogKindMatchGroups, requestLogKindsNeedCatalog } from './request-log-kind-filter';
 import { BILLING_CURRENCY_KEY, tryParseGatewaySupportedBillingCurrencyInput } from '@octafuse/core/lib/billing-currency';
 import { MAINTENANCE_MODE_KEY } from '@octafuse/core/lib/maintenance-mode';
 import {
@@ -132,6 +137,13 @@ export async function listAdminGlobalRequestLogsService(
 		model_id?: string;
 		provider_id?: string;
 		provider_ids?: string;
+		/** 供应商类型，逗号分隔；`__unclassified__` 表示未分类。与 `provider_ids` 取并集。 */
+		provider_kinds?: string;
+		model_ids?: string;
+		/** 模型厂商 key，逗号分隔。与 `model_ids` 取并集。 */
+		model_vendors?: string;
+		/** 类型多选，见 `lib/request-log-kind.ts`。 */
+		kinds?: string;
 		model_id_prefix?: string;
 		route_group?: string;
 		protocol?: string;
@@ -150,6 +162,24 @@ export async function listAdminGlobalRequestLogsService(
 	}
 	const page = Math.max(1, Number.parseInt(String(input.page ?? '1'), 10));
 	const pageSize = Math.min(100, Math.max(1, Number.parseInt(String(input.page_size ?? '20'), 10)));
+	const providerIds = parseIdList(input.provider_ids, 'provider_ids', MAX_REQUEST_LOG_FILTER_IDS);
+	const providerKinds = parseIdList(input.provider_kinds, 'provider_kinds', MAX_REQUEST_LOG_FILTER_GROUPS)?.map((kind) =>
+		kind === UNCLASSIFIED_PROVIDER_KIND_FILTER ? '' : kind,
+	);
+	const modelIds = parseIdList(input.model_ids, 'model_ids', MAX_REQUEST_LOG_FILTER_IDS);
+	const modelVendors = parseIdList(input.model_vendors, 'model_vendors', MAX_REQUEST_LOG_FILTER_GROUPS)?.map((vendor) =>
+		vendor.toLowerCase(),
+	);
+	const kindFilter = await resolveRequestLogKindFilter(repos, input.kinds);
+	// D1 单条语句最多 100 个绑定参数，给分页、时间和其余单值筛选留出余量。
+	const listBinds =
+		kindFilter.binds +
+		[providerIds, providerKinds, modelIds, modelVendors].reduce((sum, list) => sum + (list?.length ?? 0), 0);
+	if (repos.client.driver === 'd1' && listBinds > MAX_D1_REQUEST_LOG_LIST_BINDS) {
+		throw badRequest(
+			`Too many filter values for D1: kinds, model_ids, model_vendors, provider_ids and provider_kinds (plus non-LLM catalog models when filtering by model kind) add up to ${listBinds}, limit ${MAX_D1_REQUEST_LOG_LIST_BINDS}`,
+		);
+	}
 	const result = await repos.requestLogs.getRequestLogs({
 		page,
 		pageSize,
@@ -158,7 +188,11 @@ export async function listAdminGlobalRequestLogsService(
 		userEmail: input.user_email,
 		modelId: input.model_id,
 		providerId: input.provider_id,
-		providerIds: parseProviderIds(input.provider_ids),
+		providerIds,
+		providerKinds,
+		modelIds,
+		modelVendors,
+		anyOf: kindFilter.groups,
 		modelIdPrefix: input.model_id_prefix?.trim() || undefined,
 		routeGroup: input.route_group,
 		protocol,
@@ -330,14 +364,46 @@ export async function getRequestLogSummaryService(
 }
 
 const MAX_PROVIDER_IDS = 10;
+/** 请求日志列表的 `model_vendors` / `provider_kinds` 最多带多少项。一项只占一个绑定参数，放得比 id 宽。 */
+const MAX_REQUEST_LOG_FILTER_GROUPS = 100;
+const MAX_D1_REQUEST_LOG_LIST_BINDS = 85;
 
-function parseProviderIds(raw: string | undefined): string[] | undefined {
+function parseIdList(raw: string | undefined, name: string, max: number): string[] | undefined {
 	if (raw == null || raw.trim() === '') return undefined;
 	const ids = [...new Set(raw.split(',').map((value) => value.trim()).filter((value) => value !== ''))];
-	if (ids.length > MAX_PROVIDER_IDS) {
-		throw badRequest('provider_ids accepts at most 10 values');
+	if (ids.length > max) {
+		throw badRequest(`${name} accepts at most ${max} values`);
 	}
 	return ids.length > 0 ? ids : undefined;
+}
+
+function parseProviderIds(raw: string | undefined): string[] | undefined {
+	return parseIdList(raw, 'provider_ids', MAX_PROVIDER_IDS);
+}
+
+/**
+ * `kinds` 参数 → 仓储的「任一组命中」条件。只有按模型类型筛选时才读模型目录。
+ * `binds` 是这些条件大约占用的绑定参数个数：每个类型项一个，按模型类型筛选时每个非 LLM 目录模型再占一个。
+ */
+async function resolveRequestLogKindFilter(
+	repos: GatewayRepositories,
+	raw: string | undefined,
+): Promise<{ groups: RequestLogMatchGroup[] | undefined; binds: number }> {
+	if (raw == null || raw.trim() === '') return { groups: undefined, binds: 0 };
+	const { kinds, invalid } = parseRequestLogKinds(raw);
+	if (invalid.length > 0) {
+		throw badRequest(`Unknown kinds value: ${invalid[0]}`);
+	}
+	if (kinds.length > MAX_REQUEST_LOG_KINDS) {
+		throw badRequest(`kinds accepts at most ${MAX_REQUEST_LOG_KINDS} values`);
+	}
+	const catalog = requestLogKindsNeedCatalog(kinds)
+		? (await repos.models.listModelsWithRouteCounts()).map((row) => ({ id: row.id, kind: resolveModelKind(row) }))
+		: [];
+	return {
+		groups: requestLogKindMatchGroups(kinds, catalog),
+		binds: kinds.length + catalog.filter((model) => model.kind !== 'llm').length,
+	};
 }
 
 /** 多值过滤参数：可重复出现，也可在单个值里用逗号分隔；去空去重。 */

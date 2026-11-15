@@ -16,6 +16,7 @@ import {
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { invocationLogsHref } from '@/lib/request-log-kind';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { McpServerWorkspace } from './components/mcp-server-workspace';
 import { McpServerDirectory } from './components/mcp-server-directory';
@@ -219,7 +220,7 @@ function McpServersWorkspace() {
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
 					<Link
-						href="/gateway/tools/invocations?source=mcp"
+						href={invocationLogsHref({ source: 'mcp' })}
 						className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 hover:bg-gray-50"
 					>
 						<ClockIcon className="h-4 w-4" aria-hidden="true" />

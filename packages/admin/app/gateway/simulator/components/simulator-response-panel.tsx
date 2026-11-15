@@ -7,7 +7,7 @@ import { ArrowDownTrayIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/2
 import { useTranslations } from 'next-intl';
 import { ImageGenerationsPreview } from '@/components/image-generations-preview';
 import type { ImagePreviewItem } from '@/lib/image-generations';
-import { buildRequestLogsHref, buildToolsInvocationsHref } from '../simulator-utils';
+import { buildRequestLogsHref, buildToolRequestLogsHref } from '../simulator-utils';
 import type { ResponseMeta, ResponseTab, SimulatorProtocol } from '../types';
 
 import { LlmResponseContent } from '@/components/model-test/llm-response-content';
@@ -67,14 +67,13 @@ export function SimulatorResponsePanel({
 	const isImageResponse = imagePreviews.length > 0;
 	const isAudioResponse = Boolean(audioPreviewUrl);
 	const logsHref = isToolKind
-		? buildToolsInvocationsHref({ toolId: selectedToolId || undefined })
+		? buildToolRequestLogsHref({ apiKeyId: selectedKeyId || undefined, toolId: selectedToolId || undefined })
 		: buildRequestLogsHref({
 				apiKeyId: selectedKeyId || undefined,
 				modelId: selectedModelId || undefined,
 				routeGroup: routeGroup || 'default',
 				protocol,
 		  });
-	const logsLinkLabel = isToolKind ? t('openToolsInvocations') : t('openRequestLogs');
 
 	return (
 		<section className="admin-editor-panel admin-content-panel flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
@@ -209,7 +208,7 @@ export function SimulatorResponsePanel({
 						href={logsHref}
 						className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-950"
 					>
-						{logsLinkLabel}
+						{t('openRequestLogs')}
 						<ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" aria-hidden />
 					</Link>
 				</footer>

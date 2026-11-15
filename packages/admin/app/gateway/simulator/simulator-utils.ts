@@ -15,6 +15,7 @@ import {
 import { VOLCENGINE_IMAGE_BODY_TEMPLATE, imageBodyTemplateFor, type ImageOperation } from '@/lib/image-generations';
 import { GATEWAY_TOOLS, findGatewayToolById, type GatewayToolDefinition } from '@/lib/gateway-tools';
 import type { AudioOperation, GatewayToolId, OpenaiLlmOperation, SimulatorProtocol } from '@/lib/invoke-kind';
+import { invocationLogQuery } from '@/lib/request-log-kind';
 import type { SimulatorGeminiAction } from '@/lib/simulator/endpoint';
 import {
 	DASHSCOPE_ASYNC_TRANSCRIPTION_BODY_TEMPLATE,
@@ -585,13 +586,11 @@ export function buildRequestLogsHref(opts: {
 	return q ? `/gateway/request-logs?${q}` : '/gateway/request-logs';
 }
 
-/** Tools Invocations；可选按 tool id 筛选（页面读 `?tool=`）。 */
-export function buildToolsInvocationsHref(opts?: { toolId?: string }): string {
-	const sp = new URLSearchParams();
-	const tool = opts?.toolId ? findGatewayToolById(opts.toolId) : undefined;
-	if (tool) sp.set('tool', tool.id);
-	const q = sp.toString();
-	return q ? `/gateway/tools/invocations?${q}` : '/gateway/tools/invocations';
+/** 工具调用也记在请求日志里：按 REST 工具（可选具体工具）和所用 API Key 筛选。 */
+export function buildToolRequestLogsHref(opts: { apiKeyId?: string; toolId?: string } = {}): string {
+	const sp = invocationLogQuery({ source: 'rest', tool: opts.toolId });
+	if (opts.apiKeyId) sp.set('api_key_id', opts.apiKeyId);
+	return `/gateway/request-logs?${sp}`;
 }
 
 export function listGatewayTools(): readonly GatewayToolDefinition[] {

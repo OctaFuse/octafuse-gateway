@@ -4,7 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import { formatAdminDocumentTitle, type AdminNavNameKey } from './admin-nav';
 
 /**
- * 使用 absolute，避免嵌套布局（如 Tools → Invocations）吃掉根布局 title.template，
+ * 使用 absolute，避免嵌套布局（如 Analytics → Model Usage）吃掉根布局 title.template，
  * 导致子页只剩功能名、没有产品后缀。
  */
 export async function adminNavMetadata(nameKey: AdminNavNameKey): Promise<Metadata> {

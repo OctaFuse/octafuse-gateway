@@ -1,5 +1,6 @@
 /**
- * 从工具调用 request_logs 行解析展示用摘要（query / 结果条数等）。
+ * 从工具调用 request_logs 行解析展示用内容：请求参数、响应摘要、MCP 结果、定价快照。
+ * 这些行的请求体在 `request_body`，响应在 `raw_usage`，定价在 `pricing_audit`。
  */
 
 export type ToolInvocationRequestSummary = {
@@ -18,6 +19,8 @@ export type ToolInvocationResultItem = {
 export type ToolInvocationResponseSummary = {
 	resultCount: number | null;
 	results: ToolInvocationResultItem[];
+	/** web-fetch：抓取到的正文总长度（字符）。 */
+	contentLength: number | null;
 	raw: unknown | null;
 };
 
@@ -133,7 +136,7 @@ export function resolveToolEngineProvider(log: {
 export function parseToolResponseSummary(rawUsage: string | null | undefined): ToolInvocationResponseSummary {
 	const raw = tryParseJson(rawUsage);
 	if (!raw || typeof raw !== 'object') {
-		return { resultCount: null, results: [], raw };
+		return { resultCount: null, results: [], contentLength: null, raw };
 	}
 	const rec = raw as Record<string, unknown>;
 	const resultCount = typeof rec.result_count === 'number' ? rec.result_count : null;
@@ -161,5 +164,194 @@ export function parseToolResponseSummary(rawUsage: string | null | undefined): T
 		});
 	}
 
-	return { resultCount: resultCount ?? (results.length > 0 ? results.length : null), results, raw };
+	return {
+		resultCount: resultCount ?? (results.length > 0 ? results.length : null),
+		results,
+		contentLength: typeof rec.content_length === 'number' ? rec.content_length : null,
+		raw,
+	};
+}
+
+export type ToolRequestParam = { name: string; value: string };
+
+const paramText = (value: unknown) => (typeof value === 'string' ? value : JSON.stringify(value, null, 2));
+
+/** 把请求对象拆成「参数名 / 值」逐行展示；`omit` 用于已在别处展示的字段（如引擎）。 */
+export function listRequestParams(value: unknown, omit: readonly string[] = []): ToolRequestParam[] {
+	if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+	return Object.entries(value as Record<string, unknown>)
+		.filter(([name, item]) => !omit.includes(name) && item !== undefined)
+		.map(([name, item]) => ({ name, value: paramText(item) }));
+}
+
+/** MCP 请求体 `{ name, arguments }` 里的调用参数；请求体被截断或不是 JSON 时返回 null。 */
+export function parseMcpArguments(requestBody: string | null | undefined): ToolRequestParam[] | null {
+	const raw = tryParseJson(requestBody);
+	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+	return listRequestParams((raw as Record<string, unknown>).arguments);
+}
+
+export type AiDetectionSummary = {
+	overallScore: number | null;
+	totalChars: number | null;
+	segmentCount: number | null;
+	segments: { index: number; chars: number | null; score: number | null }[];
+};
+
+const numberOrNull = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : null);
+
+/** AI 率检测的响应摘要只有分数与字符数，不含原文。 */
+export function parseAiDetectionSummary(rawUsage: string | null | undefined): AiDetectionSummary | null {
+	const raw = tryParseJson(rawUsage);
+	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+	const rec = raw as Record<string, unknown>;
+	const segments = (Array.isArray(rec.segments) ? rec.segments : [])
+		.filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
+		.map((item, position) => ({
+			index: numberOrNull(item.index) ?? position,
+			chars: numberOrNull(item.chars),
+			score: numberOrNull(item.score),
+		}));
+	return {
+		overallScore: numberOrNull(rec.overall_score),
+		totalChars: numberOrNull(rec.total_chars),
+		segmentCount: numberOrNull(rec.segment_count) ?? (segments.length || null),
+		segments,
+	};
+}
+
+export type McpResultBlock = {
+	type: string;
+	/** 文本块的正文；正文本身是 JSON 时已排版。其他类型的块为整块 JSON。 */
+	text: string;
+	isJson: boolean;
+};
+
+export type McpResultSummary = {
+	blocks: McpResultBlock[];
+	/** `structuredContent`，已排版；没有时为 null。 */
+	structured: string | null;
+	isError: boolean;
+	/** 日志只保留前 8000 个字符，超出的结果在这里不完整。 */
+	truncated: boolean;
+};
+
+const TEXT_BLOCK_PREFIX = '{"content":[{"type":"text","text":"';
+
+/** 被截断的结果不是合法 JSON；多数结果以一个文本块开头，尽量把这一块还原成可读文本。 */
+function readLeadingTextBlock(raw: string): string | null {
+	if (!raw.startsWith(TEXT_BLOCK_PREFIX)) return null;
+	const body = raw.slice(TEXT_BLOCK_PREFIX.length).replace(/…$/, '');
+	let end = body.length;
+	for (let i = 0; i < body.length; i++) {
+		if (body[i] === '"') {
+			end = i;
+			break;
+		}
+		if (body[i] !== '\\') continue;
+		const escapeLength = body[i + 1] === 'u' ? 6 : 2;
+		// 截断点落在转义序列中间时，丢掉这半个转义。
+		if (i + escapeLength > body.length) {
+			end = i;
+			break;
+		}
+		i += escapeLength - 1;
+	}
+	try {
+		return JSON.parse(`"${body.slice(0, end)}"`) as string;
+	} catch {
+		return null;
+	}
+}
+
+function textBlock(text: string): McpResultBlock {
+	const parsed = /^\s*[[{]/.test(text) ? tryParseJson(text) : null;
+	return parsed == null
+		? { type: 'text', text, isJson: false }
+		: { type: 'text', text: JSON.stringify(parsed, null, 2), isJson: true };
+}
+
+/** MCP 工具行的 `raw_usage` 是上游 `tools/call` 的结果：`{ content, structuredContent?, isError? }`。 */
+export function parseMcpResult(rawUsage: string | null | undefined): McpResultSummary | null {
+	const source = rawUsage?.trim() ?? '';
+	if (!source) return null;
+	const raw = tryParseJson(source);
+	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+		const truncated = source.endsWith('…');
+		const leading = truncated ? readLeadingTextBlock(source) : null;
+		return {
+			blocks: [{ type: 'text', text: leading ?? source, isJson: false }],
+			structured: null,
+			isError: false,
+			truncated,
+		};
+	}
+	const rec = raw as Record<string, unknown>;
+	const blocks = (Array.isArray(rec.content) ? rec.content : []).map((item): McpResultBlock => {
+		const block = item && typeof item === 'object' ? (item as Record<string, unknown>) : null;
+		if (block?.type === 'text' && typeof block.text === 'string') return textBlock(block.text);
+		return {
+			type: typeof block?.type === 'string' ? block.type : 'unknown',
+			text: JSON.stringify(item, null, 2),
+			isJson: true,
+		};
+	});
+	return {
+		blocks,
+		structured: rec.structuredContent == null ? null : JSON.stringify(rec.structuredContent, null, 2),
+		isError: rec.isError === true,
+		truncated: false,
+	};
+}
+
+export type McpFailureKind = 'toolError' | 'invalidResult' | 'timeout' | 'upstream';
+
+/** 按 Gateway 写入的错误信息区分 MCP 调用失败在哪一步，用于给出排查方向。 */
+export function classifyMcpFailure(message: string | null | undefined): McpFailureKind | null {
+	const text = message?.trim().toLowerCase() ?? '';
+	if (!text) return null;
+	if (text.includes('returned iserror')) return 'toolError';
+	if (text.includes('invalid tool result')) return 'invalidResult';
+	if (text.includes('timed out')) return 'timeout';
+	return 'upstream';
+}
+
+export type ToolPricingSnapshot = {
+	unit: string | null;
+	billingUnits: number | null;
+	unitPrices: { charged: number | null; metered: number | null; standard: number | null };
+	/** 调用时生效的倍率；旧记录没有。 */
+	chargedFactor: number | null;
+	meteredFactor: number | null;
+	/** MCP：价格来自工具自己的设置（item）还是服务默认价格（server）。 */
+	ruleSource: 'item' | 'server' | null;
+	preflightUnits: number | null;
+	settledUnits: number | null;
+};
+
+/** 工具与 MCP 调用的 `pricing_audit`（`kind: fixed_tool_cost`）：单价、计费单元和倍率快照。 */
+export function parseToolPricingAudit(pricingAudit: string | null | undefined): ToolPricingSnapshot | null {
+	const raw = tryParseJson(pricingAudit);
+	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+	const rec = raw as Record<string, unknown>;
+	if (rec.kind !== 'fixed_tool_cost') return null;
+	const object = (value: unknown) =>
+		value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+	const prices = object(rec.unit_prices);
+	const mcp = object(rec.mcp_pricing);
+	const factors = rec.mcp_pricing ? mcp : object(rec.tool_pricing);
+	return {
+		unit: typeof rec.unit === 'string' && rec.unit.trim() ? rec.unit : null,
+		billingUnits: numberOrNull(rec.billing_units),
+		unitPrices: {
+			charged: numberOrNull(prices.charged),
+			metered: numberOrNull(prices.metered),
+			standard: numberOrNull(prices.standard),
+		},
+		chargedFactor: numberOrNull(factors.charged_factor),
+		meteredFactor: numberOrNull(factors.metered_factor),
+		ruleSource: mcp.rule_source === 'item' || mcp.rule_source === 'server' ? mcp.rule_source : null,
+		preflightUnits: numberOrNull(mcp.preflight_units),
+		settledUnits: numberOrNull(mcp.settled_units),
+	};
 }

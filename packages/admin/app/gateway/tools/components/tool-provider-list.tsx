@@ -24,6 +24,7 @@ import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { AdminDialog } from '@/components/admin-dialog';
 import { formatGatewayMoneyCompact } from '@/lib/format-gateway-currency';
 import { GATEWAY_TOOLS } from '@/lib/gateway-tools';
+import { invocationLogsHref } from '@/lib/request-log-kind';
 import { ToolApiReference, ToolEndpoint, type ToolReferenceView } from './tool-api-guide';
 import { TOOL_API_DEFINITIONS, isRestToolId, normalizeToolProxyUrl } from '../tool-api-guide';
 import styles from './tool-provider-list.module.css';
@@ -233,7 +234,7 @@ export function ToolProviderList({
 								</div>
 								<div className="flex w-full flex-wrap items-center gap-3 text-xs sm:w-auto">
 									<Link
-										href={`/gateway/tools/invocations?source=rest&tool=${selected.id}`}
+										href={invocationLogsHref({ source: 'rest', tool: selected.id })}
 										className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-900"
 									>
 										<ClockIcon className="h-4 w-4" aria-hidden="true" />

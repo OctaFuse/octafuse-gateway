@@ -17,7 +17,6 @@ import {
 	Cog6ToothIcon,
 	PauseCircleIcon,
 	WrenchScrewdriverIcon,
-	QueueListIcon,
 	Squares2X2Icon,
 } from "@heroicons/react/24/outline";
 
@@ -36,7 +35,6 @@ export const ADMIN_NAV_ICONS: Record<
 	requestLogs: DocumentChartBarIcon,
 	auditLogs: ClipboardDocumentListIcon,
 	toolsConfig: WrenchScrewdriverIcon,
-	toolInvocations: QueueListIcon,
 	mcpServers: Squares2X2Icon,
 	modelUsage: ChartBarIcon,
 	providerUsage: ServerStackIcon,

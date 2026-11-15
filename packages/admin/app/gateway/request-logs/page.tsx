@@ -7,11 +7,17 @@ import { AdminContentMark } from '@/components/admin-content-mark';
 import { AdminPageTitle } from '@/components/admin-page-title';
 
 /**
- * 全站请求日志表：多维筛选、分页；Route 列按入站 / 上游两行展示协议端点、模型 ID、路由组与上游供应商；展开详情使用交互式请求流程与尝试时间线；数据来自 `/api/admin/request-logs`。
+ * 全站请求日志表：模型请求与工具调用（REST 工具、MCP）共用一张表，按类型等多维筛选、分页；Route 列按入站 / 上游两行展示协议端点、模型 ID、路由组与上游供应商；展开详情使用交互式请求流程与尝试时间线，工具调用另显示查询与响应摘要；数据来自 `/api/admin/request-logs`。
  */
 import { PricingInfoHint } from '@/components/PricingInfoHint';
 import Link from 'next/link';
 import { AdaptiveFilterGroup } from '@/components/adaptive-filter-group';
+import {
+	GroupedFilterPicker,
+	groupedFilterCatalog,
+	groupedFilterLabeler,
+	type GroupedFilterGroup,
+} from '@/components/grouped-filter-picker';
 import { useAdminDialog } from '@/components/use-admin-dialog';
 import { useFeedback } from '@/components/feedback';
 import { useBusinessTimezoneContext } from '@/components/BusinessTimezoneProvider';
@@ -19,7 +25,7 @@ import { LogRangeControl } from './log-range-control';
 import { readRequestLogFilters, requestLogDuration, requestLogQuery } from './request-log-query';
 import { dashboardErrorSummary } from '@/components/dashboard/dashboard-presentation';
 import { useLocale, useTranslations } from 'next-intl';
-import { Fragment, useState, useEffect, useMemo, useCallback } from 'react';
+import { Fragment, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
 	ArrowUpIcon,
 	ArrowDownLeftIcon,
@@ -48,8 +54,40 @@ import {
 import { readApiJson } from '@/lib/api-json';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider, GatewayRequestLog } from '@/lib/types';
 import { compareRouteGroupsForDisplay, normalizeRouteGroup } from '@/lib/route-group-ui';
-import { GATEWAY_TOOLS_PROVIDER_ID } from '@/lib/gateway-tools';
-import { liveProviderPickerLabel, sortProvidersByKindThenName } from '@/lib/provider-kind';
+import { findGatewayToolById, GATEWAY_TOOLS_PROVIDER_ID } from '@/lib/gateway-tools';
+import {
+	EMPTY_GROUPED_SELECTION,
+	groupedSelectionNodes,
+	isEmptyGroupedSelection,
+	toggleGroupedGroup,
+	toggleGroupedItem,
+	type GroupedSelection,
+	type GroupedSelectionNode,
+} from '@/lib/grouped-selection';
+import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
+import {
+	isInvocationModelId,
+	MAX_REQUEST_LOG_FILTER_IDS,
+	modelFilterFitsKinds,
+	requestLogKindDisplayNodes,
+	requestLogKindScope,
+	selectedModelKinds,
+	toggleRequestLogKind,
+} from '@/lib/request-log-kind';
+import { resolveModelKind } from '@octafuse/core/db/model-kind';
+import {
+	parseMcpInvocationSummary,
+	parseToolRequestSummary,
+	resolveInvocationSource,
+	resolveToolEngineProvider,
+} from '@/lib/tool-invocation-detail';
+import {
+	liveProviderPickerLabel,
+	providerKindDisplayLabel,
+	providerKindFilterKey,
+	sortProvidersByKindThenName,
+	UNCLASSIFIED_PROVIDER_KIND_FILTER,
+} from '@/lib/provider-kind';
 import { UPSTREAM_PROTOCOLS } from '@/lib/upstream-protocol';
 import { requestLogProtocolPath, requestSurfacePath } from '../routes/route-utils';
 import {
@@ -64,6 +102,8 @@ import {
 } from '@/lib/analytics-range';
 import { formatGatewayMoneyCode, getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import { RequestLogFlow } from './request-log-flow';
+import { RequestLogInvocation } from './request-log-invocation';
+import { RequestLogKindPicker, useRequestLogKindTree } from './request-log-kind-picker';
 import { useBillingCurrency } from '@/lib/use-billing-currency';
 import { AutoRefreshControl } from '@/components/AutoRefreshControl';
 import { REQUEST_LOG_REFRESH_INTERVAL_OPTIONS, requestLogRefreshPreference } from '@/lib/auto-refresh-preference';
@@ -75,12 +115,35 @@ import { formatRequestCostMultiplier, requestLogUsageMetrics, type UsageMetric }
 /** `/api/admin/models` 列表项（tags 解析为数组） */
 type ModelListItem = Omit<GatewayModel, 'tags'> & { tags: string[] };
 
+const byLabel = (a: { label: string }, b: { label: string }) =>
+	a.label.localeCompare(b.label, undefined, { sensitivity: 'base' });
+
+/**
+ * 「模型」筛选的两级目录：厂商 → 模型。`kinds` 给了就只列这几类模型（类型筛选只选了某几类模型时）。
+ * 厂商按名称排序，「其他」排最后。
+ */
+function buildModelGroups(catalog: readonly ModelListItem[], kinds: readonly string[] | null): GroupedFilterGroup[] {
+	const byVendor = new Map<string, GroupedFilterGroup['items']>();
+	for (const model of catalog) {
+		if (kinds !== null && !kinds.includes(resolveModelKind(model))) continue;
+		const vendor = normalizeModelVendorInput(model.vendor);
+		const label = model.display_name?.trim() || model.id;
+		const items = byVendor.get(vendor) ?? [];
+		items.push({ id: model.id, label, title: label === model.id ? undefined : model.id });
+		byVendor.set(vendor, items);
+	}
+	return [...byVendor.entries()]
+		.map(([id, items]) => ({ id, label: getModelVendorLabel(id), items: items.sort(byLabel) }))
+		.sort((a, b) => Number(a.id === 'other') - Number(b.id === 'other') || byLabel(a, b));
+}
+
 export default function GatewayRequestLogsPage() {
 	const t = useTranslations('requestLogs');
 	const tCommon = useTranslations('common');
 	const tDashboard = useTranslations('dashboard');
 	const tOptions = useTranslations('options');
 	const tKind = useTranslations('providers.kind');
+	const tToolCatalog = useTranslations('tools.catalog');
 	const tToken = useTranslations('oauthAccessTokensPage');
 	const locale = useLocale();
 	const [page, setPage] = useState(1);
@@ -100,16 +163,21 @@ export default function GatewayRequestLogsPage() {
 	const billingCurrencySym = getGatewayCurrencySymbol(billingCurrency);
 
 	// Filters
+	/** 类型多选（`kinds`）。空数组表示不限类型。 */
+	const [filterKinds, setFilterKinds] = useState<string[]>([]);
 	const [filterStatus, setFilterStatus] = useState('');
-	const [filterModel, setFilterModel] = useState('');
+	/** 模型多选：`groups` 是厂商，`items` 是模型。 */
+	const [filterModels, setFilterModels] = useState<GroupedSelection>(EMPTY_GROUPED_SELECTION);
+	/** 供应商多选：`groups` 是供应商类型，`items` 是供应商。 */
+	const [filterProviders, setFilterProviders] = useState<GroupedSelection>(EMPTY_GROUPED_SELECTION);
+	/** 链接带来的具体工具（`tool:*` / `mcp:{slug}/{tool}`），筛选栏里没有对应的选择框，用标签显示。 */
+	const [filterInvocationModel, setFilterInvocationModel] = useState('');
 	const [filterUserEmail, setFilterUserEmail] = useState('');
 	const [filterApiKeyId, setFilterApiKeyId] = useState('');
 	const [filterLogId, setFilterLogId] = useState('');
 	const [rangeValue, setRangeValue] = useState<GatewayTimeRangeValue>(() =>
 		createRangeValue(DEFAULT_GATEWAY_TIME_RANGE_PRESET, businessTimezone)
 	);
-	const [filterProviderId, setFilterProviderId] = useState('');
-	const [filterProviderIds, setFilterProviderIds] = useState('');
 	const [filterModelPrefix, setFilterModelPrefix] = useState('');
 	const remaining = useTranslations('remainingUi');
 	const [filterRouteGroup, setFilterRouteGroup] = useState('');
@@ -118,6 +186,30 @@ export default function GatewayRequestLogsPage() {
 	const [modelCatalog, setModelCatalog] = useState<ModelListItem[]>([]);
 	const [providerCatalog, setProviderCatalog] = useState<GatewayProvider[]>([]);
 	const [routesCatalog, setRoutesCatalog] = useState<GatewayModelRoute[]>([]);
+	/** MCP 服务只在类型面板里用到：打开面板或已选了某个 MCP 服务时再取。`null` 表示还没取到。 */
+	const [mcpServers, setMcpServers] = useState<{ slug: string; name: string }[] | null>(null);
+	const mcpServersRequested = useRef(false);
+	const [kindPickerOpened, setKindPickerOpened] = useState(false);
+	const wantMcpServers = kindPickerOpened || filterKinds.some((term) => term.startsWith('mcp:'));
+
+	useEffect(() => {
+		if (!wantMcpServers || mcpServersRequested.current) return;
+		mcpServersRequested.current = true;
+		let cancelled = false;
+		(async () => {
+			try {
+				const data = await readApiJson<{ slug: string; name: string }[]>(await fetch('/api/admin/mcp-servers'));
+				if (cancelled) return;
+				setMcpServers(data.success && data.data ? data.data.map(({ slug, name }) => ({ slug, name })) : []);
+			} catch (e) {
+				console.error('Fetch MCP servers for filters:', e);
+				if (!cancelled) setMcpServers([]);
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [wantMcpServers]);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -154,10 +246,11 @@ export default function GatewayRequestLogsPage() {
 			if (cancelled) return;
 			const filters = readRequestLogFilters(window.location.search, businessTimezone);
 			setPage(filters.page);
+			setFilterKinds(filters.kinds);
 			setFilterStatus(filters.status);
-			setFilterModel(filters.model);
-			setFilterProviderId(filters.provider);
-			setFilterProviderIds(filters.providerIds ?? '');
+			setFilterModels(filters.models);
+			setFilterProviders(filters.providers);
+			setFilterInvocationModel(filters.invocationModel);
 			setFilterModelPrefix(filters.modelPrefix ?? '');
 			setFilterUserEmail(filters.email);
 			setFilterApiKeyId(filters.apiKey);
@@ -174,10 +267,11 @@ export default function GatewayRequestLogsPage() {
 		() =>
 			requestLogQuery({
 				page,
+				kinds: filterKinds,
 				status: filterStatus,
-				model: filterModel,
-				provider: filterProviderId,
-				providerIds: filterProviderIds,
+				models: filterModels,
+				providers: filterProviders,
+				invocationModel: filterInvocationModel,
 				modelPrefix: filterModelPrefix,
 				email: filterUserEmail,
 				apiKey: filterApiKeyId,
@@ -188,10 +282,11 @@ export default function GatewayRequestLogsPage() {
 			}),
 		[
 			page,
+			filterKinds,
 			filterStatus,
-			filterModel,
-			filterProviderId,
-			filterProviderIds,
+			filterModels,
+			filterProviders,
+			filterInvocationModel,
 			filterModelPrefix,
 			filterUserEmail,
 			filterApiKeyId,
@@ -237,38 +332,36 @@ export default function GatewayRequestLogsPage() {
 		[providerById, locale, tKind]
 	);
 
-	const modelSelectOptions = useMemo(() => {
-		const rows = [...modelCatalog]
-			.sort((a, b) =>
-				(a.display_name?.trim() || a.id).localeCompare(b.display_name?.trim() || b.id, undefined, {
-					sensitivity: 'base',
-				})
-			)
-			.map((m) => ({
-				id: m.id,
-				label: m.display_name?.trim() || m.id,
-			}));
-		const ids = new Set(rows.map((r) => r.id));
-		if (filterModel && !ids.has(filterModel)) {
-			rows.unshift({ id: filterModel, label: t('ui.notInCatalog', { value: filterModel }) });
-		}
-		return rows;
-	}, [modelCatalog, filterModel, t]);
+	const kindTree = useRequestLogKindTree(filterKinds, mcpServers);
+	const kindScope = requestLogKindScope(filterKinds);
 
-	const providerSelectOptions = useMemo(() => {
-		const rows = sortProvidersByKindThenName(providerCatalog, locale, tKind('custom')).map((p) => ({
-			id: p.id,
-			label: liveProviderPickerLabel(p, locale, tKind('custom'), p.id),
-		}));
-		const ids = new Set(rows.map((r) => r.id));
-		if (filterProviderId && !ids.has(filterProviderId)) {
-			rows.unshift({
-				id: filterProviderId,
-				label: t('ui.notInCatalog', { value: filterProviderId }),
-			});
+	const staleLabel = useCallback((value: string) => t('ui.notInCatalog', { value }), [t]);
+
+	/** 厂商 → 模型。类型只选了某几类模型时，只列这几类。 */
+	const modelGroups = useMemo(
+		() => buildModelGroups(modelCatalog, selectedModelKinds(filterKinds)),
+		[modelCatalog, filterKinds],
+	);
+
+	/** 供应商类型 → 供应商。类型按名称排序，未分类排最后。 */
+	const providerGroups = useMemo(() => {
+		const groups = new Map<string, GroupedFilterGroup>();
+		for (const provider of sortProvidersByKindThenName(providerCatalog, locale, tKind('custom'))) {
+			const key = providerKindFilterKey(provider.kind);
+			const group = groups.get(key) ?? {
+				id: key,
+				label:
+					key === UNCLASSIFIED_PROVIDER_KIND_FILTER
+						? tKind('unclassified')
+						: providerKindDisplayLabel(provider, locale, tKind('custom')) || key,
+				items: [],
+			};
+			const label = provider.name?.trim() || provider.id;
+			group.items.push({ id: provider.id, label, title: label === provider.id ? undefined : provider.id });
+			groups.set(key, group);
 		}
-		return rows;
-	}, [providerCatalog, filterProviderId, locale, tKind, t]);
+		return [...groups.values()];
+	}, [providerCatalog, locale, tKind]);
 
 	/** option 的 value 与展示文案均为规范化后的 route_group（与目录一致） */
 	const routeGroupSelectOptions = useMemo(() => {
@@ -484,7 +577,37 @@ export default function GatewayRequestLogsPage() {
 		</div>
 	);
 
+	/** 工具调用没有模型路由：第一行是工具名，第二行是引擎与查询（MCP 为参数摘要）。 */
+	const renderInvocationCell = (log: GatewayRequestLog, source: 'rest' | 'mcp') => {
+		let name: string;
+		let detail: string;
+		if (source === 'mcp') {
+			const summary = parseMcpInvocationSummary(log);
+			name = summary.label;
+			detail = summary.argumentSummary ?? '';
+		} else {
+			const tool = findGatewayToolById(log.model_id);
+			name = tool ? tToolCatalog(tool.nameKey) : log.model_name?.trim() || log.model_id || '—';
+			detail = [resolveToolEngineProvider(log), parseToolRequestSummary(log.request_body).query]
+				.filter(Boolean)
+				.join(' · ');
+		}
+		return (
+			<div className="min-w-0 space-y-1">
+				<div className="truncate text-sm font-medium text-gray-900" title={log.model_id || undefined}>
+					{name}
+				</div>
+				<div className="truncate text-xs text-gray-500" title={detail || undefined}>
+					{detail || '—'}
+				</div>
+				{renderFeatureTags(log)}
+			</div>
+		);
+	};
+
 	const renderRouteCell = (log: GatewayRequestLog) => {
+		const invocationSource = resolveInvocationSource(log);
+		if (invocationSource) return renderInvocationCell(log, invocationSource);
 		const name = log.model_name?.trim() || log.model_id || '—';
 		const route = normalizeRouteGroup(log.route_group);
 		const protocol = log.request_protocol || log.upstream_protocol;
@@ -609,15 +732,92 @@ export default function GatewayRequestLogsPage() {
 		);
 	};
 
+	/**
+	 * 改类型时一并清掉在新范围里不再适用的筛选：它们与类型按 AND 组合，留着只会一条也查不到。
+	 * 模型、供应商、协议、路由组只对模型请求有意义；已选的厂商和模型要在新的模型类型里还选得到。
+	 */
+	const changeKinds = (kinds: string[]) => {
+		const scope = requestLogKindScope(kinds);
+		if (!scope.model) {
+			setFilterModels(EMPTY_GROUPED_SELECTION);
+			setFilterProviders(EMPTY_GROUPED_SELECTION);
+			setFilterProtocol('');
+			setFilterRouteGroup('');
+		} else if (modelCatalog.length > 0) {
+			const visible = buildModelGroups(modelCatalog, selectedModelKinds(kinds));
+			const vendors = new Set(visible.map((group) => group.id));
+			const models = new Set(visible.flatMap((group) => group.items.map((item) => item.id)));
+			// 目录里没有的模型（已删除、或链接带来的）判断不了类型，留着。
+			setFilterModels((prev) => ({
+				groups: prev.groups.filter((vendor) => vendors.has(vendor)),
+				items: prev.items.filter((id) => models.has(id) || !modelById.has(id)),
+			}));
+		}
+		if (!modelFilterFitsKinds(filterInvocationModel, kinds)) setFilterInvocationModel('');
+		if (!scope.invocation && isInvocationModelId(filterModelPrefix)) setFilterModelPrefix('');
+		setFilterKinds(kinds);
+		setPage(1);
+	};
+	/** 单独勾选的模型 / 供应商有个数上限（API 的 `model_ids` / `provider_ids`）；勾选整个分组不占这个额度。 */
+	const withinIdLimit = (next: GroupedSelection, prev: GroupedSelection, message: string) => {
+		if (next.items.length <= MAX_REQUEST_LOG_FILTER_IDS || next.items.length <= prev.items.length) return true;
+		notify('error', message);
+		return false;
+	};
+	const changeModels = (next: GroupedSelection) => {
+		if (!withinIdLimit(next, filterModels, t('modelFilter.limit', { max: MAX_REQUEST_LOG_FILTER_IDS }))) return;
+		setFilterModels(next);
+		setPage(1);
+	};
+	const changeProviders = (next: GroupedSelection) => {
+		if (!withinIdLimit(next, filterProviders, t('providerFilter.limit', { max: MAX_REQUEST_LOG_FILTER_IDS }))) return;
+		setFilterProviders(next);
+		setPage(1);
+	};
+	const modelOnlyHint = kindScope.model ? undefined : t('kindFilter.modelOnly');
+	// 类型选了多项时筛选栏只显示第一项和数量，用标签把每一项列出来，可单独移除。
+	const kindNodes = requestLogKindDisplayNodes(filterKinds);
+	const kindChips = (kindNodes.length > 1 ? kindNodes : []).map((node) => ({
+		key: `kind:${node}`,
+		label: t('kindFilter.label'),
+		value: node,
+		display: kindTree.labelOf(node),
+		clear: () => changeKinds(toggleRequestLogKind(filterKinds, node, false, kindTree.children)),
+	}));
+	/** 模型、供应商选了多项时同样逐项列出。 */
+	const groupedChips = (
+		prefix: string,
+		label: string,
+		groups: GroupedFilterGroup[],
+		selection: GroupedSelection,
+		change: (next: GroupedSelection) => void,
+	) => {
+		const catalog = groupedFilterCatalog(groups);
+		const labelOf = groupedFilterLabeler(groups, staleLabel);
+		const nodes = groupedSelectionNodes(selection, catalog);
+		const remove = (node: GroupedSelectionNode) =>
+			node.type === 'group'
+				? toggleGroupedGroup(selection, node.id, false, catalog)
+				: toggleGroupedItem(selection, node.id, false, catalog);
+		return (nodes.length > 1 ? nodes : []).map((node) => ({
+			key: `${prefix}:${node.type}:${node.id}`,
+			label,
+			value: node.id,
+			display: labelOf(node),
+			clear: () => change(remove(node)),
+		}));
+	};
+	const modelChips = groupedChips('model', tCommon('model'), modelGroups, filterModels, changeModels);
+	const providerChips = groupedChips('provider', tCommon('provider'), providerGroups, filterProviders, changeProviders);
+	// 链接带来的具体工具（如某个 MCP 工具）没有对应的选择框，用标签显示并允许移除。
 	const advancedFilters = [
-		{ label: remaining('providerScope'), value: filterProviderIds, clear: () => setFilterProviderIds('') },
-		{ label: remaining('modelPrefix'), value: filterModelPrefix, clear: () => setFilterModelPrefix('') },
 		{
-			label: tCommon('provider'),
-			value: filterProviderId,
-			display: providerSelectOptions.find((item) => item.id === filterProviderId)?.label,
-			clear: () => setFilterProviderId(''),
+			label: t('kindFilter.toolChip'),
+			value: filterInvocationModel,
+			display: filterInvocationModel.replace(/^(tool|mcp):/, ''),
+			clear: () => setFilterInvocationModel(''),
 		},
+		{ label: remaining('modelPrefix'), value: filterModelPrefix, clear: () => setFilterModelPrefix('') },
 		{ label: t('filters.protocol'), value: filterProtocol, clear: () => setFilterProtocol('') },
 		{
 			label: t('filters.routeGroup'),
@@ -627,12 +827,26 @@ export default function GatewayRequestLogsPage() {
 		{ label: t('filters.apiKeyId'), value: filterApiKeyId, clear: () => setFilterApiKeyId('') },
 		{ label: t('filters.requestId'), value: filterLogId, clear: () => setFilterLogId('') },
 	].filter((item) => item.value);
-	const hasFilters = Boolean(filterStatus || filterModel || filterUserEmail || advancedFilters.length);
+	const filterChips = [
+		...kindChips,
+		...modelChips,
+		...providerChips,
+		...advancedFilters.map((item) => ({ ...item, key: item.label })),
+	];
+	const hasFilters = Boolean(
+		filterKinds.length ||
+			filterStatus ||
+			!isEmptyGroupedSelection(filterModels) ||
+			!isEmptyGroupedSelection(filterProviders) ||
+			filterUserEmail ||
+			advancedFilters.length
+	);
 	const clearFilters = () => {
+		setFilterKinds([]);
 		setFilterStatus('');
-		setFilterModel('');
-		setFilterProviderId('');
-		setFilterProviderIds('');
+		setFilterModels(EMPTY_GROUPED_SELECTION);
+		setFilterProviders(EMPTY_GROUPED_SELECTION);
+		setFilterInvocationModel('');
 		setFilterModelPrefix('');
 		setFilterUserEmail('');
 		setFilterApiKeyId('');
@@ -643,6 +857,23 @@ export default function GatewayRequestLogsPage() {
 		setPage(1);
 	};
 	const selectClass = 'h-10 min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-600';
+	/** 常驻筛选项与「更多筛选」里的项用同一种标题：选中值后仍能看出是哪个筛选。 */
+	const fieldClass = 'block min-w-0 space-y-2 text-xs text-gray-500';
+	const detailInvocationSource = detailLog ? resolveInvocationSource(detailLog) : null;
+	// 调用方：用户邮箱 + 凭据（API Key，或 MCP 的 OAuth 授权应用）。
+	const detailIdentityLabel = detailLog
+		? [
+				detailLog.user_email,
+				detailLog.api_key_id ??
+					(detailLog.oauth_access_token_id
+						? detailLog.oauth_access_token_name
+							? tToken('logCredential', { name: detailLog.oauth_access_token_name })
+							: tToken('logCredentialUnknown', { id: detailLog.oauth_access_token_id })
+						: null),
+			]
+				.filter(Boolean)
+				.join(' · ')
+		: '';
 	const copyId = async (id: string) => {
 		try {
 			await navigator.clipboard.writeText(id);
@@ -677,61 +908,83 @@ export default function GatewayRequestLogsPage() {
 
 			<section aria-label={t('ui.filters')} className="admin-filter-surface mb-5 space-y-3">
 				<div className="flex flex-wrap items-end gap-3">
-					<div className="relative min-w-0 flex-1 basis-60 sm:max-w-xs">
-						<MagnifyingGlassIcon
-							className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-							aria-hidden
-						/>
-						<input
-							type="search"
-							aria-label={t('filters.userEmail')}
-							value={filterUserEmail}
+					<label className={`${fieldClass} flex-1 basis-60 sm:max-w-xs`}>
+						{t('filters.userEmail')}
+						<div className="relative">
+							<MagnifyingGlassIcon
+								className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+								aria-hidden
+							/>
+							<input
+								type="search"
+								value={filterUserEmail}
+								onChange={(e) => {
+									setFilterUserEmail(e.target.value);
+									setPage(1);
+								}}
+								placeholder={t('filters.emailPlaceholder')}
+								className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-sm text-gray-900"
+							/>
+						</div>
+					</label>
+					<label className={`${fieldClass} w-32`}>
+						{tCommon('status')}
+						<select
+							value={filterStatus}
 							onChange={(e) => {
-								setFilterUserEmail(e.target.value);
+								setFilterStatus(e.target.value);
 								setPage(1);
 							}}
-							placeholder={t('filters.emailPlaceholder')}
-							className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-sm"
-						/>
-					</div>
-					<select
-						aria-label={tCommon('status')}
-						value={filterStatus}
-						onChange={(e) => {
-							setFilterStatus(e.target.value);
-							setPage(1);
-						}}
-						className={`${selectClass} w-32`}
-					>
-						<option value="">{t('ui.allStatuses')}</option>
-						{['success', 'error', 'incomplete', 'cancelled'].map((status) => (
-							<option key={status} value={status}>
-								{tOptions(`requestStatus.${status}`)}
-							</option>
-						))}
-					</select>
-					<select
-						aria-label={tCommon('model')}
-						value={filterModel}
-						onChange={(e) => {
-							setFilterModelPrefix('');
-							setFilterModel(e.target.value);
-							setPage(1);
-						}}
-						className={`${selectClass} max-w-full w-52`}
-					>
-						<option value="">{t('ui.allModels')}</option>
-						{modelSelectOptions.map((item) => (
-							<option key={item.id} value={item.id}>
-								{item.label}
-							</option>
-						))}
-					</select>
+							className={`${selectClass} block w-full`}
+						>
+							<option value="">{t('ui.allStatuses')}</option>
+							{['success', 'error', 'incomplete', 'cancelled'].map((status) => (
+								<option key={status} value={status}>
+									{tOptions(`requestStatus.${status}`)}
+								</option>
+							))}
+						</select>
+					</label>
+					<RequestLogKindPicker
+						className="w-44"
+						value={filterKinds}
+						tree={kindTree}
+						onChange={changeKinds}
+						onOpen={() => setKindPickerOpened(true)}
+					/>
+					<GroupedFilterPicker
+						className="w-52 max-w-full"
+						label={tCommon('model')}
+						emptyLabel={t('ui.allModels')}
+						clearLabel={t('modelFilter.clear')}
+						hint={t('modelFilter.hint')}
+						search={{ placeholder: t('modelFilter.search'), empty: t('modelFilter.empty') }}
+						groups={modelGroups}
+						value={filterModels}
+						onChange={changeModels}
+						staleLabel={staleLabel}
+						disabled={!kindScope.model}
+						title={modelOnlyHint}
+					/>
+					<GroupedFilterPicker
+						className="w-52 max-w-full"
+						label={tCommon('provider')}
+						emptyLabel={t('providerFilter.all')}
+						clearLabel={t('providerFilter.clear')}
+						hint={t('providerFilter.hint')}
+						search={{ placeholder: t('providerFilter.search'), empty: t('providerFilter.empty') }}
+						groups={providerGroups}
+						value={filterProviders}
+						onChange={changeProviders}
+						staleLabel={staleLabel}
+						disabled={!kindScope.model}
+						title={modelOnlyHint}
+					/>
 					<AdaptiveFilterGroup
 						onOpenChange={setFilterDialogOpen}
 						label={t('ui.moreFilters')}
 						activeCount={advancedFilters.length}
-						extraCount={[filterProviderIds, filterModelPrefix, filterApiKeyId, filterLogId].filter(Boolean).length}
+						extraCount={advancedFilters.length - [filterProtocol, filterRouteGroup].filter(Boolean).length}
 						inlineAt={1440}
 						extra={<>
 						<label className="block space-y-2 text-xs text-gray-500">
@@ -759,34 +1012,16 @@ export default function GatewayRequestLogsPage() {
 							/>
 						</label></>}
 					>
-						<label className="admin-adaptive-field block space-y-2 text-xs text-gray-500">
-							{tCommon('provider')}
-							<select
-								value={filterProviderId}
-								onChange={(e) => {
-									setFilterProviderIds('');
-									setFilterProviderId(e.target.value);
-									setPage(1);
-								}}
-								className={`${selectClass} block w-full`}
-							>
-								<option value="">{tCommon('all')}</option>
-								{providerSelectOptions.map((item) => (
-									<option key={item.id} value={item.id}>
-										{item.label}
-									</option>
-								))}
-							</select>
-						</label>
-						<label className="admin-adaptive-field block space-y-2 text-xs text-gray-500">
+						<label className="admin-adaptive-field block space-y-2 text-xs text-gray-500" title={modelOnlyHint}>
 							{t('filters.protocol')}
 							<select
 								value={filterProtocol}
+								disabled={!kindScope.model}
 								onChange={(e) => {
 									setFilterProtocol(e.target.value);
 									setPage(1);
 								}}
-								className={`${selectClass} block w-full`}
+								className={`${selectClass} block w-full disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400`}
 							>
 								<option value="">{tCommon('all')}</option>
 								{UPSTREAM_PROTOCOLS.map((protocol) => (
@@ -796,15 +1031,16 @@ export default function GatewayRequestLogsPage() {
 								))}
 							</select>
 						</label>
-						<label className="admin-adaptive-field block space-y-2 text-xs text-gray-500">
+						<label className="admin-adaptive-field block space-y-2 text-xs text-gray-500" title={modelOnlyHint}>
 							{t('filters.routeGroup')}
 							<select
 								value={filterRouteGroup}
+								disabled={!kindScope.model}
 								onChange={(e) => {
 									setFilterRouteGroup(e.target.value);
 									setPage(1);
 								}}
-								className={`${selectClass} block w-full`}
+								className={`${selectClass} block w-full disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400`}
 							>
 								<option value="">{tCommon('all')}</option>
 								{routeGroupSelectOptions.map((item) => (
@@ -828,11 +1064,11 @@ export default function GatewayRequestLogsPage() {
 						{t('totalRequests', { count: total })}
 					</span>
 				</div>
-				{advancedFilters.length > 0 && (
+				{filterChips.length > 0 && (
 					<div className="flex flex-wrap gap-2">
-						{advancedFilters.map((item) => (
+						{filterChips.map((item) => (
 							<button
-								key={item.label}
+								key={item.key}
 								type="button"
 								onClick={() => {
 									item.clear();
@@ -1090,24 +1326,24 @@ export default function GatewayRequestLogsPage() {
 							</button>
 						</header>
 						<div className="admin-dialog-body min-h-0 overflow-y-auto overscroll-contain">
-							<RequestLogFlow
-								key={detailLog.id}
-								log={detailLog}
-								providerLabel={providerRouteLabel(detailLog)}
-								identityLabel={[
-									detailLog.user_email,
-									detailLog.api_key_id ??
-										(detailLog.oauth_access_token_id
-											? detailLog.oauth_access_token_name
-												? tToken('logCredential', { name: detailLog.oauth_access_token_name })
-												: tToken('logCredentialUnknown', { id: detailLog.oauth_access_token_id })
-											: null),
-								]
-									.filter(Boolean)
-									.join(' · ')}
-								currency={billingCurrency}
-								onExplainTiming={() => setTimingHelpLog(detailLog)}
-							/>
+							{detailInvocationSource ? (
+								<RequestLogInvocation
+									key={detailLog.id}
+									log={detailLog}
+									source={detailInvocationSource}
+									identityLabel={detailIdentityLabel}
+									currency={billingCurrency}
+								/>
+							) : (
+								<RequestLogFlow
+									key={detailLog.id}
+									log={detailLog}
+									providerLabel={providerRouteLabel(detailLog)}
+									identityLabel={detailIdentityLabel}
+									currency={billingCurrency}
+									onExplainTiming={() => setTimingHelpLog(detailLog)}
+								/>
+							)}
 						</div>
 						<footer className="admin-dialog-footer flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 bg-gray-50 px-5 py-3">
 							<span className="text-xs text-gray-500">

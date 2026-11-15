@@ -16,6 +16,7 @@ import {
 	ServerStackIcon,
 } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
+import { invocationLogsHref } from '@/lib/request-log-kind';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 import { mcpConnectEndpoint } from '../mcp-connect-guide-utils';
 import type { CatalogItem, ServerDetail } from '../mcp-types';
@@ -157,7 +158,7 @@ export function McpServerWorkspace({
 							</div>
 							<div className="flex flex-wrap items-center gap-2">
 								<Link
-									href={`/gateway/tools/invocations?source=mcp&server=${encodeURIComponent(server.slug)}`}
+									href={invocationLogsHref({ source: 'mcp', server: server.slug })}
 									className={BUTTON}
 								>
 									<ClockIcon className="h-4 w-4" aria-hidden="true" />

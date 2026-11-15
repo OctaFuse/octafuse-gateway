@@ -1080,11 +1080,11 @@ Catalog JSON 以 Provider id 为键。新价格使用版本化 `pricing`，例�
 
 ### 运维验收：Agent Tools（Playground / Simulator）
 
-Admin 内闭环：**Tools Config → Playground（引擎）→ Simulator（Proxy）→ Tools Invocations**。
+Admin 内闭环：**Tools Config → Playground（引擎）→ Simulator（Proxy）→ Request Logs**。
 
 1. **Config**：Admin → Tools → Configuration，在“连接设置”维护凭证，在“计费规则”维护**标准价、用户倍率、供应倍率**并保存；Active 指向已配齐凭证的引擎（AI Detection 第一版为 `tencent_tms`）。修改价格并保存后 catalog JSON 应包含 `pricing: { v: 2, standard, chargedFactor, meteredFactor }`。
 2. **Playground Tools**（不计费、不写 logs）：Admin → Playground → **Tools** 模式，或 Config 行内 **Test in Playground**（`?mode=tools&tool=…&provider=…`）。选工具 + **任意 catalog 引擎**（不限 Active）→ Send → 直连上游引擎，确认密钥与响应形态。
-3. **Simulator Tools**（真实 Proxy）：Admin → Simulator → Kind=**Tools** → 选工具与用户 API Key → Send 打到 `{proxy}/v1/tools/{id}` → 核对响应 `cost`（= charged）与预算；**Open Tools Invocations** / Request Logs 核对三列不同（若配置了不同单价）、`budget_spent` 仅增 charged、失败请求三列 0、`pricing_audit` v4 `fixed_tool_cost`。
+3. **Simulator Tools**（真实 Proxy）：Admin → Simulator → Kind=**Tools** → 选工具与用户 API Key → Send 打到 `{proxy}/v1/tools/{id}` → 核对响应 `cost`（= charged）与预算；**Open Request Logs**（已按该工具与所用 API Key 筛选）核对三列不同（若配置了不同单价）、`budget_spent` 仅增 charged、失败请求三列 0、`pricing_audit` v4 `fixed_tool_cost`。
 4. **边界**：Playground Tools **不经** Proxy、**不扣**用户预算、**不写** `api_key_request_logs`；Simulator Tools **走** Proxy 全链路。二者共用 **`@octafuse/tool-engines`** 引擎客户端（Admin 不得再依赖 `packages/proxy`）。LLM / Image / Audio 的 Routes 模式行为不变。
 5. **curl**（可选，用户 API Key，等价 Simulator）：
 
@@ -1123,12 +1123,33 @@ Admin UI 登录后由 `BusinessTimezoneProvider` 调用，用于时间列展示�
 | `api_key_id` | 精确匹配 |
 | `user_email` | 精确匹配 |
 | `model_id` | 精确匹配 |
+| `model_ids` | 逗号分隔，最多 30 个，匹配其中任一 `model_id` |
+| `model_vendors` | 模型厂商 key（`models.vendor`，如 `openai`、`anthropic`），逗号分隔，最多 100 个。匹配当前模型目录里属于这些厂商的模型；与 `model_ids` 同时传时取并集 |
 | `provider_id` | 精确匹配 |
-| `provider_ids` | 逗号分隔，最多 10 个，匹配其中任一 `provider_id` |
+| `provider_ids` | 逗号分隔，最多 30 个，匹配其中任一 `provider_id` |
+| `provider_kinds` | 供应商类型（`providers.kind`，如 `DeepSeek`；`__custom__` 是自定义，`__unclassified__` 是未分类），逗号分隔，最多 100 个。匹配当前供应商目录里属于这些类型的供应商；与 `provider_ids` 同时传时取并集 |
+| `kinds` | 请求类型，逗号分隔，最多 30 项，多项取并集，再与其他参数按 AND 组合。取值见下表；有不认识的项返回 400 |
 | `model_id_prefix` | `model_id` 前缀；`%`、`_` 和 `\` 按字面量匹配 |
 | `route_group` | 精确匹配 |
 | `status` | 精确匹配 |
 | `start_date` / `end_date` | 过滤 `created_at`（UTC，格式：`YYYY-MM-DD HH:mm:ss`） |
+
+`kinds` 的取值：
+
+| 取值 | 匹配的日志 |
+|------|------------|
+| `model` | 全部模型请求（`provider_id` 不是 `octafuse-tools` / `octafuse-mcp`，含没有 `provider_id` 的日志） |
+| `model:llm`、`model:image`、`model:asr`、`model:tts`、`model:embedding` | 某一类模型请求。类型不落库，按顺序推断：`billing_kind` → `request_operation` / `upstream_operation` → 模型目录里该模型的类型 → `audio_tokens` 计费算 `asr` → 其余算 `llm`。与管理后台请求日志列表的类型标签同一套规则 |
+| `tool` | 全部 REST 工具调用（`provider_id=octafuse-tools`） |
+| `tool:<id>` | 某个 REST 工具，即日志的 `model_id`，如 `tool:web-search` |
+| `mcp` | 全部 MCP 工具调用（`provider_id=octafuse-mcp`） |
+| `mcp:<slug>` | 某个 MCP 服务（`model_id` 以 `mcp:<slug>/` 开头）。只看其中一个工具时再加 `model_id=mcp:<slug>/<tool>` |
+
+例如 `kinds=model:image,tool:web-search,mcp:docs` 返回图像模型请求、Web Search 调用与 `docs` 服务的 MCP 调用。
+
+`model_vendors` 与 `provider_kinds` 按当前目录解析：已删除的模型不属于任何厂商，已删除的供应商不属于任何类型，它们的历史日志只能用 `model_ids` / `provider_ids` 查。模型、供应商、类型三组条件之间是 AND，例如 `model_vendors=openai&provider_kinds=__custom__` 返回自定义供应商承接的 OpenAI 模型请求。
+
+D1 单条语句最多 100 个绑定参数：`kinds`、`model_ids`、`model_vendors`、`provider_ids`、`provider_kinds` 的取值个数，加上按模型类型筛选时模型目录里的非 LLM 模型数，合计不能超过 85，超出返回 400。Postgres / MySQL 没有这个限制。
 
 `data` 每条日志即 **`api_key_request_logs` 行**（读接口不 JOIN `models` / `providers`；展示名依赖写入时快照列）。**`model_name`** / **`provider_name`** 为请求当时展示名快照；**`provider_model_name`** 为上游模型 id；**`provider_key_id`** / **`provider_key_label`** / **`provider_key_fingerprint`** 为最终选用 Provider 快照（现为 **provider id / name / api_key 指纹**；0015 前旧行可能仍为历史 key 池 id）。**`request_body`** 为客户端入口侧脱敏 JSON（无提示词正文；长度有上限）。**`upstream_request_body`** 为合并路由 `custom_params` 后、与发往供应商的 wire 体结构对齐的脱敏快照（规则同 `request_body`；迁移前或旧行可能为 `null`）。**`request_protocol`**（入口）与 **`upstream_protocol`**（所选路由实际转发协议）见上文注。升级前列可能为 `null`。
 
