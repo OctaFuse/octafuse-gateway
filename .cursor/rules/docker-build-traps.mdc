@@ -25,8 +25,13 @@ npm run typecheck -w @octafuse/admin
    - Docker 里 `npm ci --ignore-scripts` 后必须 `find …/esbuild/install.js -exec node {} \;`。
    - **禁止** `npm rebuild esbuild`（多版本会报 Expected 0.25.4 but got 0.27.3）。
 
-3. **Admin Alpine / arm64 的 SWC musl**
-   - `next-intl` 读 `next.config` 需要 `@swc/core-linux-*-musl`。交叉构建时按 `Dockerfile.admin` 显式安装，不要删那一步。
+3. **Admin Alpine 的 SWC musl**
+   - `next-intl` 读 `next.config` 需要 `@swc/core-linux-*-musl`。`Dockerfile.admin` 里先检查能否加载，加载失败才按构建机架构补装，不要删这个兜底。
+
+3a. **Admin builder 固定 `$BUILDPLATFORM`，standalone 必须与架构无关**（2026-11）
+   - `Dockerfile.admin` 的 builder 用 `FROM --platform=$BUILDPLATFORM`，`next build` 只原生跑一次；arm64 走 QEMU 时同一步慢约 8 倍（约 450s vs 55s）。
+   - 代价：standalone 里不能有原生二进制。Next 会把 `sharp`（`@img/sharp-*`）trace 进来，Turbopack 下 `outputFileTracingExcludes` 对 `next-server` 无效，所以 Dockerfile 构建后 `rm -rf` 并用 `find '*.node'` 守卫。
+   - 新增带原生绑定的运行时依赖时，守卫会让构建失败；不要删守卫，改为按目标架构分别构建 builder。
 
 4. **Docker Admin 不跑 `wrangler types`**
    - 镜像走 `build:docker` + `types/cloudflare-env-shim.d.ts`。不要让 admin 源码在无 wrangler 时必依赖生成的 CF 类型。

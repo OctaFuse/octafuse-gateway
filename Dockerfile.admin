@@ -4,7 +4,13 @@
 # Bump digest: docker buildx imagetools inspect docker.io/library/node:22-alpine3.22
 ARG NODE_IMAGE=node:22-alpine3.22@sha256:b77017c37f430e4466ff497058948a2f16e8b59779600d53711eeb7b999b0f4e
 
-FROM ${NODE_IMAGE} AS builder
+# builder 固定在构建机本机架构（--platform=$BUILDPLATFORM）：`next build` 产物（.next/standalone、
+# node-server.mjs）是纯 JS，与目标架构无关。多架构发布时只原生构建一次，避免 linux/arm64 走 QEMU
+# （实测 `next build` 约 450s vs 原生约 55s）。runner 阶段仍按目标平台各自拉基础镜像并 COPY。
+# 约束：runner 只能 COPY 平台无关文件。standalone 会把 sharp 的原生 `.node` 一并 trace 进来
+# （Turbopack 下 outputFileTracingExcludes 对 next-server 不生效），下面构建后显式删除，
+# 并用守卫保证 standalone 里没有任何原生二进制，否则会把构建机架构的文件带进另一个架构的镜像。
+FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS builder
 
 WORKDIR /app
 
@@ -29,18 +35,23 @@ RUN --mount=type=cache,target=/root/.npm \
 RUN find node_modules -path '*/esbuild/install.js' -exec node {} \;
 
 # next-intl → @swc/core：加载 next.config 时需要当前平台的 musl 原生绑定。
-# buildx QEMU 交叉构建 linux/arm64 时，npm optionalDependencies 有时会漏装
-# `@swc/core-linux-arm64-musl`，表现为 Failed to load native binding。
+# npm optionalDependencies 有时会漏装 `@swc/core-linux-*-musl`（lockfile 在 macOS 生成时尤其常见），
+# 表现为 Failed to load native binding。已能加载则跳过（`npm install` 会重解析整棵 workspace 树，较慢）；
+# 加载失败才按当前（构建机）架构补装。
 RUN set -eux; \
-	arch="$(uname -m)"; \
-	case "$arch" in \
-		aarch64|arm64) swc_arch=arm64 ;; \
-		x86_64|amd64) swc_arch=x64 ;; \
-		*) echo "unsupported arch: $arch" >&2; exit 1 ;; \
-	esac; \
-	swc_ver="$(node -p "require('./node_modules/@swc/core/package.json').version")"; \
-	npm install --no-save --ignore-scripts "@swc/core-linux-${swc_arch}-musl@${swc_ver}"; \
-	node -e "require('@swc/core')"
+	if node -e "require('@swc/core')" 2>/dev/null; then \
+		echo "@swc/core native binding OK, skip fallback install"; \
+	else \
+		arch="$(uname -m)"; \
+		case "$arch" in \
+			aarch64|arm64) swc_arch=arm64 ;; \
+			x86_64|amd64) swc_arch=x64 ;; \
+			*) echo "unsupported arch: $arch" >&2; exit 1 ;; \
+		esac; \
+		swc_ver="$(node -p "require('./node_modules/@swc/core/package.json').version")"; \
+		npm install --no-save --ignore-scripts "@swc/core-linux-${swc_arch}-musl@${swc_ver}"; \
+		node -e "require('@swc/core')"; \
+	fi
 
 COPY packages/core ./packages/core
 COPY packages/tool-engines ./packages/tool-engines
@@ -50,6 +61,18 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build -w @octafuse/core && npm run build:docker -w @octafuse/admin
+
+# Admin 使用 `images.unoptimized`，不会加载 sharp；删除后 standalone 即与架构无关（见文件头注释）。
+# 守卫：若以后新增了带原生二进制的依赖，这里直接失败，而不是静默发出架构错误的镜像。
+RUN set -eux; \
+	standalone=packages/admin/.next/standalone; \
+	rm -rf "$standalone/node_modules/sharp" "$standalone/node_modules/@img"; \
+	native="$(find "$standalone" \( -name '*.node' -o -name '*.so' -o -name '*.so.*' \) | head -20)"; \
+	if [ -n "$native" ]; then \
+		echo "standalone 含平台相关原生文件，builder 固定 \$BUILDPLATFORM 后无法用于多架构镜像:" >&2; \
+		echo "$native" >&2; \
+		exit 1; \
+	fi
 
 FROM ${NODE_IMAGE} AS runner
 
