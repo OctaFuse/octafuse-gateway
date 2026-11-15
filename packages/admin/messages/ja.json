@@ -4371,12 +4371,10 @@
 			"consentHint": "ユーザーがサインインして承認する場所。Gateway は request_id を付与します。空の場合は内蔵ページを使い、API キーで承認します。",
 			"consentInvalid": "同意ページの URL が無効です。認証情報やフラグメントを含まない https URL を指定してください（localhost のみ http 可）。",
 			"serverTitle": "認可サーバー",
-			"configureServer": "認可サーバーを設定",
-			"collapseConfig": "設定を閉じる",
 			"scope": {
 				"builtin": "すべての MCP サービスに適用される共通設定です。Gateway がアプリの許可、クライアント登録、トークン発行を管理します。",
 				"external": "共通設定です。ログインと登録は外部サーバーが管理し、以下には Gateway に保存された記録を表示します。",
-				"off": "OAuth の検出は無効です。API Key 接続は利用できます。既存のトークンは自動失効せず、以下で管理できます。"
+				"off": "OAuth の検出は無効です。API Key 接続は引き続き利用できます。既存の認可記録は保持され、発行済みトークンは自動的には取り消されません。"
 			}
 		},
 		"connectGuide": {

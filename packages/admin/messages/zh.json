@@ -4371,12 +4371,10 @@
 			"consentHint": "用户在这里登录并同意。Gateway 会附带 request_id。留空则使用内置页面，用户用 API Key 确认。",
 			"consentInvalid": "同意页地址无效：请填写不含账号密码和片段的 https 地址（仅 localhost 允许 http）。",
 			"serverTitle": "授权服务器",
-			"configureServer": "配置授权服务器",
-			"collapseConfig": "收起配置",
 			"scope": {
 				"builtin": "全局配置，适用于所有 MCP 服务。应用准入、客户端注册与令牌签发由 Gateway 管理。",
 				"external": "全局配置，客户端登录与注册由外部服务器管理。下方仅展示网关保存的应用和授权记录。",
-				"off": "OAuth 授权发现已关闭，API Key 接入仍可用。已有令牌不会自动撤销，可在下方管理。"
+				"off": "OAuth 授权发现已关闭，API Key 接入仍可用。已有授权记录会保留，关闭不会自动撤销已签发的令牌。"
 			}
 		},
 		"connectGuide": {

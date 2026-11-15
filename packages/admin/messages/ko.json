@@ -4371,12 +4371,10 @@
 			"consentHint": "사용자가 로그인하고 승인하는 곳입니다. Gateway가 request_id를 붙입니다. 비워 두면 내장 페이지에서 API Key로 승인합니다.",
 			"consentInvalid": "동의 페이지 URL이 올바르지 않습니다. 자격 증명이나 프래그먼트가 없는 https URL을 입력하세요(localhost만 http 허용).",
 			"serverTitle": "인증 서버",
-			"configureServer": "인증 서버 설정",
-			"collapseConfig": "설정 접기",
 			"scope": {
 				"builtin": "모든 MCP 서비스에 적용되는 전역 설정입니다. Gateway가 앱 허용, 클라이언트 등록 및 토큰 발급을 관리합니다.",
 				"external": "전역 설정입니다. 로그인과 등록은 외부 서버가 관리하며, 아래에는 Gateway에 저장된 기록만 표시합니다.",
-				"off": "OAuth 검색이 꺼져 있습니다. API Key 연결은 계속 사용할 수 있습니다. 기존 토큰은 자동 취소되지 않으며 아래에서 관리할 수 있습니다."
+				"off": "OAuth 검색이 꺼져 있습니다. API Key 연결은 계속 사용할 수 있습니다. 기존 승인 기록은 유지되며 발급된 토큰은 자동으로 취소되지 않습니다."
 			}
 		},
 		"connectGuide": {

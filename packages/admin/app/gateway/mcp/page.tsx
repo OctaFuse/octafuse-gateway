@@ -43,6 +43,8 @@ function McpServersWorkspace() {
 	const [guideScope, setGuideScope] = useState('');
 	const [guideAuth, setGuideAuth] = useState<McpConnectAuth>('key');
 	const [oauthServer, setOauthServer] = useState<string | undefined>(undefined);
+	// Only reveal OAuth management after a saved, enabled configuration has loaded.
+	const oauthEnabled = Boolean(oauthServer?.trim());
 	const proxyBaseUrl = useProxyBaseUrl().url;
 	const [section, setSection] = useState<'services' | 'clients'>('services');
 	const [view, setView] = useState<McpWorkspaceView>('catalog');
@@ -131,15 +133,15 @@ function McpServersWorkspace() {
 			section === 'clients' &&
 			['#mcp-client-guide', '#mcp-oauth', '#oauth-access-tokens'].includes(window.location.hash)
 		) {
-			document
-				.getElementById(
-					window.location.hash === '#mcp-client-guide'
-						? 'mcp-client-documentation'
-						: window.location.hash.slice(1)
-				)
-				?.scrollIntoView({ block: 'start' });
+			const target =
+				guideAuth === 'oauth' && !oauthEnabled
+					? 'mcp-oauth'
+					: window.location.hash === '#mcp-client-guide'
+					? 'mcp-client-documentation'
+					: window.location.hash.slice(1);
+			document.getElementById(target)?.scrollIntoView({ block: 'start' });
 		}
-	}, [section, requestedLocation]);
+	}, [section, requestedLocation, guideAuth, oauthEnabled]);
 
 	function selectClientAuth(auth: McpConnectAuth) {
 		setGuideAuth(auth);
@@ -165,7 +167,9 @@ function McpServersWorkspace() {
 			'#mcp-client-guide'
 		);
 		requestAnimationFrame(() => {
-			const guide = document.getElementById('mcp-client-documentation');
+			const guide = document.getElementById(
+				auth === 'oauth' && !oauthEnabled ? 'mcp-oauth' : 'mcp-client-documentation'
+			);
 			guide?.focus({ preventScroll: true });
 			guide?.scrollIntoView({ block: 'start' });
 		});
@@ -403,17 +407,6 @@ function McpServersWorkspace() {
 								);
 							})}
 						</div>
-						{guideAuth === 'oauth' ? (
-							<button
-								type="button"
-								onClick={() => showClientGuide(guideScope, 'oauth')}
-								aria-controls="mcp-client-documentation"
-								className="ml-auto inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
-							>
-								<BookOpenIcon className="h-4 w-4" aria-hidden="true" />
-								{t('clientAccess.documentation')}
-							</button>
-						) : null}
 					</div>
 					<div
 						id="mcp-auth-panel"
@@ -429,11 +422,16 @@ function McpServersWorkspace() {
 									onSaved={setOauthServer}
 									onOpenGuide={() => showClientGuide(guideScope, 'oauth')}
 								/>
-								<OAuthAccessTokensPanel active={section === 'clients' && guideAuth === 'oauth'} />
+								<div hidden={!oauthEnabled}>
+									<OAuthAccessTokensPanel
+										active={section === 'clients' && guideAuth === 'oauth' && oauthEnabled}
+									/>
+								</div>
 							</div>
 						</div>
 						<section
 							id="mcp-client-documentation"
+							hidden={guideAuth === 'oauth' && !oauthEnabled}
 							tabIndex={-1}
 							className={`${
 								guideAuth === 'key' ? styles.guidePanel : ''

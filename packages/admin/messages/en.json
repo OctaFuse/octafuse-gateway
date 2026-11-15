@@ -4371,12 +4371,10 @@
 			"consentHint": "Where users sign in and approve. The Gateway appends request_id. Leave empty to use the built-in page, where users approve with their API Key.",
 			"consentInvalid": "Invalid consent page URL: use an https URL without credentials or fragment (http is allowed for localhost only).",
 			"serverTitle": "Authorization server",
-			"configureServer": "Configure server",
-			"collapseConfig": "Close configuration",
 			"scope": {
 				"builtin": "Global configuration for all MCP services. Gateway manages app admission, client registration and token issuance.",
 				"external": "Global configuration. Sign-in and registration are managed externally; the records below are stored by Gateway.",
-				"off": "OAuth discovery is off; API Key access remains available. Existing tokens are not revoked automatically and can be managed below."
+				"off": "OAuth discovery is off; API Key access remains available. Existing grant records are retained, and issued tokens are not revoked automatically."
 			}
 		},
 		"connectGuide": {

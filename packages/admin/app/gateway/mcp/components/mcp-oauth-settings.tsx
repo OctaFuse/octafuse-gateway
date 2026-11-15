@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { InfoHintPopover } from '@/components/InfoHintPopover';
-import { ChevronDownIcon, Cog6ToothIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { readApiJson } from '@/lib/api-json';
 import type { SystemConfigRow } from '@/lib/types';
 import {
@@ -30,7 +30,7 @@ interface Values {
 
 const EMPTY: Values = { mode: 'off', issuer: '', consentUrl: '', authorizationServer: '' };
 
-const MODES: readonly Mode[] = ['builtin', 'external', 'off'];
+const MODES: readonly Mode[] = ['off', 'builtin', 'external'];
 
 /**
  * MCP OAuth 的三种模式（均为全局设置，不属于某个 MCP 服务）：
@@ -61,19 +61,6 @@ export function McpOAuthSettings({
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState('');
 	const [notice, setNotice] = useState('');
-	const [expanded, setExpanded] = useState(false);
-	useEffect(() => {
-		const followAnchor = () => {
-			if (window.location.hash === '#mcp-oauth') setExpanded(true);
-		};
-		followAnchor();
-		window.addEventListener('hashchange', followAnchor);
-		window.addEventListener('popstate', followAnchor);
-		return () => {
-			window.removeEventListener('hashchange', followAnchor);
-			window.removeEventListener('popstate', followAnchor);
-		};
-	}, []);
 
 	const effectiveServer = (values: Values) =>
 		values.mode === 'builtin' ? values.issuer : values.mode === 'external' ? values.authorizationServer : '';
@@ -292,33 +279,16 @@ export function McpOAuthSettings({
 						</>
 					) : null}
 				</div>
-				<button
-					type="button"
-					aria-expanded={expanded}
-					aria-controls="mcp-oauth-configuration"
-					onClick={() => setExpanded(!expanded)}
-					className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
-				>
-					<Cog6ToothIcon className="h-4 w-4" aria-hidden="true" />
-					{t(expanded ? 'collapseConfig' : 'configureServer')}
-					<ChevronDownIcon
-						className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`}
-						aria-hidden="true"
-					/>
-				</button>
 			</header>
-			{loadFailed && !expanded ? <div className="mt-4">{footer}</div> : null}
-			<div
-				id="mcp-oauth-configuration"
-				hidden={!expanded}
-				className="mt-5 border-t border-gray-100 pt-5"
-			>
+			<div id="mcp-oauth-configuration" className="mt-5 border-t border-gray-100 pt-5">
 				<div role="radiogroup" aria-label={t('modeLabel')} className="grid gap-3 md:grid-cols-3">
 					{MODES.map((mode) => (
 						<label
 							key={mode}
 							className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 ${
-								draft.mode === mode ? 'border-gray-500 bg-gray-50' : 'border-gray-200'
+								draft.mode === mode
+									? 'border-teal-500 bg-teal-50 ring-1 ring-teal-100'
+									: 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
 							} ${saving || loading || loadFailed ? 'opacity-60' : ''}`}
 						>
 							<input
@@ -328,11 +298,19 @@ export function McpOAuthSettings({
 								checked={draft.mode === mode}
 								disabled={saving || loading || loadFailed}
 								onChange={() => setField({ mode })}
-								className="mt-1"
+								className="mt-1 accent-teal-700"
 							/>
 							<span className="min-w-0">
-								<span className="block text-sm font-medium text-gray-900">{t(`modes.${mode}.title`)}</span>
-								<span className="block text-xs leading-5 text-gray-500">{t(`modes.${mode}.hint`)}</span>
+								<span
+									className={`block text-sm font-medium ${
+										draft.mode === mode ? 'text-teal-950' : 'text-gray-900'
+									}`}
+								>
+									{t(`modes.${mode}.title`)}
+								</span>
+								<span className="block text-xs leading-5 text-gray-500">
+									{t(`modes.${mode}.hint`)}
+								</span>
 							</span>
 						</label>
 					))}
@@ -405,25 +383,27 @@ export function McpOAuthSettings({
 								{ui('oauthSaved')}
 							</p>
 						) : null}
-						<div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-							<button
-								type="button"
-								onClick={onOpenGuide}
-								className="font-medium text-gray-800 hover:text-gray-800 hover:underline"
-							>
-								{t('openGuide')}
-							</button>
-							{savedServer ? (
-								<a
-									href={`${savedServer}/.well-known/oauth-authorization-server`}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="text-gray-500 hover:text-gray-700 hover:underline"
+						{savedServer && !dirty ? (
+							<div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+								<button
+									type="button"
+									onClick={onOpenGuide}
+									className="font-medium text-gray-800 hover:text-gray-800 hover:underline"
 								>
-									{t('metadataLink')} ↗
-								</a>
-							) : null}
-						</div>
+									{t('openGuide')}
+								</button>
+								{savedServer ? (
+									<a
+										href={`${savedServer}/.well-known/oauth-authorization-server`}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-gray-500 hover:text-gray-700 hover:underline"
+									>
+										{t('metadataLink')} ↗
+									</a>
+								) : null}
+							</div>
+						) : null}
 						<details className="mt-3 text-xs leading-5 text-gray-500">
 							<summary className="cursor-pointer text-gray-600 hover:text-gray-800">{t('learnMore')}</summary>
 							<p className="mt-2 font-medium text-gray-700">{t('howTitle')}</p>
