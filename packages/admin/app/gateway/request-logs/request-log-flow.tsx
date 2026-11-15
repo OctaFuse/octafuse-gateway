@@ -2,7 +2,8 @@
 
 import { MultiplierBadge } from '@/components/financial-value';
 import { useEffect, useId, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { formatRequestCostMultiplier, requestLogDetailUsageMetrics } from './request-log-values';
 import {
   ArrowRightIcon,
   ArrowsRightLeftIcon,
@@ -138,11 +139,12 @@ export function RequestLogFlow({
     log.gateway_overhead_ms,
     log.stream_duration_ms
   );
-  const catalogAmount = log.standard_cost ?? 0;
+  const locale = useLocale();
+  const usageMetrics = requestLogDetailUsageMetrics(log);
   const money = (value: number | undefined) =>
     value == null ? '—' : formatGatewayMoneyCode(value, currency, 6);
   const count = (value: number | null | undefined) =>
-    value == null ? '—' : value.toLocaleString();
+    value == null ? '—' : value.toLocaleString(locale);
   const status = ['success', 'error', 'incomplete', 'cancelled'].includes(log.status)
     ? options(`requestStatus.${log.status}`)
     : log.status;
@@ -672,48 +674,18 @@ export function RequestLogFlow({
                 <div className="mt-4">
                   <Fields
                     rows={[
-                      [f('inputTokens'), count(log.input_tokens)],
-                      [f('outputTokens'), count(log.output_tokens)],
-                      [f('cacheRead'), count(log.cache_read_tokens)],
-                      [f('cacheWrite'), count(log.cache_write_tokens)],
-                      [f('reasoningTokens'), count(log.reasoning_tokens)],
+                      ...usageMetrics.map(metric => [f(metric.field), count(metric.value)] as [string, unknown]),
                       [f('billingKind'), log.billing_kind],
                       [
                         t('ui.chargedFactor'),
-                        catalogAmount > 0
-                          ? `×${(log.charged_cost / catalogAmount).toLocaleString('en-US', {
-                              maximumFractionDigits: 3,
-                            })}`
-                          : '—',
+                        formatRequestCostMultiplier(log.charged_cost, log.standard_cost, locale) ?? '—',
                         'factor',
                       ],
                       [
                         t('ui.meteredFactor'),
-                        catalogAmount > 0
-                          ? `×${(log.metered_cost / catalogAmount).toLocaleString('en-US', {
-                              maximumFractionDigits: 3,
-                            })}`
-                          : '—',
+                        formatRequestCostMultiplier(log.metered_cost, log.standard_cost, locale) ?? '—',
                         'factor',
                       ],
-                      ...(log.billing_kind?.startsWith('image')
-                        ? ([
-                            [f('inputImages'), count(log.input_image_count)],
-                            [f('outputImages'), count(log.output_image_count)],
-                          ] as [string, unknown][])
-                        : []),
-                      ...(log.audio_duration_seconds != null
-                        ? ([[f('audioSeconds'), count(log.audio_duration_seconds)]] as [
-                            string,
-                            unknown
-                          ][])
-                        : []),
-                      ...(log.audio_characters != null
-                        ? ([[f('audioCharacters'), count(log.audio_characters)]] as [
-                            string,
-                            unknown
-                          ][])
-                        : []),
                     ]}
                   />
                 </div>

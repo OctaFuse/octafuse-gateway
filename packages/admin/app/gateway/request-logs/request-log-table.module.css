@@ -1,0 +1,66 @@
+.usage {
+	container-type: inline-size;
+	container-name: request-log-usage;
+	min-width: 0;
+}
+
+.tokenGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 4px 8px;
+	margin-left: auto;
+	max-width: 264px;
+}
+
+.metric {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 4px;
+	padding: 2px 4px;
+	font-size: 12px;
+	line-height: 16px;
+	white-space: nowrap;
+}
+
+.metricLabel {
+	font-size: 10px;
+}
+
+.value {
+	font-variant-numeric: tabular-nums;
+	font-weight: 500;
+	color: #242b37;
+}
+
+.input {
+	color: #3b6ca8;
+}
+
+.output {
+	color: #29816a;
+}
+
+.cacheRead {
+	color: #a16b16;
+}
+
+.cacheWrite {
+	color: #7c64a6;
+}
+
+@container request-log-usage (max-width: 190px) {
+	.metricLabel {
+		display: none;
+	}
+
+	.tokenGrid {
+		gap: 4px;
+	}
+}
+
+.singleMetric {
+	display: flex;
+	justify-content: flex-end;
+}

@@ -22,6 +22,23 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Fragment, useState, useEffect, useMemo, useCallback } from 'react';
 import {
 	ArrowUpIcon,
+	ArrowDownLeftIcon,
+	ArrowUpRightIcon,
+	ArrowPathRoundedSquareIcon,
+	BoltIcon,
+	ChatBubbleLeftRightIcon,
+	CheckCircleIcon,
+	CircleStackIcon,
+	CpuChipIcon,
+	ExclamationCircleIcon,
+	MicrophoneIcon,
+	NoSymbolIcon,
+	PhotoIcon,
+	SignalIcon,
+	SpeakerWaveIcon,
+	Squares2X2Icon,
+	WrenchScrewdriverIcon,
+	XCircleIcon,
 	ChevronRightIcon,
 	ClipboardDocumentIcon,
 	ClockIcon,
@@ -52,6 +69,8 @@ import { AutoRefreshControl } from '@/components/AutoRefreshControl';
 import { REQUEST_LOG_REFRESH_INTERVAL_OPTIONS, requestLogRefreshPreference } from '@/lib/auto-refresh-preference';
 import { useRequestLogFeed } from './use-request-log-feed';
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
+import tableStyles from './request-log-table.module.css';
+import { formatRequestCostMultiplier, requestLogUsageMetrics, type UsageMetric } from './request-log-values';
 
 /** `/api/admin/models` 列表项（tags 解析为数组） */
 type ModelListItem = Omit<GatewayModel, 'tags'> & { tags: string[] };
@@ -345,91 +364,82 @@ export default function GatewayRequestLogsPage() {
 				log.first_token_ms != null
 					? t('timing.listContentTtftTitle', { ms: formatLatencyMs(log.first_token_ms) })
 					: undefined;
-			return { text, title };
+			return { text, title: [t('timing.reasoningDesc'), title].filter(Boolean).join(' · ') };
 		}
 		if (log.first_token_ms != null) {
-			return { text: `TTFT ${formatLatencyMs(log.first_token_ms)}` };
+			return {
+				text: `TTFT ${formatLatencyMs(log.first_token_ms)}`,
+				title: t('timing.ttftContentDesc'),
+			};
 		}
 		if (log.upstream_response_ms != null) {
-			return { text: t('ui.upstreamLatency', { time: formatLatencyMs(log.upstream_response_ms) }) };
+			return {
+				text: t('ui.upstreamLatency', { time: formatLatencyMs(log.upstream_response_ms) }),
+				title: t('timing.upstreamDesc'),
+			};
 		}
 		return { text: '\u00A0' };
 	};
 
-	const formatCostMultiplier = (cost: number, standardCost: number): string | null => {
-		if (!Number.isFinite(cost) || !Number.isFinite(standardCost) || standardCost <= 0) {
-			return null;
+	const formatCostMultiplier = (cost: number, standardCost: number) =>
+		formatRequestCostMultiplier(cost, standardCost, locale);
+
+	const usagePresentation = (key: UsageMetric['key']) => {
+		switch (key) {
+			case 'input': case 'inputImages': return { Icon: ArrowDownLeftIcon, tone: tableStyles.input };
+			case 'output': case 'outputImages': return { Icon: ArrowUpRightIcon, tone: tableStyles.output };
+			case 'cacheRead': return { Icon: CircleStackIcon, tone: tableStyles.cacheRead };
+			case 'cacheWrite': return { Icon: ArrowUpIcon, tone: tableStyles.cacheWrite };
+			case 'reasoning': return { Icon: CpuChipIcon, tone: tableStyles.cacheWrite };
+			case 'seconds': return { Icon: MicrophoneIcon, tone: 'text-gray-500' };
+			case 'characters': return { Icon: SpeakerWaveIcon, tone: 'text-gray-500' };
+			default: return { Icon: Squares2X2Icon, tone: 'text-gray-500' };
 		}
-		const ratio = cost / standardCost;
-		if (!Number.isFinite(ratio) || ratio < 0) {
-			return null;
-		}
-		return `×${ratio.toLocaleString('en-US', { maximumFractionDigits: 3 })}`;
 	};
 
-	const renderUsageValue = (value: string, unit: string, title: string) => (
-		<div className="leading-tight" title={title}>
-			<div className="inline-flex items-baseline gap-1 text-gray-900">
-				<span className="tabular-nums">{value}</span>
-				<span className="text-xs font-medium text-gray-400">{unit}</span>
-			</div>
-		</div>
-	);
-
-	const compactCount = (value: number | null | undefined) =>
-		Number(value ?? 0).toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 1 });
-
-	/** 用量：按计费种类展示 Token / 张数 / 秒 / 字符；Token 行在有 cache 时补第二行。 */
 	const renderUsageCell = (log: GatewayRequestLog) => {
-		if (log.billing_kind === 'image_per_image') {
-			const inN = log.input_image_count ?? 0;
-			const outN = log.output_image_count ?? 0;
-			const value = inN > 0 && outN > 0 ? `${inN}×${outN}` : `${inN + outN}`;
-			return renderUsageValue(value, t('usage.images'), t('titles.imagePerImageUsage'));
-		}
-		if (log.billing_kind === 'audio_per_second') {
-			const secs = log.audio_duration_seconds;
-			const value =
-				secs != null && Number.isFinite(secs)
-					? Number(secs).toLocaleString('en-US', { maximumFractionDigits: 3 })
-					: '—';
-			return renderUsageValue(value, t('usage.seconds'), t('titles.audioPerSecondUsage'));
-		}
-		if (log.billing_kind === 'audio_per_character') {
-			const characters = log.audio_characters;
-			const value =
-				characters != null && Number.isFinite(characters) ? Number(characters).toLocaleString() : '—';
-			return renderUsageValue(value, t('usage.characters'), t('titles.audioPerCharacterUsage'));
-		}
-		const hasCache = log.cache_read_tokens > 0 || log.cache_write_tokens > 0;
+		const metrics = requestLogUsageMetrics(log, {
+			catalogModel: log.model_id ? modelById.get(log.model_id) : undefined,
+		});
+		if (!metrics.length) return (
+			<span className="inline-flex items-center gap-1.5 text-gray-400" title={t('usage.noTokens')} aria-label={t('usage.noTokens')}>
+				<WrenchScrewdriverIcon className="h-3.5 w-3.5" aria-hidden="true" />—
+			</span>
+		);
 		return (
-			<div className="leading-tight space-y-1 whitespace-nowrap">
-				<div
-					className="inline-flex items-baseline gap-1 text-gray-900"
-					title={`${t('titles.inputOutputTokens')}: ${Number(
-						log.input_tokens ?? 0
-					).toLocaleString()} / ${Number(log.output_tokens ?? 0).toLocaleString()}`}
-				>
-					<span className="tabular-nums">
-						{compactCount(log.input_tokens)} / {compactCount(log.output_tokens)}
-					</span>
-					<span className="text-xs font-medium text-gray-400">{t('usage.tokens')}</span>
+			<div className={tableStyles.usage}>
+				<div className={metrics.length === 1 ? tableStyles.singleMetric : tableStyles.tokenGrid}>
+					{metrics.map(({ key, field, value, unit, inputTotal }) => {
+						const { Icon, tone } = usagePresentation(key);
+						const valid = value != null && Number.isFinite(value);
+						const exact = valid ? value.toLocaleString(locale, { maximumFractionDigits: 3 }) : '—';
+						const label = field === 'uncachedInputTokens'
+							? `${t('flow.uncachedInputTokens')}: ${exact}\n${t('titles.billableInput', {
+								input: inputTotal == null ? '—' : inputTotal.toLocaleString(locale),
+								read: (log.cache_read_tokens ?? 0).toLocaleString(locale),
+								write: (log.cache_write_tokens ?? 0).toLocaleString(locale),
+							})}`
+							: `${t(`flow.${field}`)}: ${exact}`;
+						const display = valid ? unit === 'tokens'
+							? value.toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 1 })
+							: exact : '—';
+						return (
+							<span key={key} className={`${tableStyles.metric} ${tone}`} style={key === 'cacheWrite' ? { gridColumn: 2 } : undefined} title={label} aria-label={label}>
+								<Icon className="h-3 w-3 shrink-0" aria-hidden="true" />
+								{unit !== 'seconds' && unit !== 'characters' && <span className={tableStyles.metricLabel}>{t(`usage.${key}`)}</span>}
+								<span className={tableStyles.value}>{display}</span>
+								{unit !== 'tokens' && <span className="text-[10px] text-gray-400">{t(`usage.${unit}`)}</span>}
+							</span>
+						);
+					})}
 				</div>
-				{hasCache ? (
-					<div
-						className="text-gray-400 tabular-nums"
-						title={`${t('titles.cacheTokens')}: ${log.cache_read_tokens} / ${log.cache_write_tokens}`}
-					>
-						CR {compactCount(log.cache_read_tokens)} / CW {compactCount(log.cache_write_tokens)}
-					</div>
-				) : null}
 			</div>
 		);
 	};
 
 	const renderCostCell = (standardCost: number, chargedCost: number, meteredCost: number) => (
 		<div
-			className="admin-money-comparison grid grid-cols-[auto_auto_auto] justify-end gap-x-1.5 gap-y-1 text-right text-xs tabular-nums"
+			className="grid grid-cols-[auto_auto_auto] justify-end gap-x-1.5 gap-y-1 text-right text-xs tabular-nums"
 			title={[
 				`${t('titles.standardCatalogPrice')}: ${formatGatewayMoneyCode(standardCost, billingCurrency, 6)}`,
 				`${t('titles.chargedUserBudget')}: ${formatCostMultiplier(chargedCost, standardCost) || '—'}`,
@@ -461,7 +471,13 @@ export default function GatewayRequestLogsPage() {
 						className="min-w-12 self-baseline whitespace-nowrap text-right text-[11px] text-gray-400"
 						title={row.hint}
 					>
-						{formatCostMultiplier(row.amount, standardCost) ? <MultiplierBadge compact title={row.hint}>{formatCostMultiplier(row.amount, standardCost)}</MultiplierBadge> : '—'}
+						{formatCostMultiplier(row.amount, standardCost) ? (
+							<MultiplierBadge compact title={row.hint}>
+								{formatCostMultiplier(row.amount, standardCost)}
+							</MultiplierBadge>
+						) : (
+							'—'
+						)}
 					</span>
 				</Fragment>
 			))}
@@ -510,7 +526,36 @@ export default function GatewayRequestLogsPage() {
 		);
 	};
 
-	const featureTagClass = 'bg-gray-50 text-gray-500 ring-gray-200/70';
+	const featureTagPresentation = (tag: RequestLogFeatureTag) => {
+		if (tag.key === 'failover')
+			return {
+				Icon: ArrowPathRoundedSquareIcon,
+				tone: 'bg-amber-50 text-amber-700 ring-amber-200/70',
+			};
+		if (tag.key === 'reasoning')
+			return { Icon: CpuChipIcon, tone: 'bg-violet-50 text-violet-700 ring-violet-200/60' };
+		if (tag.key === 'stream' || tag.key === 'realtime')
+			return {
+				Icon: tag.key === 'stream' ? SignalIcon : BoltIcon,
+				tone: 'bg-blue-50 text-blue-700 ring-blue-200/60',
+			};
+		const icons = {
+			llm: ChatBubbleLeftRightIcon,
+			image: PhotoIcon,
+			tts: SpeakerWaveIcon,
+			asr: MicrophoneIcon,
+			embedding: CircleStackIcon,
+			tool: WrenchScrewdriverIcon,
+			mcp: Squares2X2Icon,
+		};
+		return {
+			Icon: icons[tag.kind],
+			tone:
+				tag.kind === 'tool' || tag.kind === 'mcp'
+					? 'bg-teal-50 text-teal-700 ring-teal-200/60'
+					: 'bg-gray-50 text-gray-600 ring-gray-200/70',
+		};
+	};
 
 	const featureTagLabel = (tag: RequestLogFeatureTag): string => {
 		if (tag.key === 'kind') return t(`tags.kind.${tag.kind}`);
@@ -525,14 +570,14 @@ export default function GatewayRequestLogsPage() {
 			<div className="flex flex-wrap items-center gap-1">
 				{tags.map((tag) => {
 					const key = tag.key === 'kind' ? `kind-${tag.kind}` : tag.key;
+					const { Icon, tone } = featureTagPresentation(tag);
 					return (
 						<span
 							key={key}
-							className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset ${
-								tag.key === 'failover' ? 'bg-amber-50 text-amber-700 ring-amber-200' : featureTagClass
-							}`}
+							className={`inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset ${tone}`}
 							title={t(`titles.tag.${tag.key === 'kind' ? tag.kind : tag.key}`)}
 						>
+							<Icon className="h-3 w-3" aria-hidden="true" />
 							{featureTagLabel(tag)}
 						</span>
 					);
@@ -541,18 +586,29 @@ export default function GatewayRequestLogsPage() {
 		);
 	};
 
-	/** 首列状态色块（实心）；悬停色块见完整 status 文案 */
-	const statusSwatchClass = (status: string) => {
-		if (status === 'success') return 'bg-emerald-500';
-		if (status === 'error') return 'bg-red-500';
-		if (status === 'incomplete') return 'bg-amber-500';
-		if (status === 'cancelled') return 'bg-violet-500';
-		return 'bg-gray-400';
+	const statusPresentation = (status: string) => {
+		if (status === 'success')
+			return { Icon: CheckCircleIcon, tone: 'bg-emerald-50 text-emerald-700' };
+		if (status === 'error') return { Icon: XCircleIcon, tone: 'bg-red-50 text-red-700' };
+		if (status === 'incomplete')
+			return { Icon: ExclamationCircleIcon, tone: 'bg-amber-50 text-amber-700' };
+		if (status === 'cancelled') return { Icon: NoSymbolIcon, tone: 'bg-gray-100 text-gray-600' };
+		return { Icon: ExclamationCircleIcon, tone: 'bg-gray-100 text-gray-600' };
 	};
 	const statusLabel = (status: string) =>
 		['success', 'error', 'incomplete', 'cancelled'].includes(status)
 			? tOptions(`requestStatus.${status}`)
 			: t('statusOther');
+	const renderStatusBadge = (status: string) => {
+		const { Icon, tone } = statusPresentation(status);
+		return (
+			<span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium ${tone}`}>
+				<Icon className="h-3.5 w-3.5" aria-hidden="true" />
+				{statusLabel(status)}
+			</span>
+		);
+	};
+
 	const advancedFilters = [
 		{ label: remaining('providerScope'), value: filterProviderIds, clear: () => setFilterProviderIds('') },
 		{ label: remaining('modelPrefix'), value: filterModelPrefix, clear: () => setFilterModelPrefix('') },
@@ -826,9 +882,9 @@ export default function GatewayRequestLogsPage() {
 					className={`scroll-mt-20 overflow-x-auto ${isLoading && logs.length > 0 ? 'opacity-60' : ''}`}
 					aria-busy={isLoading}
 				>
-					<table className="admin-data-table w-full min-w-[60rem] table-fixed">
+					<table className="admin-data-table w-full min-w-[68rem] table-fixed">
 						<colgroup>
-							{['15%', '24%', '16%', '14%', '10%', '21%'].map((width, index) => (
+							{['14%', '23%', '15%', '18%', '9%', '21%'].map((width, index) => (
 								<col key={index} style={{ width }} />
 							))}
 						</colgroup>
@@ -893,22 +949,11 @@ export default function GatewayRequestLogsPage() {
 								>
 									<td className="overflow-hidden px-4 py-3.5 text-xs">
 										<div className="flex items-center gap-2">
-											<span
-												className={`h-2 w-2 shrink-0 rounded-full ${statusSwatchClass(log.status)}`}
+											{renderStatusBadge(log.status)}
+											<ChevronRightIcon
+												className="ml-auto h-3.5 w-3.5 shrink-0 text-gray-400"
 												aria-hidden
 											/>
-											<span
-												className={
-													log.status === 'error'
-														? 'font-medium text-red-600'
-														: log.status === 'incomplete'
-														? 'font-medium text-amber-700'
-														: 'text-gray-700'
-												}
-											>
-												{statusLabel(log.status)}
-											</span>
-											<ChevronRightIcon className="ml-auto h-3.5 w-3.5 shrink-0 text-gray-400" aria-hidden />
 										</div>
 										<div className="mt-1 flex flex-wrap gap-x-2 text-xs tabular-nums text-gray-500">
 											<span>{formatShortDate(log.created_at)}</span>
@@ -941,10 +986,26 @@ export default function GatewayRequestLogsPage() {
 									</td>
 									<td className="px-4 py-3.5 text-right text-xs text-gray-600">{renderUsageCell(log)}</td>
 									<td className="px-4 py-3.5 text-right text-xs tabular-nums">
-										<p className="font-medium text-gray-900">{formatLatencyMs(log.latency_ms)}</p>
-										<p className="mt-1 truncate text-gray-500" title={formatTtftListLine(log).title}>
-											{formatTtftListLine(log).text}
+										<p className="inline-flex items-center gap-1 whitespace-nowrap font-medium text-gray-900">
+											<ClockIcon className="h-3 w-3 text-gray-400" aria-hidden="true" />
+											{formatLatencyMs(log.latency_ms)}
 										</p>
+										{formatTtftListLine(log).text.trim() ? (
+											<div
+												className="mt-1 flex min-w-0 items-center justify-end gap-1 text-gray-500"
+												title={formatTtftListLine(log).title}
+											>
+												{log.first_reasoning_token_ms != null ? (
+													<CpuChipIcon
+														className="h-3 w-3 shrink-0 text-violet-400"
+														aria-hidden="true"
+													/>
+												) : (
+													<BoltIcon className="h-3 w-3 shrink-0 text-blue-400" aria-hidden="true" />
+												)}
+												<span className="truncate">{formatTtftListLine(log).text}</span>
+											</div>
+										) : null}
 									</td>
 									<td className="px-4 py-3.5">
 										{renderCostCell(
