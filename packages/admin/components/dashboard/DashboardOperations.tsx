@@ -1,4 +1,5 @@
 'use client';
+import { MultiplierBadge } from '@/components/financial-value';
 
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -32,7 +33,7 @@ export function DashboardCosts({ operations, range, currency, scope }: { operati
    {c.charged > 0 && <div className="mt-3 flex h-1 overflow-hidden rounded-full bg-emerald-200" aria-hidden><span className={`h-full ${spread < 0 ? 'bg-rose-400' : 'bg-gray-400'}`} style={{width:`${Math.min(100,Math.max(0,c.metered/c.charged*100))}%`}} /></div>}
   </div>
   <dl className="mt-3 grid grid-cols-2 gap-4" title={`${t('factorHint')} ${t('catalog')}: ${money(c.standard)}`}>
-   {[{label:review('chargeFactor'),value:c.charged},{label:review('costFactor'),value:c.metered}].map(item => <div className="min-w-0" key={item.label}><dt className="text-xs text-gray-500">{item.label}</dt><dd className="mt-1 whitespace-nowrap font-mono text-lg tabular-nums text-gray-900">{ratio(item.value)}</dd></div>)}
+   {[{label:review('chargeFactor'),value:c.charged},{label:review('costFactor'),value:c.metered}].map(item => <div className="min-w-0" key={item.label}><dt className="text-xs text-gray-500">{item.label}</dt><dd className="mt-1 whitespace-nowrap font-mono text-lg tabular-nums text-gray-900">{c.standard > 0 ? <MultiplierBadge>{ratio(item.value)}</MultiplierBadge> : '—'}</dd></div>)}
   </dl>
   {c.errorCost > 0 && <Link href={dashboardLogsHref(range,{status:'error'})} className="mt-4 flex items-center gap-2 border-t border-gray-100 pt-3 text-xs text-gray-600 hover:text-gray-950"><span className="flex-1">{t('errorCost')}</span><span className="whitespace-nowrap font-mono tabular-nums text-rose-700">{money(c.errorCost)}</span><ArrowUpRightIcon className="h-3 w-3 shrink-0" aria-hidden /></Link>}
  </section>;

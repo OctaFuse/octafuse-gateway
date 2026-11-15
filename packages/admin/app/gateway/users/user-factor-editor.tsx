@@ -1,7 +1,8 @@
 'use client';
 
+import { FinancialInput } from '@/components/financial-value';
 import { useState } from 'react';
-import { CodeBracketIcon, MagnifyingGlassIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CodeBracketIcon, MagnifyingGlassIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
@@ -37,19 +38,17 @@ function MultiplierInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="relative w-20 shrink-0">
-      <input
+    <div className="w-24 shrink-0">
+      <FinancialInput
+        kind="factor"
+        compact
         type="number"
         min={0}
         step="any"
         value={value}
         aria-label={label}
         onChange={(event) => onChange(event.target.value)}
-        className="h-8 w-full rounded-md border border-gray-300 bg-white pl-2 pr-6 text-right font-mono text-xs [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
       />
-      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400" aria-hidden>
-        ×
-      </span>
     </div>
   );
 }
@@ -225,7 +224,7 @@ export function UserFactorEditor({
                           aria-label={te('removeDefault', { model: label })}
                           title={te('removeDefault', { model: label })}
                         >
-                          <XMarkIcon className="h-3.5 w-3.5" aria-hidden />
+                          <TrashIcon className="h-3.5 w-3.5" aria-hidden />
                         </button>
                       </div>
                     ) : (
@@ -290,7 +289,7 @@ export function UserFactorEditor({
                                   group: row.routeGroup,
                                 })}
                               >
-                                <XMarkIcon className="h-3.5 w-3.5" aria-hidden />
+                                <TrashIcon className="h-3.5 w-3.5" aria-hidden />
                               </button>
                             </div>
                             {!known && (

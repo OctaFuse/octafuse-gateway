@@ -12,7 +12,7 @@ export function readMcpWorkspaceLocation(search: string, hash: string) {
 		view: (params.get('view') === 'connection' ? 'connection' : 'catalog') as McpWorkspaceView,
 		section: (legacyAccess || CLIENT_ANCHORS.includes(hash) ? 'clients' : 'services') as 'services' | 'clients',
 		scope: params.has('scope') ? params.get('scope')?.trim() ?? '' : legacyAccess ? server ?? '' : '',
-		auth: (params.get('auth') === 'oauth' ? 'oauth' : 'key') as McpConnectAuth,
+		auth: (params.get('auth') === 'oauth' || ['#mcp-oauth', '#oauth-access-tokens'].includes(hash) ? 'oauth' : 'key') as McpConnectAuth,
 	};
 }
 

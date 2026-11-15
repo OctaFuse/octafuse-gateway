@@ -1,5 +1,7 @@
 'use client';
 
+import { MultiplierBadge } from '@/components/financial-value';
+
 import { useEffect, useId, useState, type RefObject } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
@@ -537,12 +539,7 @@ function ToolEngineList({ group, currency }: { group: ToolProviderGroup; currenc
 														{money(parts[kind])}
 													</span>
 													{factor ? (
-														<span
-															title={ui('multiplierHint')}
-															className="inline-flex shrink-0 items-center rounded-md bg-blue-50 px-1.5 font-mono text-xs font-medium leading-5 tabular-nums text-blue-700"
-														>
-															{factor}
-														</span>
+														<MultiplierBadge title={ui('multiplierHint')}>{factor}</MultiplierBadge>
 													) : null}
 												</div>
 												{kind === 'standard' ? (

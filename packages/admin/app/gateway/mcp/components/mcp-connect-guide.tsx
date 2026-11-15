@@ -31,14 +31,12 @@ export function McpConnectGuide({
 	scope: slug,
 	onScopeChange,
 	auth,
-	onAuthChange,
 	oauthServer,
 }: {
 	servers: ServerSummary[];
 	scope: string;
 	onScopeChange: (scope: string) => void;
 	auth: McpConnectAuth;
-	onAuthChange: (auth: McpConnectAuth) => void;
 	oauthServer: string | undefined;
 }) {
 	const t = useTranslations('mcp.connectGuide');
@@ -60,13 +58,6 @@ export function McpConnectGuide({
 	const clients = oauthMode ? MCP_OAUTH_CONNECT_CLIENTS : MCP_CONNECT_CLIENTS;
 	const active = snippets.find((s) => s.client === client) ?? snippets[0];
 	const copied = copyResult?.code === active.code ? copyResult.status : null;
-
-	function changeAuth(next: McpConnectAuth) {
-		onAuthChange(next);
-		setCopyResult(null);
-		// ChatGPT only exists in the OAuth list; fall back when it is no longer offered.
-		if (next === 'key' && client === 'chatgpt') setClient('cursor');
-	}
 
 	function changeBaseUrl(value: string) {
 		proxyConnection.setValue(value);
@@ -98,36 +89,6 @@ export function McpConnectGuide({
 	const content = (
 		<div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]">
 			<div className="min-w-0 space-y-5">
-				<div
-					role="radiogroup"
-					aria-label={t('authMode')}
-					className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5"
-				>
-					{(['key', 'oauth'] as const).map((id) => (
-						<button
-							key={id}
-							type="button"
-							role="radio"
-							id={`${guideId}-auth-${id}`}
-							tabIndex={auth === id ? 0 : -1}
-							onKeyDown={(event) => {
-								if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(event.key)) return;
-								event.preventDefault();
-								const next = id === 'key' ? 'oauth' : 'key';
-								changeAuth(next);
-								document.getElementById(`${guideId}-auth-${next}`)?.focus();
-							}}
-							aria-checked={auth === id}
-							onClick={() => changeAuth(id)}
-							className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-								auth === id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-							}`}
-						>
-							{id === 'key' ? t('authKey') : t('authOauth')}
-						</button>
-					))}
-				</div>
-
 				{oauthMode && oauthServer !== undefined ? (
 					<p
 						role="status"

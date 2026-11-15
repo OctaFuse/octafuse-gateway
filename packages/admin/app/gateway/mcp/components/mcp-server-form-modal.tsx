@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import { ArrowDownTrayIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import { ArrowDownTrayIcon, CurrencyDollarIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import {
 	applyMcpImport,
@@ -12,12 +12,13 @@ import {
 import { useFeedback } from '@/components/feedback';
 import type { ServerForm } from '../mcp-types';
 import { McpDialog } from './mcp-dialog';
-import { McpPricingDraftSummary, McpPricingEditor } from './mcp-pricing-editor';
+import { McpPricingEditor } from './mcp-pricing-editor';
 import { McpConnectionEditor } from './mcp-connection-editor';
 import { McpAdvancedSettings } from './mcp-advanced-settings';
 import { pricingRuleFromDraft } from '../mcp-pricing-draft';
 const SECTIONS = ['connection', 'pricing', 'advanced'] as const;
-type Section = (typeof SECTIONS)[number];
+export type McpFormSection = (typeof SECTIONS)[number];
+type Section = McpFormSection;
 
 const INPUT =
 	'mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-100 read-only:bg-gray-50 read-only:text-gray-500';
@@ -25,6 +26,7 @@ const INPUT =
 export function McpServerFormModal({
 	currency,
 	mode,
+	initialSection = 'connection',
 	form,
 	busy,
 	urlMasked,
@@ -35,6 +37,7 @@ export function McpServerFormModal({
 }: {
 	currency: string;
 	mode: 'create' | 'edit';
+	initialSection?: McpFormSection;
 	form: ServerForm;
 	busy: boolean;
 	urlMasked?: string;
@@ -51,7 +54,7 @@ export function McpServerFormModal({
 	const [choices, setChoices] = useState<McpImportCandidate[] | null>(null);
 	const [choiceIndex, setChoiceIndex] = useState(0);
 	const [message, setMessage] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null);
-	const [section, setSection] = useState<Section>('connection');
+	const [section, setSection] = useState<Section>(initialSection);
 	const [validation, setValidation] = useState<string | null>(null);
 	const [initialForm] = useState(() => JSON.stringify(form));
 	const { confirm } = useFeedback();
@@ -221,14 +224,13 @@ export function McpServerFormModal({
 					))}
 				</div>
 			}
-			title={mode === 'create' ? t('add') : t('editSettings')}
+			title={mode === 'create' ? t('add') : `${t('editSettings')} · ${form.name}`}
 			subtitle={mode === 'create' ? t('createSubtitle') : t('editSubtitle')}
 			busy={busy}
 			onClose={() => void requestClose()}
 			footer={
 				<div className="flex items-center justify-between gap-3">
 					<div className="hidden min-w-0 sm:block">
-						<McpPricingDraftSummary value={form.pricing} currency={currency} />
 						<p className="mt-1 text-xs text-gray-500">{t('saveHint')}</p>
 					</div>
 					<div className="ml-auto flex gap-2">
@@ -376,10 +378,16 @@ export function McpServerFormModal({
 						hidden={section !== 'pricing'}
 					>
 						<div className="mb-4">
-							<h3 className="text-sm font-medium text-gray-900">{t('pricing.title')}</h3>
-							<p className="mt-1 text-xs leading-5 text-gray-500">{t('pricing.simpleDefaultHint')}</p>
+							<h3 className="flex items-center gap-2 text-sm font-medium text-gray-900">
+								<span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+									<CurrencyDollarIcon className="h-4 w-4" aria-hidden="true" />
+								</span>
+								{t('defaultPrices')}
+							</h3>
+							<p className="mt-2 text-xs leading-5 text-gray-500">{t('pricing.simpleDefaultHint')}</p>
 						</div>
 						<McpPricingEditor
+							layout="rows"
 							value={form.pricing}
 							currency={currency}
 							onChange={(pricing) => onChange({ ...form, pricing })}

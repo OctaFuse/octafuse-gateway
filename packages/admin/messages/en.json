@@ -1095,6 +1095,9 @@
 			"editHint": "Manage model details, modalities, pricing and associated routes.",
 			"modalities": "Modalities",
 			"backToForm": "Back to form",
+			"pricingViewLabel": "Pricing view",
+			"pricingFormView": "Form",
+			"pricingJsonView": "JSON",
 			"metadataHint": "Optional JSON data stored with this model. Leave blank to remove it.",
 			"pricingJsonHint": "Preview pricing_profile from the current form, including unsaved prices and schedules.",
 			"jsonCopyFailed": "Copy failed. The text is selected; you can copy it manually.",
@@ -2886,7 +2889,7 @@
 			"deleteConfirm": "This revokes all {count} live authorizations of \"{name}\" and detaches its registered instances; the app can no longer register. Continue?",
 			"deleted": "Application deleted",
 			"unattributedTitle": "Unattributed authorizations",
-			"unattributedHint": "Issued before the built-in server took over and not linked to an application. Users must authorize again after the switch; revoke or let them expire.",
+			"unattributedHint": "Historical grants not linked to an app. Switching authorization modes does not remove these records; review or revoke them by status.",
 			"unattributedBadge": "Unattributed",
 			"filteringBy": "Showing authorizations of: {name}",
 			"form": {
@@ -2904,7 +2907,17 @@
 				"saved": "Application saved",
 				"saveFailed": "Could not save the application"
 			}
-		}
+		},
+		"managementTitle": "Apps & user grants",
+		"globalScope": "Gateway-wide records · Not filtered by service scope or authorization server URL",
+		"relationshipHint": "Apps define which clients the built-in authorization server admits. An app can have multiple client instances and users. After consent, a token binds a Gateway user to a client instance; calls use that user’s permissions and budget. Switching authorization servers does not delete these records.",
+		"grantsTitle": "User grants",
+		"grantsHint": "Each record is a Gateway user’s grant to a client instance. Select an app on the left to view its records.",
+		"appsRoleHint": "Admission rules for the built-in server; one app can register multiple client instances.",
+		"searchApps": "Search app name or slug",
+		"selectApp": "Select an app",
+		"allGrants": "All grants",
+		"noMatchingApps": "No matching apps"
 	},
 	"keysPage": {
 		"title": "API Keys",
@@ -4162,23 +4175,24 @@
 			"add": "Add",
 			"preview": "Preview",
 			"noTiers": "No tiers yet.",
-			"upto": "upto",
-			"input": "input",
-			"output": "output",
-			"cacheRead": "cache read",
-			"cacheWrite": "cache write",
+			"upto": "Input limit",
+			"input": "Input",
+			"output": "Output",
+			"cacheRead": "Cache read",
+			"cacheWrite": "Cache write",
 			"textInput": "Text Input",
 			"cachedText": "Cached Text",
 			"imageInput": "Image Input",
 			"cachedImageInput": "Cached Image Input",
 			"imageOutput": "Image Output",
-			"imageHint": "Token rates billed from upstream Images usage × these $/1M rates. Route factors apply on top.",
+			"imageHint": "Image usage is billed at the {currency}/million Token rates below, with route multipliers applied afterwards.",
 			"footer": "{currency}/1M; by input_tokens (last row open-ended). No tiers on save → null (bill 0).",
 			"footerImage": "Unit: {currency}/1M tokens · Text Input / Cached Text / Image Input / Cached Image Input / Image Output. Last row open-ended.",
 			"removeTier": "Remove this tier",
 			"lastTierOpenEnded": "Last tier is open-ended (JSON upto: null); not editable",
 			"unitPerM": "{currency}/1M tokens",
-			"unitPerImage": "{currency}/image"
+			"unitPerImage": "{currency}/image",
+			"tierField": "Tier {tier} · {field}"
 		},
 		"readOnlyTable": {
 			"inputRange": "Input range",
@@ -4278,6 +4292,7 @@
 			"selectService": "Select an MCP service",
 			"catalogPricing": "Catalog & pricing",
 			"copyEndpoint": "Copy endpoint URL",
+			"editDefaultPricing": "Edit default pricing",
 			"loading": "Loading services"
 		},
 		"clientEndpoint": "Client endpoint",
@@ -4288,7 +4303,14 @@
 		},
 		"clientAccess": {
 			"title": "Connect clients",
-			"description": "Choose a service scope and authentication method, then copy a client configuration or test the catalog."
+			"description": "Choose a service scope and authentication method, then copy a client configuration or test the catalog.",
+			"authCategories": "Connection method",
+			"keyTitle": "API Key access",
+			"oauthTitle": "OAuth 2.0 authorization",
+			"guideTitle": "Client configuration",
+			"keyDescription": "Connect with a Gateway user API Key using the configuration for your client.",
+			"oauthDescription": "Connect through browser sign-in and consent, without entering an API Key.",
+			"documentation": "Client connection documentation"
 		},
 		"title": "MCP Servers",
 		"subtitle": "Connect remote MCP servers, review and enable tools, and make them available through a single client endpoint.",
@@ -4343,11 +4365,17 @@
 			},
 			"issuerLabel": "Public URL of this Gateway (issuer)",
 			"issuerPlaceholder": "https://api.example.com",
-			"issuerHint": "The origin clients reach this Gateway at. Your reverse proxy must forward /oauth/* and /.well-known/oauth-authorization-server to the proxy service. Clear it to roll back to the external server.",
+			"issuerHint": "The origin clients reach this Gateway at. Your reverse proxy must forward /oauth/* and /.well-known/oauth-authorization-server to the proxy service.",
 			"consentLabel": "Sign-in and consent page (optional)",
 			"consentPlaceholder": "https://portal.example.com/oauth/consent",
 			"consentHint": "Where users sign in and approve. The Gateway appends request_id. Leave empty to use the built-in page, where users approve with their API Key.",
-			"consentInvalid": "Invalid consent page URL: use an https URL without credentials or fragment (http is allowed for localhost only)."
+			"consentInvalid": "Invalid consent page URL: use an https URL without credentials or fragment (http is allowed for localhost only).",
+			"serverTitle": "Authorization server",
+			"scope": {
+				"builtin": "Global configuration for all MCP services. Gateway manages app admission, client registration and token issuance.",
+				"external": "Global configuration. Sign-in and registration are managed externally; the records below are stored by Gateway.",
+				"off": "OAuth discovery is off; API Key access remains available. Existing grant records are retained, and issued tokens are not revoked automatically."
+			}
 		},
 		"connectGuide": {
 			"button": "Connection guide",
@@ -4509,7 +4537,7 @@
 		"removeHeader": "Remove this header",
 		"removedHeadersWarning": "Saving will remove these headers: {names}",
 		"advancedSettings": "Advanced settings",
-		"defaultPriceHint": "Tools inherit this server’s per-call prices by default.",
+		"defaultPriceHint": "Tools without an override use these prices.",
 		"timeoutHint": "1,000–120,000 ms; default 30 seconds.",
 		"maxBytesHint": "1,000–8,000,000 bytes.",
 		"slugReserved": "builtin is reserved. Choose another slug.",
@@ -4622,7 +4650,7 @@
 			"pricing": "Billing rules",
 			"advanced": "Advanced"
 		},
-		"advancedHint": "Defaults usually work well. Adjust for slower upstream services or larger responses. Default timeout: 30 seconds; maximum response: 1 MiB.",
+		"advancedHint": "Adjust these only for slow upstream responses or large payloads.",
 		"pricing": {
 			"simpleDefaultHint": "Tools without their own pricing use these defaults.",
 			"needsReview": "Review configuration",

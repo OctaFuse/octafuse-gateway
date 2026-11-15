@@ -1,5 +1,7 @@
 'use client';
 
+import { FinancialInput } from '@/components/financial-value';
+
 import { AdminPageTitle } from '@/components/admin-page-title';
 
 /**
@@ -1241,13 +1243,13 @@ export default function GatewayUserDetailPage() {
                       hint={t('detailUx.fieldHints.budgetMax')}
                       optionalLabel={tCommon('optional')}
                     />
-                    <input
+                    <FinancialInput
+                      currency={billingCurrency}
                       id="user-budgetMax"
                       type="number"
                       step="0.01"
                       value={planForm.budget_max}
                       onChange={(e) => setPlanForm({ ...planForm, budget_max: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
                       placeholder={tCommon('noLimit')}
                     />
                   </div>
@@ -1257,13 +1259,13 @@ export default function GatewayUserDetailPage() {
                       label={t('detailUx.fieldLabels.budgetSpent')}
                       hint={t('detailUx.fieldHints.budgetSpent')}
                     />
-                    <input
+                    <FinancialInput
+                      currency={billingCurrency}
                       id="user-budgetSpent"
                       type="number"
                       step="0.01"
                       value={planForm.budget_spent}
                       onChange={(e) => setPlanForm({ ...planForm, budget_spent: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
                     />
                   </div>
                   <div>
@@ -1273,13 +1275,13 @@ export default function GatewayUserDetailPage() {
                       hint={t('detailUx.fieldHints.budgetBase')}
                       optionalLabel={tCommon('optional')}
                     />
-                    <input
+                    <FinancialInput
+                      currency={billingCurrency}
                       id="user-budgetBase"
                       type="number"
                       step="0.01"
                       value={planForm.budget_base}
                       onChange={(e) => setPlanForm({ ...planForm, budget_base: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
                       placeholder={tCommon('optional')}
                     />
                   </div>
@@ -1346,14 +1348,14 @@ export default function GatewayUserDetailPage() {
                       label={t('detailUx.fieldLabels.walletGranted')}
                       hint={t('detailUx.fieldHints.walletGranted')}
                     />
-                    <input
+                    <FinancialInput
+                      currency={billingCurrency}
                       id="user-walletGranted"
                       type="number"
                       step="0.01"
                       min="0"
                       value={planForm.wallet_granted}
                       onChange={(e) => setPlanForm({ ...planForm, wallet_granted: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
                     />
                   </div>
                   <div>
@@ -1362,14 +1364,14 @@ export default function GatewayUserDetailPage() {
                       label={t('detailUx.fieldLabels.walletSpent')}
                       hint={t('detailUx.fieldHints.walletSpent')}
                     />
-                    <input
+                    <FinancialInput
+                      currency={billingCurrency}
                       id="user-walletSpent"
                       type="number"
                       step="0.01"
                       min="0"
                       value={planForm.wallet_spent}
                       onChange={(e) => setPlanForm({ ...planForm, wallet_spent: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm"
                     />
                   </div>
                 </div>

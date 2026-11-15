@@ -29,8 +29,8 @@ export function ModelPricingJsonPreview({
 		}
 	};
 	return (
-		<div className="flex min-h-80 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200">
-			<div className="flex items-start justify-between gap-4 border-b border-gray-200 bg-gray-50/70 px-4 py-3">
+		<div className="flex min-h-80 flex-1 flex-col gap-4">
+			<div className="flex items-start justify-between gap-4">
 				<div>
 					<h3 className="text-sm font-medium text-gray-800">
 						{t('viewPricingProfileJson')}
@@ -54,7 +54,7 @@ export function ModelPricingJsonPreview({
 				</button>
 			</div>
 			{state === 'failed' ? (
-				<p role="status" className="px-4 pt-3 text-xs text-amber-700">
+				<p role="status" className="text-xs text-amber-700">
 					{t('jsonCopyFailed')}
 				</p>
 			) : null}
@@ -64,7 +64,7 @@ export function ModelPricingJsonPreview({
 				spellCheck={false}
 				aria-label={t('viewPricingProfileJson')}
 				value={preview.text}
-				className={`min-h-64 w-full flex-1 resize-none bg-gray-50/30 p-4 font-mono text-xs leading-6 outline-none focus:ring-2 focus:ring-inset focus:ring-gray-200 ${
+				className={`min-h-80 w-full flex-1 resize-y rounded-lg border border-gray-200 bg-gray-50/50 p-4 font-mono text-xs leading-6 outline-none focus:ring-2 focus:ring-inset focus:ring-gray-200 ${
 					preview.ok ? 'text-gray-800' : 'text-red-600'
 				}`}
 			/>

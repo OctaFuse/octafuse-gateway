@@ -13,7 +13,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { ModelVendorIcon } from '@/components/model-vendor-icon';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
-import { formatCatalogPricingTierRowsTooltip } from '@/lib/pricing-ui';
+import { getCatalogPricingTierRows } from '@/lib/pricing-ui';
 import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import {
 	isModelRetiringSoon,
@@ -59,6 +59,7 @@ export function ModelCard(props: {
 	const isList = view === 'list';
 	const hasOfficialUpdate = Number(model.official_update_count ?? 0) > 0;
 	const t = useTranslations('models.card');
+	const pricingLabels = useTranslations('pricing.readOnlyTable');
 	const displayName = model.display_name || model.id;
 	const kind = resolveModelKind(model);
 	const kindVisual = {
@@ -93,14 +94,14 @@ export function ModelCard(props: {
 		billingCurrency,
 		t('pricingNoData')
 	);
-	const pricingTooltip = formatCatalogPricingTierRowsTooltip(
-		model,
-		billingCurrency
-	);
-	const pricingTitle =
-		pricingTooltip === '—'
-			? [pricing.amount, pricing.unit].filter(Boolean).join(' ')
-			: pricingTooltip;
+	const pricingRows = kind === 'llm' ? getCatalogPricingTierRows(model, billingCurrency) : [];
+	const pricingTitle = pricingRows.length
+		? pricingRows.map((row) => [
+			row.rangeLine,
+			`${t('inputOutputPricing')}: ${row.inputOutputLine} ${billingCurrency}`,
+			row.cacheLine ? `${pricingLabels('cacheRead')} / ${pricingLabels('cacheWrite')}: ${row.cacheLine} ${billingCurrency}` : null,
+		].filter(Boolean).join('\n')).join('\n\n')
+		: [pricing.amount, pricing.unit].filter(Boolean).join(' ');
 
 	const renderOfficialUpdateButton = () =>
 		hasOfficialUpdate && onReviewOfficialUpdate ? (

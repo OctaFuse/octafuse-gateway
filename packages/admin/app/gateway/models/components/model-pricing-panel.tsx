@@ -1,21 +1,14 @@
 'use client';
 
+import { FinancialInput } from '@/components/financial-value';
+
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { useTranslations } from 'next-intl';
 import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { DailyScheduleEditor } from '@/components/daily-schedule-editor';
 import { PricingTiersEditor } from '@/components/pricing-tiers-editor';
-import {
-	formatPerMillionTokenUnit,
-	formatPerCharacterUnit,
-	formatPerSecondUnit,
-} from '@/lib/format-gateway-currency';
-import {
-	createDefaultAudioCharacterPricingDraft,
-	createDefaultAudioPricingDraft,
-	createDefaultAudioTokenPricingDraft,
-	type AudioBillingModeDraft,
-} from '@/lib/pricing-tiers-draft';
+import { formatPerCharacterUnit, formatPerSecondUnit } from '@/lib/format-gateway-currency';
+import { switchAudioPricingDraftMode } from '@/lib/pricing-tiers-draft';
 import type { ModelModalProps } from './model-modal';
 
 type Props = Pick<
@@ -64,17 +57,12 @@ export function ModelPricingPanel({
 		cacheWrite: t('pricingColumns.cacheWrite'),
 	};
 	return (
-		<div className="space-y-6">
-			<div className="admin-content-panel min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white p-4 sm:p-5 [&_input]:h-10 [&_input]:text-sm">
+		<div className="divide-y divide-gray-100">
+			<div className="min-w-0 pb-6">
 				{isAudioModel && audioPricingDraft && onAudioPricingDraftChange ? (
 					<div className="space-y-3">
-						<p className="text-sm font-medium text-gray-800">
-							{t('audioPricing')}
-						</p>
 						<div className="space-y-1.5">
-							<p className="text-xs font-medium text-gray-600">
-								{t('audioBillingMode')}
-							</p>
+							<p className="text-xs font-medium text-gray-600">{t('audioBillingMode')}</p>
 							<div
 								className="inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5"
 								role="group"
@@ -108,49 +96,11 @@ export function ModelPricingPanel({
 											key={opt.id}
 											aria-pressed={active}
 											type="button"
-											onClick={() => {
-												if (audioPricingDraft.mode === opt.id) return;
-												const nextMode: AudioBillingModeDraft = opt.id;
-												if (nextMode === 'per_second') {
-													onAudioPricingDraftChange({
-														...createDefaultAudioPricingDraft(),
-														price_per_second:
-															audioPricingDraft.price_per_second.trim() !== ''
-																? audioPricingDraft.price_per_second
-																: createDefaultAudioPricingDraft()
-																		.price_per_second,
-														minimum_seconds:
-															audioPricingDraft.minimum_seconds.trim() !== ''
-																? audioPricingDraft.minimum_seconds
-																: createDefaultAudioPricingDraft()
-																		.minimum_seconds,
-													});
-													return;
-												}
-												if (nextMode === 'per_character') {
-													onAudioPricingDraftChange({
-														...createDefaultAudioCharacterPricingDraft(),
-														price_per_character:
-															audioPricingDraft.price_per_character.trim() !==
-															''
-																? audioPricingDraft.price_per_character
-																: '',
-														minimum_characters:
-															audioPricingDraft.minimum_characters.trim() !== ''
-																? audioPricingDraft.minimum_characters
-																: '0',
-													});
-													return;
-												}
+											onClick={() =>
 												onAudioPricingDraftChange(
-													audioPricingDraft.tiers.length > 0
-														? {
-																...audioPricingDraft,
-																mode: 'token',
-														  }
-														: createDefaultAudioTokenPricingDraft()
-												);
-											}}
+													switchAudioPricingDraftMode(audioPricingDraft, opt.id)
+												)
+											}
 											className={
 												active
 													? 'rounded px-3 py-1.5 text-sm font-medium bg-white text-gray-900 shadow-sm'
@@ -164,68 +114,15 @@ export function ModelPricingPanel({
 							</div>
 						</div>
 						{audioPricingDraft.mode === 'token' ? (
-							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-								<div>
-									<label className="mb-1 block text-xs font-medium text-gray-600">
-										{t('audioInputPricePerM')}
-										<span className="ml-1 font-normal text-gray-400">
-											({formatPerMillionTokenUnit(billingCurrency)})
-										</span>
-									</label>
-									<input
-										type="number"
-										step="any"
-										min="0"
-										value={audioPricingDraft.tiers[0]?.input_price ?? ''}
-										onChange={(e) => {
-											const base =
-												audioPricingDraft.tiers[0] ??
-												createDefaultAudioTokenPricingDraft().tiers[0]!;
-											onAudioPricingDraftChange({
-												...audioPricingDraft,
-												mode: 'token',
-												tiers: [
-													{
-														...base,
-														input_price: e.target.value,
-													},
-												],
-											});
-										}}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
-									/>
-								</div>
-								<div>
-									<label className="mb-1 block text-xs font-medium text-gray-600">
-										{t('audioOutputPricePerM')}
-										<span className="ml-1 font-normal text-gray-400">
-											({formatPerMillionTokenUnit(billingCurrency)})
-										</span>
-									</label>
-									<input
-										type="number"
-										step="any"
-										min="0"
-										value={audioPricingDraft.tiers[0]?.output_price ?? ''}
-										onChange={(e) => {
-											const base =
-												audioPricingDraft.tiers[0] ??
-												createDefaultAudioTokenPricingDraft().tiers[0]!;
-											onAudioPricingDraftChange({
-												...audioPricingDraft,
-												mode: 'token',
-												tiers: [
-													{
-														...base,
-														output_price: e.target.value,
-													},
-												],
-											});
-										}}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
-									/>
-								</div>
-							</div>
+							<PricingTiersEditor
+								title={t('audioPricing')}
+								columnLabels={columnLabels}
+								hintDisplay="popover"
+								rows={audioPricingDraft.tiers}
+								onChange={(tiers) => onAudioPricingDraftChange({ ...audioPricingDraft, tiers })}
+								billingCurrencyCode={billingCurrency}
+								minRows={1}
+							/>
 						) : audioPricingDraft.mode === 'per_character' ? (
 							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 								<div>
@@ -235,10 +132,18 @@ export function ModelPricingPanel({
 											({formatPerCharacterUnit(billingCurrency)})
 										</span>
 									</label>
-									<input
+									<FinancialInput
+										currency={billingCurrency}
+										aria-label={t('audioPricePerCharacter')}
 										type="number"
 										step="any"
 										min="0"
+										required
+										aria-invalid={
+											!audioPricingDraft.price_per_character.trim() ||
+											!Number.isFinite(Number(audioPricingDraft.price_per_character)) ||
+											Number(audioPricingDraft.price_per_character) < 0
+										}
 										value={audioPricingDraft.price_per_character}
 										onChange={(e) =>
 											onAudioPricingDraftChange({
@@ -247,7 +152,6 @@ export function ModelPricingPanel({
 												price_per_character: e.target.value,
 											})
 										}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
 									/>
 								</div>
 								<div>
@@ -258,6 +162,7 @@ export function ModelPricingPanel({
 										type="number"
 										step="1"
 										min="0"
+										aria-label={t('audioMinimumCharacters')}
 										value={audioPricingDraft.minimum_characters}
 										onChange={(e) =>
 											onAudioPricingDraftChange({
@@ -266,7 +171,7 @@ export function ModelPricingPanel({
 												minimum_characters: e.target.value,
 											})
 										}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
+										className="h-10 w-full rounded-lg border border-gray-200 px-3 font-mono text-base tabular-nums focus:outline-none focus:ring-2 focus:ring-gray-500/10"
 									/>
 								</div>
 							</div>
@@ -279,10 +184,18 @@ export function ModelPricingPanel({
 											({formatPerSecondUnit(billingCurrency)})
 										</span>
 									</label>
-									<input
+									<FinancialInput
+										currency={billingCurrency}
+										aria-label={t('audioPricePerSecond')}
 										type="number"
 										step="any"
 										min="0"
+										required
+										aria-invalid={
+											!audioPricingDraft.price_per_second.trim() ||
+											!Number.isFinite(Number(audioPricingDraft.price_per_second)) ||
+											Number(audioPricingDraft.price_per_second) < 0
+										}
 										value={audioPricingDraft.price_per_second}
 										onChange={(e) =>
 											onAudioPricingDraftChange({
@@ -291,7 +204,6 @@ export function ModelPricingPanel({
 												price_per_second: e.target.value,
 											})
 										}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
 									/>
 								</div>
 								<div>
@@ -302,6 +214,7 @@ export function ModelPricingPanel({
 										type="number"
 										step="any"
 										min="0"
+										aria-label={t('audioMinimumSeconds')}
 										value={audioPricingDraft.minimum_seconds}
 										onChange={(e) =>
 											onAudioPricingDraftChange({
@@ -310,7 +223,7 @@ export function ModelPricingPanel({
 												minimum_seconds: e.target.value,
 											})
 										}
-										className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
+										className="h-10 w-full rounded-lg border border-gray-200 px-3 font-mono text-base tabular-nums focus:outline-none focus:ring-2 focus:ring-gray-500/10"
 									/>
 								</div>
 							</div>
@@ -355,25 +268,17 @@ export function ModelPricingPanel({
 				)}
 			</div>
 			{onCatalogScheduleWindowsChange ? (
-				<details
-					open={catalogScheduleWindows.length > 0}
-					className="rounded-xl border border-gray-200 bg-white"
-				>
-					<summary className="cursor-pointer px-4 py-4 text-sm font-medium text-gray-700 sm:px-5">
-						{t('catalogSchedule')}
-						<span className="ml-3 text-xs font-normal text-gray-500">
-							{catalogScheduleWindows.length
-								? t('scheduleWindowCount', {
-										count: catalogScheduleWindows.length,
-								  })
-								: t('optionalSetting')}
-						</span>
-					</summary>
-					<div className="min-w-0 overflow-hidden p-4 pt-0 sm:p-5 sm:pt-0">
+				<section className="min-w-0 pt-6">
+					<div className="min-w-0">
 						<div className="mb-3">
 							<div className="flex items-start justify-between gap-2">
 								<h4 className="flex items-center gap-2 text-sm font-medium text-gray-800">
 									{t('catalogSchedule')}
+									<span className="text-xs font-normal text-gray-500">
+										{catalogScheduleWindows.length
+											? t('scheduleWindowCount', { count: catalogScheduleWindows.length })
+											: t('optionalSetting')}
+									</span>
 									<InfoHintPopover
 										label={t('catalogSchedule')}
 										openOnHover
@@ -381,9 +286,7 @@ export function ModelPricingPanel({
 										portal
 										align="start"
 									>
-										<p className="whitespace-pre-line leading-6">
-											{tPricingHelp('catalog.body')}
-										</p>
+										<p className="whitespace-pre-line leading-6">{tPricingHelp('catalog.body')}</p>
 										<p className="mt-3 leading-6">{t('catalogScheduleHint')}</p>
 									</InfoHintPopover>
 								</h4>
@@ -431,7 +334,7 @@ export function ModelPricingPanel({
 							}}
 						/>
 					</div>
-				</details>
+				</section>
 			) : null}
 		</div>
 	);

@@ -1,6 +1,7 @@
 'use client';
 
 import { AdminContentMark } from '@/components/admin-content-mark';
+import styles from './model-modal.module.css';
 
 import {
 	cloneElement,
@@ -29,7 +30,6 @@ import {
 } from '@octafuse/core/db/model-modalities';
 import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { VendorIcon } from '@/components/model-vendor-icon';
-import { ModelModalitiesBadgeFromRaw } from '@/components/model-modalities-badge';
 import { MODEL_VENDOR_OPTIONS } from '@/lib/model-vendor';
 import { pickProviderCatalogText } from '@/lib/provider-kind';
 import {
@@ -58,9 +58,7 @@ export type ModelModalProps = {
 	formKind: ModelFormKind;
 	pricingTierRows: PricingTierDraftRow[];
 	catalogScheduleWindows?: CatalogScheduleFormWindow[];
-	onCatalogScheduleWindowsChange?: (
-		windows: CatalogScheduleFormWindow[]
-	) => void;
+	onCatalogScheduleWindowsChange?: (windows: CatalogScheduleFormWindow[]) => void;
 	imageBillingMode?: ImageBillingModeDraft;
 	onImageBillingModeChange?: (mode: ImageBillingModeDraft) => void;
 	imagePerImageDraft?: ImagePerImageDraft;
@@ -78,10 +76,7 @@ export type ModelModalProps = {
 	onTagInputChange: (value: string) => void;
 	onAddTag: () => void;
 	onRemoveTag: (tag: string) => void;
-	onToggleModality: (
-		kind: 'input_modalities' | 'output_modalities',
-		modality: string
-	) => void;
+	onToggleModality: (kind: 'input_modalities' | 'output_modalities', modality: string) => void;
 	/** 切换 LLM / Image / Audio Kind（同步 modalities 与默认 pricing） */
 	onKindChange: (kind: ModelFormKind) => void;
 	onSave: () => void;
@@ -94,19 +89,34 @@ const inputClass =
 	'h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-500/10 disabled:bg-gray-50 disabled:text-gray-500';
 type Tab = 'basic' | 'pricing' | 'metadata' | 'routes';
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({
+	label,
+	children,
+	leading,
+}: {
+	label: string;
+	children: ReactNode;
+	leading?: ReactNode;
+}) {
 	const id = useId();
 	return (
 		<div className="min-w-0">
-			<label
-				htmlFor={id}
-				className="mb-1.5 block text-xs font-medium text-gray-600"
-			>
+			<label htmlFor={id} className="mb-1.5 block text-xs font-medium text-gray-600">
 				{label}
 			</label>
-			{isValidElement<{ id?: string; 'aria-label'?: string }>(children)
-				? cloneElement(children, { id, 'aria-label': label })
-				: children}
+			<div className="relative min-w-0">
+				{leading ? (
+					<span
+						className="pointer-events-none absolute left-1.5 top-1/2 z-10 -translate-y-1/2"
+						aria-hidden
+					>
+						{leading}
+					</span>
+				) : null}
+				{isValidElement<{ id?: string; 'aria-label'?: string }>(children)
+					? cloneElement(children, { id, 'aria-label': label })
+					: children}
+			</div>
 		</div>
 	);
 }
@@ -150,8 +160,7 @@ export function ModelModal(props: ModelModalProps) {
 		props.onRoutesChanged
 	);
 	const busy = isSaving || isDeleting || routesState.isDeleting;
-	const deleteDisabled =
-		busy || !routesState.ready || routesState.routes.length > 0;
+	const deleteDisabled = busy || !routesState.ready || routesState.routes.length > 0;
 	const deleteReason = routesState.error
 		? t('relatedRoutes.loadFailed')
 		: !routesState.ready
@@ -167,9 +176,7 @@ export function ModelModal(props: ModelModalProps) {
 		duplicateSourceModelId ?? ''
 	}`;
 	const [session, setSession] = useState(sessionKey);
-	const [activeTab, setActiveTab] = useState<Tab>(
-		editingModel ? initialTab : 'basic'
-	);
+	const [activeTab, setActiveTab] = useState<Tab>(editingModel ? initialTab : 'basic');
 	const [showPricingJson, setShowPricingJson] = useState(false);
 	if (session !== sessionKey) {
 		setSession(sessionKey);
@@ -199,7 +206,6 @@ export function ModelModal(props: ModelModalProps) {
 			label: t('pricingProfile'),
 			icon: AdjustmentsHorizontalIcon,
 		},
-		{ key: 'metadata', label: t('metadataTab'), icon: CodeBracketIcon },
 		...(editingModel
 			? [
 					{
@@ -209,6 +215,7 @@ export function ModelModal(props: ModelModalProps) {
 					} as const,
 			  ]
 			: []),
+		{ key: 'metadata', label: t('metadataTab'), icon: CodeBracketIcon },
 	] as const;
 	const pricingPreview = useMemo(
 		() =>
@@ -238,15 +245,10 @@ export function ModelModal(props: ModelModalProps) {
 
 	useEffect(() => {
 		if (!open) return;
-		const previous =
-			document.activeElement instanceof HTMLElement
-				? document.activeElement
-				: null;
+		const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		const previousOverflow = document.body.style.overflow;
 		document.body.style.overflow = 'hidden';
-		const autofocus = dialogRef.current?.querySelector<HTMLInputElement>(
-			'[data-duplicate-id]'
-		);
+		const autofocus = dialogRef.current?.querySelector<HTMLInputElement>('[data-duplicate-id]');
 		(autofocus ?? dialogRef.current)?.focus();
 		return () => {
 			document.body.style.overflow = previousOverflow;
@@ -258,8 +260,7 @@ export function ModelModal(props: ModelModalProps) {
 	}, [activeTab, showPricingJson, sessionKey]);
 
 	useEffect(() => {
-		if (open && !busy && document.activeElement === document.body)
-			dialogRef.current?.focus();
+		if (open && !busy && document.activeElement === document.body) dialogRef.current?.focus();
 	}, [open, busy]);
 
 	const selectTab = (key: Tab) => {
@@ -275,8 +276,7 @@ export function ModelModal(props: ModelModalProps) {
 				? 0
 				: event.key === 'End'
 				? tabs.length - 1
-				: (index + (event.key === 'ArrowLeft' ? -1 : 1) + tabs.length) %
-				  tabs.length;
+				: (index + (event.key === 'ArrowLeft' ? -1 : 1) + tabs.length) % tabs.length;
 		selectTab(tabs[next].key);
 		document.getElementById(`${id}-${tabs[next].key}-tab`)?.focus();
 	};
@@ -291,22 +291,18 @@ export function ModelModal(props: ModelModalProps) {
 			event.currentTarget.querySelectorAll<HTMLElement>(
 				'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]'
 			)
-		).filter(
-			(element) => element.tabIndex >= 0 && element.getClientRects().length > 0
-		);
+		).filter((element) => element.tabIndex >= 0 && element.getClientRects().length > 0);
 		const first = focusable[0],
 			last = focusable[focusable.length - 1];
 		if (
 			event.shiftKey &&
-			(document.activeElement === first ||
-				document.activeElement === event.currentTarget)
+			(document.activeElement === first || document.activeElement === event.currentTarget)
 		) {
 			event.preventDefault();
 			last?.focus();
 		} else if (
 			!event.shiftKey &&
-			(document.activeElement === last ||
-				document.activeElement === event.currentTarget)
+			(document.activeElement === last || document.activeElement === event.currentTarget)
 		) {
 			event.preventDefault();
 			first?.focus();
@@ -341,17 +337,47 @@ export function ModelModal(props: ModelModalProps) {
 				aria-labelledby={`${id}-title`}
 				tabIndex={-1}
 				onKeyDown={handleKeys}
-				className="admin-content-dialog flex max-h-[min(800px,90dvh)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none"
+				className={`admin-content-dialog ${styles.dialog} flex max-h-[min(800px,90dvh)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-panel outline-none`}
 			>
 				<header className="admin-dialog-header flex shrink-0 items-start justify-between gap-4 px-5 pb-5 pt-6 sm:px-7">
 					<div className="min-w-0">
 						<h2
 							id={`${id}-title`}
-							className="admin-dialog-title text-lg font-medium text-gray-900"
-						><AdminContentMark />
-							{editingModel ? t('editTitle') : t('newTitle')}
+							className="admin-dialog-title flex min-w-0 items-center gap-2 text-lg font-medium text-gray-900"
+						>
+							<AdminContentMark />
+							<span className="shrink-0">{editingModel ? t('editTitle') : t('newTitle')}</span>
+							{editingModel ? (
+								<>
+									<span className="font-normal text-gray-300" aria-hidden>
+										{' '}
+										/{' '}
+									</span>
+									<span
+										className="min-w-0 truncate"
+										title={editingModel.display_name || editingModel.id}
+									>
+										{editingModel.display_name || editingModel.id}
+									</span>
+								</>
+							) : null}
 						</h2>
-						<p className="mt-1.5 text-sm text-gray-500">{t('editHint')}</p>
+						{editingModel ? (
+							<div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+								<p className="min-w-0 truncate font-mono text-gray-500" title={editingModel.id}>
+									{editingModel.id}
+								</p>
+								<span className="inline-flex shrink-0 items-center gap-1.5 text-gray-600">
+									<span className="h-3 border-l border-gray-200" aria-hidden />
+									{selectedKind.label}
+									<InfoHintPopover label={t('kind')} openOnHover openOnFocus portal align="start">
+										<p className="leading-6">{selectedKind.hint}</p>
+									</InfoHintPopover>
+								</span>
+							</div>
+						) : (
+							<p className="mt-1.5 text-sm text-gray-500">{t('editHint')}</p>
+						)}
 						{!editingModel && duplicateSourceModelId ? (
 							<p className="mt-1 text-xs text-gray-500">
 								{t('prefilledFrom', { id: duplicateSourceModelId })}
@@ -368,11 +394,11 @@ export function ModelModal(props: ModelModalProps) {
 						<XMarkIcon className="h-5 w-5" aria-hidden />
 					</button>
 				</header>
-				<div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-5 sm:px-7">
+				<div className="shrink-0 border-b border-gray-200 px-5 sm:px-7">
 					<div
 						role="tablist"
 						aria-label={t('settingsLabel')}
-						className="admin-detail-tabs flex min-w-0 flex-1 gap-5 overflow-x-auto [scrollbar-width:none]"
+						className="flex min-w-0 gap-5 overflow-x-auto [scrollbar-width:none]"
 					>
 						{tabs.map(({ key, label, icon: Icon }) => (
 							<button
@@ -385,42 +411,22 @@ export function ModelModal(props: ModelModalProps) {
 								tabIndex={activeTab === key ? 0 : -1}
 								onClick={() => selectTab(key)}
 								onKeyDown={(event) => navigateTabs(event, key)}
-								className={`inline-flex items-center gap-2 whitespace-nowrap border-b-2 pb-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-gray-300 ${
+								className={`inline-flex min-h-12 shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-1 py-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-gray-300 ${
 									activeTab === key
-										? 'border-gray-600 font-medium text-gray-800'
+										? 'border-gray-900 font-medium text-gray-900'
 										: 'border-transparent text-gray-500 hover:text-gray-800'
 								}`}
 							>
 								<Icon className="h-4 w-4" aria-hidden />
 								{label}
 								{key === 'routes' ? (
-									<span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs tabular-nums text-gray-500">
+									<span className="rounded-md bg-gray-100 px-1.5 py-0.5 text-xs tabular-nums text-gray-500">
 										{routesState.ready ? routesState.routes.length : '…'}
 									</span>
 								) : null}
 							</button>
 						))}
 					</div>
-					{activeTab === 'pricing' ? (
-						<button
-							type="button"
-							onClick={() => setShowPricingJson((value) => !value)}
-							aria-label={
-								showPricingJson
-									? t('hidePricingProfileJson')
-									: t('viewPricingProfileJson')
-							}
-							aria-pressed={showPricingJson}
-							className={`mb-2 inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium ${
-								showPricingJson
-									? 'bg-gray-50 text-gray-800'
-									: 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
-							}`}
-						>
-							<CodeBracketIcon className="h-4 w-4" aria-hidden />
-							{showPricingJson ? t('backToForm') : 'JSON'}
-						</button>
-					) : null}
 				</div>
 				{saveError ? (
 					<div
@@ -432,44 +438,37 @@ export function ModelModal(props: ModelModalProps) {
 				) : null}
 				<div
 					ref={contentRef}
-					className="admin-dialog-body min-h-0 flex-1 overflow-y-auto overscroll-contain"
+					className={`admin-dialog-body ${styles.body} min-h-0 flex-1 overflow-y-auto overscroll-contain`}
 				>
 					<fieldset disabled={busy} className="m-0 min-w-0 border-0 p-0">
 						<section
 							id={`${id}-${activeTab}-panel`}
 							role="tabpanel"
 							aria-labelledby={`${id}-${activeTab}-tab`}
-							className={`px-5 py-6 sm:px-7 ${
-								activeTab === 'metadata' ||
-								(activeTab === 'pricing' && showPricingJson)
+							className={`${styles.panel} ${
+								activeTab === 'metadata' || (activeTab === 'pricing' && showPricingJson)
 									? 'flex flex-col'
 									: ''
 							}`}
 						>
 							{activeTab === 'basic' ? (
-								<div className="grid items-start gap-6 md:grid-cols-[1.1fr_1fr]">
-									<div className="min-w-0 space-y-4">
-										<div className="flex items-start gap-3">
-											<div className="min-w-0 flex-1">
-												<div className="mb-1.5 flex items-center gap-1.5">
-													<span className="text-xs font-medium text-gray-600">
+								<div className={styles.basicLayout}>
+									<div className={styles.mainColumn}>
+										<section className={styles.section}>
+											{!editingModel ? (
+												<div className="space-y-2">
+													<div className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
 														{t('kind')}
-													</span>
-													<InfoHintPopover
-														label={t('kind')}
-														openOnHover
-														openOnFocus
-														portal
-														align="start"
-													>
-														<p className="leading-6">{selectedKind.hint}</p>
-													</InfoHintPopover>
-												</div>
-												{editingModel ? (
-													<p className="text-sm font-medium leading-6 text-gray-900">
-														{selectedKind.label}
-													</p>
-												) : (
+														<InfoHintPopover
+															label={t('kind')}
+															openOnHover
+															openOnFocus
+															portal
+															align="start"
+														>
+															<p className="leading-6">{selectedKind.hint}</p>
+														</InfoHintPopover>
+													</div>
 													<div
 														role="group"
 														aria-label={t('kind')}
@@ -481,8 +480,7 @@ export function ModelModal(props: ModelModalProps) {
 																type="button"
 																aria-pressed={formKind === kind.id}
 																onClick={() => {
-																	if (formKind !== kind.id)
-																		onKindChange(kind.id);
+																	if (formKind !== kind.id) onKindChange(kind.id);
 																}}
 																className={`rounded-md border px-2.5 py-1.5 text-xs font-medium ${
 																	formKind === kind.id
@@ -494,201 +492,177 @@ export function ModelModal(props: ModelModalProps) {
 															</button>
 														))}
 													</div>
-												)}
-											</div>
-											<VendorIcon vendor={formData.vendor} size="identity" />
-										</div>
-										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-											<Field label={t('modelIdRequired')}>
-												<input
-													type="text"
-													value={formData.id}
-													onChange={(event) =>
-														onFormChange({
-															...formData,
-															id: event.target.value,
-														})
-													}
-													disabled={!!editingModel}
-													data-duplicate-id={
-														!editingModel && duplicateSourceModelId
-															? ''
-															: undefined
-													}
-													className={`${inputClass} font-mono`}
-													placeholder={t('modelIdPlaceholder')}
-													required
-												/>
-											</Field>
-											<Field label={t('displayName')}>
-												<input
-													type="text"
-													value={formData.display_name}
-													onChange={(event) =>
-														onFormChange({
-															...formData,
-															display_name: event.target.value,
-														})
-													}
-													className={inputClass}
-													placeholder={t('displayNamePlaceholder')}
-												/>
-											</Field>
-										</div>
-										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-											<Field label={t('vendor')}>
-												<select
-													value={
-														MODEL_VENDOR_OPTIONS.some(
-															(option) => option.key === formData.vendor
-														)
-															? formData.vendor
-															: 'other'
-													}
-													onChange={(event) =>
-														onFormChange({
-															...formData,
-															vendor: event.target.value,
-														})
-													}
-													className={inputClass}
-												>
-													{MODEL_VENDOR_OPTIONS.map((option) => (
-														<option key={option.key} value={option.key}>
-															{option.label}
-														</option>
-													))}
-												</select>
-											</Field>
-											<Field label={t('released')}>
-												<input
-													type="date"
-													value={formData.released_at}
-													onChange={(event) =>
-														onFormChange({
-															...formData,
-															released_at: event.target.value,
-														})
-													}
-													className={inputClass}
-												/>
-											</Field>
-										</div>
-										{!hideTokenLimits ? (
-											<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-												<Field label={t('contextWindow')}>
+												</div>
+											) : null}
+											<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+												<Field label={t('modelIdRequired')}>
 													<input
-														type="number"
-														min="0"
-														value={formData.context_window}
+														type="text"
+														value={formData.id}
 														onChange={(event) =>
 															onFormChange({
 																...formData,
-																context_window: event.target.value,
+																id: event.target.value,
 															})
 														}
+														disabled={!!editingModel}
+														data-duplicate-id={
+															!editingModel && duplicateSourceModelId ? '' : undefined
+														}
 														className={`${inputClass} font-mono`}
-														placeholder={t('contextWindowPlaceholder')}
+														placeholder={t('modelIdPlaceholder')}
+														required
 													/>
 												</Field>
-												{formKind !== 'embedding' ? (
-													<Field label={t('maxTokens')}>
+												<Field label={t('displayName')}>
+													<input
+														type="text"
+														value={formData.display_name}
+														onChange={(event) =>
+															onFormChange({
+																...formData,
+																display_name: event.target.value,
+															})
+														}
+														className={inputClass}
+														placeholder={t('displayNamePlaceholder')}
+													/>
+												</Field>
+											</div>
+											<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+												<Field
+													label={t('vendor')}
+													leading={<VendorIcon vendor={formData.vendor} size="compact" />}
+												>
+													<select
+														value={
+															MODEL_VENDOR_OPTIONS.some((option) => option.key === formData.vendor)
+																? formData.vendor
+																: 'other'
+														}
+														onChange={(event) =>
+															onFormChange({
+																...formData,
+																vendor: event.target.value,
+															})
+														}
+														className={`${inputClass} pl-11`}
+													>
+														{MODEL_VENDOR_OPTIONS.map((option) => (
+															<option key={option.key} value={option.key}>
+																{option.label}
+															</option>
+														))}
+													</select>
+												</Field>
+												<Field label={t('released')}>
+													<input
+														type="date"
+														value={formData.released_at}
+														onChange={(event) =>
+															onFormChange({
+																...formData,
+																released_at: event.target.value,
+															})
+														}
+														className={inputClass}
+													/>
+												</Field>
+											</div>
+										</section>
+										<section className={styles.section}>
+											{!hideTokenLimits ? (
+												<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+													<Field label={t('contextWindow')}>
 														<input
 															type="number"
 															min="0"
-															value={formData.max_tokens}
+															value={formData.context_window}
 															onChange={(event) =>
 																onFormChange({
 																	...formData,
-																	max_tokens: event.target.value,
+																	context_window: event.target.value,
 																})
 															}
 															className={`${inputClass} font-mono`}
-															placeholder={t('maxTokensPlaceholder')}
+															placeholder={t('contextWindowPlaceholder')}
 														/>
 													</Field>
-												) : null}
-											</div>
-										) : null}
-										<div className="rounded-xl border border-gray-200">
-											<div className="flex items-center justify-between gap-3 border-b border-gray-100 px-3 py-2.5">
-												<span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700">
-													{t('modalities')}
-													<InfoHintPopover
-														label={t('modalities')}
-														openOnHover
-														openOnFocus
-														portal
-														align="start"
-													>
-														<p className="leading-6">{selectedKind.hint}</p>
-													</InfoHintPopover>
-												</span>
-												<ModelModalitiesBadgeFromRaw
-													inputRaw={JSON.stringify(formData.input_modalities)}
-													outputRaw={JSON.stringify(formData.output_modalities)}
-													size="sm"
-													spacing="relaxed"
-												/>
-											</div>
-											<div className="space-y-2.5 p-3">
-												{(
-													['input_modalities', 'output_modalities'] as const
-												).map((direction) => (
-													<div
-														role="group"
-														aria-label={t(
-															direction === 'input_modalities'
-																? 'input'
-																: 'output'
-														)}
-														key={direction}
-														className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2"
-													>
-														<span className="w-6 shrink-0 text-xs text-gray-500">
-															{t(
-																direction === 'input_modalities'
-																	? 'input'
-																	: 'output'
-															)}
-														</span>
-														<div className="flex flex-wrap gap-1.5">
-															{(direction === 'input_modalities'
-																? MODEL_INPUT_MODALITIES
-																: MODEL_OUTPUT_MODALITIES
-															).map((modality) => (
-																<label
-																	key={modality}
-																	className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${
-																		formData[direction].includes(modality)
-																			? 'border-gray-200 bg-gray-50/70 text-gray-800'
-																			: 'border-gray-200 text-gray-500'
-																	} ${
-																		isAudioModel
-																			? 'opacity-60'
-																			: 'cursor-pointer'
-																	}`}
-																>
-																	<input
-																		type="checkbox"
-																		checked={formData[direction].includes(
-																			modality
-																		)}
-																		onChange={() =>
-																			onToggleModality(direction, modality)
-																		}
-																		disabled={isAudioModel}
-																		className="h-3.5 w-3.5 rounded border-gray-300 text-gray-800 focus:ring-gray-500"
-																	/>
-																	{t(`modalityLabels.${modality}`)}
-																</label>
-															))}
+													{formKind !== 'embedding' ? (
+														<Field label={t('maxTokens')}>
+															<input
+																type="number"
+																min="0"
+																value={formData.max_tokens}
+																onChange={(event) =>
+																	onFormChange({
+																		...formData,
+																		max_tokens: event.target.value,
+																	})
+																}
+																className={`${inputClass} font-mono`}
+																placeholder={t('maxTokensPlaceholder')}
+															/>
+														</Field>
+													) : null}
+												</div>
+											) : null}
+											<div className={styles.modalities}>
+												<div className="flex items-center justify-between gap-3">
+													<span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700">
+														{t('modalities')}
+														<InfoHintPopover
+															label={t('modalities')}
+															openOnHover
+															openOnFocus
+															portal
+															align="start"
+														>
+															<p className="leading-6">{selectedKind.hint}</p>
+														</InfoHintPopover>
+													</span>
+												</div>
+												<div className="mt-3 space-y-3">
+													{(['input_modalities', 'output_modalities'] as const).map((direction) => (
+														<div
+															role="group"
+															aria-label={t(direction === 'input_modalities' ? 'input' : 'output')}
+															key={direction}
+															className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2"
+														>
+															<span className="w-12 shrink-0 text-xs text-gray-500">
+																{t(direction === 'input_modalities' ? 'input' : 'output')}
+															</span>
+															<div className="flex flex-wrap gap-1.5">
+																{(direction === 'input_modalities'
+																	? MODEL_INPUT_MODALITIES
+																	: MODEL_OUTPUT_MODALITIES
+																).map((modality) => (
+																	<label
+																		key={modality}
+																		className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${
+																			formData[direction].includes(modality)
+																				? 'border-gray-200 bg-gray-50/70 text-gray-800'
+																				: 'border-gray-200 text-gray-500'
+																		} ${isAudioModel ? 'opacity-60' : 'cursor-pointer'}`}
+																	>
+																		<input
+																			type="checkbox"
+																			checked={formData[direction].includes(modality)}
+																			onChange={() => onToggleModality(direction, modality)}
+																			disabled={isAudioModel}
+																			className="h-3.5 w-3.5 rounded border-gray-300 text-gray-800 focus:ring-gray-500"
+																		/>
+																		{t(`modalityLabels.${modality}`)}
+																	</label>
+																))}
+															</div>
 														</div>
-													</div>
-												))}
+													))}
+												</div>
 											</div>
-										</div>
-										<div>
+										</section>
+										<section className={styles.section}>
 											<label
 												htmlFor={`${id}-tag`}
 												className="mb-1.5 block text-xs font-medium text-gray-600"
@@ -711,10 +685,7 @@ export function ModelModal(props: ModelModalProps) {
 																aria-label={t('removeTag', { tag })}
 																className="rounded text-gray-400 hover:text-red-600"
 															>
-																<XMarkIcon
-																	className="h-3.5 w-3.5"
-																	aria-hidden
-																/>
+																<XMarkIcon className="h-3.5 w-3.5" aria-hidden />
 															</button>
 														</span>
 													))}
@@ -725,9 +696,7 @@ export function ModelModal(props: ModelModalProps) {
 													id={`${id}-tag`}
 													type="text"
 													value={tagInput}
-													onChange={(event) =>
-														onTagInputChange(event.target.value)
-													}
+													onChange={(event) => onTagInputChange(event.target.value)}
 													onKeyDown={(event) => {
 														if (event.key === 'Enter' || event.key === ',') {
 															event.preventDefault();
@@ -746,18 +715,15 @@ export function ModelModal(props: ModelModalProps) {
 													{tCommon('add')}
 												</button>
 											</div>
-										</div>
+										</section>
 									</div>
-									<div className="flex min-w-0 flex-col gap-5">
+									<aside className={styles.aside}>
 										{intro ? (
-											<div className="rounded-xl bg-gray-50 p-4">
+											<div className="min-w-0">
 												<h3 className="shrink-0 text-xs font-medium text-gray-500">
 													{t('catalogIntro')}
 												</h3>
-												<p
-													tabIndex={0}
-													className="mt-2 max-h-56 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words text-sm leading-6 text-gray-700 outline-none focus-visible:ring-2 focus-visible:ring-gray-200"
-												>
+												<p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600">
 													{intro}
 												</p>
 											</div>
@@ -779,32 +745,66 @@ export function ModelModal(props: ModelModalProps) {
 													})
 												}
 												rows={4}
-												className="block h-32 max-h-32 w-full resize-none overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-500/10"
+												className="block min-h-40 max-h-80 w-full resize-y overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-500/10"
 												placeholder={t('notePlaceholder')}
 											/>
 										</div>
-									</div>
+									</aside>
 								</div>
 							) : activeTab === 'pricing' ? (
-								showPricingJson ? (
-									<ModelPricingJsonPreview preview={pricingPreview} />
-								) : (
-									<ModelPricingPanel {...props} />
-								)
+								<>
+									<div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+										<p className="text-xs font-medium text-gray-500">{t('pricingViewLabel')}</p>
+										<div
+											role="group"
+											aria-label={t('pricingViewLabel')}
+											className="inline-flex gap-1 rounded-lg bg-gray-100 p-1"
+										>
+											{(
+												[
+													{
+														json: false,
+														label: t('pricingFormView'),
+														Icon: AdjustmentsHorizontalIcon,
+													},
+													{ json: true, label: t('pricingJsonView'), Icon: CodeBracketIcon },
+												] as const
+											).map(({ json, label, Icon }) => (
+												<button
+													key={String(json)}
+													type="button"
+													aria-pressed={showPricingJson === json}
+													onClick={() => setShowPricingJson(json)}
+													className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 ${
+														showPricingJson === json
+															? 'bg-white text-gray-900 shadow-sm'
+															: 'text-gray-500 hover:text-gray-900'
+													}`}
+												>
+													<Icon className="h-3.5 w-3.5" aria-hidden />
+													{label}
+												</button>
+											))}
+										</div>
+									</div>
+									{showPricingJson ? (
+										<ModelPricingJsonPreview preview={pricingPreview} />
+									) : (
+										<ModelPricingPanel {...props} />
+									)}
+								</>
 							) : activeTab === 'routes' ? (
 								<RelatedRoutesPanel
+									embedded
 									key={editingModel?.id}
 									state={routesState}
 									perspective="model"
 									disabled={busy}
 								/>
 							) : (
-								<div className="flex min-h-80 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200">
-									<div className="flex items-center gap-2 border-b border-gray-200 bg-gray-50/70 px-4 py-3">
-										<label
-											htmlFor={`${id}-metadata`}
-											className="text-sm font-medium text-gray-800"
-										>
+								<div className="flex min-h-80 flex-1 flex-col gap-4">
+									<div className="flex flex-wrap items-center gap-2">
+										<label htmlFor={`${id}-metadata`} className="text-sm font-medium text-gray-800">
 											{t('metadataJson')}
 										</label>
 										<InfoHintPopover
@@ -826,7 +826,7 @@ export function ModelModal(props: ModelModalProps) {
 												metadata: event.target.value,
 											})
 										}
-										className="min-h-64 w-full flex-1 resize-none bg-gray-50/30 p-4 font-mono text-xs leading-6 text-gray-800 outline-none focus:ring-2 focus:ring-inset focus:ring-gray-200"
+										className="min-h-80 w-full flex-1 resize-y rounded-lg border border-gray-200 bg-gray-50/50 p-4 font-mono text-xs leading-6 text-gray-800 outline-none focus:ring-2 focus:ring-inset focus:ring-gray-200"
 										placeholder={t('metadataPlaceholder')}
 										spellCheck={false}
 									/>

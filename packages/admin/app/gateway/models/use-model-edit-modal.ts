@@ -12,6 +12,7 @@ import {
 	createDefaultImagePerImageDraft,
 	createDefaultEmbeddingTierRow,
 	createDefaultImageTokenTierRow,
+	imagePricingRowsForMode,
 	createDefaultNewModelTierRow,
 	draftRowsHaveImageTokenPrices,
 	draftRowsLookLikeImageOnly,
@@ -181,13 +182,7 @@ export function useModelEditModal(options?: Options) {
 
 	const handleImageBillingModeChange = useCallback((mode: ImageBillingModeDraft) => {
 		setImageBillingMode(mode);
-		if (mode === 'per_image') {
-			setPricingTierRows([]);
-			return;
-		}
-		setPricingTierRows((rows) =>
-			draftRowsHaveImageTokenPrices(rows) ? rows : [createDefaultImageTokenTierRow()]
-		);
+		setPricingTierRows((rows) => imagePricingRowsForMode(rows, mode));
 	}, []);
 
 	/** 切换 Kind：同步 modalities / token 字段，并在无对应单价时写入默认档。 */

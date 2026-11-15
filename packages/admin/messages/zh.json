@@ -988,7 +988,7 @@
 		"import": {
 			"title": "从静态目录导入",
 			"subtitle": "选择模型导入，已有相同 ID 的模型不会被覆盖。价格以 {currency} 显示。",
-			"searchPlaceholder": "搜索 Model ID 或显示名称",
+			"searchPlaceholder": "搜索 模型 ID 或显示名称",
 			"clearSearch": "清除搜索",
 			"clearSelection": "清除选择",
 			"reloadCatalog": "重新加载目录",
@@ -1005,7 +1005,7 @@
 			"catalogEmpty": "目录为空",
 			"noMatch": "没有匹配该筛选条件的模型",
 			"selectColumn": "选择",
-			"modelId": "Model ID",
+			"modelId": "模型 ID",
 			"displayName": "显示名称",
 			"vendor": "模型厂商",
 			"context": "上下文",
@@ -1029,7 +1029,7 @@
 		"modal": {
 			"editTitle": "编辑模型",
 			"newTitle": "新建模型",
-			"prefilledFrom": "已从 {id} 预填。Model ID 已加上 -copy 后缀，保存前请确认。",
+			"prefilledFrom": "已从 {id} 预填。模型 ID 已加上 -copy 后缀，保存前请确认。",
 			"copyDisplayName": "{name}（副本）",
 			"kind": "类型",
 			"kindLlm": "大语言模型",
@@ -1040,7 +1040,7 @@
 			"kindHintImage": "文生图模型：OUTPUT 含 image、Image token 单价，无上下文 / Max Tokens。",
 			"kindHintAsr": "输入音频、输出文字，支持按秒或 Token 计费。",
 			"kindHintTts": "输入文字、输出音频，使用按字符计费。",
-			"modelIdRequired": "Model ID *",
+			"modelIdRequired": "模型 ID *",
 			"modelIdPlaceholder": "gpt-4o",
 			"displayName": "显示名称",
 			"displayNamePlaceholder": "GPT-4o",
@@ -1095,6 +1095,9 @@
 			"editHint": "管理模型信息、输入输出、定价和关联路由。",
 			"modalities": "输入与输出",
 			"backToForm": "返回表单",
+			"pricingViewLabel": "定价视图",
+			"pricingFormView": "表单",
+			"pricingJsonView": "JSON",
 			"metadataHint": "可选的模型附加 JSON 数据，留空则移除。",
 			"pricingJsonHint": "当前表单的 pricing_profile，包含尚未保存的单价和时段配置。",
 			"jsonCopyFailed": "复制失败，已选中文本，可手动复制。",
@@ -1157,7 +1160,7 @@
 				"cacheRead": "缓存读取",
 				"cacheWrite": "缓存写入"
 			},
-			"modelIdRequiredError": "请填写 Model ID",
+			"modelIdRequiredError": "请填写 模型 ID",
 			"invalidMetadata": "元数据须为有效的 JSON 对象"
 		},
 		"metadata": {
@@ -2886,7 +2889,7 @@
 			"deleteConfirm": "将撤销「{name}」下全部 {count} 条有效授权，并解除已注册实例的归属；该应用之后无法再注册。继续吗？",
 			"deleted": "应用已删除",
 			"unattributedTitle": "未归属的授权",
-			"unattributedHint": "内置授权服务器接管之前签发、未关联任何应用的授权。切换后用户需要重新授权，可直接撤销或等其过期。",
+			"unattributedHint": "未关联应用的历史授权。切换授权模式不会清除这些记录，可按状态查看或撤销。",
 			"unattributedBadge": "未归属",
 			"filteringBy": "正在查看：{name} 的授权",
 			"form": {
@@ -2904,7 +2907,17 @@
 				"saved": "应用已保存",
 				"saveFailed": "保存应用失败"
 			}
-		}
+		},
+		"managementTitle": "应用与用户授权",
+		"globalScope": "全网关记录 · 不按当前服务范围或授权服务器地址筛选",
+		"relationshipHint": "应用定义内置授权服务器允许接入的客户端；一个应用可有多个客户端实例和用户。用户同意后，令牌绑定网关用户与具体实例，调用按该用户的权限与额度处理。切换授权服务器不会删除这些记录。",
+		"grantsTitle": "用户授权",
+		"grantsHint": "每条记录是网关用户对某个客户端实例的授权。选择左侧应用可查看对应记录。",
+		"appsRoleHint": "内置授权服务器按应用规则接纳客户端；同一应用可注册多个实例。",
+		"searchApps": "搜索应用名称或标识",
+		"selectApp": "选择应用",
+		"allGrants": "全部授权",
+		"noMatchingApps": "没有匹配的应用"
 	},
 	"keysPage": {
 		"title": "API 密钥",
@@ -4162,23 +4175,24 @@
 			"add": "添加",
 			"preview": "预览",
 			"noTiers": "暂无档位。",
-			"upto": "upto",
-			"input": "input",
-			"output": "output",
-			"cacheRead": "cache read",
-			"cacheWrite": "cache write",
+			"upto": "输入上限",
+			"input": "输入",
+			"output": "输出",
+			"cacheRead": "缓存读取",
+			"cacheWrite": "缓存写入",
 			"textInput": "文本输入",
 			"cachedText": "缓存文本",
 			"imageInput": "图像输入",
 			"cachedImageInput": "缓存图像输入",
 			"imageOutput": "图像输出",
-			"imageHint": "按上游 Images usage × 下列 $/1M token 单价计费。路由 factor 在之上叠加。",
+			"imageHint": "图片用量按下方 {currency}/百万 Token 单价计费，再应用路由倍率。",
 			"footer": "{currency}/1M；按 input_tokens（最后一行无上限）。保存时无档位 → null（计费 0）。",
 			"footerImage": "单位：{currency}/1M tokens · 文本输入 / 缓存文本 / 图像输入 / 缓存图像输入 / 图像输出。末档无上限。",
 			"removeTier": "移除此档",
 			"lastTierOpenEnded": "最后一档无上限（JSON upto: null）；不可编辑",
 			"unitPerM": "{currency}/百万 Token",
-			"unitPerImage": "{currency}/张"
+			"unitPerImage": "{currency}/张",
+			"tierField": "第 {tier} 档 · {field}"
 		},
 		"readOnlyTable": {
 			"inputRange": "输入范围",
@@ -4278,6 +4292,7 @@
 			"selectService": "选择 MCP 服务",
 			"catalogPricing": "目录与计费",
 			"copyEndpoint": "复制接入地址",
+			"editDefaultPricing": "编辑默认价格",
 			"loading": "正在加载服务"
 		},
 		"clientEndpoint": "客户端接入地址",
@@ -4288,7 +4303,14 @@
 		},
 		"clientAccess": {
 			"title": "客户端接入",
-			"description": "选择服务范围和鉴权方式，复制客户端配置或验证工具目录。"
+			"description": "选择服务范围和鉴权方式，复制客户端配置或验证工具目录。",
+			"authCategories": "接入方式",
+			"keyTitle": "API Key 接入",
+			"oauthTitle": "OAuth 2.0 授权接入",
+			"guideTitle": "客户端配置",
+			"keyDescription": "使用网关用户 API Key，复制对应客户端的配置即可接入。",
+			"oauthDescription": "客户端通过浏览器登录并授权，无需填写 API Key。",
+			"documentation": "客户端接入文档"
 		},
 		"title": "MCP 服务",
 		"subtitle": "接入远程服务，管理工具目录、计费与客户端授权",
@@ -4343,11 +4365,17 @@
 			},
 			"issuerLabel": "本 Gateway 的公开地址（issuer）",
 			"issuerPlaceholder": "https://api.example.com",
-			"issuerHint": "客户端访问本 Gateway 所用的 origin。反向代理需把 /oauth/* 与 /.well-known/oauth-authorization-server 转发到代理服务。清空即可回滚到外部授权服务器。",
+			"issuerHint": "客户端访问本 Gateway 所用的 origin。反向代理需把 /oauth/* 与 /.well-known/oauth-authorization-server 转发到代理服务。",
 			"consentLabel": "登录与同意页（可选）",
 			"consentPlaceholder": "https://portal.example.com/oauth/consent",
 			"consentHint": "用户在这里登录并同意。Gateway 会附带 request_id。留空则使用内置页面，用户用 API Key 确认。",
-			"consentInvalid": "同意页地址无效：请填写不含账号密码和片段的 https 地址（仅 localhost 允许 http）。"
+			"consentInvalid": "同意页地址无效：请填写不含账号密码和片段的 https 地址（仅 localhost 允许 http）。",
+			"serverTitle": "授权服务器",
+			"scope": {
+				"builtin": "全局配置，适用于所有 MCP 服务。应用准入、客户端注册与令牌签发由 Gateway 管理。",
+				"external": "全局配置，客户端登录与注册由外部服务器管理。下方仅展示网关保存的应用和授权记录。",
+				"off": "OAuth 授权发现已关闭，API Key 接入仍可用。已有授权记录会保留，关闭不会自动撤销已签发的令牌。"
+			}
 		},
 		"connectGuide": {
 			"button": "接入指南",
@@ -4509,7 +4537,7 @@
 		"removeHeader": "移除此认证头",
 		"removedHeadersWarning": "保存后将移除认证头：{names}",
 		"advancedSettings": "高级设置",
-		"defaultPriceHint": "工具默认使用此服务的按次价格。",
+		"defaultPriceHint": "未单独设价的工具使用此价格。",
 		"timeoutHint": "范围 1,000–120,000 毫秒，默认 30 秒。",
 		"maxBytesHint": "范围 1,000–8,000,000 字节。",
 		"slugReserved": "builtin 为保留标识，请使用其他标识。",
@@ -4622,7 +4650,7 @@
 			"pricing": "计费规则",
 			"advanced": "高级设置"
 		},
-		"advancedHint": "通常使用默认值即可，仅在上游响应较慢或返回内容较大时调整。默认超时 30 秒，最大响应 1 MiB。",
+		"advancedHint": "仅在上游响应较慢或返回内容较大时调整。",
 		"pricing": {
 			"simpleDefaultHint": "未配置独立价格的工具采用这里的默认设置。",
 			"needsReview": "配置待检查",

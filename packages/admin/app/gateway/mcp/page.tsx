@@ -4,7 +4,15 @@ import { useProxyBaseUrl } from '@/components/proxy-connection-provider';
 import { AdminPageTitle } from '@/components/admin-page-title';
 
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { ClockIcon, ServerStackIcon, CodeBracketIcon, LinkIcon } from '@heroicons/react/24/outline';
+import {
+	ClockIcon,
+	ServerStackIcon,
+	CodeBracketIcon,
+	LinkIcon,
+	KeyIcon,
+	BookOpenIcon,
+	ShieldCheckIcon,
+} from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -17,7 +25,7 @@ import {
 	type McpWorkspaceView,
 	type McpConnectAuth,
 } from './mcp-workspace-location';
-import { McpServerFormModal } from './components/mcp-server-form-modal';
+import { McpServerFormModal, type McpFormSection } from './components/mcp-server-form-modal';
 import { useMcpServersState } from './use-mcp-servers-state';
 import { McpCatalogTestModal } from './components/mcp-catalog-test-modal';
 import { McpConnectGuide } from './components/mcp-connect-guide';
@@ -30,10 +38,13 @@ function McpServersWorkspace() {
 	const t = useTranslations('mcp');
 	const state = useMcpServersState();
 	const billing = useBillingCurrency();
+	const [formSection, setFormSection] = useState<McpFormSection>('connection');
 	const [catalogScope, setCatalogScope] = useState<string | null>(null);
 	const [guideScope, setGuideScope] = useState('');
 	const [guideAuth, setGuideAuth] = useState<McpConnectAuth>('key');
 	const [oauthServer, setOauthServer] = useState<string | undefined>(undefined);
+	// Only reveal OAuth management after a saved, enabled configuration has loaded.
+	const oauthEnabled = Boolean(oauthServer?.trim());
 	const proxyBaseUrl = useProxyBaseUrl().url;
 	const [section, setSection] = useState<'services' | 'clients'>('services');
 	const [view, setView] = useState<McpWorkspaceView>('catalog');
@@ -118,12 +129,36 @@ function McpServersWorkspace() {
 	}, [servers, selectedId, view, section, guideScope, guideAuth, requestedLocation, listLoading, listError]);
 
 	useEffect(() => {
-		if (section === 'clients' && ['#mcp-client-guide', '#mcp-oauth', '#oauth-access-tokens'].includes(window.location.hash)) {
-			document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: 'start' });
+		if (
+			section === 'clients' &&
+			['#mcp-client-guide', '#mcp-oauth', '#oauth-access-tokens'].includes(window.location.hash)
+		) {
+			const target =
+				guideAuth === 'oauth' && !oauthEnabled
+					? 'mcp-oauth'
+					: window.location.hash === '#mcp-client-guide'
+					? 'mcp-client-documentation'
+					: window.location.hash.slice(1);
+			document.getElementById(target)?.scrollIntoView({ block: 'start' });
 		}
-	}, [section, requestedLocation]);
+	}, [section, requestedLocation, guideAuth, oauthEnabled]);
 
-	function openClientGuide(scope: string, auth: McpConnectAuth = 'key') {
+	function selectClientAuth(auth: McpConnectAuth) {
+		setGuideAuth(auth);
+		// Do not retain an OAuth-only anchor when switching to the API Key guide.
+		replaceLocation(
+			mcpWorkspaceSearch(
+				window.location.search,
+				state.detail?.server.slug ?? null,
+				view,
+				guideScope,
+				auth
+			),
+			'#mcp-panel-clients'
+		);
+	}
+
+	function showClientGuide(scope: string, auth: McpConnectAuth = 'key') {
 		setGuideScope(scope);
 		setGuideAuth(auth);
 		setSection('clients');
@@ -132,11 +167,47 @@ function McpServersWorkspace() {
 			'#mcp-client-guide'
 		);
 		requestAnimationFrame(() => {
-			const guide = document.getElementById('mcp-client-guide');
+			const guide = document.getElementById(
+				auth === 'oauth' && !oauthEnabled ? 'mcp-oauth' : 'mcp-client-documentation'
+			);
 			guide?.focus({ preventScroll: true });
 			guide?.scrollIntoView({ block: 'start' });
 		});
 	}
+
+	const clientGuideContent = (
+		<div id="mcp-client-documentation-content" className="min-w-0">
+			<div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+				<div>
+					<h2 id="mcp-client-access-title" className="text-base font-medium text-gray-900">
+						<span className="inline-flex items-center gap-2">
+							<BookOpenIcon className="h-4 w-4 text-teal-700" aria-hidden="true" />
+							{t(guideAuth === 'key' ? 'clientAccess.guideTitle' : 'clientAccess.documentation')}
+						</span>
+					</h2>
+					<p className="mt-1 text-sm leading-6 text-gray-500">
+						{t(`clientAccess.${guideAuth}Description`)}
+					</p>
+				</div>
+				<button
+					type="button"
+					disabled={state.busy}
+					onClick={() => setCatalogScope(guideScope)}
+					className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+				>
+					<CodeBracketIcon className="h-4 w-4" aria-hidden="true" />
+					{t('catalogTest.title')}
+				</button>
+			</div>
+			<McpConnectGuide
+				servers={state.servers}
+				scope={guideScope}
+				onScopeChange={setGuideScope}
+				auth={guideAuth}
+				oauthServer={oauthServer}
+			/>
+		</div>
+	);
 
 	const currency = billing.loading ? '—' : billing.currency;
 	return (
@@ -215,7 +286,10 @@ function McpServersWorkspace() {
 						busy={state.busy}
 						loading={state.listLoading}
 						error={state.listError}
-						onCreate={state.openCreate}
+						onCreate={() => {
+							setFormSection('connection');
+							state.openCreate();
+						}}
 						onSelect={state.selectServer}
 						onRefresh={() => {
 							void state.loadList();
@@ -242,7 +316,8 @@ function McpServersWorkspace() {
 								onRetry={() => {
 									if (state.selectedId) void state.loadDetail(state.selectedId);
 								}}
-								onEdit={() => {
+								onEdit={(section = 'connection') => {
+									setFormSection(section);
 									const server = state.detail?.server;
 									if (server) state.openEdit(server);
 								}}
@@ -253,7 +328,7 @@ function McpServersWorkspace() {
 									if (server) setCatalogScope(server.slug);
 								}}
 								onConnectGuide={() => {
-									if (state.detail) openClientGuide(state.detail.server.slug);
+									if (state.detail) showClientGuide(state.detail.server.slug);
 								}}
 								onSync={() => void state.sync()}
 								onReveal={() => void state.reveal()}
@@ -288,43 +363,84 @@ function McpServersWorkspace() {
 				hidden={section !== 'clients'}
 				tabIndex={0}
 			>
-				<div className="mb-4">
-					<section
-						id="mcp-client-guide"
-						tabIndex={-1}
-						className="admin-content-panel min-w-0 scroll-mt-4 rounded-xl border border-gray-200 bg-white p-4 focus:outline-none sm:p-6"
-						aria-labelledby="mcp-client-access-title"
-					>
-						<div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-							<div>
-								<h2 id="mcp-client-access-title" className="text-base font-medium text-gray-900">
-									{t('connectGuide.title')}
-								</h2>
-								<p className="mt-1 text-sm leading-6 text-gray-500">{t('clientAccess.description')}</p>
-							</div>
-							<button
-								type="button"
-								disabled={state.busy}
-								onClick={() => setCatalogScope(guideScope)}
-								className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
-							>
-								<CodeBracketIcon className="h-4 w-4" aria-hidden="true" />
-								{t('catalogTest.title')}
-							</button>
+				<div id="mcp-client-guide" tabIndex={-1} className="scroll-mt-4 focus:outline-none">
+					<div className={styles.authNavigation}>
+						<span aria-hidden="true" className={styles.authLabel}>
+							{t('clientAccess.authCategories')}
+						</span>
+						<div
+							role="tablist"
+							aria-label={t('clientAccess.authCategories')}
+							className="flex flex-wrap items-center gap-6"
+						>
+							{(['key', 'oauth'] as const).map((auth) => {
+								const Icon = auth === 'key' ? KeyIcon : ShieldCheckIcon;
+								return (
+									<button
+										key={auth}
+										id={`mcp-auth-${auth}`}
+										type="button"
+										role="tab"
+										aria-selected={guideAuth === auth}
+										aria-controls="mcp-auth-panel"
+										tabIndex={guideAuth === auth ? 0 : -1}
+										onClick={() => selectClientAuth(auth)}
+										onKeyDown={(event) => {
+											if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+											event.preventDefault();
+											const next =
+												event.key === 'Home'
+													? 'key'
+													: event.key === 'End'
+													? 'oauth'
+													: auth === 'key'
+													? 'oauth'
+													: 'key';
+											selectClientAuth(next);
+											document.getElementById(`mcp-auth-${next}`)?.focus();
+										}}
+										className={styles.authTab}
+									>
+										<Icon className="h-4 w-4" aria-hidden="true" />
+										{t(`clientAccess.${auth}Title`)}
+									</button>
+								);
+							})}
 						</div>
-						<McpConnectGuide
-							servers={state.servers}
-							scope={guideScope}
-							onScopeChange={setGuideScope}
-							auth={guideAuth}
-							onAuthChange={setGuideAuth}
-							oauthServer={oauthServer}
-						/>
-					</section>
-				</div>
-				<div className={styles.authorization}>
-					<McpOAuthSettings onSaved={setOauthServer} onOpenGuide={() => openClientGuide(guideScope, 'oauth')} />
-					<OAuthAccessTokensPanel active={section === 'clients'} />
+					</div>
+					<div
+						id="mcp-auth-panel"
+						role="tabpanel"
+						aria-labelledby={`mcp-auth-${guideAuth}`}
+						tabIndex={0}
+						className={`${styles.authPanel} space-y-4 focus:outline-none`}
+					>
+						<div hidden={guideAuth !== 'oauth'}>
+							<div className={styles.authorization}>
+								<McpOAuthSettings
+									className={styles.guidePanel}
+									onSaved={setOauthServer}
+									onOpenGuide={() => showClientGuide(guideScope, 'oauth')}
+								/>
+								<div hidden={!oauthEnabled}>
+									<OAuthAccessTokensPanel
+										active={section === 'clients' && guideAuth === 'oauth' && oauthEnabled}
+									/>
+								</div>
+							</div>
+						</div>
+						<section
+							id="mcp-client-documentation"
+							hidden={guideAuth === 'oauth' && !oauthEnabled}
+							tabIndex={-1}
+							className={`${
+								guideAuth === 'key' ? styles.guidePanel : ''
+							} admin-content-panel min-w-0 scroll-mt-4 border border-gray-200 bg-white p-4 focus:outline-none sm:p-6`}
+							aria-labelledby="mcp-client-access-title"
+						>
+							{clientGuideContent}
+						</section>
+					</div>
 				</div>
 			</div>
 			{catalogScope !== null ? (
@@ -340,6 +456,7 @@ function McpServersWorkspace() {
 				<McpServerFormModal
 					currency={currency}
 					mode={state.formMode}
+					initialSection={formSection}
 					form={state.form}
 					busy={state.busy}
 					urlMasked={state.editingServer?.urlMasked}

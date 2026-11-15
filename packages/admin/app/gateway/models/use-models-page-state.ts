@@ -13,6 +13,7 @@ import {
 	createDefaultImagePerImageDraft,
 	createDefaultEmbeddingTierRow,
 	createDefaultImageTokenTierRow,
+	imagePricingRowsForMode,
 	createDefaultNewModelTierRow,
 	draftRowsHaveImageTokenPrices,
 	draftRowsLookLikeImageOnly,
@@ -532,15 +533,7 @@ export function useModelsPageState() {
 	const handleImageBillingModeChange = useCallback(
 		(mode: ImageBillingModeDraft) => {
 			setImageBillingMode(mode);
-			if (mode === 'per_image') {
-				setPricingTierRows([]);
-				return;
-			}
-			setPricingTierRows((rows) =>
-				draftRowsHaveImageTokenPrices(rows)
-					? rows
-					: [createDefaultImageTokenTierRow()]
-			);
+			setPricingTierRows((rows) => imagePricingRowsForMode(rows, mode));
 		},
 		[]
 	);

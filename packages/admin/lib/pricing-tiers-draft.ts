@@ -192,6 +192,40 @@ export function createDefaultAudioCharacterPricingDraft(): AudioPricingDraftStat
 	};
 }
 
+/** Switching the visible billing mode must not discard another mode's unsaved prices or tiers. */
+export function switchAudioPricingDraftMode(
+	draft: AudioPricingDraftState,
+	mode: AudioBillingModeDraft
+): AudioPricingDraftState {
+	if (mode === draft.mode) return draft;
+	if (mode === 'token') {
+		return {
+			...draft,
+			mode,
+			tiers: draft.tiers.length ? draft.tiers : createDefaultAudioTokenPricingDraft().tiers,
+		};
+	}
+	if (mode === 'per_second') {
+		const defaults = createDefaultAudioPricingDraft();
+		return {
+			...draft,
+			mode,
+			price_per_second: draft.price_per_second.trim() ? draft.price_per_second : defaults.price_per_second,
+			minimum_seconds: draft.minimum_seconds.trim() ? draft.minimum_seconds : defaults.minimum_seconds,
+		};
+	}
+	return {
+		...draft,
+		mode,
+		minimum_characters: draft.minimum_characters.trim() ? draft.minimum_characters : '0',
+	};
+}
+
+/** Keep token drafts when temporarily viewing per-image pricing. */
+export function imagePricingRowsForMode(rows: PricingTierDraftRow[], mode: ImageBillingModeDraft): PricingTierDraftRow[] {
+	return mode === 'token' && rows.length === 0 ? [createDefaultImageTokenTierRow()] : rows;
+}
+
 export function createDefaultImagePerImageDraft(): ImagePerImageDraft {
 	return {
 		default: '0.05',
@@ -486,7 +520,7 @@ export function serializeAudioPricingDraft(draft: AudioPricingDraftState): Seria
 	}
 	if (draft.mode === 'per_character') {
 		const pricePerCharacter = Number(draft.price_per_character.trim());
-		if (!Number.isFinite(pricePerCharacter) || pricePerCharacter < 0) {
+		if (!draft.price_per_character.trim() || !Number.isFinite(pricePerCharacter) || pricePerCharacter < 0) {
 			return { ok: false, error: 'Audio price_per_character must be a finite number ≥ 0' };
 		}
 		const minTrim = draft.minimum_characters.trim();
@@ -511,7 +545,7 @@ export function serializeAudioPricingDraft(draft: AudioPricingDraftState): Seria
 	}
 
 	const pricePerSecond = Number(draft.price_per_second.trim());
-	if (!Number.isFinite(pricePerSecond) || pricePerSecond < 0) {
+	if (!draft.price_per_second.trim() || !Number.isFinite(pricePerSecond) || pricePerSecond < 0) {
 		return { ok: false, error: 'Audio price_per_second must be a finite number ≥ 0' };
 	}
 	const minTrim = draft.minimum_seconds.trim();

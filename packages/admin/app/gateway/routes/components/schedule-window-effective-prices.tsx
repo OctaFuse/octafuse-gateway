@@ -68,16 +68,16 @@ function SideRows({
 								{r.rangeLine}
 							</td>
 						) : null}
-						<td className="whitespace-nowrap px-2 py-1 text-right font-mono tabular-nums text-gray-800">
+						<td className="whitespace-nowrap px-2 py-1 text-right font-mono font-medium tabular-nums text-gray-900">
 							<PriceCell dash={dash} value={inputPrice} />
 						</td>
-						<td className="whitespace-nowrap px-2 py-1 text-right font-mono tabular-nums text-gray-800">
+						<td className="whitespace-nowrap px-2 py-1 text-right font-mono font-medium tabular-nums text-gray-900">
 							<PriceCell dash={dash} value={outputPrice} />
 						</td>
-						<td className="whitespace-nowrap px-2 py-1 text-right font-mono tabular-nums text-gray-800">
+						<td className="whitespace-nowrap px-2 py-1 text-right font-mono font-medium tabular-nums text-gray-900">
 							<PriceCell dash={dash} value={cacheRead} />
 						</td>
-						<td className="whitespace-nowrap px-2 py-1 text-right font-mono tabular-nums text-gray-800">
+						<td className="whitespace-nowrap px-2 py-1 text-right font-mono font-medium tabular-nums text-gray-900">
 							<PriceCell dash={dash} value={cacheWrite} />
 						</td>
 					</tr>
