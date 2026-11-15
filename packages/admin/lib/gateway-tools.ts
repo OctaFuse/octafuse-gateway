@@ -16,7 +16,7 @@ export type GatewayToolDefinition = {
 	configAnchor: string;
 };
 
-/** 已上线的工具；新增 tool 时在此登记，供 Invocations 筛选与 Config 卡片扩展。 */
+/** 已上线的工具；新增 tool 时在此登记，供请求日志的工具筛选与 Config 卡片扩展。 */
 export const GATEWAY_TOOLS: readonly GatewayToolDefinition[] = [
 	{
 		id: 'web-search',

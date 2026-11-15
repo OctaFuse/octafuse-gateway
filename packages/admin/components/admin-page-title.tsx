@@ -10,6 +10,7 @@ const TONES = {
 	models: "bg-blue-50 text-blue-700",
 	testing: "bg-blue-50 text-blue-700",
 	user: "bg-emerald-50 text-emerald-700",
+	logs: "bg-blue-50 text-blue-700",
 	tools: "bg-teal-50 text-teal-700",
 	analytics: "bg-indigo-50 text-indigo-700",
 	integration: "bg-amber-50 text-amber-700",

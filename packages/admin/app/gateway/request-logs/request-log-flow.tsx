@@ -1,8 +1,8 @@
 'use client';
 
-import { MultiplierBadge } from '@/components/financial-value';
 import { useEffect, useId, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { formatRequestCostMultiplier, requestLogDetailUsageMetrics } from './request-log-values';
 import {
   ArrowRightIcon,
   ArrowsRightLeftIcon,
@@ -13,13 +13,10 @@ import {
   ExclamationCircleIcon,
   ServerStackIcon,
 } from '@heroicons/react/24/outline';
-import { PricingInfoHint } from '@/components/PricingInfoHint';
+import { CostCards, Fields, RawData, detailButtonClass as buttonClass } from './request-log-detail-parts';
 import { requestLogDuration } from './request-log-query';
 import type { GatewayRequestLog } from '@/lib/types';
-import {
-  formatGatewayMoneyCode,
-  formatGatewayMoneyCodeSigned,
-} from '@/lib/format-gateway-currency';
+import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
 import { normalizeRouteGroup } from '@/lib/route-group-ui';
 import { summarizePricingAuditJson } from '@/lib/pricing-ui';
 import {
@@ -36,72 +33,6 @@ type Selection = Stage | `attempt:${number}`;
 
 const ms = requestLogDuration;
 const json = (value: unknown) => JSON.stringify(value, null, 2);
-const buttonClass =
-  'rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 hover:border-gray-300 hover:text-gray-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-500';
-
-function Fields({ rows }: { rows: [string, unknown, 'factor'?][] }) {
-  return (
-    <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
-      {rows.map(([label, value, kind]) => (
-        <div key={label} className="min-w-0">
-          <dt className="text-xs text-gray-500">{label}</dt>
-          <dd className="mt-1 break-words font-mono text-xs text-gray-800 [overflow-wrap:anywhere]">
-            {value == null || value === '' ? '—' : kind === 'factor' && value !== '—' ? <MultiplierBadge title={label}>{String(value)}</MultiplierBadge> : String(value)}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-function RawData({ title, raw }: { title: string; raw: string | null | undefined }) {
-  const common = useTranslations('common');
-  const t = useTranslations('requestLogs.flow');
-  const [copiedText, setCopiedText] = useState<string | null>(null);
-  const [copyFailed, setCopyFailed] = useState(false);
-  let display = raw?.trim() ?? '';
-  try {
-    if (display) display = json(JSON.parse(display));
-  } catch {
-    /* Keep malformed legacy values readable. */
-  }
-  return (
-    <details className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white">
-      <summary className="cursor-pointer px-3 py-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
-        {title}
-      </summary>
-      <div className="border-t border-gray-100 p-3">
-        <div className="mb-2 flex justify-end gap-2">
-          {copyFailed && (
-            <span role="status" className="text-xs text-red-600">
-              {t('copyFailed')}
-            </span>
-          )}
-          <button
-            type="button"
-            className={buttonClass}
-            disabled={!display}
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(display);
-                setCopiedText(display);
-                setCopyFailed(false);
-              } catch {
-                setCopyFailed(true);
-              }
-            }}
-          >
-            {copiedText === display ? common('copied') : common('copy')}
-          </button>
-        </div>
-        <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded bg-gray-50 p-3 font-mono text-xs leading-relaxed text-gray-700">
-          {display || common('noDataFound')}
-        </pre>
-      </div>
-    </details>
-  );
-}
-
 export function RequestLogFlow({
   log,
   providerLabel,
@@ -138,11 +69,12 @@ export function RequestLogFlow({
     log.gateway_overhead_ms,
     log.stream_duration_ms
   );
-  const catalogAmount = log.standard_cost ?? 0;
+  const locale = useLocale();
+  const usageMetrics = requestLogDetailUsageMetrics(log);
   const money = (value: number | undefined) =>
     value == null ? '—' : formatGatewayMoneyCode(value, currency, 6);
   const count = (value: number | null | undefined) =>
-    value == null ? '—' : value.toLocaleString();
+    value == null ? '—' : value.toLocaleString(locale);
   const status = ['success', 'error', 'incomplete', 'cancelled'].includes(log.status)
     ? options(`requestStatus.${log.status}`)
     : log.status;
@@ -636,84 +568,22 @@ export function RequestLogFlow({
             )}
             {selection === 'billing' && (
               <>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  {[
-                    [t('titles.chargedUserBudget'), log.charged_cost],
-                    [t('titles.meteredSupplierCost'), log.metered_cost],
-                    [f('catalogAmount'), log.standard_cost],
-                  ].map(([label, amount]) => (
-                    <div key={label} className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                      <div className="text-xs text-gray-500">{label}</div>
-                      <div className="mt-1 font-mono text-base font-medium text-gray-800">
-                        {money(amount as number | undefined)}
-                      </div>
-                    </div>
-                  ))}
-                  <div className="rounded-lg border border-gray-200 bg-white p-3">
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                      {t('ui.profit')}
-                      <PricingInfoHint kind="profit" />
-                    </div>
-                    <div
-                      className={`mt-1 text-base font-medium tabular-nums ${
-                        (log.charged_cost ?? 0) - (log.metered_cost ?? 0) < 0
-                          ? 'text-red-600'
-                          : 'text-gray-900'
-                      }`}
-                    >
-                      {formatGatewayMoneyCodeSigned(
-                        (log.charged_cost ?? 0) - (log.metered_cost ?? 0),
-                        currency,
-                        6
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <CostCards log={log} currency={currency} />
                 <div className="mt-4">
                   <Fields
                     rows={[
-                      [f('inputTokens'), count(log.input_tokens)],
-                      [f('outputTokens'), count(log.output_tokens)],
-                      [f('cacheRead'), count(log.cache_read_tokens)],
-                      [f('cacheWrite'), count(log.cache_write_tokens)],
-                      [f('reasoningTokens'), count(log.reasoning_tokens)],
+                      ...usageMetrics.map(metric => [f(metric.field), count(metric.value)] as [string, unknown]),
                       [f('billingKind'), log.billing_kind],
                       [
                         t('ui.chargedFactor'),
-                        catalogAmount > 0
-                          ? `×${(log.charged_cost / catalogAmount).toLocaleString('en-US', {
-                              maximumFractionDigits: 3,
-                            })}`
-                          : '—',
+                        formatRequestCostMultiplier(log.charged_cost, log.standard_cost, locale) ?? '—',
                         'factor',
                       ],
                       [
                         t('ui.meteredFactor'),
-                        catalogAmount > 0
-                          ? `×${(log.metered_cost / catalogAmount).toLocaleString('en-US', {
-                              maximumFractionDigits: 3,
-                            })}`
-                          : '—',
+                        formatRequestCostMultiplier(log.metered_cost, log.standard_cost, locale) ?? '—',
                         'factor',
                       ],
-                      ...(log.billing_kind?.startsWith('image')
-                        ? ([
-                            [f('inputImages'), count(log.input_image_count)],
-                            [f('outputImages'), count(log.output_image_count)],
-                          ] as [string, unknown][])
-                        : []),
-                      ...(log.audio_duration_seconds != null
-                        ? ([[f('audioSeconds'), count(log.audio_duration_seconds)]] as [
-                            string,
-                            unknown
-                          ][])
-                        : []),
-                      ...(log.audio_characters != null
-                        ? ([[f('audioCharacters'), count(log.audio_characters)]] as [
-                            string,
-                            unknown
-                          ][])
-                        : []),
                     ]}
                   />
                 </div>

@@ -14,6 +14,7 @@ import {
 	bodyTemplateForSelection,
 	buildModelRoutingString,
 	buildRequestLogsHref,
+	buildToolRequestLogsHref,
 	filterMatchingActiveRoutes,
 	isBodyDirty,
 	listDashScopeAudioClientOperations,
@@ -376,6 +377,14 @@ describe("simulator-utils", () => {
 			buildRequestLogsHref({ routeGroup: "default" }),
 			"/gateway/request-logs?route_group=default"
 		);
+	});
+
+	it("buildToolRequestLogsHref scopes request logs to REST tool calls", () => {
+		assert.equal(
+			buildToolRequestLogsHref({ apiKeyId: "k1", toolId: "web-search" }),
+			"/gateway/request-logs?kinds=tool%3Aweb-search&api_key_id=k1"
+		);
+		assert.equal(buildToolRequestLogsHref(), "/gateway/request-logs?kinds=tool");
 	});
 
 	it("isBodyDirty detects edits", () => {

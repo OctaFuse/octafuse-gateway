@@ -18,7 +18,13 @@ import type { RequestLogSummaryRow, RequestLogsRepository } from '../../storage/
 import type { RequestLogsD1Statements } from './d1-repository-extras';
 import type { InsertRequestLogParams } from '../request-logs-types';
 import { filterAllowedRequestLogStatuses } from '../request-log-status-filter';
-import { appendModelIdPrefixCondition, appendProviderIdsCondition } from '../request-log-filters';
+import {
+	appendAnyOfCondition,
+	appendModelIdPrefixCondition,
+	appendModelScopeCondition,
+	appendProviderScopeCondition,
+	type RequestLogMatchGroup,
+} from '../request-log-filters';
 import { buildRequestLogSummaryQuery, mapRequestLogSummaryRows } from '../request-log-summary';
 import {
 	sqliteBusinessTimezoneModifier,
@@ -168,6 +174,10 @@ export function createD1RequestLogsRepository(db: D1DatabaseClient): RequestLogs
 			modelId?: string;
 			providerId?: string;
 			providerIds?: string[];
+			providerKinds?: string[];
+			modelIds?: string[];
+			modelVendors?: string[];
+			anyOf?: RequestLogMatchGroup[];
 			modelIdPrefix?: string;
 			routeGroup?: string;
 			protocol?: string;
@@ -212,14 +222,15 @@ export function createD1RequestLogsRepository(db: D1DatabaseClient): RequestLogs
 				conditionsRl.push('rl.provider_id = ?');
 				bindValues.push(options.providerId);
 			}
-			const providerIdConditions: string[] = [];
-			const providerIdBinds: unknown[] = [];
-			appendProviderIdsCondition(providerIdConditions, providerIdBinds, 'provider_id', options.providerIds);
-			if (providerIdConditions[0]) {
-				conditions.push(providerIdConditions[0]);
-				conditionsRl.push(providerIdConditions[0].replace('provider_id', 'rl.provider_id'));
-				bindValues.push(...providerIdBinds);
-			}
+			// 两条查询共用一份绑定值，带别名的条件单独生成，不用字符串替换补表别名。
+			const providerScope = { providerIds: options.providerIds, kinds: options.providerKinds };
+			appendProviderScopeCondition(conditions, bindValues, '', providerScope);
+			appendProviderScopeCondition(conditionsRl, [], 'rl.', providerScope);
+			const modelScope = { modelIds: options.modelIds, vendors: options.modelVendors };
+			appendModelScopeCondition(conditions, bindValues, '', modelScope);
+			appendModelScopeCondition(conditionsRl, [], 'rl.', modelScope);
+			appendAnyOfCondition(conditions, bindValues, '', options.anyOf);
+			appendAnyOfCondition(conditionsRl, [], 'rl.', options.anyOf);
 			const modelPrefixConditions: string[] = [];
 			const modelPrefixBinds: unknown[] = [];
 			appendModelIdPrefixCondition(modelPrefixConditions, modelPrefixBinds, 'model_id', options.modelIdPrefix);

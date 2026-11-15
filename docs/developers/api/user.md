@@ -660,7 +660,7 @@ Authorization: Bearer <USER_API_KEY>
 3. 调用 Active 引擎；**仅成功**后按该引擎 **charged** 单价计入 `users.budget_spent`
 4. 上游失败不扣费
 
-运营侧在 Admin → **Tools → Configuration** 按引擎维护 catalog 并选择 Active；调用记录见 **Tools → Invocations**（与 Request Logs 同源，`provider_id=octafuse-tools`）。
+运营侧在 Admin → **Tools → Configuration** 按引擎维护 catalog 并选择 Active；调用记录见 **Logs → Request Logs**（Type 选 **REST tools**，`provider_id=octafuse-tools`）。
 
 ### 响应
 
@@ -721,7 +721,7 @@ Authorization: Bearer <USER_API_KEY>
 4. 调用 Active 引擎；**仅成功**后按该引擎单价计入 `users.budget_spent`
 5. 上游失败不扣费；上游 **401/403** 映射为 **502**（勿透出成用户 Key 无效）
 
-运营侧在 Admin → **Tools → Configuration** 按引擎维护 catalog 并选择 Active；调用记录见 **Tools → Invocations**（与 Request Logs 同源，`provider_id=octafuse-tools`）。
+运营侧在 Admin → **Tools → Configuration** 按引擎维护 catalog 并选择 Active；调用记录见 **Logs → Request Logs**（Type 选 **REST tools**，`provider_id=octafuse-tools`）。
 
 ### 响应
 
@@ -782,7 +782,7 @@ Authorization: Bearer <USER_API_KEY>
 3. 调用 Active 引擎；**仅成功**后按该引擎单价计入 `users.budget_spent`
 4. 上游失败不扣费；上游 **401/403** 映射为 **502**
 
-运营侧在 Admin → **Tools → Configuration** 配置；调用记录见 **Tools → Invocations**（`model_id=tool:web-deep-search`）。
+运营侧在 Admin → **Tools → Configuration** 配置；调用记录见 **Logs → Request Logs**（Type 选 **REST tools**，`model_id=tool:web-deep-search`）。
 
 ### 响应
 
@@ -866,7 +866,7 @@ Authorization: Bearer <USER_API_KEY>
 4. **仅成功**后按计费单元数 × 三账本单价写入日志，并仅用 **charged** 扣费；上游失败写 error 日志、**不扣费**
 5. 请求日志不含原文 / excerpt：`requestBody` 仅 `{ total_chars, billing_units }`；`pricing_audit`（v4 `fixed_tool_cost`）含 `unit_prices` / `totals` / `provider` / `billing_units`
 
-运营侧在 Admin → **Tools → Configuration** 配置；调用记录见 **Tools → Invocations**（`model_id=tool:ai-detection`）。
+运营侧在 Admin → **Tools → Configuration** 配置；调用记录见 **Logs → Request Logs**（Type 选 **REST tools**，`model_id=tool:ai-detection`）。
 
 ### 响应
 

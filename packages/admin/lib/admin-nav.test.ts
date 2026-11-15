@@ -8,17 +8,29 @@ describe('matchAdminNavRoute', () => {
 		assert.equal(matchAdminNavRoute('/dashboard')?.nameKey, 'dashboard');
 	});
 
-	it('prefers the longest href so nested tools pages win', () => {
+	it('matches the tools pages', () => {
 		assert.equal(matchAdminNavRoute('/gateway/tools')?.nameKey, 'toolsConfig');
-		assert.equal(matchAdminNavRoute('/gateway/tools/invocations')?.nameKey, 'toolInvocations');
 		assert.equal(matchAdminNavRoute('/gateway/mcp')?.nameKey, 'mcpServers');
 	});
 
-	it('lists REST services, then MCP servers, then invocations', () => {
+	it('lists REST services, then MCP servers', () => {
 		const tools = ADMIN_NAV_GROUPS.find((group) => group.groupKey === 'tools');
 		assert.deepEqual(
 			tools?.items.map((item) => item.nameKey),
-			['toolsConfig', 'mcpServers', 'toolInvocations'],
+			['toolsConfig', 'mcpServers'],
+		);
+	});
+
+	it('keeps request and audit logs in their own group, after users', () => {
+		const keys = ADMIN_NAV_GROUPS.map((group) => group.groupKey);
+		assert.equal(keys.indexOf('logs'), keys.indexOf('user') + 1);
+		assert.deepEqual(
+			ADMIN_NAV_GROUPS.find((group) => group.groupKey === 'logs')?.items.map((item) => item.nameKey),
+			['requestLogs', 'auditLogs'],
+		);
+		assert.deepEqual(
+			ADMIN_NAV_GROUPS.find((group) => group.groupKey === 'user')?.items.map((item) => item.nameKey),
+			['users', 'apiKeys'],
 		);
 	});
 
