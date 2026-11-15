@@ -34,7 +34,15 @@ export function Fields({ rows }: { rows: DetailFieldRow[] }) {
 	);
 }
 
-export function RawData({ title, raw }: { title: string; raw: string | null | undefined }) {
+export function RawData({
+	title,
+	raw,
+	collapsible = true,
+}: {
+	title: string;
+	raw: string | null | undefined;
+	collapsible?: boolean;
+}) {
 	const common = useTranslations('common');
 	const t = useTranslations('requestLogs.flow');
 	const [copiedText, setCopiedText] = useState<string | null>(null);
@@ -45,40 +53,53 @@ export function RawData({ title, raw }: { title: string; raw: string | null | un
 	} catch {
 		/* Keep malformed legacy values readable. */
 	}
-	return (
+	const content = (
+		<div className="p-3">
+			<div className="mb-2 flex justify-end gap-2">
+				{copyFailed && (
+					<span role="status" className="text-xs text-red-600">
+						{t('copyFailed')}
+					</span>
+				)}
+				<button
+					type="button"
+					className={detailButtonClass}
+					aria-label={`${title} · ${copiedText === display ? common('copied') : common('copy')}`}
+					disabled={!display}
+					onClick={async () => {
+						try {
+							await navigator.clipboard.writeText(display);
+							setCopiedText(display);
+							setCopyFailed(false);
+						} catch {
+							setCopiedText(null);
+							setCopyFailed(true);
+						}
+					}}
+				>
+					{copiedText === display ? common('copied') : common('copy')}
+				</button>
+			</div>
+			<pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded bg-gray-50 p-3 font-mono text-xs leading-relaxed text-gray-700">
+				{display || common('noDataFound')}
+			</pre>
+		</div>
+	);
+	return collapsible ? (
 		<details className="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white">
 			<summary className="cursor-pointer px-3 py-2.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
 				{title}
 			</summary>
-			<div className="border-t border-gray-100 p-3">
-				<div className="mb-2 flex justify-end gap-2">
-					{copyFailed && (
-						<span role="status" className="text-xs text-red-600">
-							{t('copyFailed')}
-						</span>
-					)}
-					<button
-						type="button"
-						className={detailButtonClass}
-						disabled={!display}
-						onClick={async () => {
-							try {
-								await navigator.clipboard.writeText(display);
-								setCopiedText(display);
-								setCopyFailed(false);
-							} catch {
-								setCopyFailed(true);
-							}
-						}}
-					>
-						{copiedText === display ? common('copied') : common('copy')}
-					</button>
-				</div>
-				<pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded bg-gray-50 p-3 font-mono text-xs leading-relaxed text-gray-700">
-					{display || common('noDataFound')}
-				</pre>
-			</div>
+			<div className="border-t border-gray-100">{content}</div>
 		</details>
+	) : (
+		<div
+			role="group"
+			aria-label={title}
+			className="overflow-hidden rounded-lg border border-gray-200 bg-white"
+		>
+			{content}
+		</div>
 	);
 }
 

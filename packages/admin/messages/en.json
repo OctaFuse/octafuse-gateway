@@ -3083,6 +3083,10 @@
 			"limit": "You can check up to {max} individual providers. To select more, check the whole provider type."
 		},
 		"invocation": {
+			"requestView": "Request view",
+			"responseView": "Response view",
+			"dataPreview": "Preview",
+			"dataOriginal": "Raw data",
 			"restTitle": "REST tool call",
 			"mcpTitle": "MCP tool call",
 			"engineLatency": "Engine time",

@@ -5,7 +5,7 @@
  * 所以不用「请求流程」，而是按排查顺序展示：失败原因 → 调用概览 → 请求 → 响应 → 记账。
  * REST 工具与 MCP 工具记录的内容不同，各有一个视图，共用外壳和记账块。
  */
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ArrowRightIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { formatGatewayMoneyCode } from '@/lib/format-gateway-currency';
@@ -135,6 +135,73 @@ function NoResponse({ log }: { log: GatewayRequestLog }) {
 	return <p className={noteClass}>{t(log.status === 'success' ? 'noResponseStored' : 'noResponseFailed')}</p>;
 }
 
+/** 请求、响应共用的可读视图与原始视图；各区独立切换，不转换协议。 */
+function DataSection({
+	title,
+	viewLabel,
+	raw,
+	rawTitle,
+	aside,
+	notice,
+	children,
+}: {
+	title: string;
+	viewLabel: string;
+	raw: string | null | undefined;
+	rawTitle: string;
+	aside?: ReactNode;
+	notice?: ReactNode;
+	children: ReactNode;
+}) {
+	const t = useTranslations('requestLogs.invocation');
+	const [view, setView] = useState<'preview' | 'raw'>('preview');
+	const hasData = Boolean(raw?.trim());
+	return (
+		<Section
+			title={title}
+			aside={
+				<div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+					{aside}
+					{hasData && (
+						<div
+							role="group"
+							aria-label={viewLabel}
+							className="inline-flex rounded-lg bg-gray-100 p-1"
+						>
+							{(['preview', 'raw'] as const).map((option) => (
+								<button
+									key={option}
+									type="button"
+									aria-pressed={view === option}
+									onClick={() => setView(option)}
+									className={`rounded-md px-3 py-1 text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-500 ${
+										view === option
+											? 'bg-white text-gray-950 shadow-sm'
+											: 'text-gray-500 hover:text-gray-900'
+									}`}
+								>
+									{t(
+										option === 'preview'
+											? 'dataPreview'
+											: 'dataOriginal'
+									)}
+								</button>
+							))}
+						</div>
+					)}
+				</div>
+			}
+		>
+			{notice}
+			{hasData && view === 'raw' ? (
+				<RawData title={rawTitle} raw={raw} collapsible={false} />
+			) : (
+				children
+			)}
+		</Section>
+	);
+}
+
 function Accounting({ log, currency }: { log: GatewayRequestLog; currency: string }) {
 	const t = useTranslations('requestLogs.invocation');
 	const logs = useTranslations('requestLogs');
@@ -240,7 +307,7 @@ function RestCallDetail({ log, identityLabel, currency }: DetailProps) {
 			>
 				<Fields rows={overview} />
 			</Section>
-			<Section title={t('request')}>
+			<DataSection title={t('request')} viewLabel={t('requestView')} raw={log.request_body} rawTitle={t('requestRaw')}>
 				{params.length > 0 ? (
 					<ParamList params={params} />
 				) : (
@@ -248,9 +315,8 @@ function RestCallDetail({ log, identityLabel, currency }: DetailProps) {
 						{log.request_body?.trim() || '—'}
 					</pre>
 				)}
-				<RawData title={t('requestRaw')} raw={log.request_body} />
-			</Section>
-			<Section title={t('response')}>
+			</DataSection>
+			<DataSection title={t('response')} viewLabel={t('responseView')} raw={log.raw_usage} rawTitle={t('responseRaw')}>
 				{!log.raw_usage?.trim() ? (
 					<NoResponse log={log} />
 				) : detection ? (
@@ -333,8 +399,7 @@ function RestCallDetail({ log, identityLabel, currency }: DetailProps) {
 						{response.raw == null ? log.raw_usage : JSON.stringify(response.raw, null, 2)}
 					</pre>
 				)}
-				{log.raw_usage?.trim() && <RawData title={t('responseRaw')} raw={log.raw_usage} />}
-			</Section>
+			</DataSection>
 			<Accounting log={log} currency={currency} />
 		</CallShell>
 	);
@@ -378,7 +443,7 @@ function McpCallDetail({ log, identityLabel, currency }: DetailProps) {
 					]}
 				/>
 			</Section>
-			<Section title={t('request')}>
+			<DataSection title={t('request')} viewLabel={t('requestView')} raw={log.request_body} rawTitle={t('mcpRequestRaw')}>
 				{args === null ? (
 					<pre className={`max-h-48 rounded-lg border border-gray-200 bg-white p-3 ${preClass}`}>
 						{log.request_body?.trim() || '—'}
@@ -388,10 +453,13 @@ function McpCallDetail({ log, identityLabel, currency }: DetailProps) {
 				) : (
 					<ParamList params={args} />
 				)}
-				<RawData title={t('mcpRequestRaw')} raw={log.request_body} />
-			</Section>
-			<Section
+			</DataSection>
+			<DataSection
 				title={t('response')}
+				viewLabel={t('responseView')}
+				raw={log.raw_usage}
+				rawTitle={t('mcpResponseRaw')}
+				notice={result?.truncated && <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{t('truncated')}</p>}
 				aside={
 					result?.isError && (
 						<span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
@@ -404,9 +472,6 @@ function McpCallDetail({ log, identityLabel, currency }: DetailProps) {
 					<NoResponse log={log} />
 				) : (
 					<div className="space-y-3">
-						{result.truncated && (
-							<p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{t('truncated')}</p>
-						)}
 						{result.blocks.length === 0 && !result.structured && <p className={noteClass}>{t('emptyResult')}</p>}
 						{result.blocks.map((block, index) => (
 							<div key={index} className="overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -429,8 +494,7 @@ function McpCallDetail({ log, identityLabel, currency }: DetailProps) {
 						)}
 					</div>
 				)}
-				{log.raw_usage?.trim() && <RawData title={t('mcpResponseRaw')} raw={log.raw_usage} />}
-			</Section>
+			</DataSection>
 			<Accounting log={log} currency={currency} />
 		</CallShell>
 	);

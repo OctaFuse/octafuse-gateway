@@ -3083,6 +3083,10 @@
 			"limit": "最多单独勾选 {max} 个供应商。要选更多，请直接勾选供应商类型。"
 		},
 		"invocation": {
+			"requestView": "请求显示方式",
+			"responseView": "响应显示方式",
+			"dataPreview": "预览",
+			"dataOriginal": "原始数据",
 			"restTitle": "REST 工具调用",
 			"mcpTitle": "MCP 工具调用",
 			"engineLatency": "引擎耗时",

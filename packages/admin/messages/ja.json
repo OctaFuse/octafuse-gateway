@@ -3083,6 +3083,10 @@
 			"limit": "個別に選択できるプロバイダーは {max} 個までです。それ以上は種類ごと選択してください。"
 		},
 		"invocation": {
+			"requestView": "リクエスト表示",
+			"responseView": "レスポンス表示",
+			"dataPreview": "プレビュー",
+			"dataOriginal": "元データ",
 			"restTitle": "REST ツール呼び出し",
 			"mcpTitle": "MCP ツール呼び出し",
 			"engineLatency": "エンジン所要時間",
