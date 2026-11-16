@@ -357,7 +357,7 @@ async function nonStreamResponseWithUsage(
 }
 
 /**
- * 上游 400 且 body 表示 `Invalid thought signature` 时，返回清洗后的重试请求体；否则 `null`。
+ * 上游 400 且 body 表示签名无效（`Invalid` / `Corrupted thought signature`）时，返回清洗后的重试请求体；否则 `null`。
  * 用 `clone()` 读 body，不消耗原响应，不满足条件时原响应原样返回给调用方。
  */
 async function buildInvalidThoughtSignatureRetry(

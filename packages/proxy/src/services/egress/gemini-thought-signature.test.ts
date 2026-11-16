@@ -12,6 +12,10 @@ describe('isInvalidThoughtSignatureErrorBody', () => {
 		assert.equal(isInvalidThoughtSignatureErrorBody('Invalid thought_signature in request'), true);
 	});
 
+	it('matches corrupted-signature errors', () => {
+		assert.equal(isInvalidThoughtSignatureErrorBody('{"error":{"message":"Corrupted thought signature."}}'), true);
+	});
+
 	it('ignores other errors, including a missing signature', () => {
 		assert.equal(isInvalidThoughtSignatureErrorBody('{"error":{"message":"bad request"}}'), false);
 		assert.equal(
