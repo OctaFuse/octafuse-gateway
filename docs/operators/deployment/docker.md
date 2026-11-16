@@ -108,6 +108,8 @@ docker run --rm -p 8789:8789 \
 
 本地 `docker build` / `docker compose build` 可用于开发验证，但生产发版以 **tag → GHCR** 为准。
 
+**Admin 镜像的构建耗时**：`Dockerfile.admin` 的 `builder` 阶段固定为 `--platform=$BUILDPLATFORM`，`next build` 只在 CI 机器本机架构（amd64）上原生跑一次，`linux/arm64` 镜像只在 `runner` 阶段按目标平台各自组装（仅 `COPY`），不再用 QEMU 模拟编译。此前 arm64 走 QEMU，`next build`（含 TypeScript 类型检查）约 450 秒，原生约 55 秒，整个 admin 镜像约 16 分钟。这个做法要求 standalone 产物与架构无关：构建后会删除 `sharp` 的原生二进制（Admin 使用 `images.unoptimized`，不会加载它），并检查 standalone 里没有任何 `.node` / `.so` 文件。以后给 Admin 加带原生二进制的依赖时，这一步会让镜像构建失败，需改为按目标架构分别构建。
+
 **手动 dispatch** 下可选择 **`linux/amd64`**、**`linux/arm64`**（默认两者均勾选），须至少勾选一种架构。标签策略：**commit sha**、**分支名**、**semver**（在版本 tag 上）、**`latest`**（`main` 上手动构建，或 **稳定版 `vX.Y.Z` tag** 推送时）。
 
 推送后的 **GHCR** 镜像名（`github.repository` 转小写，与 workflow 中 `repository_lc` 一致）。本仓库官方镜像为：

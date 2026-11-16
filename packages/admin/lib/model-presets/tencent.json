@@ -1,5 +1,53 @@
 [
 	{
+		"id": "hy4-flash",
+		"display_name": "Hy4 flash",
+		"description": "Tencent's most cost-efficient Hy model (224B total parameters including 64B Engram parameters, 12B active) for high-frequency, large-scale daily work such as deep search, document processing, slide generation, simple frontend work, and Computer Use. It inherits Hy4's visual understanding and agent abilities, with a 1M context window and about 64K max output. Thinking is on by default (reasoning_effort high; thinking can be turned off). Supports function calling, structured outputs, caching, and OpenAI Chat Completions, Responses, and Anthropic Messages protocols. For long-horizon software engineering and other complex tasks, prefer Hy4. Prices are list prices, not the limited-time 50% TokenHub discount.",
+		"i18n": {
+			"en": "Tencent's most cost-efficient Hy model (224B total parameters including 64B Engram parameters, 12B active) for high-frequency, large-scale daily work such as deep search, document processing, slide generation, simple frontend work, and Computer Use. It inherits Hy4's visual understanding and agent abilities, with a 1M context window and about 64K max output. Thinking is on by default (reasoning_effort high; thinking can be turned off). Supports function calling, structured outputs, caching, and OpenAI Chat Completions, Responses, and Anthropic Messages protocols. For long-horizon software engineering and other complex tasks, prefer Hy4. Prices are list prices, not the limited-time 50% TokenHub discount.",
+			"zh": "腾讯混元迄今性价比最高的 Hy 模型（总参数 224B，其中 64B 为 Engram 参数，激活参数 12B），适合深度搜索、文档处理、PPT 生成、简单前端展示、Computer Use 等高频、规模化的日常工作。沿用 Hy4 的视觉理解与 Agent 能力，上下文 1M，最大输出约 64K。默认开启深度思考（reasoning_effort 为 high，可关闭）。支持 Function Calling、结构化输出、缓存，兼容 OpenAI Chat Completions、Responses 与 Anthropic Messages 协议。长程软件工程等复杂任务建议使用 Hy4。价格为刊例价，未计入 TokenHub 的限时 5 折。",
+			"ja": "Tencent の Hy モデルの中で最もコスト効率の高いモデル（総パラメータ 224B、うち 64B は Engram パラメータ、アクティブ 12B）で、ディープ検索、文書処理、スライド作成、簡単なフロントエンド、Computer Use など、頻度が高く大規模な日常業務に向きます。Hy4 の画像理解とエージェント能力を引き継ぎ、コンテキストは 1M、最大出力は約 64K です。思考は既定でオン（reasoning_effort は high、オフにも可）。Function Calling、構造化出力、キャッシュに対応し、OpenAI Chat Completions、Responses、Anthropic Messages プロトコルと互換です。長く続くソフトウェア開発など難しいタスクには Hy4 をおすすめします。価格は定価で、TokenHub の期間限定 50% オフは含みません。",
+			"ko": "Tencent Hy 모델 중 비용 효율이 가장 높은 모델(총 파라미터 224B, 그중 64B는 Engram 파라미터, 활성 12B)로, 딥 서치, 문서 처리, 슬라이드 생성, 간단한 프런트엔드, Computer Use 같은 빈도가 높고 규모가 큰 일상 업무에 적합합니다. Hy4의 이미지 이해와 에이전트 능력을 이어받았고 컨텍스트는 1M, 최대 출력은 약 64K입니다. 사고는 기본으로 켜져 있고(reasoning_effort는 high, 끌 수 있음), Function Calling, 구조화 출력, 캐시를 지원하며 OpenAI Chat Completions, Responses, Anthropic Messages 프로토콜과 호환됩니다. 길게 이어지는 소프트웨어 엔지니어링 같은 복잡한 작업에는 Hy4를 권장합니다. 가격은 정가이며 TokenHub의 기간 한정 50% 할인은 반영하지 않았습니다."
+		},
+		"vendor": "tencent",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.07,
+						"output_price": 0.281,
+						"cache_read_price": 0.003,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 0.5,
+						"output_price": 2,
+						"cache_read_price": 0.02,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-11-16"
+	},
+	{
 		"id": "hy4",
 		"display_name": "Hy4",
 		"description": "Tencent's flagship Hy4 general-availability model, a broad upgrade over Hy4 preview with stronger agentic capabilities and better results on long-horizon, real-world productivity tasks. Hy4 adds visual understanding for the first time and offers a 1M context window for agentic, coding, and productivity workloads.",
@@ -92,7 +140,8 @@
 				"text"
 			]
 		},
-		"released": "2026-08-28"
+		"released": "2026-08-28",
+		"retired": "2026-12-07"
 	},
 	{
 		"id": "hy3",

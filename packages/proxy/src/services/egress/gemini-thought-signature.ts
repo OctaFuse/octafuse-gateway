@@ -15,9 +15,12 @@
 /** Google 文档给出的占位签名，Vertex 与 Gemini API 都接受，用于跳过历史 function call 的签名校验。 */
 export const GEMINI_SKIP_THOUGHT_SIGNATURE = 'skip_thought_signature_validator';
 
-/** 上游 400 body 是否表示「签名无效」（不含「缺少签名」这一类，那是另一种错误）。 */
+/**
+ * 上游 400 body 是否表示「签名无效」（不含「缺少签名」这一类，那是另一种错误）。
+ * Vertex 报 `Invalid thought signature.`，部分上游报 `Corrupted thought signature.`。
+ */
 export function isInvalidThoughtSignatureErrorBody(text: string): boolean {
-	return /invalid/i.test(text) && /thought[\s_]?signature/i.test(text);
+	return /invalid|corrupt/i.test(text) && /thought[\s_]?signature/i.test(text);
 }
 
 type JsonObject = Record<string, unknown>;
