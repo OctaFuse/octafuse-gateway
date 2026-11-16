@@ -1,13 +1,10 @@
 'use client';
 
-import { useRef } from 'react';
-import { useElementWidth } from '@/components/use-element-width';
-import { RouteOptionsDialog } from './route-options-dialog';
-
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import type { GatewayProvider } from '@/lib/types';
-import { useLocale, useTranslations } from 'next-intl';
-import { liveProviderPickerLabel, type ProviderKindFilterOption } from '@/lib/provider-kind';
+import { useTranslations } from 'next-intl';
+import { useId } from 'react';
+import { GroupedFilterPicker, groupedFilterCatalog, groupedFilterLabeler, type GroupedFilterGroup } from '@/components/grouped-filter-picker';
+import { groupedSelectionNodes, isEmptyGroupedSelection, toggleGroupedGroup, toggleGroupedItem, type GroupedSelection } from '@/lib/grouped-selection';
 import type { RouteKindFilter } from '../types';
 
 type Props = {
@@ -16,75 +13,52 @@ type Props = {
 	filterStatus: string;
 	filterKind: RouteKindFilter;
 	filterRouteGroup: string;
-	filterVendor: string;
-	filterProviderId: string;
-	filterProviderKind: string;
-	providerKindFilterOptions: ProviderKindFilterOption[];
+	filterModels: GroupedSelection;
+	filterProviders: GroupedSelection;
+	modelGroups: GroupedFilterGroup[];
+	providerGroups: GroupedFilterGroup[];
 	statusCounts: { all: number; active: number; inactive: number };
 	kindCounts: { all: number; llm: number; image: number; asr: number; tts: number; embedding: number };
 	routeGroupFilterOptions: string[];
 	routeGroupCounts: Map<string, number>;
-	vendorFilterOptions: Array<{ key: string; label: string; count: number }>;
-	providers: GatewayProvider[];
-	providerRouteCounts: Map<string, number>;
 	onFilterStatusChange: (status: string) => void;
 	onFilterKindChange: (kind: RouteKindFilter) => void;
 	onFilterRouteGroupChange: (group: string) => void;
-	onFilterVendorChange: (vendor: string) => void;
-	onFilterProviderIdChange: (providerId: string) => void;
-	onFilterProviderKindChange: (providerKind: string) => void;
+	onModelsChange: (selection: GroupedSelection) => void;
+	onProvidersChange: (selection: GroupedSelection) => void;
 	onClearAllFilters: () => void;
 };
 
 export function RouteFilterSidebar(props: Props) {
+	const searchId = useId();
 	const t = useTranslations('filter');
 	const tw = useTranslations('routes.workspace');
 	const tc = useTranslations('common');
-	const tk = useTranslations('providers.kind');
-	const locale = useLocale();
-	const sectionRef = useRef<HTMLElement>(null);
-	const searchRef = useRef<HTMLInputElement>(null);
-	const width = useElementWidth(sectionRef);
-	const layout = width >= 1280 ? 'wide' : width >= 1024 ? 'regular' : 'compact';
-
-	const filters = [
+	const tl = useTranslations('requestLogs');
+	const staleLabel = (value: string) => tl('ui.notInCatalog', { value });
+	const pickers = [
 		{
-			key: 'vendor',
-			label: t('vendor'),
-			value: props.filterVendor,
-			onChange: props.onFilterVendorChange,
-			options: props.vendorFilterOptions.map((o) => ({ value: o.key, label: o.label, count: o.count })),
+			key: 'model', label: tc('model'), emptyLabel: tl('ui.allModels'), messages: 'modelFilter',
+			groups: props.modelGroups, value: props.filterModels, onChange: props.onModelsChange,
 		},
 		{
-			key: 'providerType',
-			label: t('providerType'),
-			value: props.filterProviderKind,
-			onChange: props.onFilterProviderKindChange,
-			options: props.providerKindFilterOptions.map((o) => ({ value: o.key, label: o.label, count: o.count })),
-		},
-		{
-			key: 'provider',
-			label: t('provider'),
-			value: props.filterProviderId,
-			onChange: props.onFilterProviderIdChange,
-			options: props.providers.map((p) => ({
-				value: p.id,
-				label: liveProviderPickerLabel(p, locale, tk('custom'), p.id),
-				count: props.providerRouteCounts.get(p.id) ?? 0,
-			})),
-		},
-		{
-			key: 'routeGroup',
-			label: t('routeGroup'),
-			value: props.filterRouteGroup,
-			onChange: props.onFilterRouteGroupChange,
-			options: props.routeGroupFilterOptions.map((value) => ({
-				value,
-				label: value,
-				count: props.routeGroupCounts.get(value) ?? 0,
-			})),
+			key: 'provider', label: tc('provider'), emptyLabel: tl('providerFilter.all'), messages: 'providerFilter',
+			groups: props.providerGroups, value: props.filterProviders, onChange: props.onProvidersChange,
 		},
 	];
+	const chips = pickers.flatMap(picker => {
+		const catalog = groupedFilterCatalog(picker.groups);
+		const labelOf = groupedFilterLabeler(picker.groups, staleLabel);
+		const nodes = groupedSelectionNodes(picker.value, catalog);
+		return (nodes.length > 1 ? nodes : []).map(node => ({
+			key: `${picker.key}:${node.type}:${node.id}`,
+			label: picker.label,
+			display: labelOf(node),
+			clear: () => picker.onChange(node.type === 'group'
+				? toggleGroupedGroup(picker.value, node.id, false, catalog)
+				: toggleGroupedItem(picker.value, node.id, false, catalog)),
+		}));
+	});
 	const kindOptions = [
 		{ value: 'all', label: t('all'), count: props.kindCounts.all },
 		{ value: 'llm', label: t('kindLlm'), count: props.kindCounts.llm },
@@ -93,117 +67,99 @@ export function RouteFilterSidebar(props: Props) {
 		{ value: 'tts', label: t('kindTts'), count: props.kindCounts.tts },
 		{ value: 'embedding', label: t('kindEmbedding'), count: props.kindCounts.embedding },
 	];
-	const hasActiveFilters = Boolean(props.searchQuery || props.filterStatus || props.filterKind !== 'all' || filters.some(filter => filter.value));
-	const selectClass =
-		'h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100';
-	const renderFilter = (filter: (typeof filters)[number], expanded = false) => (
-		<label
-			key={filter.key}
-			className={
-				expanded
-					? 'block min-w-0'
-					: `route-filter-inline min-w-0 shrink-0 ${['provider', 'routeGroup'].includes(filter.key) ? 'route-filter-common' : 'route-filter-advanced'} ${filter.key === 'provider' ? 'w-48' : filter.key === 'providerType' ? 'w-44' : filter.key === 'vendor' ? 'w-40' : 'w-36'}`
-			}
-		>
-			<span className={expanded ? 'mb-1.5 block text-xs font-medium text-gray-600' : 'sr-only'}>
-				{filter.label}
-			</span>
-			<select
-				aria-label={filter.label}
-				value={filter.value}
-				onChange={(event) => filter.onChange(event.target.value)}
-				className={selectClass}
-			>
-				<option value="">
-					{tw(
-						(
-							{
-								vendor: 'allVendors',
-								providerType: 'allProviderKinds',
-								provider: 'allProviders',
-								routeGroup: 'allRouteGroups',
-							} as Record<string, string>
-						)[filter.key]
-					)}
-				</option>
-				{filter.value && !filter.options.some((option) => option.value === filter.value) && (
-					<option value={filter.value}>{filter.value}</option>
-				)}
-				{filter.options.map((option) => (
-					<option key={option.value} value={option.value}>
-						{option.label} ({option.count})
-					</option>
-				))}
-			</select>
-		</label>
-	);
-	const advancedCount = filters.filter(
-		(filter) => filter.value && ['vendor', 'providerType'].includes(filter.key)
-	).length;
-	const mobileCount = filters.filter((filter) => filter.value).length;
+	const hasActiveFilters = Boolean(props.searchQuery || props.filterStatus || props.filterKind !== 'all' || props.filterRouteGroup || !isEmptyGroupedSelection(props.filterModels) || !isEmptyGroupedSelection(props.filterProviders));
+	const selectClass = 'h-10 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100';
 	return (
-		<section ref={sectionRef} data-filter-layout={layout} className="route-filters mb-5 space-y-4" aria-label={t('title')}>
-			<div className="flex flex-wrap items-center gap-3">
-				<div className="relative min-w-0 flex-1 basis-64 sm:max-w-sm">
-					<MagnifyingGlassIcon
-						className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-						aria-hidden
+		<section className="route-filters mb-5 space-y-4" aria-label={t('title')}>
+			<div className="flex flex-wrap items-end gap-3">
+				<div className="min-w-0 flex-1 basis-64 space-y-2 text-xs text-gray-500 sm:max-w-sm">
+					<label htmlFor={searchId} className="block">{tw('searchLabel')}</label>
+					<div className="relative">
+						<MagnifyingGlassIcon
+							className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+							aria-hidden
+						/>
+						<input
+							id={searchId}
+							type="search"
+							value={props.searchQuery}
+							onChange={(event) => props.onSearchChange(event.target.value)}
+							placeholder={tw('searchPlaceholder')}
+							aria-label={tw('searchPlaceholder')}
+							className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-9 text-sm placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
+						/>
+						{props.searchQuery && (
+							<button
+								type="button"
+								aria-label={tw('clearSearch')}
+								onClick={() => props.onSearchChange('')}
+								className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100"
+							>
+								<XMarkIcon className="h-4 w-4" aria-hidden />
+							</button>
+						)}
+					</div>
+				</div>
+				<label className="block shrink-0 space-y-2 text-xs text-gray-500">
+					<span className="block">{t('status')}</span>
+					<select
+						aria-label={t('status')}
+						value={props.filterStatus}
+						onChange={(event) => props.onFilterStatusChange(event.target.value)}
+						className={`${selectClass} !w-auto`}
+					>
+						<option value="">
+							{tw('allStatuses')} ({props.statusCounts.all})
+						</option>
+						<option value="active">
+							{tc('active')} ({props.statusCounts.active})
+						</option>
+						<option value="inactive">
+							{tc('inactive')} ({props.statusCounts.inactive})
+						</option>
+					</select>
+				</label>
+				{pickers.map(picker => (
+					<GroupedFilterPicker
+						key={picker.key}
+						className="w-52 max-w-full shrink-0"
+						label={picker.label}
+						emptyLabel={picker.emptyLabel}
+						clearLabel={tl(`${picker.messages}.clear`)}
+						hint={tl(`${picker.messages}.hint`)}
+						search={{ placeholder: tl(`${picker.messages}.search`), empty: tl(`${picker.messages}.empty`) }}
+						groups={picker.groups}
+						value={picker.value}
+						onChange={picker.onChange}
+						staleLabel={staleLabel}
 					/>
-					<input
-						ref={searchRef}
-						type="search"
-						value={props.searchQuery}
-						onChange={(event) => props.onSearchChange(event.target.value)}
-						placeholder={tw('searchPlaceholder')}
-						aria-label={tw('searchPlaceholder')}
-						className="h-10 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-9 text-sm placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
-					/>
-					{props.searchQuery && (
-						<button
-							type="button"
-							aria-label={tw('clearSearch')}
-							onClick={() => props.onSearchChange('')}
-							className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100"
-						>
-							<XMarkIcon className="h-4 w-4" aria-hidden />
-						</button>
-					)}
-				</div>
-				<select
-					aria-label={t('status')}
-					value={props.filterStatus}
-					onChange={(event) => props.onFilterStatusChange(event.target.value)}
-					className={`${selectClass} !w-auto`}
-				>
-					<option value="">
-						{tw('allStatuses')} ({props.statusCounts.all})
-					</option>
-					<option value="active">
-						{tc('active')} ({props.statusCounts.active})
-					</option>
-					<option value="inactive">
-						{tc('inactive')} ({props.statusCounts.inactive})
-					</option>
-				</select>
-				{filters
-					.filter((filter) => ['provider', 'routeGroup'].includes(filter.key))
-					.map((filter) => renderFilter(filter))}
-				{filters
-					.filter((filter) => ['vendor', 'providerType'].includes(filter.key))
-					.map((filter) => renderFilter(filter))}
-				<div className="route-filter-more-advanced contents">
-					<RouteOptionsDialog label={tw('moreFilters')} activeCount={advancedCount} fallbackFocusRef={searchRef}>
-						{filters
-							.filter((filter) => ['vendor', 'providerType'].includes(filter.key))
-							.map((filter) => renderFilter(filter, true))}
-					</RouteOptionsDialog>
-				</div>
-				<div className="route-filter-more-all contents">
-					<RouteOptionsDialog label={tw('moreFilters')} activeCount={mobileCount} fallbackFocusRef={searchRef}>
-						{filters.map((filter) => renderFilter(filter, true))}
-					</RouteOptionsDialog>
-				</div>
+				))}
+				<label className="block w-36 max-w-full space-y-2 text-xs text-gray-500">
+					<span className="block">{t('routeGroup')}</span>
+					<select aria-label={t('routeGroup')} value={props.filterRouteGroup} onChange={event => props.onFilterRouteGroupChange(event.target.value)} className={selectClass}>
+						<option value="">{tw('allRouteGroups')}</option>
+						{props.routeGroupFilterOptions.map(value => <option key={value} value={value}>{value} ({props.routeGroupCounts.get(value) ?? 0})</option>)}
+					</select>
+				</label>
 			</div>
+			{chips.length > 0 && (
+				<div className="flex flex-wrap gap-2">
+					{chips.map(chip => (
+						<button
+							key={chip.key}
+							type="button"
+							onClick={chip.clear}
+							aria-label={tl('ui.removeFilter', { name: `${chip.label}: ${chip.display}` })}
+							title={`${chip.label}: ${chip.display}`}
+							className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-500"
+						>
+							<span className="max-w-64 truncate">{chip.label}: {chip.display}</span>
+							<XMarkIcon className="h-3 w-3 shrink-0" aria-hidden />
+						</button>
+					))}
+				</div>
+			)}
+
 			<div
 				className="flex flex-wrap items-center gap-1 border-b border-gray-200 pb-3"
 				role="group"

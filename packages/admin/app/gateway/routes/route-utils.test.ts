@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
+import { readRouteCatalogFilters, writeRouteCatalogFilters } from './route-filter-query';
 import { fileURLToPath } from 'node:url';
 import type { GatewayModel, GatewayModelRoute, GatewayProvider } from '@/lib/types';
 import {
@@ -1613,7 +1614,7 @@ describe('route workspace search', () => {
 		modelMeta: new Map(models.map(m => [m.id, m])),
 		routes: [route({ id: 'r1', provider_model_name: 'upstream-flash' }), route({ id: 'r2', provider_id: 'p2', status: 'inactive' })],
 		providers: [{ ...provider({}), id: 'p1', name: '谷仓' }, { ...provider({}), id: 'p2', name: 'Backup' }],
-		filterVendor: '', filterProviderId: '', filterRouteGroup: '', filterStatus: '',
+		filterRouteGroup: '', filterStatus: '',
 	};
 	it('matches model names case-insensitively and keeps the complete failover topology', () => {
 		const result = buildRoutesByModel({ ...base, searchQuery: '  DEEPSEEK   flash ' });
@@ -1936,5 +1937,56 @@ describe('route configuration availability', () => {
 		assert.equal(isRouteConfigurationAvailable({ status: 'disabled' }, { status: 'active' }), false);
 		assert.equal(isRouteConfigurationAvailable({ status: 'disabled' }, { status: 'disabled' }), false);
 		assert.equal(isRouteConfigurationAvailable({ status: 'active' }, undefined), true);
+	});
+});
+
+
+describe('route catalog grouped filters', () => {
+	const models = [model({ id: 'm1', vendor: 'openai' }), model({ id: 'm2', vendor: 'openai' }), model({ id: 'm3', vendor: 'anthropic' }), model({ id: 'm4', vendor: 'google' })];
+	const base = {
+		models, modelMeta: new Map(models.map(m => [m.id, m])),
+		providers: [{ ...provider({}), id: 'p1', kind: 'OpenAI' }, { ...provider({}), id: 'p2', kind: 'OpenAI' }, { ...provider({}), id: 'p3', kind: undefined }],
+		routes: [route({ id: 'r1', model_id: 'm1', provider_id: 'p1' }), route({ id: 'r2', model_id: 'm1', provider_id: 'p3' }), route({ id: 'r3', model_id: 'm2', provider_id: 'p2' }), route({ id: 'r4', model_id: 'm3', provider_id: 'p3' })],
+		filterRouteGroup: '', filterStatus: '',
+	};
+	it('unions model vendors and individual models while retaining unrouted models', () => {
+		const groups = buildRoutesByModel({ ...base, filterModels: { groups: ['openai'], items: ['m4'] } });
+		assert.deepEqual(groups.map(g => g.model_id).sort(), ['m1', 'm2', 'm4']);
+		assert.equal(groups.find(g => g.model_id === 'm1')?.groupRoutes.length, 2);
+		assert.equal(groups.find(g => g.model_id === 'm4')?.groupRoutes.length, 0);
+		assert.deepEqual(buildRoutesByModel({ ...base, filterModels: { groups: [], items: ['m1', 'm3'] } }).map(g => g.model_id).sort(), ['m1', 'm3']);
+	});
+	it('unions provider types and individual providers, hiding models without matching routes', () => {
+		const groups = buildRoutesByModel({ ...base, filterProviders: { groups: ['OpenAI'], items: ['p3'] } });
+		assert.deepEqual(groups.flatMap(g => g.groupRoutes.map(r => r.id)).sort(), ['r1', 'r2', 'r3', 'r4']);
+		assert.ok(!groups.some(g => g.model_id === 'm4'));
+		assert.deepEqual(buildRoutesByModel({ ...base, filterProviders: { groups: ['__unclassified__'], items: [] } }).flatMap(g => g.groupRoutes.map(r => r.id)).sort(), ['r2', 'r4']);
+	});
+	it('intersects model and provider selections with the other route filters', () => {
+		const groups = buildRoutesByModel({ ...base, filterModels: { groups: ['openai'], items: [] }, filterProviders: { groups: [], items: ['p3'] }, filterStatus: 'active' });
+		assert.deepEqual(groups.map(g => g.model_id), ['m1']);
+		assert.deepEqual(groups[0].groupRoutes.map(r => r.id), ['r2']);
+		assert.equal(buildRoutesByModel({ ...base, filterModels: { groups: [], items: ['deleted-model'] } }).length, 0);
+		assert.equal(buildRoutesByModel({ ...base, filterProviders: { groups: [], items: ['deleted-provider'] } }).length, 0);
+	});
+	it('restores legacy vendor, model and provider links without broadening a provider ID', () => {
+		const filters = readRouteCatalogFilters(new URLSearchParams('vendor=OpenAI&model_id=m3&provider_kind=OpenAI&provider_id=p2'));
+		assert.deepEqual(filters.models, { groups: ['openai'], items: ['m3'] });
+		assert.deepEqual(filters.providers, { groups: [], items: ['p2'] });
+		assert.deepEqual(readRouteCatalogFilters(new URLSearchParams('provider_kind=__unclassified__')).providers, { groups: ['__unclassified__'], items: [] });
+	});
+	it('round-trips grouped selections and special IDs, removing obsolete filter aliases', () => {
+		const models = { groups: ['openai', 'anthropic'], items: ['model/with+space'] };
+		const providers = { groups: ['OpenAI', '__unclassified__'], items: ['provider+1'] };
+		const params = writeRouteCatalogFilters(new URLSearchParams('vendor=google&provider_id=old&status=active'), models, providers);
+		assert.equal(params.get('vendor'), null);assert.equal(params.get('provider_id'), null);assert.equal(params.get('status'), 'active');
+		assert.deepEqual(readRouteCatalogFilters(new URLSearchParams(params.toString())), { models, providers });
+		writeRouteCatalogFilters(params, { groups: [], items: [] }, { groups: [], items: [] });
+		assert.equal(params.toString(), 'status=active');
+	});
+	it('prefers canonical filters, deduplicates values and allows explicit empty selections', () => {
+		const filters = readRouteCatalogFilters(new URLSearchParams('vendor=google&model_vendors=OpenAI,openai&model_ids=m1,m1&provider_kind=OpenAI&provider_id=p1&provider_ids=&provider_kinds='));
+		assert.deepEqual(filters.models, { groups: ['openai'], items: ['m1'] });
+		assert.deepEqual(filters.providers, { groups: [], items: [] });
 	});
 });

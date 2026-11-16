@@ -1,3 +1,4 @@
+import { EMPTY_GROUPED_SELECTION, isEmptyGroupedSelection, type GroupedSelection } from '@/lib/grouped-selection';
 import { parsePricingProfile } from '@octafuse/core/db/pricing-profile';
 import { resolveModelKind } from '@octafuse/core/db/model-kind';
 import {
@@ -1428,9 +1429,8 @@ export function buildRoutesByModel(params: {
 	routes: RouteListRow[];
 	models: GatewayModel[];
 	modelMeta: Map<string, GatewayModel>;
-	filterVendor: string;
-	filterProviderId: string;
-	filterProviderKind?: string;
+	filterModels?: GroupedSelection;
+	filterProviders?: GroupedSelection;
 	providers?: Array<Pick<GatewayProvider, 'id' | 'name' | 'kind' | 'kind_labels'>>;
 	locale?: string;
 	customKindLabel?: string;
@@ -1443,9 +1443,8 @@ export function buildRoutesByModel(params: {
 		routes,
 		models,
 		modelMeta,
-		filterVendor,
-		filterProviderId,
-		filterProviderKind = '',
+		filterModels = EMPTY_GROUPED_SELECTION,
+		filterProviders = EMPTY_GROUPED_SELECTION,
 		providers = [],
 		locale = 'en',
 		customKindLabel = 'Custom',
@@ -1462,22 +1461,24 @@ export function buildRoutesByModel(params: {
 		customKindLabel,
 	};
 
-	const modelMatchesVendor = (modelId: string) => {
-		if (!filterVendor) return true;
-		return normalizeModelVendorInput(modelMeta.get(modelId)?.vendor) === filterVendor;
-	};
+	const modelIds = new Set(filterModels.items);
+	const modelVendors = new Set(filterModels.groups);
+	const providerIds = new Set(filterProviders.items);
+	const providerKinds = new Set(filterProviders.groups);
+	const modelMatchesSelection = (modelId: string) =>
+		isEmptyGroupedSelection(filterModels) || modelIds.has(modelId) ||
+		modelVendors.has(normalizeModelVendorInput(modelMeta.get(modelId)?.vendor));
+	const providerMatchesSelection = (providerId: string) =>
+		isEmptyGroupedSelection(filterProviders) || providerIds.has(providerId) ||
+		(providerKindById.has(providerId) && providerKinds.has(providerKindFilterKey(providerKindById.get(providerId))));
 
 	const modelMatchesKind = (modelId: string) => modelMatchesKindFilter(modelMeta.get(modelId), filterKind);
 
 	const routeByModelId = new Map<string, RouteListRow[]>();
 	for (const r of routes) {
-		if (!modelMatchesVendor(r.model_id)) continue;
+		if (!modelMatchesSelection(r.model_id)) continue;
 		if (!modelMatchesKind(r.model_id)) continue;
-		if (filterProviderId && r.provider_id !== filterProviderId) continue;
-		if (filterProviderKind) {
-			if (!providerKindById.has(r.provider_id)) continue;
-			if (providerKindFilterKey(providerKindById.get(r.provider_id)) !== filterProviderKind) continue;
-		}
+		if (!providerMatchesSelection(r.provider_id)) continue;
 		if (filterStatus && r.status !== filterStatus) continue;
 		if (filterRouteGroup && normalizeRouteGroup(r.route_group) !== filterRouteGroup) continue;
 		const list = routeByModelId.get(r.model_id) ?? [];
@@ -1491,17 +1492,17 @@ export function buildRoutesByModel(params: {
 
 	const candidateModelIds = new Set<string>();
 	for (const model of models) {
-		if (!modelMatchesVendor(model.id)) continue;
+		if (!modelMatchesSelection(model.id)) continue;
 		if (!modelMatchesKind(model.id)) continue;
 		candidateModelIds.add(model.id);
 	}
 	for (const route of routes) {
-		if (!modelMatchesVendor(route.model_id)) continue;
+		if (!modelMatchesSelection(route.model_id)) continue;
 		if (!modelMatchesKind(route.model_id)) continue;
 		candidateModelIds.add(route.model_id);
 	}
 
-	const hasRouteLevelFilter = Boolean(filterProviderId || filterProviderKind || filterStatus || filterRouteGroup);
+	const hasRouteLevelFilter = Boolean(!isEmptyGroupedSelection(filterProviders) || filterStatus || filterRouteGroup);
 	const entries = [...candidateModelIds].sort((idA, idB) => {
 		const nameA = modelMeta.get(idA)?.display_name || idA;
 		const nameB = modelMeta.get(idB)?.display_name || idB;
