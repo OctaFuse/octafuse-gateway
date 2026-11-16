@@ -211,7 +211,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(usd!.kind, 'llm');
 		assert.equal(usd!.display_name, 'Qwen4 Max');
 		assert.equal(usd!.context_window, 1000000);
-		assert.equal(usd!.max_tokens, 131072);
+		assert.equal(usd!.max_tokens, 128000);
 		assert.equal(usd!.pricing_label, '$1.5 / $4.5 /M');
 		assert.equal(cny!.pricing_label, '¥10 / ¥30 /M');
 		const preset = listStaticModelPresets().find((p) => p.id === 'qwen4-max');
@@ -236,26 +236,26 @@ describe('import catalog pricing preview follows billing currency', () => {
 		}
 		for (const text of [preset!.description, preset!.i18n?.en, preset!.i18n?.zh, preset!.i18n?.ja, preset!.i18n?.ko]) {
 			assert.match(text ?? '', /1M/);
-			assert.match(text ?? '', /131K/);
-			assert.match(text ?? '', /262K/);
-			assert.doesNotMatch(text ?? '', /1000000|131072|262144/);
+			assert.match(text ?? '', /128K/);
+			assert.match(text ?? '', /256K/);
+			assert.doesNotMatch(text ?? '', /1000000|128000|131072|262144/);
 		}
 	});
 
-	it('includes qwen4-max-preview aligned to qwen3.8-max pricing, with its official preview end as retired', () => {
+	it('includes qwen4-max-preview aligned to qwen4-max pricing, with its official preview end as retired', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen4-max-preview');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen4-max-preview');
-		const prev = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen3.8-max');
+		const prev = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen4-max');
 		assert.ok(usd);
 		assert.ok(cny);
 		assert.ok(prev);
 		assert.equal(usd!.kind, 'llm');
 		assert.equal(usd!.display_name, 'Qwen4 Max Preview');
 		assert.equal(usd!.context_window, 1000000);
-		assert.equal(usd!.max_tokens, 393216);
+		assert.equal(usd!.max_tokens, 384000);
 		assert.equal(usd!.pricing_label, prev!.pricing_label);
 		const preset = listStaticModelPresets().find((p) => p.id === 'qwen4-max-preview');
-		const prevPreset = listStaticModelPresets().find((p) => p.id === 'qwen3.8-max');
+		const prevPreset = listStaticModelPresets().find((p) => p.id === 'qwen4-max');
 		assert.ok(preset);
 		assert.ok(prevPreset);
 		assert.equal(preset!.vendor, 'aliyun');
@@ -271,10 +271,10 @@ describe('import catalog pricing preview follows billing currency', () => {
 		}
 		for (const text of [preset!.description, preset!.i18n?.en, preset!.i18n?.zh, preset!.i18n?.ja, preset!.i18n?.ko]) {
 			assert.match(text ?? '', /Token Plan/);
-			assert.match(text ?? '', /qwen3\.8-max/);
+			assert.match(text ?? '', /qwen4-max/);
 			assert.match(text ?? '', /1M/);
-			assert.match(text ?? '', /393K/);
-			assert.doesNotMatch(text ?? '', /1000000|393216/);
+			assert.match(text ?? '', /384K/);
+			assert.doesNotMatch(text ?? '', /1000000|384000|393216/);
 		}
 	});
 
