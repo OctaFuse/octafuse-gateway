@@ -58,6 +58,35 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(cny!.pricing_label, '¥2 / ¥7 /M');
 	});
 
+	it('includes hy4-flash at the list price, not the 50% TokenHub promo, with image input', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'hy4-flash');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'hy4-flash');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.kind, 'llm');
+		assert.equal(usd!.display_name, 'Hy4 flash');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 64000);
+		assert.equal(usd!.pricing_label, '$0.07 / $0.281 /M');
+		assert.equal(cny!.pricing_label, '¥0.5 / ¥2 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'hy4-flash');
+		assert.ok(preset);
+		assert.equal(preset!.vendor, 'tencent');
+		assert.equal(preset!.released, '2026-11-16');
+		assert.equal(preset!.retired, undefined);
+		assert.deepEqual(preset!.modalities?.input, ['text', 'image']);
+		assert.deepEqual(preset!.modalities?.output, ['text']);
+		const usdProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(usdProfile?.tiers[0]?.cache_read_price, 0.003);
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.equal(cnyProfile?.tiers[0]?.cache_read_price, 0.02);
+		for (const text of [preset!.description, preset!.i18n?.en, preset!.i18n?.zh, preset!.i18n?.ja, preset!.i18n?.ko]) {
+			assert.match(text ?? '', /1M/);
+			assert.match(text ?? '', /64K/);
+			assert.doesNotMatch(text ?? '', /1000000|64000/);
+		}
+	});
+
 	it('includes hy4 at the list price, not the 50% TokenHub promo, with image input', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'hy4');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'hy4');
@@ -89,6 +118,7 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(usd!.max_tokens, 64000);
 		assert.equal(usd!.pricing_label, '$0.834 / $2.501 /M');
 		assert.equal(cny!.pricing_label, '¥6 / ¥18 /M');
+		assert.equal(listStaticModelPresets().find((p) => p.id === 'hy4-preview')?.retired, '2026-12-07');
 	});
 
 	it('includes gemini-4-argon at the post-intro list price, not the introductory rate', () => {
