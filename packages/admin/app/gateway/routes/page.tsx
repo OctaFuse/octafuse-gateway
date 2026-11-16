@@ -126,23 +126,19 @@ function RoutesContent() {
 				filterStatus={state.filterStatus}
 				filterKind={state.filterKind}
 				filterRouteGroup={state.filterRouteGroup}
-				filterVendor={state.filterVendor}
-				filterProviderId={state.filterProviderId}
-				filterProviderKind={state.filterProviderKind}
-				providerKindFilterOptions={state.providerKindFilterOptions}
+				filterModels={state.filterModels}
+				filterProviders={state.filterProviders}
+				modelGroups={state.modelFilterGroups}
+				providerGroups={state.providerFilterGroups}
 				statusCounts={state.statusCounts}
 				kindCounts={state.kindCounts}
 				routeGroupFilterOptions={state.routeGroupFilterOptions}
 				routeGroupCounts={state.routeGroupCounts}
-				vendorFilterOptions={state.vendorFilterOptions}
-				providers={state.filterProviders}
-				providerRouteCounts={state.providerRouteCounts}
 				onFilterStatusChange={state.setFilterStatus}
 				onFilterKindChange={state.setFilterKind}
 				onFilterRouteGroupChange={state.setFilterRouteGroup}
-				onFilterVendorChange={state.setFilterVendor}
-				onFilterProviderIdChange={state.setFilterProviderId}
-				onFilterProviderKindChange={state.setFilterProviderKind}
+				onModelsChange={state.setFilterModels}
+				onProvidersChange={state.setFilterProviders}
 				onClearAllFilters={state.clearAllFilters}
 			/>
 
