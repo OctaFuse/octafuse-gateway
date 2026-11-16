@@ -1,5 +1,54 @@
 [
 	{
+		"id": "qwen4-max",
+		"display_name": "Qwen4 Max",
+		"description": "Next-generation flagship multimodal Qwen model (2.4T-parameter MoE) for coding, office productivity, frontend design, and complex agentic tasks. Accepts text, image, and video input, with a 1M context window, about 131K max output, and up to about 262K for thinking plus the answer. Thinking is on by default and adjustable with reasoning_effort (low / high / xhigh, default high; none turns it off); reasoning_effort and thinking_budget cannot be set together. Supports function calling, structured outputs, explicit and implicit caching, and OpenAI Chat Completions, Responses, and Anthropic Messages protocols. Cache write is the 5-minute list price.",
+		"i18n": {
+			"en": "Next-generation flagship multimodal Qwen model (2.4T-parameter MoE) for coding, office productivity, frontend design, and complex agentic tasks. Accepts text, image, and video input, with a 1M context window, about 131K max output, and up to about 262K for thinking plus the answer. Thinking is on by default and adjustable with reasoning_effort (low / high / xhigh, default high; none turns it off); reasoning_effort and thinking_budget cannot be set together. Supports function calling, structured outputs, explicit and implicit caching, and OpenAI Chat Completions, Responses, and Anthropic Messages protocols. Cache write is the 5-minute list price.",
+			"zh": "千问新一代旗舰多模态模型（2.4 万亿参数 MoE），面向编程、办公、前端设计与复杂智能体任务。支持文本、图片和视频输入，上下文 1M，最大输出约 131K，思考与回答合计最长约 262K。默认开启深度思考，可用 reasoning_effort（low / high / xhigh，默认 high；none 关闭）调节；reasoning_effort 与 thinking_budget 不能同时设置。支持 Function Calling、结构化输出、显式与隐式缓存，兼容 OpenAI Chat Completions、Responses 与 Anthropic Messages 协议。缓存写入价为 5 分钟档刊例价。",
+			"ja": "次世代フラッグシップのマルチモーダル Qwen モデル（総パラメータ 2.4兆の MoE）で、コーディング、オフィス業務、フロントエンド設計、複雑なエージェント作業に向きます。テキスト・画像・動画を入力でき、コンテキストは 1M、最大出力は約 131K、思考と回答の合計は最長で約 262K です。思考は既定でオンで、reasoning_effort（low / high / xhigh、既定は high。none でオフ）で調整できます。reasoning_effort と thinking_budget は同時に指定できません。Function Calling、構造化出力、明示的・暗黙的キャッシュに対応し、OpenAI Chat Completions、Responses、Anthropic Messages プロトコルと互換です。キャッシュ書き込み価格は 5 分枠の定価です。",
+			"ko": "차세대 플래그십 멀티모달 Qwen 모델(총 파라미터 2.4조 MoE)로, 코딩, 오피스 업무, 프런트엔드 디자인, 복잡한 에이전트 작업에 적합합니다. 텍스트·이미지·동영상 입력을 지원하며 컨텍스트는 1M, 최대 출력은 약 131K, 사고와 답변의 합계는 최대 약 262K입니다. 사고는 기본으로 켜져 있고 reasoning_effort(low / high / xhigh, 기본값 high, none이면 끔)로 조절할 수 있습니다. reasoning_effort와 thinking_budget은 동시에 설정할 수 없습니다. Function Calling, 구조화 출력, 명시적·암시적 캐시를 지원하고 OpenAI Chat Completions, Responses, Anthropic Messages 프로토콜과 호환됩니다. 캐시 쓰기 가격은 5분 구간 정가입니다."
+		},
+		"vendor": "aliyun",
+		"context_window": 1000000,
+		"max_tokens": 131072,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 1.5,
+						"output_price": 4.5,
+						"cache_read_price": 0.075,
+						"cache_write_price": 1.875
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 10,
+						"output_price": 30,
+						"cache_read_price": 0.5,
+						"cache_write_price": 12.5
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"video"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-11-16"
+	},
+	{
 		"id": "qwen4-max-preview",
 		"display_name": "Qwen4 Max Preview",
 		"description": "Next-generation flagship multimodal Qwen preview for coding, office productivity, frontend design, and complex agentic tasks. Accepts text, image, and video input, with a 1M context window and about 393K max output shared by thinking and the answer. Thinking is on by default and adjustable with reasoning_effort (low / medium / xhigh, default xhigh); reasoning_effort and thinking_budget cannot be set together. Available only through Token Plan, not pay-as-you-go; the preview runs until 2026-11-25 24:00 (UTC+8) and the model is retired afterwards. Prices are aligned to the previous same-tier model qwen3.8-max for now; Alibaba has not published list prices for Qwen4-Max, so update them at general availability.",

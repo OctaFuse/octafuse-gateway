@@ -203,6 +203,45 @@ describe('import catalog pricing preview follows billing currency', () => {
 		assert.equal(listStaticModelPresets().some((p) => p.id === 'gemini-omni-1.2-flash'), false);
 	});
 
+	it('includes qwen4-max with official Model Studio list prices and cache prices', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen4-max');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen4-max');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.kind, 'llm');
+		assert.equal(usd!.display_name, 'Qwen4 Max');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 131072);
+		assert.equal(usd!.pricing_label, '$1.5 / $4.5 /M');
+		assert.equal(cny!.pricing_label, '¥10 / ¥30 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'qwen4-max');
+		assert.ok(preset);
+		assert.equal(preset!.vendor, 'aliyun');
+		assert.equal(preset!.released, '2026-11-16');
+		assert.equal(preset!.retired, undefined);
+		assert.deepEqual(preset!.modalities?.input, ['text', 'image', 'video']);
+		assert.deepEqual(preset!.modalities?.output, ['text']);
+		const expected = {
+			USD: { input_price: 1.5, output_price: 4.5, cache_read_price: 0.075, cache_write_price: 1.875 },
+			CNY: { input_price: 10, output_price: 30, cache_read_price: 0.5, cache_write_price: 12.5 },
+		} as const;
+		for (const currency of ['USD', 'CNY'] as const) {
+			const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, currency))!);
+			assert.equal(profile?.tiers.length, 1);
+			assert.equal(profile?.tiers[0].upto, null);
+			assert.equal(profile?.tiers[0].input_price, expected[currency].input_price);
+			assert.equal(profile?.tiers[0].output_price, expected[currency].output_price);
+			assert.equal(profile?.tiers[0].cache_read_price, expected[currency].cache_read_price);
+			assert.equal(profile?.tiers[0].cache_write_price, expected[currency].cache_write_price);
+		}
+		for (const text of [preset!.description, preset!.i18n?.en, preset!.i18n?.zh, preset!.i18n?.ja, preset!.i18n?.ko]) {
+			assert.match(text ?? '', /1M/);
+			assert.match(text ?? '', /131K/);
+			assert.match(text ?? '', /262K/);
+			assert.doesNotMatch(text ?? '', /1000000|131072|262144/);
+		}
+	});
+
 	it('includes qwen4-max-preview aligned to qwen3.8-max pricing, with its official preview end as retired', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'qwen4-max-preview');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'qwen4-max-preview');
