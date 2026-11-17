@@ -11,6 +11,7 @@ import {
 	createOAuthAccessTokensSqlRepository,
 	createOAuthServerSqlRepository,
 	hashOAuthAccessToken,
+	hashOAuthSecret,
 	s256Challenge,
 	type SqlExec,
 	type StorageContext,
@@ -56,7 +57,7 @@ async function makeApp(config: Record<string, string> = { MCP_OAUTH_ISSUER: ISSU
 	const db = new DatabaseSync(':memory:');
 	db.exec('CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT);');
 	db.exec('CREATE TABLE api_key_request_logs (id TEXT PRIMARY KEY, api_key_id TEXT);');
-	for (const name of ['0035_oauth_access_tokens', '0036_oauth_authorization_server']) {
+	for (const name of ['0035_oauth_access_tokens', '0036_oauth_authorization_server', '0037_oauth_client_credentials']) {
 		db.exec(readFileSync(new URL(`../../../core/migrations-d1/${name}.sql`, import.meta.url), 'utf8'));
 	}
 	db.prepare('INSERT INTO users (id, email) VALUES (?, ?)').run('user-1', 'user-1@example.com');
@@ -107,28 +108,35 @@ async function registerClient(ctx: Ctx, name = 'Codex CLI') {
 	return (await res.json()) as { client_id: string };
 }
 
+/** 授权地址；`extra` 里值为空串的参数会被去掉（用于模拟不带 PKCE）。 */
 async function authorizeUrl(clientId: string, extra: Record<string, string> = {}) {
 	const params = new URLSearchParams({
 		client_id: clientId, redirect_uri: REDIRECT, response_type: 'code', state: 'st1',
 		code_challenge: await s256Challenge(VERIFIER), code_challenge_method: 'S256', resource: `${ISSUER}/mcp`, ...extra,
 	});
+	for (const [key, value] of Object.entries(extra)) if (value === '') params.delete(key);
 	return `/oauth/authorize?${params.toString()}`;
 }
 
 /** 走到确认页并同意，返回授权码。 */
-async function approve(ctx: Ctx, clientId: string): Promise<string> {
-	const auth = await ctx.app.request(await authorizeUrl(clientId));
-	assert.equal(auth.status, 302);
+async function approve(
+	ctx: Ctx,
+	clientId: string,
+	options: { redirect?: string; extra?: Record<string, string>; expectName?: RegExp } = {}
+): Promise<string> {
+	const redirect = options.redirect ?? REDIRECT;
+	const auth = await ctx.app.request(await authorizeUrl(clientId, { redirect_uri: redirect, ...options.extra }));
+	assert.equal(auth.status, 302, await auth.clone().text());
 	const consent = new URL(auth.headers.get('location') as string);
 	assert.equal(consent.origin + consent.pathname, `${ISSUER}/oauth/consent`);
 	const requestId = consent.searchParams.get('request_id') as string;
 	const page = await ctx.app.request(`/oauth/consent?request_id=${requestId}`);
 	assert.equal(page.status, 200);
-	assert.match(await page.text(), /Codex/);
+	assert.match(await page.text(), options.expectName ?? /Codex/);
 	const done = await postForm(ctx, '/oauth/consent', { request_id: requestId, decision: 'approve', api_key: SK });
 	assert.equal(done.status, 303);
 	const back = new URL(done.headers.get('location') as string);
-	assert.equal(back.origin + back.pathname, REDIRECT);
+	assert.equal(back.origin + back.pathname, new URL(redirect).origin + new URL(redirect).pathname);
 	assert.equal(back.searchParams.get('state'), 'st1');
 	assert.equal(back.searchParams.get('iss'), ISSUER);
 	return back.searchParams.get('code') as string;
@@ -171,10 +179,165 @@ describe('built-in authorization server', () => {
 		assert.equal(((await bad.json()) as { error: string }).error, 'invalid_redirect_uri');
 		const noUris = await postJson(ctx, '/oauth/register', { client_name: 'x' });
 		assert.equal(noUris.status, 400);
-		const secret = await postJson(ctx, '/oauth/register', {
-			client_name: 'x', redirect_uris: [REDIRECT], token_endpoint_auth_method: 'client_secret_basic',
+		const jwt = await postJson(ctx, '/oauth/register', {
+			client_name: 'x', redirect_uris: [REDIRECT], token_endpoint_auth_method: 'private_key_jwt',
 		});
-		assert.equal(((await secret.json()) as { error: string }).error, 'invalid_client_metadata');
+		assert.equal(((await jwt.json()) as { error: string }).error, 'invalid_client_metadata');
+		const wildcard = await postJson(ctx, '/oauth/register', { client_name: 'x', redirect_uris: ['https://*.example.com/cb'] });
+		assert.equal(((await wildcard.json()) as { error: string }).error, 'invalid_redirect_uri', 'clients cannot register wildcard callbacks');
+	});
+
+	it('serves discovery documents on the path variants clients probe', async () => {
+		const ctx = await makeApp();
+		for (const path of [
+			'/.well-known/oauth-authorization-server/mcp',
+			'/.well-known/oauth-authorization-server/mcp/insight',
+			'/mcp/.well-known/oauth-authorization-server',
+		]) {
+			const res = await ctx.app.request(path);
+			assert.equal(res.status, 200, path);
+			const meta = (await res.json()) as { issuer: string; token_endpoint_auth_methods_supported: string[] };
+			assert.equal(meta.issuer, ISSUER);
+			assert.deepEqual(meta.token_endpoint_auth_methods_supported, ['none', 'client_secret_basic', 'client_secret_post']);
+		}
+		const resource = await ctx.app.request('/mcp/.well-known/oauth-protected-resource', { headers: { host: 'gw.example.com' } });
+		assert.equal(resource.status, 200);
+		assert.deepEqual(((await resource.json()) as { authorization_servers: string[] }).authorization_servers, [ISSUER]);
+		const unauth = await ctx.app.request('/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+		assert.match(unauth.headers.get('www-authenticate') ?? '', /scope="mcp"/);
+	});
+
+	it('registers loopback-localhost and private-use scheme callbacks for matching apps', async () => {
+		const ctx = await makeApp();
+		await ctx.oauthServer.insertApp({
+			id: 'app-cursor', slug: 'cursor', name: 'Cursor', redirectUris: ['cursor://anysphere.cursor-mcp/oauth/callback'],
+			clientNamePatterns: [], enabled: true, nowIso: '2026-01-01T00:00:00.000Z',
+		});
+		await ctx.oauthServer.insertApp({
+			id: 'app-local', slug: 'local', name: 'Local clients', redirectUris: ['http://localhost/*', 'http://127.0.0.1/*'],
+			clientNamePatterns: [], enabled: true, nowIso: '2026-01-01T00:00:00.000Z',
+		});
+		const cursor = await postJson(ctx, '/oauth/register', {
+			client_name: 'Cursor', redirect_uris: ['cursor://anysphere.cursor-mcp/oauth/callback'],
+		});
+		assert.equal(cursor.status, 201);
+		assert.equal((await ctx.oauthServer.getClient(((await cursor.json()) as { client_id: string }).client_id))?.app_id, 'app-cursor');
+		const cli = await postJson(ctx, '/oauth/register', { client_name: 'Some CLI', redirect_uris: ['http://localhost:51234/callback'] });
+		assert.equal(cli.status, 201);
+		const cliId = ((await cli.json()) as { client_id: string }).client_id;
+		assert.equal((await ctx.oauthServer.getClient(cliId))?.app_id, 'app-local');
+		// Codex 应用的具体地址比通用应用的通配更精确
+		const codex = await registerClient(ctx, 'Unknown name');
+		assert.equal((await ctx.oauthServer.getClient(codex.client_id))?.app_id, 'app-codex');
+		// localhost 回调可以换端口
+		const code = await approve(ctx, cliId, { redirect: 'http://localhost:60000/callback', expectName: /Local clients|Some CLI/ });
+		const token = await tokenRequest(ctx, code, cliId, { redirect_uri: 'http://localhost:60000/callback' });
+		assert.equal(token.status, 200);
+	});
+
+	it('supports confidential clients registered dynamically, with or without PKCE', async () => {
+		const ctx = await makeApp();
+		const reg = await postJson(ctx, '/oauth/register', {
+			client_name: 'Codex server', redirect_uris: [REDIRECT], token_endpoint_auth_method: 'client_secret_post',
+		});
+		assert.equal(reg.status, 201);
+		const { client_id, client_secret, token_endpoint_auth_method } = (await reg.json()) as {
+			client_id: string; client_secret: string; token_endpoint_auth_method: string;
+		};
+		assert.match(client_secret, /^ocs_/);
+		assert.equal(token_endpoint_auth_method, 'client_secret_post');
+		const stored = await ctx.oauthServer.getClient(client_id);
+		assert.notEqual(stored?.client_secret_hash, client_secret, 'only the hash is stored');
+
+		const noPkce = { code_challenge: '', code_challenge_method: '' };
+		const code = await approve(ctx, client_id, { extra: noPkce });
+		const missing = await tokenRequest(ctx, code, client_id, { code_verifier: '' });
+		assert.equal(missing.status, 401);
+		assert.equal(((await missing.json()) as { error: string }).error, 'invalid_client');
+
+		const code2 = await approve(ctx, client_id, { extra: noPkce });
+		const ok = await tokenRequest(ctx, code2, client_id, { code_verifier: '', client_secret });
+		assert.equal(ok.status, 200);
+		const { refresh_token } = (await ok.json()) as { refresh_token: string };
+
+		// Basic 认证同样可用；错误的 secret 带 WWW-Authenticate
+		const basic = (secret: string) => `Basic ${btoa(`${encodeURIComponent(client_id)}:${encodeURIComponent(secret)}`)}`;
+		const wrong = await postForm(ctx, '/oauth/token', { grant_type: 'refresh_token', refresh_token }, { Authorization: basic('ocs_wrong') });
+		assert.equal(wrong.status, 401);
+		assert.match(wrong.headers.get('www-authenticate') ?? '', /^Basic/);
+		const refreshed = await postForm(ctx, '/oauth/token', { grant_type: 'refresh_token', refresh_token }, { Authorization: basic(client_secret) });
+		assert.equal(refreshed.status, 200);
+
+		// 带了 PKCE 就照常校验
+		const code3 = await approve(ctx, client_id);
+		assert.equal((await tokenRequest(ctx, code3, client_id, { client_secret, code_verifier: 'w'.repeat(50) })).status, 400);
+	});
+
+	it('accepts manual clients issued by an admin for an app with wildcard callbacks', async () => {
+		const ctx = await makeApp();
+		await ctx.oauthServer.insertApp({
+			id: 'app-wb', slug: 'workbuddy', name: 'WorkBuddy', redirectUris: ['https://*.workbuddy.cn', 'https://*.tencent.com'],
+			clientNamePatterns: [], enabled: true, nowIso: '2026-01-01T00:00:00.000Z',
+		});
+		const secret = 'ocs_manual-secret';
+		await ctx.oauthServer.insertClient({
+			clientId: 'octa_manual', appId: 'app-wb', clientName: 'Tencent connector', redirectUris: [],
+			nowIso: '2026-01-01T00:00:00.000Z', registrationMethod: 'manual', tokenEndpointAuthMethod: 'client_secret_basic',
+			clientSecretHash: await hashOAuthSecret(secret),
+		});
+		const redirect = 'https://connector.workbuddy.cn/oauth/callback';
+		const evil = await ctx.app.request(await authorizeUrl('octa_manual', { redirect_uri: 'https://evil.example/cb' }));
+		assert.equal(evil.status, 400);
+		const code = await approve(ctx, 'octa_manual', {
+			redirect, extra: { code_challenge: '', code_challenge_method: '' }, expectName: /WorkBuddy|Tencent connector/,
+		});
+		const token = await postForm(
+			ctx,
+			'/oauth/token',
+			{ grant_type: 'authorization_code', code, redirect_uri: redirect },
+			{ Authorization: `Basic ${btoa(`octa_manual:${secret}`)}` }
+		);
+		assert.equal(token.status, 200);
+		const grant = await ctx.oauthAccessTokens.getByHash(
+			await hashOAuthAccessToken(((await token.json()) as { access_token: string }).access_token)
+		);
+		assert.equal(grant?.app_id, 'app-wb');
+	});
+
+	it('accepts client ID metadata documents only when enabled', async () => {
+		const metadataUrl = 'https://agent.example.com/oauth/client.json';
+		const off = await makeApp();
+		const disabled = await off.app.request(await authorizeUrl(metadataUrl));
+		assert.equal(disabled.status, 400);
+		assert.equal(((await disabled.json()) as { error: string }).error, 'invalid_client');
+
+		const ctx = await makeApp({ MCP_OAUTH_ISSUER: ISSUER, MCP_OAUTH_CIMD_ENABLED: 'true' });
+		const meta = (await (await ctx.app.request('/.well-known/oauth-authorization-server')).json()) as {
+			client_id_metadata_document_supported: boolean;
+		};
+		assert.equal(meta.client_id_metadata_document_supported, true);
+
+		const originalFetch = globalThis.fetch;
+		let fetches = 0;
+		globalThis.fetch = (async (input: RequestInfo | URL) => {
+			fetches += 1;
+			assert.equal(String(input), metadataUrl);
+			return new Response(JSON.stringify({ client_id: metadataUrl, client_name: 'Codex via CIMD', redirect_uris: [REDIRECT] }), {
+				status: 200,
+				headers: { 'content-type': 'application/json' },
+			});
+		}) as typeof fetch;
+		try {
+			const code = await approve(ctx, metadataUrl);
+			const client = await ctx.oauthServer.getClient(metadataUrl);
+			assert.equal(client?.registration_method, 'cimd');
+			assert.equal(client?.app_id, 'app-codex');
+			assert.equal((await tokenRequest(ctx, code, metadataUrl)).status, 200);
+			await approve(ctx, metadataUrl);
+			assert.equal(fetches, 1, 'fresh metadata is reused');
+		} finally {
+			globalThis.fetch = originalFetch;
+		}
 	});
 
 	it('runs the full flow: authorize, consent, token, MCP use, refresh, revoke', async () => {

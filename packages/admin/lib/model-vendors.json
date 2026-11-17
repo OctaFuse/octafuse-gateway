@@ -23,6 +23,7 @@
   { "key": "meituan", "label": "Meituan LongCat" },
   { "key": "minimax", "label": "MiniMax" },
   { "key": "mistral", "label": "Mistral AI" },
+  { "key": "modelink", "label": "Modelink" },
   { "key": "moonshot", "label": "Moonshot AI" },
   { "key": "novita", "label": "Novita AI" },
   { "key": "nvidia", "label": "NVIDIA" },

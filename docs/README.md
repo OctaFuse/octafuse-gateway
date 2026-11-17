@@ -52,6 +52,7 @@
 | 2.18.0 升级（粘性绑定列出用户，0034） | [operators/migrations/0034-sticky-binding-affinity-key.md](./operators/migrations/0034-sticky-binding-affinity-key.md) |
 | 2.18.0 升级（OAuth 访问令牌，0035） | [operators/migrations/0035-oauth-access-tokens.md](./operators/migrations/0035-oauth-access-tokens.md) |
 | 内置 OAuth 授权服务器（0036） | [operators/migrations/0036-oauth-authorization-server.md](./operators/migrations/0036-oauth-authorization-server.md) |
+| OAuth 机密客户端、手工客户端与客户端元数据文档（0037） | [operators/migrations/0037-oauth-client-credentials.md](./operators/migrations/0037-oauth-client-credentials.md) |
 | 文档规范 | [CONVENTIONS.md](./CONVENTIONS.md) |
 
 ## 文档规范

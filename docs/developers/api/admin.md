@@ -88,7 +88,9 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/routes/pools/:poolId/sticky/reset` | POST | bump `sticky_epoch`，使本 pool 全部绑定失效 | Admin UI |
 | `/admin/playground` | POST | Routes：`routeId` 或 `routeDraft` 直连上游；Tools：`toolId`+`provider` 读 catalog 直连引擎（均可测、不计费、不写日志、无 failover） | Admin UI、运维联调 |
 | `/admin/oauth/apps`、`/:id`、`/:id/revoke` | GET, POST, PATCH, DELETE | `oauth_apps` + `oauth_access_tokens` 统计；应用目录与按应用撤销（`oauth.read` / `oauth.write`；`/:id/revoke` 的 `none` 配 `client_name` 撤销「未归属」一组） | Admin UI |
-| `/admin/oauth/clients` | GET | `oauth_clients`（可按 `app_id` 筛选） | Admin UI |
+| `/admin/oauth/apps/:id/clients` | POST | 为应用签发手工客户端（body 可选 `client_name`、`redirect_uris`），响应含一次性 `client_secret` | Admin UI |
+| `/admin/oauth/clients` | GET | `oauth_clients`（可按 `app_id`、`registration_method`（`dcr` / `manual` / `cimd`）筛选；不返回 secret 哈希，只返回 `has_client_secret`） | Admin UI |
+| `/admin/oauth/clients/:clientId`、`/:clientId/secret` | PATCH, DELETE, POST | 仅手工客户端：改名称 / 回调规则、删除（先撤销其授权）、重置 secret（响应含新的一次性 `client_secret`） | Admin UI |
 | `/admin/oauth/authorization-requests/:id`、`/:id/accept`、`/:id/reject` | GET, POST | `oauth_authorization_requests`；同意页读取请求、提交决定（`oauth.consent`；`accept` 的 body 为 `{"user_id"}`，响应 `{"redirect_uri"}`） | 门户同意页 |
 | `/admin/oauth-access-tokens`、`/revoke`、`/cleanup`、`/:id/revoke` | GET, POST | `oauth_access_tokens`（列表支持 `app_id`、`client_name`、`status=active、renewable、expired、revoked`） | Admin UI |
 | `/admin/mcp-servers` | GET, POST | `mcp_servers`（列表脱敏 URL 与鉴权头） | Admin UI |

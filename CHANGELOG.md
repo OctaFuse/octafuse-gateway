@@ -4,13 +4,16 @@
 
 ### Proxy
 
+- **MCP OAuth 接入更多 Agent**：内置授权服务器支持机密客户端——动态注册可声明 `client_secret_basic` / `client_secret_post` 并获得一次性 `client_secret`，令牌与撤销端点按声明认证客户端，机密客户端可不带 PKCE。新增可选的客户端元数据文档（CIMD，MCP 2025-11-25）：在 OAuth 卡片中开启或设置 `MCP_OAUTH_CIMD_ENABLED=true` 后，接受以 https 地址为 `client_id` 的客户端，默认关闭。授权服务器元数据另在 `/.well-known/oauth-authorization-server/mcp[/{slug}]` 与 `/mcp/.well-known/oauth-authorization-server` 提供，资源元数据另在 `/mcp/.well-known/oauth-protected-resource` 提供；`/mcp` 的 401 `WWW-Authenticate` 增加 `scope="mcp"`。本机回调 `http://localhost` 与 `127.0.0.1` 一样忽略端口；被拒绝的注册会写一条 `registration rejected` 日志，方便补充应用规则。需要先执行迁移 0037（见[迁移说明](docs/operators/migrations/0037-oauth-client-credentials.md)）。
 - **Gemini thought signature 兜底**：上游返回 `HTTP 400: Corrupted thought signature.` 时，也会清洗历史签名后对同一上游重试一次，与 `Invalid thought signature` 的处理一致。此前故障转移到这类上游（如部分第三方中转）后，会话历史里别家签发的签名会让请求直接失败。
 
 ### Admin
 
+- **MCP OAuth 应用规则与手工凭据**：应用的回调规则支持 `https://*.example.com` 子域通配和末尾 `*` 前缀匹配，客户端归属按匹配精确度排序，具体地址优先于通配。每个应用可签发「手工凭据」（固定 `client_id` + `client_secret`，可重置、删除），供要求填写服务端认证凭据、不支持动态注册的平台使用。预设新增 Claude Code、Cursor、VS Code、Gemini CLI 和兜底的「Local MCP clients」，WorkBuddy 预设补充 `*.tencent.com`、`*.workbuddy.cn`、`*.workbuddy.ai`、`*.codebuddy.cn` 回调。Admin API 新增 `POST /api/admin/oauth/apps/:id/clients`、`PATCH|DELETE /api/admin/oauth/clients/:clientId` 与 `POST /api/admin/oauth/clients/:clientId/secret`，客户端列表支持按 `registration_method` 筛选并返回 `has_client_secret`。
 - **模型路由筛选**：模型与供应商改为两级多选，分别按模型厂商和供应商类型分组；支持整组或单项勾选、搜索、逐项移除，并在地址中保存筛选条件，兼容旧的单选筛选链接。
 - **Hy4 flash**：模型目录新增 `hy4-flash`（2026-11-16）。总参数 224B（含 64B Engram 参数），激活 12B，上下文 1M，最大输出约 64K，输入含文本和图像。刊例价：国内 ¥0.5 / ¥2 每百万 token，缓存命中 ¥0.02；国际 $0.07 / $0.281，缓存命中 $0.003；未计入 TokenHub 至 2026-11-30 的限时 5 折。`hy4-preview` 补记官方下线日期 `retired` 2026-12-07。
 - **Qwen4 Max**：模型目录新增正式版 `qwen4-max`（2026-11-16）。上下文 1M，最大输出 128K（思考与回答合计最长约 256K），输入含文本、图像和视频。刊例价：国内 ¥10 / ¥30 每百万 token，缓存命中 ¥0.5，缓存写入（5 分钟档）¥12.5；国际 $1.5 / $4.5，缓存命中 $0.075，缓存写入（5 分钟档）$1.875。思考档为 `low` / `high` / `xhigh`（默认 `high`），与预览版的 `low` / `medium` / `xhigh` 不同。`qwen4-max-preview` 仍保留，刊例价改为与 `qwen4-max` 一致（此前暂按 `qwen3.8-max` 对齐），官方预览期至 2026-11-25。
+- **Modelink 供应商模板**：Providers 导入模板新增 Modelink（七牛云 AI 的海外接入点 `api.modelink.ai`），预填 OpenAI Chat、Responses 与 Images（生成 / 编辑）直通、Anthropic、Gemini（Vertex 兼容 + Bearer）端点，并新增 Modelink 厂商与图标；`modelink.ai` 域名与名称不再归入七牛。中国大陆继续使用「七牛云 AI」模板（`api.qnaigc.com`）。
 
 ## 2.20.0
 

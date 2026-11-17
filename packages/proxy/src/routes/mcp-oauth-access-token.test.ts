@@ -187,7 +187,7 @@ describe('access tokens at the proxy', () => {
 		assert.equal(res.status, 401);
 		assert.equal(
 			res.headers.get('WWW-Authenticate'),
-			'Bearer error="invalid_token", resource_metadata="http://gw.test/.well-known/oauth-protected-resource/mcp/insight"'
+			'Bearer error="invalid_token", resource_metadata="http://gw.test/.well-known/oauth-protected-resource/mcp/insight", scope="mcp"'
 		);
 	});
 
@@ -208,13 +208,13 @@ describe('MCP OAuth discovery', () => {
 		assert.equal(missing.status, 401);
 		assert.equal(
 			missing.headers.get('WWW-Authenticate'),
-			'Bearer resource_metadata="http://gw.test/.well-known/oauth-protected-resource/mcp/insight"'
+			'Bearer resource_metadata="http://gw.test/.well-known/oauth-protected-resource/mcp/insight", scope="mcp"'
 		);
 		const bad = await app.request('http://gw.test/mcp', { method: 'POST', headers: bearer('sk-nope') });
 		assert.equal(bad.status, 401);
 		assert.equal(
 			bad.headers.get('WWW-Authenticate'),
-			'Bearer resource_metadata="http://gw.test/.well-known/oauth-protected-resource/mcp"'
+			'Bearer resource_metadata="http://gw.test/.well-known/oauth-protected-resource/mcp", scope="mcp"'
 		);
 	});
 

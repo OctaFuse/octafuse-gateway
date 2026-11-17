@@ -8,11 +8,13 @@ import { readApiJson } from '@/lib/api-json';
 import type { SystemConfigRow } from '@/lib/types';
 import {
 	MCP_OAUTH_AUTHORIZATION_SERVER_KEY,
+	MCP_OAUTH_CIMD_ENABLED_KEY,
 	MCP_OAUTH_CONSENT_URL_KEY,
 	MCP_OAUTH_ISSUER_KEY,
 	MCP_OAUTH_PROTECTED_RESOURCE_PATH,
 	normalizeMcpOAuthAuthorizationServer,
 	normalizeMcpOAuthConsentUrl,
+	parseMcpOAuthCimdEnabled,
 	resolveMcpOAuthMode,
 } from '@octafuse/core/lib/mcp-oauth-system-config';
 
@@ -26,9 +28,11 @@ interface Values {
 	consentUrl: string;
 	/** 外部模式：外部授权服务器地址 */
 	authorizationServer: string;
+	/** 内置模式：是否接受以 https URL 作为 `client_id` 的客户端元数据文档（CIMD） */
+	cimd: boolean;
 }
 
-const EMPTY: Values = { mode: 'off', issuer: '', consentUrl: '', authorizationServer: '' };
+const EMPTY: Values = { mode: 'off', issuer: '', consentUrl: '', authorizationServer: '', cimd: false };
 
 const MODES: readonly Mode[] = ['off', 'builtin', 'external'];
 
@@ -77,6 +81,7 @@ export function McpOAuthSettings({
 					issuer: read(MCP_OAUTH_ISSUER_KEY),
 					authorizationServer: read(MCP_OAUTH_AUTHORIZATION_SERVER_KEY),
 					consentUrl: read(MCP_OAUTH_CONSENT_URL_KEY),
+					cimdEnabled: read(MCP_OAUTH_CIMD_ENABLED_KEY),
 				});
 				const values: Values = {
 					mode: resolved.mode,
@@ -84,6 +89,7 @@ export function McpOAuthSettings({
 					consentUrl: resolved.mode === 'builtin' ? resolved.consentUrl ?? '' : '',
 					authorizationServer:
 						resolved.mode === 'external' ? resolved.authorizationServer : read(MCP_OAUTH_AUTHORIZATION_SERVER_KEY),
+					cimd: parseMcpOAuthCimdEnabled(read(MCP_OAUTH_CIMD_ENABLED_KEY)),
 				};
 				setLoadFailed(false);
 				setSaved(values);
@@ -111,6 +117,7 @@ export function McpOAuthSettings({
 		issuer: v.mode === 'builtin' ? v.issuer.trim() : '',
 		consentUrl: v.mode === 'builtin' ? v.consentUrl.trim() : '',
 		authorizationServer: v.mode === 'external' ? v.authorizationServer.trim() : '',
+		cimd: v.mode === 'builtin' ? v.cimd : false,
 	});
 	const dirty = useMemo(
 		() => JSON.stringify(normalizeForCompare(draft)) !== JSON.stringify(normalizeForCompare(saved)),
@@ -170,12 +177,15 @@ export function McpOAuthSettings({
 			await putConfig(MCP_OAUTH_CONSENT_URL_KEY, consentUrl);
 			// 切到内置时保留外部地址不动，方便回滚；其余模式按草稿写入。
 			if (draft.mode !== 'builtin') await putConfig(MCP_OAUTH_AUTHORIZATION_SERVER_KEY, authorizationServer);
+			const cimd = draft.mode === 'builtin' && draft.cimd;
+			if (cimd !== saved.cimd) await putConfig(MCP_OAUTH_CIMD_ENABLED_KEY, cimd ? 'true' : '');
 			const next: Values = {
 				mode: draft.mode,
 				issuer,
 				consentUrl,
 				authorizationServer:
 					draft.mode === 'builtin' ? saved.authorizationServer : authorizationServer,
+				cimd,
 			};
 			setSaved(next);
 			setDraft(next);
@@ -356,6 +366,19 @@ export function McpOAuthSettings({
 							/>
 							<p className="mt-1 text-xs leading-5 text-gray-400">{t('consentHint')}</p>
 						</div>
+						<label className="flex items-start gap-3 md:col-span-2">
+							<input
+								type="checkbox"
+								checked={draft.cimd}
+								disabled={saving || loading || loadFailed}
+								onChange={(e) => setField({ cimd: e.target.checked })}
+								className="mt-1 accent-teal-700"
+							/>
+							<span className="min-w-0">
+								<span className="block text-sm font-medium text-gray-700">{t('cimdLabel')}</span>
+								<span className="block text-xs leading-5 text-gray-400">{t('cimdHint')}</span>
+							</span>
+						</label>
 					</div>
 				) : null}
 				{draft.mode === 'external' ? (

@@ -1,15 +1,16 @@
 /**
  * 内置 MCP OAuth 授权服务器的公开端点（仅 `MCP_OAUTH_ISSUER` 非空时启用，否则一律 404）：
  *
- * - `GET  /.well-known/oauth-authorization-server`  授权服务器元数据（RFC 8414）
- * - `POST /oauth/register`   动态客户端注册（RFC 7591），回调须命中某个启用应用
- * - `GET  /oauth/authorize`  校验参数、落授权请求，跳到同意页
+ * - `GET  /.well-known/oauth-authorization-server[/mcp[/{slug}]]`  授权服务器元数据（RFC 8414，含路径后缀写法）
+ * - `POST /oauth/register`   动态客户端注册（RFC 7591），回调须命中某个启用应用；可申请 client_secret
+ * - `GET  /oauth/authorize`  校验参数、落授权请求，跳到同意页；`client_id` 为 https URL 时按客户端元数据文档处理
  * - `POST /oauth/token`      授权码换令牌 / 刷新令牌轮换（刷新令牌重放视为泄露，整个授权被撤销）
  * - `POST /oauth/revoke`     撤销（RFC 7009），接受访问令牌或刷新令牌
  * - `GET|POST /oauth/consent` 内置确认页，见 `oauth-consent.ts`
  *
- * 全部为公开客户端（无 client secret），PKCE S256 必需。Gateway 不信任客户端自报的名称：
- * 它只用于归类展示，归属以回调地址为准。
+ * 客户端有三种来源：动态注册（`dcr`）、管理员手工签发（`manual`）、元数据文档（`cimd`）。
+ * 公开客户端必须用 PKCE S256；机密客户端（`client_secret_basic` / `client_secret_post`）换令牌时必须出示 secret，
+ * PKCE 可选。Gateway 不信任客户端自报的名称：它只用于归类展示，归属以回调地址为准。
  */
 import { Hono } from 'hono';
 import type { Context } from 'hono';
@@ -23,26 +24,35 @@ import {
 	buildAuthorizeErrorRedirect,
 	buildOAuthAuthorizationServerMetadata,
 	consumeRateLimitLayers,
+	fetchClientIdMetadataDocument,
 	generateOAuthAccessTokenSecret,
 	generateOAuthClientId,
+	generateOAuthClientSecret,
 	generateRefreshToken,
 	hashOAuthAccessToken,
 	hashOAuthSecret,
 	isAcceptableRedirectUriShape,
+	isClientIdMetadataFresh,
+	isClientIdMetadataUrl,
+	isConfidentialAuthMethod,
 	isOAuthAccessTokenValue,
 	isRefreshTokenValue,
+	isTokenEndpointAuthMethod,
 	isValidCodeVerifier,
 	matchOAuthApp,
 	normalizeStringList,
 	oauthAccessTokenHint,
 	oauthAccessTokenStatus,
+	parseBasicClientCredentials,
 	randomOAuthToken,
 	readMcpOAuthMode,
 	sanitizeClientName,
 	validateAuthorizeParams,
+	verifyOAuthClientSecret,
 	verifyPkceS256,
 	type GatewayRepositories,
 	type McpOAuthMode,
+	type OAuthClientRow,
 } from '@octafuse/core';
 import type { Env } from '../app';
 import { publicOrigin } from '../services/mcp/oauth-discovery';
@@ -75,8 +85,14 @@ async function rateLimited(c: Ctx, bucket: string, rpm: number): Promise<Respons
 	);
 }
 
-function oauthError(c: Ctx, status: 400 | 401 | 403 | 404 | 429 | 503, error: string, description: string): Response {
-	return c.json({ error, error_description: description }, status, NO_STORE);
+function oauthError(
+	c: Ctx,
+	status: 400 | 401 | 403 | 404 | 429 | 503,
+	error: string,
+	description: string,
+	headers: Record<string, string> = {}
+): Response {
+	return c.json({ error, error_description: description }, status, { ...NO_STORE, ...headers });
 }
 
 /** 授权服务器关闭（或没有开启内置模式）时，所有端点表现为不存在。 */
@@ -127,11 +143,22 @@ async function maybeCleanup(repos: GatewayRepositories): Promise<void> {
 // 元数据
 // ---------------------------------------------------------------------------
 
-oauthServerMetadataRoutes.get('/', async (c) => {
+/** 授权服务器元数据。 */
+export async function serveAuthorizationServerMetadata(c: Ctx): Promise<Response> {
 	const mode = await requireBuiltin(c);
 	if (mode instanceof Response) return mode;
-	return c.json(buildOAuthAuthorizationServerMetadata(mode.issuer), 200, { 'Cache-Control': 'public, max-age=300' });
-});
+	return c.json(
+		buildOAuthAuthorizationServerMetadata(mode.issuer, { clientIdMetadataDocuments: mode.clientIdMetadataDocuments }),
+		200,
+		{ 'Cache-Control': 'public, max-age=300' }
+	);
+}
+
+// 部分客户端把 MCP 地址当 issuer，按 RFC 8414 路径插入规则访问 `/.well-known/oauth-authorization-server/mcp[/{slug}]`。
+// 这里返回同一份元数据（issuer 仍是 Gateway 源），不影响按根路径发现的客户端。
+oauthServerMetadataRoutes.get('/', serveAuthorizationServerMetadata);
+oauthServerMetadataRoutes.get('/mcp', serveAuthorizationServerMetadata);
+oauthServerMetadataRoutes.get('/mcp/:slug', serveAuthorizationServerMetadata);
 
 // ---------------------------------------------------------------------------
 // 动态注册
@@ -151,8 +178,10 @@ oauthServerRoutes.post('/register', async (c) => {
 	if (!redirectUris.every(isAcceptableRedirectUriShape)) {
 		return oauthError(c, 400, 'invalid_redirect_uri', 'redirect_uris must be https URLs, loopback http URLs or custom schemes');
 	}
-	const method = str(body.token_endpoint_auth_method);
-	if (method && method !== 'none') return invalidMeta('Only token_endpoint_auth_method "none" is supported');
+	const requestedMethod = str(body.token_endpoint_auth_method) || 'none';
+	if (!isTokenEndpointAuthMethod(requestedMethod)) {
+		return invalidMeta('token_endpoint_auth_method must be one of none, client_secret_basic, client_secret_post');
+	}
 	if (Array.isArray(body.grant_types)) {
 		const allowed = ['authorization_code', 'refresh_token'];
 		if (!body.grant_types.every((g) => typeof g === 'string' && allowed.includes(g))) {
@@ -168,21 +197,36 @@ oauthServerRoutes.post('/register', async (c) => {
 	const apps = await repos.oauthServer.listApps();
 	const appId = matchOAuthApp(apps, { clientName, redirectUris });
 	if (!appId) {
+		// 运营据此把新客户端的回调加进应用白名单；client_name 由客户端自报，只作参考。
+		console.warn('[Gateway OAuth] registration rejected: no enabled application covers the redirect_uris', {
+			client_name: clientName,
+			redirect_uris: redirectUris,
+		});
 		return oauthError(c, 400, 'invalid_redirect_uri', 'redirect_uris are not allowed by any enabled application');
 	}
 	const clientId = generateOAuthClientId();
+	const clientSecret = isConfidentialAuthMethod(requestedMethod) ? generateOAuthClientSecret() : null;
 	const nowIso = new Date().toISOString();
-	await repos.oauthServer.insertClient({ clientId, appId, clientName, redirectUris, nowIso });
+	await repos.oauthServer.insertClient({
+		clientId,
+		appId,
+		clientName,
+		redirectUris,
+		nowIso,
+		tokenEndpointAuthMethod: requestedMethod,
+		clientSecretHash: clientSecret ? await hashOAuthSecret(clientSecret) : null,
+	});
 	void maybeCleanup(repos);
 	return c.json(
 		{
 			client_id: clientId,
 			client_id_issued_at: Math.floor(Date.parse(nowIso) / 1000),
+			...(clientSecret ? { client_secret: clientSecret, client_secret_expires_at: 0 } : {}),
 			client_name: clientName,
 			redirect_uris: redirectUris,
 			grant_types: ['authorization_code', 'refresh_token'],
 			response_types: ['code'],
-			token_endpoint_auth_method: 'none',
+			token_endpoint_auth_method: requestedMethod,
 			scope: OAUTH_SERVER_SCOPE,
 		},
 		201,
@@ -191,18 +235,99 @@ oauthServerRoutes.post('/register', async (c) => {
 });
 
 // ---------------------------------------------------------------------------
+// 客户端元数据文档（client_id 为 https URL）
+// ---------------------------------------------------------------------------
+
+type ClientResolution = { client: OAuthClientRow | null; problem: string | null };
+
+/**
+ * 找到授权请求里的注册实例。元数据文档客户端在首次授权或缓存过期时去取文档，按回调归属应用后落库；
+ * 取文档失败时如果本地还有旧记录就继续用旧记录，避免对方站点短暂故障导致已接入的用户无法授权。
+ */
+async function resolveAuthorizeClient(repos: GatewayRepositories, mode: BuiltinMode, clientId: string): Promise<ClientResolution> {
+	if (!clientId) return { client: null, problem: null };
+	const existing = await repos.oauthServer.getClient(clientId);
+	if (!isClientIdMetadataUrl(clientId)) return { client: existing, problem: null };
+	if (!mode.clientIdMetadataDocuments) return { client: null, problem: 'Client ID metadata documents are not enabled on this server' };
+	if (existing && existing.registration_method !== 'cimd') return { client: existing, problem: null };
+	if (existing && isClientIdMetadataFresh(existing.metadata_fetched_at)) return { client: existing, problem: null };
+
+	const fetched = await fetchClientIdMetadataDocument(clientId);
+	if (!fetched.ok) {
+		console.warn('[Gateway OAuth] client metadata document rejected', { client_id: clientId, reason: fetched.reason });
+		return existing ? { client: existing, problem: null } : { client: null, problem: fetched.reason };
+	}
+	const { clientName, redirectUris } = fetched.metadata;
+	const appId = matchOAuthApp(await repos.oauthServer.listApps(), { clientName, redirectUris });
+	const nowIso = new Date().toISOString();
+	if (existing) {
+		await repos.oauthServer.updateClientMetadata(clientId, { appId, clientName, redirectUris, metadataFetchedAt: nowIso });
+		if (appId && appId !== existing.app_id) await repos.oauthAccessTokens.assignApp(clientId, appId);
+	}
+	if (!appId) {
+		console.warn('[Gateway OAuth] client metadata document rejected: no enabled application covers the redirect_uris', {
+			client_id: clientId,
+			client_name: clientName,
+			redirect_uris: redirectUris,
+		});
+		return { client: null, problem: 'redirect_uris are not allowed by any enabled application' };
+	}
+	if (!existing) {
+		await repos.oauthServer.insertClient({
+			clientId,
+			appId,
+			clientName,
+			redirectUris,
+			nowIso,
+			registrationMethod: 'cimd',
+			metadataFetchedAt: nowIso,
+		});
+	}
+	return { client: await repos.oauthServer.getClient(clientId), problem: null };
+}
+
+// ---------------------------------------------------------------------------
+// 客户端认证（token / revoke）
+// ---------------------------------------------------------------------------
+
+type ClientAuthResult = { ok: true; client: OAuthClientRow } | { ok: false; response: Response };
+
+/**
+ * 认证调用 token 端点的客户端：`Authorization: Basic` 或表单里的 `client_id` / `client_secret`。
+ * 公开客户端只需 client_id（带了 secret 也忽略）；机密客户端两种方式都接受，但必须出示正确的 secret。
+ */
+async function authenticateTokenClient(c: Ctx, repos: GatewayRepositories, body: Record<string, unknown>): Promise<ClientAuthResult> {
+	const basic = parseBasicClientCredentials(c.req.header('authorization'));
+	const bodyClientId = str(body.client_id);
+	if (basic && bodyClientId && bodyClientId !== basic.clientId) {
+		return { ok: false, response: oauthError(c, 400, 'invalid_request', 'client_id in the body does not match the Authorization header') };
+	}
+	const clientId = basic?.clientId ?? bodyClientId;
+	if (!clientId) return { ok: false, response: oauthError(c, 400, 'invalid_request', 'client_id is required') };
+	const invalidClient = (description: string) =>
+		oauthError(c, 401, 'invalid_client', description, basic ? { 'WWW-Authenticate': 'Basic realm="oauth"' } : {});
+	const client = await repos.oauthServer.getClient(clientId);
+	if (!client) return { ok: false, response: invalidClient('Unknown client') };
+	if (isConfidentialAuthMethod(client.token_endpoint_auth_method)) {
+		const secret = basic?.clientSecret || str(body.client_secret);
+		if (!(await verifyOAuthClientSecret(secret, client.client_secret_hash))) {
+			return { ok: false, response: invalidClient('Client authentication failed') };
+		}
+	}
+	return { ok: true, client };
+}
+
+// ---------------------------------------------------------------------------
 // 授权
 // ---------------------------------------------------------------------------
 
-/** 注册实例当前生效的回调白名单：归属应用启用才有；应用被删后尝试按回调重新归类。 */
-async function resolveClientApp(
-	repos: GatewayRepositories,
-	client: { client_id: string; client_name: string; app_id: string | null; redirect_uris: string[] }
-) {
+/** 注册实例当前生效的回调白名单：归属应用启用才有；应用被删后尝试按回调重新归类（手工客户端不重新归类）。 */
+async function resolveClientApp(repos: GatewayRepositories, client: OAuthClientRow) {
 	if (client.app_id) {
 		const app = await repos.oauthServer.getAppById(client.app_id);
 		return app && app.enabled ? app : null;
 	}
+	if (client.registration_method === 'manual') return null;
 	const apps = await repos.oauthServer.listApps();
 	const matched = matchOAuthApp(apps, { clientName: client.client_name, redirectUris: client.redirect_uris });
 	if (!matched) return null;
@@ -220,11 +345,20 @@ oauthServerRoutes.get('/authorize', async (c) => {
 	const repos = c.get('repositories');
 	const query = (name: string) => c.req.query(name);
 	const clientId = str(query('client_id'));
-	const client = clientId ? await repos.oauthServer.getClient(clientId) : null;
+	const { client, problem } = await resolveAuthorizeClient(repos, mode, clientId);
+	if (problem) return oauthError(c, 400, 'invalid_client', problem);
 	const app = client ? await resolveClientApp(repos, client) : null;
 
 	const validation = validateAuthorizeParams(query, {
-		client: client ? { client_id: client.client_id, app_id: client.app_id, redirect_uris: client.redirect_uris } : null,
+		client: client
+			? {
+					client_id: client.client_id,
+					app_id: client.app_id,
+					redirect_uris: client.redirect_uris,
+					registration_method: client.registration_method,
+					token_endpoint_auth_method: client.token_endpoint_auth_method,
+				}
+			: null,
 		allowedRedirectUris: client ? (app ? app.redirect_uris : null) : [],
 		allowedResourceOrigins: [mode.issuer, publicOrigin(c)],
 	});
@@ -288,21 +422,26 @@ async function handleAuthorizationCodeGrant(
 ): Promise<Response> {
 	const code = str(body.code);
 	const verifier = str(body.code_verifier);
-	const clientId = str(body.client_id);
 	const redirectUri = str(body.redirect_uri);
-	if (!code || !verifier || !clientId || !redirectUri) {
-		return oauthError(c, 400, 'invalid_request', 'code, code_verifier, client_id and redirect_uri are required');
-	}
-	if (!isValidCodeVerifier(verifier)) return oauthError(c, 400, 'invalid_grant', 'Invalid code_verifier');
+	if (!code || !redirectUri) return oauthError(c, 400, 'invalid_request', 'code and redirect_uri are required');
+	if (verifier && !isValidCodeVerifier(verifier)) return oauthError(c, 400, 'invalid_grant', 'Invalid code_verifier');
+	const auth = await authenticateTokenClient(c, repos, body);
+	if (!auth.ok) return auth.response;
+	const client = auth.client;
 
 	const nowIso = new Date().toISOString();
 	// 一次性：不论后续校验是否通过，授权码一经取出就作废。
 	const request = await repos.oauthServer.consumeCode(await hashOAuthSecret(code), nowIso, `${nowIso}|${randomOAuthToken(12)}`);
 	if (!request || !request.user_id) return oauthError(c, 400, 'invalid_grant', 'Invalid or expired authorization code');
-	if (request.client_id !== clientId || !redirectUrisMatchExact(request.redirect_uri, redirectUri)) {
+	if (request.client_id !== client.client_id || !redirectUrisMatchExact(request.redirect_uri, redirectUri)) {
 		return oauthError(c, 400, 'invalid_grant', 'Authorization code was issued to a different client or redirect_uri');
 	}
-	if (!(await verifyPkceS256(verifier, request.code_challenge))) {
+	// 授权时带了 code_challenge 就必须校验；没带只可能是机密客户端（authorize 已拦住公开客户端），此时由上面的 secret 认证兜底。
+	if (request.code_challenge) {
+		if (!verifier || !(await verifyPkceS256(verifier, request.code_challenge))) {
+			return oauthError(c, 400, 'invalid_grant', 'PKCE verification failed');
+		}
+	} else if (!isConfidentialAuthMethod(client.token_endpoint_auth_method)) {
 		return oauthError(c, 400, 'invalid_grant', 'PKCE verification failed');
 	}
 	const resource = str(body.resource);
@@ -310,9 +449,8 @@ async function handleAuthorizationCodeGrant(
 		return oauthError(c, 400, 'invalid_target', 'resource does not match the authorization request');
 	}
 
-	const client = await repos.oauthServer.getClient(clientId);
-	const app = client ? await resolveClientApp(repos, client) : null;
-	if (!client || !app) return oauthError(c, 400, 'invalid_grant', 'This application is not available');
+	const app = await resolveClientApp(repos, client);
+	if (!app) return oauthError(c, 400, 'invalid_grant', 'This application is not available');
 	const user = await repos.users.getById(request.user_id);
 	if (!user || user.status !== 'active') return oauthError(c, 400, 'invalid_grant', 'User is not available');
 
@@ -346,8 +484,10 @@ function redirectUrisMatchExact(a: string, b: string): boolean {
 
 async function handleRefreshGrant(c: Ctx, repos: GatewayRepositories, body: Record<string, unknown>): Promise<Response> {
 	const refreshToken = str(body.refresh_token);
-	const clientId = str(body.client_id);
-	if (!refreshToken || !clientId) return oauthError(c, 400, 'invalid_request', 'refresh_token and client_id are required');
+	if (!refreshToken) return oauthError(c, 400, 'invalid_request', 'refresh_token is required');
+	const auth = await authenticateTokenClient(c, repos, body);
+	if (!auth.ok) return auth.response;
+	const client = auth.client;
 	if (!isRefreshTokenValue(refreshToken)) return oauthError(c, 400, 'invalid_grant', 'Invalid refresh token');
 
 	const refreshHash = await hashOAuthSecret(refreshToken);
@@ -359,10 +499,9 @@ async function handleRefreshGrant(c: Ctx, repos: GatewayRepositories, body: Reco
 		if (replayed) await repos.oauthAccessTokens.revokeById(replayed.id, nowIso);
 		return oauthError(c, 400, 'invalid_grant', 'Invalid refresh token');
 	}
-	if (current.client_id !== clientId) return oauthError(c, 400, 'invalid_grant', 'Refresh token belongs to a different client');
-	const client = await repos.oauthServer.getClient(clientId);
-	const app = client ? await resolveClientApp(repos, client) : null;
-	if (!client || !app) return oauthError(c, 400, 'invalid_grant', 'This application is not available');
+	if (current.client_id !== client.client_id) return oauthError(c, 400, 'invalid_grant', 'Refresh token belongs to a different client');
+	const app = await resolveClientApp(repos, client);
+	if (!app) return oauthError(c, 400, 'invalid_grant', 'This application is not available');
 	const user = await repos.users.getById(current.user_id);
 	if (!user || user.status !== 'active') return oauthError(c, 400, 'invalid_grant', 'User is not available');
 
@@ -407,7 +546,7 @@ oauthServerRoutes.post('/revoke', async (c) => {
 	const body = await readBody(c);
 	if (body instanceof Response) return body;
 	const token = str(body.token);
-	const clientId = str(body.client_id);
+	const clientId = parseBasicClientCredentials(c.req.header('authorization'))?.clientId ?? str(body.client_id);
 	if (!token) return oauthError(c, 400, 'invalid_request', 'token is required');
 
 	const repos = c.get('repositories');

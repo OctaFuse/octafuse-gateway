@@ -3,13 +3,17 @@
  *
  * - 授权请求（给同意页用）：读取详情、用户同意 / 拒绝。同意页可以是门户，也可以是 Gateway 内置确认页。
  * - 应用目录：运维维护「应用 → 回调白名单」，注册实例（`client_id`）按回调地址与名称归到应用。
+ * - 手工客户端：给不支持动态注册的平台签发固定 `client_id` + `client_secret`。
  * - 按应用统计 / 撤销，按用户撤销（封禁联动）。
  */
 import {
 	OAUTH_MAX_REDIRECT_URIS,
 	acceptAuthorizationRequest,
 	describeAuthorizationRequest,
-	isAcceptableRedirectUriShape,
+	generateOAuthClientId,
+	generateOAuthClientSecret,
+	hashOAuthSecret,
+	isValidRedirectUriRule,
 	matchOAuthApp,
 	normalizeStringList,
 	rejectAuthorizationRequest,
@@ -18,6 +22,7 @@ import {
 	type OAuthAccessTokenAppStat,
 	type OAuthAppRow,
 	type OAuthClientListRow,
+	type OAuthClientRow,
 } from '@octafuse/core';
 import { badRequest, conflict, notFound } from './errors';
 import { resolveAdminUserId } from './users-service';
@@ -124,11 +129,16 @@ function parseName(value: unknown): string {
 	return name;
 }
 
+/** 回调白名单规则：具体地址，或 `https://*.example.com`、`.../*` 这类受控通配（见 core `isValidRedirectUriRule`）。 */
 function parseRedirectUris(value: unknown): string[] {
 	const list = normalizeStringList(value, { max: OAUTH_MAX_REDIRECT_URIS * 3, maxLength: 2000 });
 	if (!list) throw badRequest('redirect_uris must be an array of strings');
-	if (!list.every(isAcceptableRedirectUriShape)) {
-		throw badRequest('redirect_uris must be https URLs, loopback http URLs or custom schemes');
+	const invalid = list.find((entry) => !isValidRedirectUriRule(entry));
+	if (invalid) {
+		throw badRequest(
+			`Invalid redirect URI rule "${invalid}": use https URLs, loopback http URLs, custom schemes, ` +
+				'https://*.domain wildcards or a trailing * for prefix matching'
+		);
 	}
 	return list;
 }
@@ -195,7 +205,9 @@ export async function updateOAuthApp(
 	return row;
 }
 
-/** 删除应用：先撤销它名下全部授权，再解除注册实例归属。已注册的客户端之后会因无法归类而被拒绝。 */
+/**
+ * 删除应用：先撤销它名下全部授权；手工签发的客户端随应用删除，其余注册实例解除归属，之后会因无法归类而被拒绝。
+ */
 export async function deleteOAuthApp(repos: GatewayRepositories, id: string): Promise<{ revoked: number }> {
 	if (!(await repos.oauthServer.getAppById(id))) throw notFound('Application not found');
 	const revoked = await repos.oauthAccessTokens.revokeWhere({ appId: id }, new Date().toISOString());
@@ -229,17 +241,112 @@ export async function revokeUserOAuthGrants(repos: GatewayRepositories, rawUserI
 	return { revoked: await repos.oauthAccessTokens.revokeWhere({ userId }, new Date().toISOString()) };
 }
 
+// ---------------------------------------------------------------------------
+// 注册实例（含运维签发的手工客户端）
+// ---------------------------------------------------------------------------
+
+/** 对外的注册实例：不返回 secret 哈希，只告诉调用方有没有设置 secret。 */
+export type OAuthClientView<T extends OAuthClientRow = OAuthClientRow> = Omit<T, 'client_secret_hash'> & {
+	has_client_secret: boolean;
+};
+
+function toClientView<T extends OAuthClientRow>(row: T): OAuthClientView<T> {
+	const { client_secret_hash, ...rest } = row;
+	return { ...rest, has_client_secret: Boolean(client_secret_hash) };
+}
+
+const REGISTRATION_METHODS = new Set(['dcr', 'manual', 'cimd']);
+
 export async function listOAuthClients(
 	repos: GatewayRepositories,
-	query: { app_id?: string | null; page?: string | null; page_size?: string | null }
-): Promise<{ items: OAuthClientListRow[]; total: number; page: number; page_size: number }> {
+	query: { app_id?: string | null; registration_method?: string | null; page?: string | null; page_size?: string | null }
+): Promise<{ items: OAuthClientView<OAuthClientListRow>[]; total: number; page: number; page_size: number }> {
 	const page = Math.max(Number.parseInt(query.page ?? '', 10) || 1, 1);
 	const pageSize = Math.min(Math.max(Number.parseInt(query.page_size ?? '', 10) || DEFAULT_PAGE_SIZE, 1), MAX_PAGE_SIZE);
+	const registrationMethod = query.registration_method?.trim() || undefined;
+	if (registrationMethod && !REGISTRATION_METHODS.has(registrationMethod)) {
+		throw badRequest('registration_method must be dcr, manual or cimd');
+	}
 	const { rows, total } = await repos.oauthServer.listClients({
 		appId: query.app_id?.trim() || undefined,
+		registrationMethod,
 		page,
 		pageSize,
 		nowIso: new Date().toISOString(),
 	});
-	return { items: rows, total, page, page_size: pageSize };
+	return { items: rows.map(toClientView), total, page, page_size: pageSize };
+}
+
+/** 签发结果：`client_secret` 只在这一次返回，库里只存哈希。 */
+export type IssuedOAuthClient = { client: OAuthClientView; client_secret: string };
+
+function parseClientName(value: unknown, fallback: string): string {
+	if (value === undefined || value === null || value === '') return fallback;
+	return parseName(value);
+}
+
+async function requireManualClient(repos: GatewayRepositories, clientId: string): Promise<OAuthClientRow> {
+	const client = await repos.oauthServer.getClient(clientId);
+	if (!client) throw notFound('Client not found');
+	if (client.registration_method !== 'manual') throw badRequest('Only manually issued clients can be changed here');
+	return client;
+}
+
+/**
+ * 为不支持动态注册的平台（如服务端托管的连接器）签发固定的 `client_id` + `client_secret`。
+ * `redirect_uris` 为空表示沿用所属应用的回调白名单。
+ */
+export async function createManualOAuthClient(
+	repos: GatewayRepositories,
+	appId: string,
+	input: { client_name?: unknown; redirect_uris?: unknown }
+): Promise<IssuedOAuthClient> {
+	const app = await repos.oauthServer.getAppById(appId);
+	if (!app) throw notFound('Application not found');
+	const clientName = parseClientName(input.client_name, app.name);
+	const redirectUris = parseRedirectUris(input.redirect_uris ?? []);
+	const secret = generateOAuthClientSecret();
+	const row = await repos.oauthServer.insertClient({
+		clientId: generateOAuthClientId(),
+		appId: app.id,
+		clientName,
+		redirectUris,
+		nowIso: new Date().toISOString(),
+		registrationMethod: 'manual',
+		tokenEndpointAuthMethod: 'client_secret_basic',
+		clientSecretHash: await hashOAuthSecret(secret),
+	});
+	return { client: toClientView(row), client_secret: secret };
+}
+
+export async function updateManualOAuthClient(
+	repos: GatewayRepositories,
+	clientId: string,
+	input: { client_name?: unknown; redirect_uris?: unknown }
+): Promise<OAuthClientView> {
+	await requireManualClient(repos, clientId);
+	const patch: { clientName?: string; redirectUris?: string[] } = {};
+	if (input.client_name !== undefined) patch.clientName = parseName(input.client_name);
+	if (input.redirect_uris !== undefined) patch.redirectUris = parseRedirectUris(input.redirect_uris);
+	const row = await repos.oauthServer.updateClient(clientId, patch);
+	if (!row) throw notFound('Client not found');
+	return toClientView(row);
+}
+
+/** 重置 secret：旧 secret 立即失效，已签发的授权不受影响（需要时另行撤销）。 */
+export async function rotateManualOAuthClientSecret(repos: GatewayRepositories, clientId: string): Promise<IssuedOAuthClient> {
+	await requireManualClient(repos, clientId);
+	const secret = generateOAuthClientSecret();
+	await repos.oauthServer.setClientSecret(clientId, { hash: await hashOAuthSecret(secret), authMethod: 'client_secret_basic' });
+	const row = await repos.oauthServer.getClient(clientId);
+	if (!row) throw notFound('Client not found');
+	return { client: toClientView(row), client_secret: secret };
+}
+
+/** 删除手工客户端：先撤销它签发的全部授权。 */
+export async function deleteManualOAuthClient(repos: GatewayRepositories, clientId: string): Promise<{ revoked: number }> {
+	await requireManualClient(repos, clientId);
+	const revoked = await repos.oauthAccessTokens.revokeByClient(clientId, new Date().toISOString());
+	await repos.oauthServer.deleteClient(clientId);
+	return { revoked };
 }

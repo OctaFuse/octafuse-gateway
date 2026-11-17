@@ -13,6 +13,7 @@ import { BILLING_CURRENCY_KEY, tryParseGatewaySupportedBillingCurrencyInput } fr
 import { MAINTENANCE_MODE_KEY } from '@octafuse/core/lib/maintenance-mode';
 import {
 	MCP_OAUTH_AUTHORIZATION_SERVER_KEY,
+	MCP_OAUTH_CIMD_ENABLED_KEY,
 	MCP_OAUTH_CONSENT_URL_KEY,
 	MCP_OAUTH_ISSUER_KEY,
 	normalizeMcpOAuthAuthorizationServer,
@@ -513,6 +514,13 @@ export async function updateAdminSystemConfigService(repos: GatewayRepositories,
 			throw badRequest('MCP_OAUTH_ISSUER must be an https origin (http allowed for localhost), or empty to disable');
 		}
 		value = normalized;
+	}
+	if (key === MCP_OAUTH_CIMD_ENABLED_KEY) {
+		const normalized = value.trim().toLowerCase();
+		if (!['', 'true', 'false', '1', '0'].includes(normalized)) {
+			throw badRequest('MCP_OAUTH_CIMD_ENABLED must be true, false or empty');
+		}
+		value = normalized === 'true' || normalized === '1' ? 'true' : '';
 	}
 	if (key === MCP_OAUTH_CONSENT_URL_KEY) {
 		const normalized = normalizeMcpOAuthConsentUrl(value);
