@@ -35,6 +35,7 @@
 | 2.17.0 → 2.18.0：粘性绑定记录明文 affinity_key（迁移 0034，须先于 Proxy 执行） | [migrations/0034-sticky-binding-affinity-key.md](./migrations/0034-sticky-binding-affinity-key.md) |
 | 2.17.0 → 2.18.0：OAuth 访问令牌独立成表 `oauth_access_tokens`（迁移 0035，须先于 Proxy / Admin 执行） | [migrations/0035-oauth-access-tokens.md](./migrations/0035-oauth-access-tokens.md) |
 | 内置 OAuth 授权服务器：应用目录、动态注册、刷新令牌（迁移 0036，须先于 Proxy / Admin 执行；切换步骤见文内） | [migrations/0036-oauth-authorization-server.md](./migrations/0036-oauth-authorization-server.md) |
+| OAuth 机密客户端、手工客户端与客户端元数据文档（迁移 0037，须先于 Proxy / Admin 执行） | [migrations/0037-oauth-client-credentials.md](./migrations/0037-oauth-client-credentials.md) |
 | User audit 兼容导出移除说明 | [migrations/user-audit-legacy-exports.md](./migrations/user-audit-legacy-exports.md) |
 
 升级到 **2.3.0** 时应在同一维护窗口内按 **0020 → 0021 → 同版本 Proxy / Admin 部署**执行；0021 无旧策略 ID 别名，禁止新旧版本混跑。

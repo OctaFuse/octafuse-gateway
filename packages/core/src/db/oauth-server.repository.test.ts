@@ -1,5 +1,5 @@
 /**
- * 用 node:sqlite 跑真实的 D1 迁移（0035 + 0036）与共享 SQL 仓储：应用目录、注册实例、授权请求 / 授权码的原子消费，
+ * 用 node:sqlite 跑真实的 D1 迁移（0035 – 0037）与共享 SQL 仓储：应用目录、注册实例、授权请求 / 授权码的原子消费，
  * 以及访问令牌上的刷新令牌轮换、重放检测、按应用统计与批量撤销。
  */
 import assert from 'node:assert/strict';
@@ -13,6 +13,7 @@ import { createOAuthServerSqlRepository } from './oauth-server.repository';
 const MIGRATIONS = [
 	new URL('../../migrations-d1/0035_oauth_access_tokens.sql', import.meta.url),
 	new URL('../../migrations-d1/0036_oauth_authorization_server.sql', import.meta.url),
+	new URL('../../migrations-d1/0037_oauth_client_credentials.sql', import.meta.url),
 ];
 
 function setup() {
@@ -85,11 +86,61 @@ describe('oauth apps and clients', () => {
 			id: 't1', userId: 'u1', clientId: 'granted', clientName: 'c', tokenHash: 'h1', tokenHint: 'x',
 			scopes: ['mcp'], expiresAt: HOUR, nowIso: T1,
 		});
+		await server.insertClient({
+			clientId: 'manual', appId: null, clientName: 'm', redirectUris: [], nowIso: T0, registrationMethod: 'manual',
+		});
 		assert.equal(await server.deleteUnusedClients('2026-11-01T12:00:00.000Z'), 1);
 		assert.equal(await server.getClient('old'), null);
 		assert.ok(await server.getClient('used'));
 		assert.ok(await server.getClient('granted'));
 		assert.ok(await server.getClient('fresh'));
+		assert.ok(await server.getClient('manual'));
+	});
+
+	it('stores confidential, manual and metadata-document clients', async () => {
+		const { server } = setup();
+		await server.insertApp({
+			id: 'app-wb', slug: 'workbuddy', name: 'WorkBuddy', redirectUris: ['https://*.workbuddy.cn'],
+			clientNamePatterns: [], enabled: true, nowIso: T0,
+		});
+		const dcr = await server.insertClient({ clientId: 'c-dcr', appId: 'app-wb', clientName: 'a', redirectUris: ['https://a.workbuddy.cn/cb'], nowIso: T0 });
+		assert.equal(dcr.registration_method, 'dcr');
+		assert.equal(dcr.token_endpoint_auth_method, 'none');
+		assert.equal(dcr.client_secret_hash, null);
+
+		const manual = await server.insertClient({
+			clientId: 'c-manual', appId: 'app-wb', clientName: 'Tencent connector', redirectUris: [], nowIso: T0,
+			registrationMethod: 'manual', tokenEndpointAuthMethod: 'client_secret_basic', clientSecretHash: 'hash-1',
+		});
+		assert.equal(manual.token_endpoint_auth_method, 'client_secret_basic');
+		assert.equal(manual.client_secret_hash, 'hash-1');
+		await server.setClientSecret('c-manual', { hash: 'hash-2', authMethod: 'client_secret_post' });
+		const rotated = await server.getClient('c-manual');
+		assert.equal(rotated?.client_secret_hash, 'hash-2');
+		assert.equal(rotated?.token_endpoint_auth_method, 'client_secret_post');
+		const renamed = await server.updateClient('c-manual', { clientName: 'Renamed', redirectUris: ['https://x.workbuddy.cn/*'] });
+		assert.equal(renamed?.client_name, 'Renamed');
+		assert.deepEqual(renamed?.redirect_uris, ['https://x.workbuddy.cn/*']);
+
+		const cimdId = 'https://client.example.com/m.json';
+		await server.insertClient({
+			clientId: cimdId, appId: null, clientName: 'Example', redirectUris: ['http://127.0.0.1/cb'], nowIso: T0,
+			registrationMethod: 'cimd', metadataFetchedAt: T0,
+		});
+		await server.updateClientMetadata(cimdId, { appId: 'app-wb', clientName: 'Example 2', redirectUris: ['https://a.workbuddy.cn/cb'], metadataFetchedAt: T1 });
+		const cimd = await server.getClient(cimdId);
+		assert.equal(cimd?.app_id, 'app-wb');
+		assert.equal(cimd?.metadata_fetched_at, T1);
+
+		const manualOnly = await server.listClients({ appId: 'app-wb', registrationMethod: 'manual', page: 1, pageSize: 10, nowIso: T1 });
+		assert.deepEqual(manualOnly.rows.map((row) => row.client_id), ['c-manual']);
+
+		// 删除应用：手工客户端一起删除，其它实例解除归属
+		await server.deleteApp('app-wb');
+		assert.equal(await server.getClient('c-manual'), null);
+		assert.equal((await server.getClient('c-dcr'))?.app_id, null);
+		assert.equal(await server.deleteClient('c-dcr'), true);
+		assert.equal(await server.deleteClient('c-dcr'), false);
 	});
 });
 

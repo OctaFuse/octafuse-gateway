@@ -106,7 +106,7 @@ erDiagram
 
 8. **`oauth_access_tokens`**：OAuth 授权服务器代用户签发给第三方 MCP 客户端的凭证，与 `api_keys` 完全分开。前缀 `oat_`、只存 SHA-256 哈希、会过期、只能访问 `/mcp*`；`api_keys` 因此不需要 `scopes`，也不需要为 OAuth 客户端做任何分类判断。一行 = 一次授权（用户 × 应用）；刷新只轮换哈希与过期时间，行 id 不变；撤销为软删除（清空哈希、保留 `client_name`）。同一用户对同一应用只保留一条未撤销记录。内置授权服务器签发的行带 `app_id`、刷新令牌哈希与过期时间；外部授权服务器经 Admin API 签发的旧行 `app_id` 与刷新列为空，后台显示为「未归属」。
 
-9. **`oauth_apps` / `oauth_clients` / `oauth_authorization_requests`**（内置授权服务器，迁移 0036）：`oauth_apps` 是管理员维护的应用目录（回调与名称模式，决定哪些客户端可注册）；`oauth_clients` 是动态注册的实例（`octa_…` client_id，归属某个应用或未归属）；`oauth_authorization_requests` 是 10 分钟内有效的授权请求，同意后写入一次性授权码哈希。三者都不含用户密钥材料。
+9. **`oauth_apps` / `oauth_clients` / `oauth_authorization_requests`**（内置授权服务器，迁移 0036）：`oauth_apps` 是管理员维护的应用目录（回调与名称模式，决定哪些客户端可注册）；`oauth_clients` 是注册实例（动态注册的 `octa_…` client_id、管理员手工签发的客户端，或以 https 地址为 client_id 的元数据文档客户端；迁移 0037 起机密客户端另存 `client_secret_hash`），归属某个应用或未归属；`oauth_authorization_requests` 是 10 分钟内有效的授权请求，同意后写入一次性授权码哈希。三者都不含用户密钥材料。
 
 ## 请求日志与审计
 

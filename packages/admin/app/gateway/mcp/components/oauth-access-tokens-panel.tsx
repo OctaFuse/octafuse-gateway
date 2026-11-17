@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
 	MagnifyingGlassIcon,
 	PlusIcon,
+	RectangleStackIcon,
 	Squares2X2Icon,
 	TrashIcon,
 	XMarkIcon,
@@ -28,6 +29,7 @@ import {
 import { useGatewayDateTime } from '@/lib/use-gateway-datetime';
 import styles from '../mcp-client-workspace.module.css';
 import { OAUTH_APP_PRESETS, OAuthAppFormDialog, type OAuthAppDraft } from './oauth-app-form-dialog';
+import { OAuthManualClientsDialog } from './oauth-manual-clients-dialog';
 
 const PAGE_SIZE = 20;
 type StatusFilter = '' | OAuthAccessTokenStatus;
@@ -69,6 +71,26 @@ export function OAuthAccessTokensPanel({ active = true }: { active?: boolean }) 
 		app: OAuthApp | null;
 		initial: OAuthAppDraft | null;
 	} | null>(null);
+	const [manualApp, setManualApp] = useState<OAuthApp | null>(null);
+	const [presetMenuOpen, setPresetMenuOpen] = useState(false);
+	const presetMenuRef = useRef<HTMLDivElement>(null);
+
+	// 点击菜单外部或按 Esc 收起预设菜单。
+	useEffect(() => {
+		if (!presetMenuOpen) return;
+		const onPointerDown = (event: PointerEvent) => {
+			if (!presetMenuRef.current?.contains(event.target as Node)) setPresetMenuOpen(false);
+		};
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') setPresetMenuOpen(false);
+		};
+		document.addEventListener('pointerdown', onPointerDown);
+		document.addEventListener('keydown', onKeyDown);
+		return () => {
+			document.removeEventListener('pointerdown', onPointerDown);
+			document.removeEventListener('keydown', onKeyDown);
+		};
+	}, [presetMenuOpen]);
 	const [filterStatus, setFilterStatus] = useState<StatusFilter>('');
 	const [isLoading, setIsLoading] = useState(true);
 	const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -327,44 +349,60 @@ export function OAuthAccessTokensPanel({ active = true }: { active?: boolean }) 
 			</header>
 			<div className={styles.grantsWorkspace}>
 				<aside className={`${styles.appDirectory} space-y-3`} aria-label={t('apps.title')}>
-					<div className="flex flex-wrap items-center justify-between gap-2">
-						<div className="flex items-center gap-2">
+					<div className="flex items-center justify-between gap-2">
+						<div className="flex min-w-0 items-center gap-2">
 							<h3 className="text-sm font-medium text-gray-900">{t('apps.title')}</h3>
 							<span className="font-mono text-xs text-gray-400">{overview.apps.length}</span>
 							<InfoHintPopover label={t('apps.title')} portal openOnHover align="start">
 								{t('appsRoleHint')}
 							</InfoHintPopover>
 						</div>
-						<div className="flex flex-wrap items-center gap-2">
+						<div className="flex shrink-0 items-center gap-1">
 							{availablePresets.length > 0 && (
-								<details className="relative">
-									<summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
-										{t('apps.importPreset')}
-									</summary>
-									<div className="absolute right-0 z-10 mt-1 min-w-[12rem] rounded-lg border border-gray-200 bg-white p-1 shadow-lg">
-										{availablePresets.map((preset) => (
-											<button
-												key={preset.slug}
-												type="button"
-												onClick={(event) => {
-													event.currentTarget.closest('details')?.removeAttribute('open');
-													setDialog({ app: null, initial: preset });
-												}}
-												className="block w-full rounded-md px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
-											>
-												{preset.name}
-											</button>
-										))}
-									</div>
-								</details>
+								<div className="relative" ref={presetMenuRef}>
+									<button
+										type="button"
+										onClick={() => setPresetMenuOpen((open) => !open)}
+										title={t('apps.importPreset')}
+										aria-label={t('apps.importPreset')}
+										aria-haspopup="menu"
+										aria-expanded={presetMenuOpen}
+										className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-200/60 hover:text-gray-800 aria-expanded:bg-gray-200/60 aria-expanded:text-gray-800"
+									>
+										<RectangleStackIcon className="h-4 w-4" aria-hidden />
+									</button>
+									{presetMenuOpen && (
+										<div
+											role="menu"
+											className="absolute left-0 z-20 mt-1 max-h-80 min-w-[12rem] overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 shadow-lg"
+										>
+											<p className="px-3 pb-1 pt-1.5 text-xs text-gray-400">{t('apps.importPreset')}</p>
+											{availablePresets.map((preset) => (
+												<button
+													key={preset.slug}
+													type="button"
+													role="menuitem"
+													onClick={() => {
+														setPresetMenuOpen(false);
+														setDialog({ app: null, initial: preset });
+													}}
+													className="block w-full rounded-md px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+												>
+													{preset.name}
+												</button>
+											))}
+										</div>
+									)}
+								</div>
 							)}
 							<button
 								type="button"
 								onClick={() => setDialog({ app: null, initial: null })}
-								className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+								title={t('apps.add')}
+								aria-label={t('apps.add')}
+								className="inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-200/60 hover:text-gray-800"
 							>
 								<PlusIcon className="h-4 w-4" aria-hidden />
-								{t('apps.add')}
 							</button>
 						</div>
 					</div>
@@ -511,6 +549,13 @@ export function OAuthAccessTokensPanel({ active = true }: { active?: boolean }) 
 										className="rounded-md px-2.5 py-2 text-gray-600 hover:bg-gray-50"
 									>
 										{t('apps.edit')}
+									</button>
+									<button
+										type="button"
+										onClick={() => setManualApp(selectedApp)}
+										className="rounded-md px-2.5 py-2 text-gray-600 hover:bg-gray-50"
+									>
+										{t('apps.manualCredentials')}
 									</button>
 									<button
 										type="button"
@@ -843,6 +888,12 @@ export function OAuthAccessTokensPanel({ active = true }: { active?: boolean }) 
 				initial={dialog?.initial ?? null}
 				onClose={() => setDialog(null)}
 				onSaved={reload}
+			/>
+			<OAuthManualClientsDialog
+				open={manualApp != null}
+				app={manualApp}
+				onClose={() => setManualApp(null)}
+				onChanged={reload}
 			/>
 		</section>
 	);

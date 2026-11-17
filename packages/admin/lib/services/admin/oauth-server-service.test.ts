@@ -10,20 +10,29 @@ import {
 	createOAuthAccessTokensSqlRepository,
 	createOAuthServerSqlRepository,
 	hashAuthorizationRequestId,
+	isValidRedirectUriRule,
+	matchOAuthApp,
+	verifyOAuthClientSecret,
 	type GatewayRepositories,
 	type SqlExec,
 } from '@octafuse/core';
+import presets from '../../oauth-app-presets.json';
 import { isAdminServiceError } from './errors';
 import {
 	acceptOAuthAuthorizationRequest,
+	createManualOAuthClient,
 	createOAuthApp,
+	deleteManualOAuthClient,
 	deleteOAuthApp,
 	getAuthorizationRequest,
 	isOAuthAuthorizationRequestError,
 	listOAuthApps,
+	listOAuthClients,
 	rejectOAuthAuthorizationRequest,
 	revokeOAuthAppGrants,
 	revokeUserOAuthGrants,
+	rotateManualOAuthClientSecret,
+	updateManualOAuthClient,
 	updateOAuthApp,
 } from './oauth-server-service';
 
@@ -41,7 +50,7 @@ function setup(config: Record<string, string> = { MCP_OAUTH_ISSUER: ISSUER }) {
 	const db = new DatabaseSync(':memory:');
 	db.exec('CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT);');
 	db.exec('CREATE TABLE api_key_request_logs (id TEXT PRIMARY KEY, api_key_id TEXT);');
-	for (const name of ['0035_oauth_access_tokens', '0036_oauth_authorization_server']) {
+	for (const name of ['0035_oauth_access_tokens', '0036_oauth_authorization_server', '0037_oauth_client_credentials']) {
 		db.exec(readFileSync(new URL(`../../../../core/migrations-d1/${name}.sql`, import.meta.url), 'utf8'));
 	}
 	db.prepare('INSERT INTO users (id, email) VALUES (?, ?)').run(USER, 'a@example.com');
@@ -143,6 +152,12 @@ describe('application directory', () => {
 		await rejects(createOAuthApp(repos, { slug: 'Bad Slug', name: 'x' }), 400);
 		await rejects(createOAuthApp(repos, { slug: 'ok', name: '' }), 400);
 		await rejects(createOAuthApp(repos, { slug: 'ok', name: 'x', redirect_uris: ['ftp://x'] }), 400);
+		await rejects(createOAuthApp(repos, { slug: 'ok', name: 'x', redirect_uris: ['http://*.example.com'] }), 400);
+		await rejects(createOAuthApp(repos, { slug: 'ok', name: 'x', redirect_uris: ['https://*.com'] }), 400);
+		const wildcard = await createOAuthApp(repos, {
+			slug: 'wb', name: 'WB', redirect_uris: ['https://*.workbuddy.cn', 'http://localhost/*', 'cursor://anysphere.cursor-mcp/*'],
+		});
+		assert.equal(wildcard.redirect_uris.length, 3);
 		await createOAuthApp(repos, { slug: 'ok', name: 'OK', redirect_uris: ['https://ok.example/cb'] });
 		await rejects(createOAuthApp(repos, { slug: 'ok', name: 'dup' }), 409);
 		await rejects(updateOAuthApp(repos, 'missing', { name: 'x' }), 404);
@@ -192,5 +207,80 @@ describe('application directory', () => {
 		assert.deepEqual(await deleteOAuthApp(ctx.repos, app.id), { revoked: 1 });
 		assert.equal((await listOAuthApps(ctx.repos)).apps.length, 0);
 		await rejects(deleteOAuthApp(ctx.repos, app.id), 404);
+	});
+});
+
+describe('manual clients', () => {
+	it('issues, lists, updates, rotates and deletes without ever exposing the secret hash', async () => {
+		const ctx = setup();
+		const app = await createOAuthApp(ctx.repos, { slug: 'wb', name: 'WorkBuddy', redirect_uris: ['https://*.workbuddy.cn'] });
+		await rejects(createManualOAuthClient(ctx.repos, 'missing', {}), 404);
+		await rejects(createManualOAuthClient(ctx.repos, app.id, { redirect_uris: ['javascript:alert(1)'] }), 400);
+
+		const issued = await createManualOAuthClient(ctx.repos, app.id, {});
+		assert.match(issued.client_secret, /^ocs_/);
+		assert.equal(issued.client.client_name, 'WorkBuddy');
+		assert.equal(issued.client.registration_method, 'manual');
+		assert.equal(issued.client.token_endpoint_auth_method, 'client_secret_basic');
+		assert.equal(issued.client.has_client_secret, true);
+		assert.equal('client_secret_hash' in issued.client, false);
+		const stored = await ctx.oauthServer.getClient(issued.client.client_id);
+		assert.equal(await verifyOAuthClientSecret(issued.client_secret, stored?.client_secret_hash ?? null), true);
+
+		await ctx.oauthServer.insertClient({
+			clientId: 'dcr-1', appId: app.id, clientName: 'Dynamic', redirectUris: ['https://a.workbuddy.cn/cb'], nowIso: nowIso(),
+		});
+		const manualOnly = await listOAuthClients(ctx.repos, { app_id: app.id, registration_method: 'manual' });
+		assert.deepEqual(manualOnly.items.map((c) => c.client_id), [issued.client.client_id]);
+		assert.equal('client_secret_hash' in manualOnly.items[0], false);
+		await rejects(listOAuthClients(ctx.repos, { registration_method: 'bogus' }), 400);
+
+		const updated = await updateManualOAuthClient(ctx.repos, issued.client.client_id, {
+			client_name: 'Tencent connector', redirect_uris: ['https://connector.workbuddy.cn/cb'],
+		});
+		assert.equal(updated.client_name, 'Tencent connector');
+		assert.deepEqual(updated.redirect_uris, ['https://connector.workbuddy.cn/cb']);
+		await rejects(updateManualOAuthClient(ctx.repos, 'dcr-1', { client_name: 'x' }), 400);
+
+		const rotated = await rotateManualOAuthClientSecret(ctx.repos, issued.client.client_id);
+		assert.notEqual(rotated.client_secret, issued.client_secret);
+		const after = await ctx.oauthServer.getClient(issued.client.client_id);
+		assert.equal(await verifyOAuthClientSecret(issued.client_secret, after?.client_secret_hash ?? null), false);
+		assert.equal(await verifyOAuthClientSecret(rotated.client_secret, after?.client_secret_hash ?? null), true);
+
+		await ctx.oauthAccessTokens.issue({
+			id: 't1', userId: USER, clientId: issued.client.client_id, clientName: 'Tencent connector', scopes: ['mcp'],
+			tokenHash: 'h1', tokenHint: 'x', appId: app.id, expiresAt: new Date(Date.now() + 3600_000).toISOString(), nowIso: nowIso(),
+		});
+		assert.deepEqual(await deleteManualOAuthClient(ctx.repos, issued.client.client_id), { revoked: 1 });
+		assert.equal(await ctx.oauthServer.getClient(issued.client.client_id), null);
+		await rejects(deleteManualOAuthClient(ctx.repos, 'dcr-1'), 400);
+		await rejects(deleteManualOAuthClient(ctx.repos, issued.client.client_id), 404);
+	});
+});
+
+describe('application presets', () => {
+	it('are valid and attribute well-known clients to the right app', () => {
+		const apps = presets.map((preset) => ({ ...preset, id: preset.slug, enabled: true }));
+		assert.equal(new Set(apps.map((app) => app.slug)).size, apps.length);
+		for (const preset of presets) {
+			assert.match(preset.slug, /^[a-z0-9][a-z0-9-]{0,39}$/);
+			for (const rule of preset.redirect_uris) assert.equal(isValidRedirectUriRule(rule), true, `${preset.slug}: ${rule}`);
+		}
+		const cases: Array<[string, string[], string]> = [
+			['Codex', ['http://127.0.0.1:1455/callback'], 'codex'],
+			['豆包', ['http://127.0.0.1:1455/callback'], 'doubao'],
+			['Claude Code (soloent)', ['http://localhost:51234/callback'], 'claude-code'],
+			['Gemini CLI MCP Client', ['http://localhost:7777/oauth/callback'], 'gemini-cli'],
+			['Visual Studio Code', ['http://127.0.0.1:33418/', 'https://vscode.dev/redirect'], 'vscode'],
+			['Cursor', ['cursor://anysphere.cursor-mcp/oauth/callback'], 'cursor'],
+			['ChatGPT', ['https://chatgpt.com/connector_platform_oauth_redirect'], 'chatgpt'],
+			['WorkBuddy', ['https://connector.workbuddy.cn/oauth/callback'], 'workbuddy'],
+			['Some new CLI', ['http://127.0.0.1:40000/oauth2/cb'], 'local-clients'],
+			['Unknown', ['http://localhost:51234/callback'], 'local-clients'],
+		];
+		for (const [clientName, redirectUris, expected] of cases) {
+			assert.equal(matchOAuthApp(apps, { clientName, redirectUris }), expected, `${clientName} ${redirectUris.join(',')}`);
+		}
 	});
 });

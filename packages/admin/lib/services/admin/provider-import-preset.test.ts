@@ -625,6 +625,48 @@ describe('provider import preset catalog metadata', () => {
 		assert.equal(inferStaticProviderVendorKey({ name: '网宿私有代理' }), 'wangsu');
 	});
 
+	it('uses the Modelink overseas host with the Modelink vendor identity', () => {
+		const row = listStaticProviderImportPresets().find((preset) => preset.name === 'Modelink');
+		assert.ok(row);
+		assert.equal(row.vendor_key, 'modelink');
+		assert.equal(
+			resolveUpstreamEndpoint('openai', 'chat', row.endpoints),
+			'https://api.modelink.ai/v1/chat/completions'
+		);
+		assert.equal(
+			resolveUpstreamEndpoint('openai', 'responses', row.endpoints),
+			'https://api.modelink.ai/bypass/openai/v1/responses'
+		);
+		assert.equal(
+			row.endpoints.openai?.endpoints?.['images.generations'],
+			'https://api.modelink.ai/bypass/openai/v1/images/generations'
+		);
+		assert.equal(
+			row.endpoints.openai?.endpoints?.['images.edits'],
+			'https://api.modelink.ai/bypass/openai/v1/images/edits'
+		);
+		assert.equal(row.endpoints.anthropic?.base, 'https://api.modelink.ai');
+		assert.equal(row.endpoints.gemini?.base, 'https://api.modelink.ai/bypass/vertex/v1/models');
+		assert.equal(row.endpoints.gemini?.auth, 'bearer');
+		assert.equal(row.catalog?.links?.platform, 'https://modelink.ai/');
+		assert.equal(inferStaticProviderVendorKey({ name: 'Modelink' }), 'modelink');
+		assert.equal(
+			inferStaticProviderVendorKey({
+				name: 'my relay',
+				endpoints: { openai: { base: 'https://api.modelink.ai/v1' } },
+			}),
+			'modelink'
+		);
+		// 国内接入点仍归七牛。
+		assert.equal(
+			inferStaticProviderVendorKey({
+				name: 'my relay',
+				endpoints: { openai: { base: 'https://api.qnaigc.com/v1' } },
+			}),
+			'qiniu'
+		);
+	});
+
 	it('keeps Vertex Express on Gemini query-key and adds project-scoped OpenAI chat', () => {
 		const rows = listStaticProviderImportPresets();
 		const express = rows.find((row) => row.name === 'Google Vertex AI (Express Mode · API Key)');
