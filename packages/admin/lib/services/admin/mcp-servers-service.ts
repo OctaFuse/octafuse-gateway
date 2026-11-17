@@ -398,6 +398,18 @@ export async function setMcpItemPricing(
 	return { id: itemId };
 }
 
+type McpItemRow = Awaited<ReturnType<GatewayRepositories['mcpServers']['listItems']>>[number];
+
+async function applyMcpItemChange(repos: GatewayRepositories, item: McpItemRow) {
+	await repos.mcpServers.updateItem(item.id, {
+		definition: item.pendingDefinition!,
+		contentHash: item.pendingHash!,
+		pendingDefinition: null,
+		pendingHash: null,
+		reviewState: 'none',
+	});
+}
+
 export async function acceptMcpItemChange(repos: GatewayRepositories, serverId: string, itemId: string) {
 	const items = await repos.mcpServers.listItems(serverId);
 	const item = items.find((row) => row.id === itemId);
@@ -405,12 +417,29 @@ export async function acceptMcpItemChange(repos: GatewayRepositories, serverId: 
 	if (item.reviewState !== 'changed' || !item.pendingDefinition || !item.pendingHash) {
 		throw badRequest('MCP item has no pending change');
 	}
-	await repos.mcpServers.updateItem(itemId, {
-		definition: item.pendingDefinition,
-		contentHash: item.pendingHash,
-		pendingDefinition: null,
-		pendingHash: null,
-		reviewState: 'none',
-	});
+	await applyMcpItemChange(repos, item);
 	return { id: itemId };
+}
+
+/**
+ * Accepts several pending definition changes at once. Unlike the single-item call this is tolerant:
+ * ids that vanished, were removed upstream or were already accepted (e.g. by another operator) are
+ * skipped, so a batch started from a stale page still applies everything that is still pending.
+ */
+export async function acceptMcpItemChanges(repos: GatewayRepositories, serverId: string, ids: unknown) {
+	if (!Array.isArray(ids) || ids.some((id) => typeof id !== 'string')) {
+		throw badRequest('ids must be a string array');
+	}
+	const server = await repos.mcpServers.getServerById(serverId);
+	if (!server) throw notFound('MCP server not found');
+	const wanted = new Set(ids as string[]);
+	const items = await repos.mcpServers.listItems(serverId);
+	let accepted = 0;
+	for (const item of items) {
+		if (!wanted.has(item.id) || item.status === 'removed') continue;
+		if (item.reviewState !== 'changed' || !item.pendingDefinition || !item.pendingHash) continue;
+		await applyMcpItemChange(repos, item);
+		accepted += 1;
+	}
+	return { accepted, skipped: wanted.size - accepted };
 }

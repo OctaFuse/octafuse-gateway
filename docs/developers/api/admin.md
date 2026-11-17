@@ -100,6 +100,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/mcp-servers/:id/sync` | POST | 拉取目录并返回新增、变更、移除差异；新条目默认停用 | Admin UI |
 | `/admin/mcp-servers/:id/items/status` | POST | 批量 `enabled` / `disabled` | Admin UI |
 | `/admin/mcp-servers/:id/items/:itemId` | PATCH | `{ pricing }` 设置工具按次价格（`v=2`、`unit=request`、`standard`、`chargedFactor`、`meteredFactor`、空 `config`；兼容 v1 独立单价），整组替换服务价格；`null` 恢复服务默认价格 | Admin UI |
+| `/admin/mcp-servers/:id/items/accept` | POST | 批量接受待发布定义：`{ "ids": [...] }`，返回 `{ accepted, skipped }`；已不在待审状态、已移除或不存在的 id 计入 `skipped`，不会报错 | Admin UI |
 | `/admin/mcp-servers/:id/items/:itemId/accept` | POST | 接受已启用条目的待发布定义 | Admin UI |
 | `/admin/stats` | GET | 多表聚合（含 `api_key_request_logs`、`api_keys` 等） | Admin UI |
 | `/admin/config` | GET, PUT | `system_config`（含 `ROUTE_STRATEGY`、`USER_CHARGED_COST_FACTOR_MODE`） | Admin UI |

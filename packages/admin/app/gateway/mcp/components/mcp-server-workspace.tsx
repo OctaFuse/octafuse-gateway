@@ -24,6 +24,7 @@ import { McpCatalogItemRow } from './mcp-catalog-item-row';
 import type { McpWorkspaceView } from '../mcp-workspace-location';
 import type { McpFormSection } from './mcp-server-form-modal';
 import { McpPricingDetails } from './mcp-pricing-editor';
+import { McpReviewDialog } from './mcp-review-dialog';
 
 const TABS = ['tool', 'prompt', 'resource'] as const;
 const BUTTON =
@@ -53,6 +54,7 @@ export function McpServerWorkspace({
 	onReveal,
 	onSetItemStatus,
 	onAccept,
+	onAcceptMany,
 	onSavePricing,
 	onDelete,
 }: {
@@ -78,7 +80,8 @@ export function McpServerWorkspace({
 	onSync: () => void;
 	onReveal: () => void;
 	onSetItemStatus: (ids: string[], status: 'enabled' | 'disabled') => Promise<boolean>;
-	onAccept: (id: string) => void;
+	onAccept: (id: string) => Promise<boolean>;
+	onAcceptMany: (ids: string[], options?: { confirmFirst?: boolean }) => Promise<boolean>;
 	onSavePricing: (item: CatalogItem, pricing: Record<string, unknown> | null) => Promise<boolean>;
 	onDelete: () => void;
 }) {
@@ -90,6 +93,7 @@ export function McpServerWorkspace({
 	const [query, setQuery] = useState('');
 	const [filter, setFilter] = useState('all');
 	const [selection, setSelection] = useState<Set<string>>(new Set());
+	const [review, setReview] = useState<{ startId: string | null } | null>(null);
 	const server = detail?.server;
 	const items = detail?.items.filter((item) => item.kind === tab) ?? [];
 	const search = query.trim().toLocaleLowerCase();
@@ -110,11 +114,15 @@ export function McpServerWorkspace({
 	});
 	const selectable = visible.filter((item) => item.status !== 'removed');
 	const selectedItems = selectable.filter((item) => selection.has(item.id));
-	const newIds = items
+	// Review queue spans every catalog type: changed definitions first (they affect live traffic), then new items.
+	const pendingItems = (detail?.items ?? [])
+		.filter((item) => item.reviewState !== 'none' && item.status !== 'removed')
+		.sort((a, b) => Number(b.reviewState === 'changed') - Number(a.reviewState === 'changed'));
+	const pendingCount = pendingItems.length;
+	const changedIds = pendingItems.filter((item) => item.reviewState === 'changed').map((item) => item.id);
+	const newIds = pendingItems
 		.filter((item) => item.reviewState === 'new' && item.status === 'disabled')
 		.map((item) => item.id);
-	const pendingCount =
-		detail?.items.filter((item) => item.reviewState !== 'none' && item.status !== 'removed').length ?? 0;
 	const allSelected = selectable.length > 0 && selectedItems.length === selectable.length;
 	async function applyStatus(ids: string[], status: 'enabled' | 'disabled') {
 		if (await onSetItemStatus(ids, status)) setSelection(new Set());
@@ -238,7 +246,13 @@ export function McpServerWorkspace({
 									</span>
 								</span>
 								{pendingCount ? (
-									<span className="text-amber-700">{t('pendingBadge', { count: pendingCount })}</span>
+									<button
+										type="button"
+										onClick={() => setReview({ startId: null })}
+										className="font-medium text-amber-700 hover:underline"
+									>
+										{t('pendingBadge', { count: pendingCount })}
+									</button>
 								) : null}
 								<span>
 									{t('lastSync')} ·{' '}
@@ -386,8 +400,48 @@ export function McpServerWorkspace({
 							) : (
 								<section>
 									{pendingCount > 0 ? (
-										<div className="mb-4 rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
-											{t('reviewHint')}
+										<div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+											<div className="flex flex-wrap items-center justify-between gap-3">
+												<div className="min-w-0">
+													<p className="text-sm font-medium text-amber-900">
+														{t('reviewBannerTitle', { count: pendingCount })}
+													</p>
+													<p className="mt-0.5 text-xs text-amber-800">
+														{t('reviewBannerDetail', { changed: changedIds.length, added: newIds.length })}
+													</p>
+												</div>
+												<div className="flex flex-wrap items-center gap-2">
+													{changedIds.length > 1 ? (
+														<button
+															type="button"
+															disabled={busy}
+															onClick={() => void onAcceptMany(changedIds, { confirmFirst: true })}
+															className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100 disabled:opacity-50"
+														>
+															{t('acceptAllChanges', { count: changedIds.length })}
+														</button>
+													) : null}
+													{newIds.length > 1 ? (
+														<button
+															type="button"
+															disabled={busy}
+															onClick={() => void applyStatus(newIds, 'enabled')}
+															className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100 disabled:opacity-50"
+														>
+															{t('enableAllNewCount', { count: newIds.length })}
+														</button>
+													) : null}
+													<button
+														type="button"
+														disabled={busy}
+														onClick={() => setReview({ startId: null })}
+														className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+													>
+														{t('reviewStart')}
+													</button>
+												</div>
+											</div>
+											<p className="mt-2 text-xs leading-5 text-amber-700">{t('reviewBannerHint')}</p>
 										</div>
 									) : null}
 									<div className="mb-4 flex flex-wrap gap-2" role="group" aria-label={t('catalogKinds')}>
@@ -522,15 +576,6 @@ export function McpServerWorkspace({
 													{t('disable')}
 												</button>
 											</div>
-										) : newIds.length ? (
-											<button
-												type="button"
-												disabled={busy}
-												onClick={() => void applyStatus(newIds, 'enabled')}
-												className="text-xs font-medium text-gray-800 hover:underline disabled:opacity-50"
-											>
-												{t('enableNewCount', { count: newIds.length })}
-											</button>
 										) : (
 											<span className="text-xs text-gray-500">{t('itemCount', { count: visible.length })}</span>
 										)}
@@ -554,7 +599,7 @@ export function McpServerWorkspace({
 														})
 													}
 													onToggle={(enabled) => void applyStatus([item.id], enabled ? 'enabled' : 'disabled')}
-													onAccept={() => onAccept(item.id)}
+													onReview={() => setReview({ startId: item.id })}
 													onSavePricing={onSavePricing}
 												/>
 											))}
@@ -590,6 +635,18 @@ export function McpServerWorkspace({
 						</div>
 					</section>
 				</div>
+			) : null}
+			{review && detail ? (
+				<McpReviewDialog
+					serverSlug={detail.server.slug}
+					items={pendingItems}
+					startId={review.startId}
+					busy={busy}
+					onClose={() => setReview(null)}
+					onAccept={onAccept}
+					onEnable={(id) => onSetItemStatus([id], 'enabled')}
+					onAcceptAll={(ids) => onAcceptMany(ids, { confirmFirst: true })}
+				/>
 			) : null}
 		</div>
 	);
