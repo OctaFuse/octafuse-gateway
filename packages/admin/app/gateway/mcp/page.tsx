@@ -45,7 +45,9 @@ function McpServersWorkspace() {
 	const [guideAuth, setGuideAuth] = useState<McpConnectAuth>('key');
 	const [oauthServer, setOauthServer] = useState<string | undefined>(undefined);
 	// Only reveal OAuth management after a saved, enabled configuration has loaded.
-	const oauthEnabled = Boolean(oauthServer?.trim());
+	// 设置里当前选中的是「关闭」（未必已保存）：下面的应用 / 授权 / 接入文档随之收起；放弃修改会恢复。
+	const [oauthDraftOff, setOauthDraftOff] = useState(false);
+	const oauthEnabled = Boolean(oauthServer?.trim()) && !oauthDraftOff;
 	const proxyBaseUrl = useProxyBaseUrl().url;
 	const [section, setSection] = useState<'services' | 'clients'>('services');
 	const [view, setView] = useState<McpWorkspaceView>('catalog');
@@ -421,6 +423,7 @@ function McpServersWorkspace() {
 								<McpOAuthSettings
 									className={styles.guidePanel}
 									onSaved={setOauthServer}
+									onDraftOffChange={setOauthDraftOff}
 									onOpenGuide={() => showClientGuide(guideScope, 'oauth')}
 								/>
 								<div hidden={!oauthEnabled}>
