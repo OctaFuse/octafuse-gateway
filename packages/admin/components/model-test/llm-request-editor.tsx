@@ -1,5 +1,6 @@
 'use client';
 import { AdminInspector } from '@/components/admin-inspector';
+import { useId } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { PaperAirplaneIcon, StopIcon } from '@heroicons/react/24/outline';
@@ -22,6 +23,7 @@ export function LlmRequestEditor({
 	onGeminiStreamingChange,
 	streamingDisabled = false,
 	controls,
+	headingMark,
 	sending,
 	canSend,
 	onSend,
@@ -34,6 +36,7 @@ export function LlmRequestEditor({
 	headers,
 	sent,
 	previewInDialog = false,
+	inlineInspection,
 }: {
 	family: PlaygroundLlmFamily | null;
 	modelHint: string;
@@ -45,6 +48,7 @@ export function LlmRequestEditor({
 	onGeminiStreamingChange: (stream: boolean) => void;
 	streamingDisabled?: boolean;
 	controls?: ReactNode;
+	headingMark?: ReactNode;
 	sending: boolean;
 	canSend: boolean;
 	onSend: () => void;
@@ -53,25 +57,41 @@ export function LlmRequestEditor({
 	error?: string | null;
 	notice?: string | null;
 	url: string | null;
-	actualBody: string | null;
-	headers: ReactNode;
-	sent: boolean;
+	actualBody?: string | null;
+	headers?: ReactNode;
+	sent?: boolean;
 	previewInDialog?: boolean;
+	inlineInspection?: { headers: ReactNode; body: ReactNode };
 }) {
 	const t = useTranslations('modelTest');
 	const common = useTranslations('common');
 	const samples = useTranslations('playground');
+	const inputId = useId();
 	const body = parseLlmRequest(bodyText);
 	const stream = family === 'gemini' ? geminiStreaming : body?.stream === true;
 	const sample = family ? matchLlmRequestSample(bodyText, family, modelHint, stream, modelValue) : 'custom';
 	const editorHint = error || notice || (url ? blockedHint : null);
+	const input = (
+		<textarea
+			id={inputId}
+			aria-label={inlineInspection ? undefined : t('requestBody')}
+			spellCheck={false}
+			value={bodyText}
+			disabled={sending}
+			onChange={(e) => onChange(e.target.value)}
+			className={`${previewInDialog ? 'min-h-[280px] xl:min-h-0' : 'min-h-0'} w-full flex-1 resize-none overflow-auto overscroll-contain rounded-lg border border-gray-200 bg-slate-50/60 p-3 font-mono text-xs leading-6 text-gray-800 outline-none focus:border-gray-500`}
+		/>
+	);
 	return (
 		<section
-			className="admin-content-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white"
+			className="admin-content-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white"
 			aria-label={t('request')}
 		>
-			<header className="flex shrink-0 items-center justify-between gap-2 border-b border-gray-100 px-4 py-2.5">
-				<h2 className="text-sm font-medium text-gray-900">{t('request')}</h2>
+			<header className={`flex shrink-0 items-center justify-between gap-2 border-b border-gray-100 px-4 py-2.5 ${headingMark ? 'admin-editor-heading min-h-[57px]' : ''}`}>
+				<h2 className="flex shrink-0 items-center gap-2 text-sm font-medium text-gray-900">
+					{headingMark}
+					{t('request')}
+				</h2>
 				<div className="flex items-center gap-2">
 					{previewInDialog && (
 						<AdminInspector label={t('actualRequest')} hint={sent ? t('sent') : t('preview')} disabled={!url}>
@@ -103,12 +123,16 @@ export function LlmRequestEditor({
 			</header>
 			<div
 				className={
-					previewInDialog
+					inlineInspection || previewInDialog
 						? 'flex min-h-0 flex-1 flex-col'
 						: 'grid min-h-0 flex-1 grid-rows-[minmax(0,2fr)_minmax(0,1fr)]'
 				}
 			>
-				<div className={previewInDialog ? "flex min-h-0 flex-1 flex-col gap-3 p-4" : "flex min-h-0 flex-col gap-2 p-3"}>
+				<div className={inlineInspection
+					? 'flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4'
+					: previewInDialog
+						? 'flex min-h-0 flex-1 flex-col gap-3 p-4'
+						: 'flex min-h-0 flex-col gap-2 p-3'}>
 					{controls ? <div className="shrink-0">{controls}</div> : null}
 					<p className="shrink-0 truncate font-mono text-xs text-gray-500" title={url ?? undefined}>
 						{url ? `POST ${url}` : blockedHint || '—'}
@@ -162,14 +186,17 @@ export function LlmRequestEditor({
 							</label>
 						</div>
 					) : null}
-					<textarea
-						aria-label={t('requestBody')}
-						spellCheck={false}
-						value={bodyText}
-						disabled={sending}
-						onChange={(e) => onChange(e.target.value)}
-						className={`${previewInDialog ? 'min-h-[280px] xl:min-h-0' : 'min-h-0'} w-full flex-1 resize-none overflow-auto overscroll-contain rounded-lg border border-gray-200 bg-slate-50/60 p-3 font-mono text-xs leading-6 text-gray-800 outline-none focus:border-gray-500`}
-					/>
+					{inlineInspection ? (
+						<>
+							{inlineInspection.headers}
+							<div className="flex min-h-44 flex-[3] flex-col gap-1.5">
+								<label htmlFor={inputId} className="text-xs font-medium text-gray-700">
+									{samples('inspectionBodyInput')}
+								</label>
+								{input}
+							</div>
+						</>
+					) : input}
 					{editorHint ? (
 						<p
 							role={error ? 'alert' : 'status'}
@@ -181,8 +208,9 @@ export function LlmRequestEditor({
 							{editorHint}
 						</p>
 					) : null}
+					{inlineInspection?.body}
 				</div>
-				{!previewInDialog && (
+				{!inlineInspection && !previewInDialog && (
 					<section className="flex min-h-0 flex-col border-t border-gray-200" aria-label={t('actualRequest')}>
 						<header className="flex shrink-0 items-center justify-between gap-2 bg-slate-50 px-4 py-2.5">
 							<h3 className="text-xs font-medium text-gray-700">{t('actualRequest')}</h3>

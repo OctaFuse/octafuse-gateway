@@ -13,6 +13,7 @@
 
 ### Admin
 
+- **调试台请求检查**：模型测试模板下方直接展示请求头、输入请求体和实际上游请求体。请求头和生效的配置字段标注供应商或路由来源，发送后切换为服务端回传的请求。「测试请求」标题增加发送方向图标，与路由和响应栏对齐。
 - **Provider 自定义参数**：Provider 编辑弹窗新增「自定义参数」页签，可按协议配置默认请求头 / 请求体；调试台预览与线上请求使用同一套合并逻辑。
 - **OpenCode 供应商模板**：OpenCode Zen 与 OpenCode Go 的静态端点改为 Console Inference。按量走 `https://opencode.ai/inference`，Go 走 `https://opencode.ai/inference/go`。两者都预填 OpenAI Chat、Responses、Anthropic Messages，以及 Bearer 鉴权的 Gemini `models.generate`（不写 `gemini.base`，因此不派生向量端点）。已导入的供应商不会自动改地址。
 - **GPT-6.2 Astra / Sol**：模型目录新增 `gpt-6.2-astra` 与 `gpt-6.2-sol`（2026-11-17）。上下文 1.05M，最大输出 128K，输入含文本和图像。刊例价：Astra $8 / $40 每百万 token，缓存命中 $0.4，缓存写入（30 分钟档）$10，较 GPT-6 Astra 输入输出价低 20%；Sol $2 / $10，缓存命中 $0.1，缓存写入 $2.5，与 GPT-6.1 Sol 相同；输入超过 272K 时输入与缓存价翻倍、输出价为 1.5 倍。API 拒绝 `reasoning.effort` 为 `none`；带工具调用必须走 Responses API，Chat Completions 仅支持不带工具的请求；不支持 `temperature`、`top_p` 与 `logprobs`。人民币价为美元刊例价 ×7 的换算占位价。

@@ -2225,6 +2225,14 @@
 		}
 	},
 	"playground": {
+		"inspectionInvalidBody": "请修正输入的 JSON，再预览实际上游请求体。",
+		"inspectionBodyInput": "请求体（输入）",
+		"inspectionBodyActual": "请求体（实际）",
+		"inspectionSourceProvider": "供应商自定义参数",
+		"inspectionSourceRoute": "路由自定义参数",
+		"inspectionSourceProtocol": "协议默认",
+		"inspectionFieldSources": "配置字段来源",
+		"inspectionUnavailable": "无法预览上游请求。",
 		"title": "调试台",
 		"subtitle": "选择单条路由，验证请求与上游响应",
 		"usageNote": "测试不计入网关用户账单或请求日志。",

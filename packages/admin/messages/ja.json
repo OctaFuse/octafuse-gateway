@@ -2225,6 +2225,14 @@
 		}
 	},
 	"playground": {
+		"inspectionInvalidBody": "入力の JSON を修正すると、実際のリクエスト本文をプレビューできます。",
+		"inspectionBodyInput": "リクエスト本文（入力）",
+		"inspectionBodyActual": "リクエスト本文（実際）",
+		"inspectionSourceProvider": "プロバイダーのカスタムパラメーター",
+		"inspectionSourceRoute": "ルートのカスタムパラメーター",
+		"inspectionSourceProtocol": "プロトコル既定値",
+		"inspectionFieldSources": "設定フィールドの出所",
+		"inspectionUnavailable": "上流リクエストをプレビューできません。",
 		"title": "プレイグラウンド",
 		"subtitle": "単一ルートのリクエストと上流レスポンスを確認",
 		"usageNote": "テストはゲートウェイのユーザー課金とリクエストログの対象外です。",

@@ -2225,6 +2225,14 @@
 		}
 	},
 	"playground": {
+		"inspectionInvalidBody": "Fix the input JSON to preview the actual request body.",
+		"inspectionBodyInput": "Request body (input)",
+		"inspectionBodyActual": "Request body (actual)",
+		"inspectionSourceProvider": "Provider custom parameters",
+		"inspectionSourceRoute": "Route custom parameters",
+		"inspectionSourceProtocol": "Protocol default",
+		"inspectionFieldSources": "Sources of configured fields",
+		"inspectionUnavailable": "Request preview unavailable.",
 		"title": "Playground",
 		"subtitle": "Test requests and upstream responses on a single route",
 		"usageNote": "Tests are excluded from gateway user billing and request logs.",

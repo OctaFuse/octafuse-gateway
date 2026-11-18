@@ -209,6 +209,16 @@ export function resolveEffectiveCustomParams(
 	protocol: UpstreamProtocol,
 	context?: { providerId?: string; routeId?: string; modelId?: string },
 ): Record<string, unknown> | null {
+	return resolveCustomParamsLayers(providerCustomParamsJson, routeCustomParamsJson, protocol, context).effective;
+}
+
+/** Keep the original layers alongside the effective configuration for request inspection. */
+export function resolveCustomParamsLayers(
+	providerCustomParamsJson: string | null | undefined,
+	routeCustomParamsJson: string | null | undefined,
+	protocol: UpstreamProtocol,
+	context?: { providerId?: string; routeId?: string; modelId?: string },
+) {
 	const providerMap = safeParseProviderCustomParams(providerCustomParamsJson, context?.providerId);
 	const providerPart = providerMap[protocol];
 
@@ -218,10 +228,11 @@ export function resolveEffectiveCustomParams(
 	const mergedHeaders = mergeHeadersCaseInsensitive(providerPart?.headers, routeSplit.extraHeaders);
 	const mergedBody = deepMergeJson(providerPart?.body ?? {}, routeSplit.body) as Record<string, unknown>;
 
-	return composeRouteCustomParamsEnvelope({
+	const effective = composeRouteCustomParamsEnvelope({
 		body: mergedBody,
 		extraHeaders: mergedHeaders,
 		forceOverrideHeaders: routeSplit.forceOverrideHeaders,
 		forceOverrideBody: routeSplit.forceOverrideBody,
 	});
+	return { effective, provider: providerPart, route: routeSplit };
 }

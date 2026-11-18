@@ -2225,6 +2225,14 @@
 		}
 	},
 	"playground": {
+		"inspectionInvalidBody": "입력 JSON을 수정하면 실제 요청 본문을 미리 볼 수 있습니다.",
+		"inspectionBodyInput": "요청 본문(입력)",
+		"inspectionBodyActual": "요청 본문(실제)",
+		"inspectionSourceProvider": "공급자 사용자 지정 매개변수",
+		"inspectionSourceRoute": "라우트 사용자 지정 매개변수",
+		"inspectionSourceProtocol": "프로토콜 기본값",
+		"inspectionFieldSources": "설정 필드의 출처",
+		"inspectionUnavailable": "업스트림 요청을 미리 볼 수 없습니다.",
 		"title": "플레이그라운드",
 		"subtitle": "단일 라우트의 요청과 업스트림 응답 확인",
 		"usageNote": "테스트는 게이트웨이 사용자 과금 및 요청 로그에 포함되지 않습니다.",

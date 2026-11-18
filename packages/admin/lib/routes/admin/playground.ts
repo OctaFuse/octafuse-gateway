@@ -8,7 +8,7 @@ import type { AdminEnv } from '@/lib/admin-env';
 import { requireAdminPrincipal } from '@/lib/middleware/admin-auth';
 import type { GeminiContentAction } from '@octafuse/core/gemini-upstream-url';
 import type { ImageOperation } from '@/lib/image-generations';
-import { invokePlaygroundUpstream } from '@/lib/services/admin/playground-service';
+import { invokePlaygroundUpstream, previewPlaygroundUpstream } from '@/lib/services/admin/playground-service';
 import { invokePlaygroundTool } from '@/lib/services/admin/playground-tools-service';
 import {
 	dispatchPlaygroundRealtime,
@@ -16,6 +16,7 @@ import {
 } from '@/lib/services/admin/playground-realtime-service';
 import { copyPlaygroundUpstreamHeaders } from '@/lib/playground/proxy-response-headers';
 import { encodePlaygroundRequestHeadersHeader } from '@/lib/playground/outbound-headers';
+import { PLAYGROUND_REQUEST_SOURCES_HEADER } from '@/lib/playground/request-sources';
 import { handleAdminRouteError } from './error-response';
 
 export const adminPlaygroundRoutes = new Hono<AdminEnv>();
@@ -63,6 +64,8 @@ type PlaygroundPostBody = {
 	body?: unknown;
 	geminiAction?: unknown;
 	imageOperation?: unknown;
+	preview?: unknown;
+	includeRequestSources?: unknown;
 };
 
 adminPlaygroundRoutes.post('/', async (c) => {
@@ -90,6 +93,9 @@ adminPlaygroundRoutes.post('/', async (c) => {
 			{ success: false as const, message: 'Provide exactly one of routeId, routeDraft, or toolId' },
 			400
 		);
+	}
+	if (parsed.preview === true && !routeId) {
+		return c.json({ success: false as const, message: 'routeId is required to preview a request' }, 400);
 	}
 
 	if (toolId) {
@@ -151,17 +157,21 @@ adminPlaygroundRoutes.post('/', async (c) => {
 	}
 
 	try {
-		const { response, upstreamUrlForHeader, latencyMs, upstreamWireBodyJson, upstreamWireHeaders } =
-			await invokePlaygroundUpstream(
-				c.get('repositories'),
-				{
-					...(hasDraft ? { routeDraft: parsed.routeDraft } : { routeId }),
-					body: rawBody as Record<string, unknown>,
-					geminiAction,
-					imageOperation,
-				},
-				c.req.raw.signal
-			);
+		const repos = c.get('repositories');
+		const body = rawBody as Record<string, unknown>;
+		if (parsed.preview === true) {
+			const data = await previewPlaygroundUpstream(repos, { routeId, body, geminiAction });
+			return c.json({ success: true as const, data });
+		}
+		const {
+			response, upstreamUrlForHeader, latencyMs, upstreamWireBodyJson, upstreamWireHeaders, requestSourceCodes,
+		} = await invokePlaygroundUpstream(repos, {
+			...(hasDraft ? { routeDraft: parsed.routeDraft } : { routeId }),
+			body,
+			geminiAction,
+			imageOperation,
+			includeRequestSources: parsed.includeRequestSources === true,
+		}, c.req.raw.signal);
 
 		const headers = copyPlaygroundUpstreamHeaders(response.headers);
 		headers.set('x-playground-latency-ms', String(latencyMs));
@@ -169,6 +179,7 @@ adminPlaygroundRoutes.post('/', async (c) => {
 		headers.set('x-playground-upstream-url', upstreamUrlForHeader);
 		headers.set('x-playground-request-body', encodeURIComponent(upstreamWireBodyJson));
 		headers.set('x-playground-request-headers', encodePlaygroundRequestHeadersHeader(upstreamWireHeaders));
+		if (requestSourceCodes) headers.set(PLAYGROUND_REQUEST_SOURCES_HEADER, requestSourceCodes);
 		headers.set('x-playground-mode', 'route');
 
 		return new Response(response.body, {
