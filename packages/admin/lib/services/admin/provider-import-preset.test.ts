@@ -708,6 +708,44 @@ describe('provider import preset catalog metadata', () => {
 		assert.equal(inferStaticProviderIconKey(conflicting), 'other');
 	});
 
+	it('keeps OpenCode Console inference endpoints for Zen and Go', () => {
+		const rows = listStaticProviderImportPresets();
+		const plans = [
+			['OpenCode Zen', 'https://opencode.ai/inference'],
+			['OpenCode Go', 'https://opencode.ai/inference/go'],
+		] as const;
+		for (const [name, origin] of plans) {
+			const row = rows.find((item) => item.name === name);
+			assert.ok(row, name);
+			assert.equal(row.vendor_key, 'opencode');
+			assert.equal(row.endpoints.openai?.base, undefined);
+			assert.equal(row.endpoints.gemini?.base, undefined);
+			assert.equal(row.endpoints.gemini?.auth, 'bearer');
+			assert.deepEqual(row.endpoints.openai?.endpoints, {
+				chat: `${origin}/openai/v1/chat/completions`,
+				responses: `${origin}/openai/v1/responses`,
+			});
+			assert.equal(row.endpoints.anthropic?.base, `${origin}/anthropic`);
+			assert.equal(
+				row.endpoints.gemini?.endpoints?.['models.generate'],
+				`${origin}/google/v1beta/models/{model}:{action}`
+			);
+			assert.deepEqual(listConfiguredCapabilities(row.endpoints, 'openai'), ['chat', 'responses']);
+			assert.deepEqual(listConfiguredCapabilities(row.endpoints, 'gemini'), ['models.generate']);
+			assert.equal(
+				resolveUpstreamEndpoint('anthropic', 'messages', row.endpoints),
+				`${origin}/anthropic/v1/messages`
+			);
+			assert.equal(
+				resolveUpstreamEndpoint('gemini', 'models.generate', row.endpoints, {
+					model: 'gemini-4-argon',
+					action: 'streamGenerateContent',
+				}),
+				`${origin}/google/v1beta/models/gemini-4-argon:streamGenerateContent`
+			);
+		}
+	});
+
 	it('overlays catalog links by template name or endpoint signature, preferring referral', () => {
 		const rows = listStaticProviderImportPresets();
 		const siliconflowChina = rows.find((row) => row.name === 'SiliconFlow');
@@ -741,11 +779,11 @@ describe('provider import preset catalog metadata', () => {
 
 		assert.equal(
 			lookupStaticProviderCatalogLinks({ name: zen.name })?.platform,
-			'https://opencode.ai/zen'
+			'https://opencode.ai/console/models'
 		);
 		assert.equal(
 			lookupStaticProviderCatalogLinks({ name: go.name })?.platform,
-			'https://opencode.ai/go'
+			'https://opencode.ai/console/go'
 		);
 
 		const outbound = resolveProviderCatalogOutbound(
@@ -820,7 +858,7 @@ describe('provider import preset catalog metadata', () => {
 
 		assert.ok(preset);
 		assert.equal(stored.iconKey, preset.icon_key?.trim() || preset.vendor_key);
-		assert.equal(stored.catalogLinks?.platform, 'https://opencode.ai/zen');
+		assert.equal(stored.catalogLinks?.platform, 'https://opencode.ai/console/models');
 		assert.notEqual(
 			stored.iconKey,
 			inferStaticProviderIconKey({ name: 'dyc', endpoints: openaiEndpoints })
