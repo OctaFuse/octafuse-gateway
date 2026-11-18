@@ -336,7 +336,8 @@ function McpServersWorkspace() {
 								onSync={() => void state.sync()}
 								onReveal={() => void state.reveal()}
 								onSetItemStatus={state.setItemStatus}
-								onAccept={(id) => void state.accept(id)}
+								onAccept={state.accept}
+								onAcceptMany={state.acceptMany}
 								onSavePricing={state.savePricing}
 								onDelete={() => void state.removeServer()}
 							/>

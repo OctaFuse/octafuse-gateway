@@ -19,13 +19,16 @@ export type ServerSummary = {
 	pendingCount: number;
 };
 
+/** Upstream MCP definition as stored (tool / prompt / resource). Only description and title are read directly. */
+export type CatalogDefinition = { description?: string; title?: string; [key: string]: unknown };
+
 export type CatalogItem = {
 	id: string;
 	kind: 'tool' | 'prompt' | 'resource';
 	upstreamKey: string;
 	exposedName: string;
-	definition: { description?: string; title?: string };
-	pendingDefinition: { description?: string } | null;
+	definition: CatalogDefinition;
+	pendingDefinition: CatalogDefinition | null;
 	reviewState: 'none' | 'new' | 'changed';
 	status: 'enabled' | 'disabled' | 'removed';
 	/** Tool rule override; null inherits the server default. */
