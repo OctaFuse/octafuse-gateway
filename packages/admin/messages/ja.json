@@ -2434,6 +2434,36 @@
 		"tools": "ツール"
 	},
 	"simulator": {
+		"inspection": {
+			"gatewayHeaders": "ゲートウェイへのリクエストヘッダー",
+			"inputBody": "リクエスト本文（入力）",
+			"actualBody": "リクエスト本文（実際）",
+			"gateway": "ゲートウェイへ",
+			"upstream": "上流へ",
+			"preview": "プレビュー",
+			"submitted": "送信済み",
+			"modelInPath": "model（URL パス）",
+			"modelInQuery": "{field}（URL クエリ）",
+			"inputSource": "その他の JSON フィールドは入力に由来します。ゲートウェイはルート選択後に上流の設定を適用します。",
+			"multipartSource": "対応する JSON フィールドと選択したファイルからフォームを作成します。",
+			"frameSource": "入力と選択したモデルから接続 URL と初期フレームを作成します。",
+			"upstreamAfterSend": "送信後、ゲートウェイが選択した上流と適用された設定を確認できます。",
+			"waitingForLog": "ゲートウェイのリクエストログを待っています…",
+			"snapshotUnavailable": "このリクエストの上流スナップショットは利用できません。",
+			"upstreamSnapshot": "ゲートウェイのリクエストログから取得したマスキング済みスナップショットです。",
+			"upstreamHeaderSources": "上流のカスタムヘッダーの出所",
+			"upstreamBodySources": "上流の設定フィールドの出所",
+			"sourcesUnavailable": "このログにはパラメーターの出所が記録されていません。",
+			"openThisLog": "このリクエストのログを開く",
+			"source": {
+				"key": "選択した API キー",
+				"protocol": "プロトコル既定値",
+				"selection": "選択したモデルとルートグループ",
+				"input": "受信リクエスト",
+				"provider": "プロバイダーのカスタム設定",
+				"route": "ルートのカスタム設定"
+			}
+		},
 		"toolsSubtitle": "ユーザーの API キーでツールを呼び出し、認証・課金・呼び出しログを検証します。",
 		"title": "シミュレーター",
 		"subtitle": "ユーザーの API キーでクライアントのリクエストを再現し、認証、ルーティング、フェイルオーバーを検証します。",

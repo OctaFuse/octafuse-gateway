@@ -2,9 +2,46 @@
  * `api_key_request_logs` 脱敏 JSON 的公共收尾：序列化 + 长度截断（协议相关的 wire 体拼装留在各 v1 路由内，便于日后按入口单独演进）。
  */
 import { redactExtraFieldsForLog } from '@octafuse/core/upstream-extra-fields';
+import {
+	configuredBodySourceCodes,
+	configuredHeaderSources,
+	type RequestParameterSources,
+} from '@octafuse/core/request-parameter-sources';
+import type { RouteResult } from './model-router';
 
 /** 与 `api_key_request_logs.request_body` / `upstream_request_body` 写入一致。 */
 export const MAX_REQUEST_LOG_JSON = 16_384;
+
+const LOG_SUMMARY_FIELDS = new Set([
+	'_contents_count', '_gemini_action', '_has_instructions', '_input_count', '_input_shape',
+	'_messages_count', '_messages_shape', '_tool_names', '_tools_count',
+]);
+
+export function requestParameterSourcesForLog(
+	route: RouteResult,
+	userBody: Record<string, unknown>,
+	upstreamBodyForLog: string | null,
+	inboundHeaders: Headers,
+): RequestParameterSources | undefined {
+	const layers = route.customParamsLayers;
+	if (!layers) return;
+	if (!layers.effective) return { body: '', headers: [] };
+	const headers = configuredHeaderSources(layers, inboundHeaders);
+	let body: string | null = null;
+	try {
+		const snapshot = upstreamBodyForLog && JSON.parse(upstreamBodyForLog);
+		if (snapshot && !Array.isArray(snapshot) && typeof snapshot === 'object') {
+			body = configuredBodySourceCodes(layers, userBody, snapshot, ([key]) =>
+				LOG_SUMMARY_FIELDS.has(key) || (route.upstreamProtocol !== 'gemini' && key === 'model'),
+			);
+		}
+	} catch {
+		// Truncated snapshots cannot be matched to a field position.
+	}
+	// Store only field positions and header names for the selected route, within the log body budget.
+	const sources = { body, headers };
+	return JSON.stringify(sources).length <= MAX_REQUEST_LOG_JSON ? sources : undefined;
+}
 
 /**
  * 将脱敏后的对象写入日志列；超长截断；序列化失败返回 null。

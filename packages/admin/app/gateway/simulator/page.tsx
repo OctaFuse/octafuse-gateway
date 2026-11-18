@@ -143,6 +143,8 @@ export default function SimulatorPage() {
 								infoHint={s.infoHint}
 								bodyError={s.bodyError}
 								displayWire={s.displayWire}
+								requestLogId={s.wireSent ? s.responseMeta?.requestLogId : null}
+								selectedKeyId={s.selectedKeyId}
 								sending={s.sending}
 								canSend={s.canSend}
 								sendBlockedHint={s.sendBlockedHint}

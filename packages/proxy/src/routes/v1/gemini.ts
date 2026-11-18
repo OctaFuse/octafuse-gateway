@@ -229,6 +229,7 @@ geminiRoutes.post('/models/:modelAction', async (c) => {
 			upstreamWireBodyForLog: (route, body) =>
 				geminiUpstreamWireBodyForLog(route, body.payload, body.action),
 			describeOutcome: describeGeminiOutcome,
+			requestBodyForSources: (body) => body.payload,
 		},
 	});
 });

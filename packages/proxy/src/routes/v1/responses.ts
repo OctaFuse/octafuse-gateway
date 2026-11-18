@@ -84,6 +84,7 @@ responsesRoutes.post('/', async (c) =>
 		accounting: {
 			requestBodyForLog: responsesRequestBodyForLog,
 			upstreamWireBodyForLog: responsesUpstreamWireBodyForLog,
+			requestBodyForSources: (body) => body,
 			describeOutcome: describeResponsesOutcome,
 		},
 		afterRoutesResolved: (ctx, { routes, body }) => {

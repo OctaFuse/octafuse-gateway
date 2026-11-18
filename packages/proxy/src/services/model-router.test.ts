@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { GatewayRepositories, ModelRouteRow, ProviderRow } from "@octafuse/core";
 import { resolveRouteResultsFromRows, routeMatchesSurface } from "./model-router";
+import { requestParameterSourcesForLog } from "./request-log-shared";
+import { buildRouteRequestBody } from "./route-default-params";
 
 /** Minimal repos stub: `routeRowToResult` only ever calls `repos.providers.getProviderById`. */
 function reposWithProvider(provider: ProviderRow | null): GatewayRepositories {
@@ -116,6 +118,43 @@ describe("routeMatchesSurface", () => {
 });
 
 describe("routeRowToResult (via resolveRouteResultsFromRows) — provider custom_params assembly", () => {
+	it("records only the winning source for fields in the redacted upstream snapshot", async () => {
+		const provider = baseProvider({
+			custom_params: JSON.stringify({
+				openai: {
+					headers: { "X-Provider": "provider-value", "x-shared": "provider-value" },
+					body: { max_tokens: 2048, temperature: 0.6, reasoning: { provider: true }, messages: ["hidden"] },
+				},
+			}),
+		});
+		const body = { temperature: 0.6, reasoning: { user: true } };
+		const inbound = new Headers({ "x-shared": "private-inbound-value" });
+		for (const forceOverride of [false, true]) {
+			const [route] = await resolveRouteResultsFromRows(reposWithProvider(provider), [baseRoute({
+				custom_params: JSON.stringify({
+					headers: { "X-Shared": "route-value" },
+					body: { reasoning: { route: true }, model: "gpt-4.1" },
+					force_override: { body: forceOverride, headers: forceOverride },
+				}),
+			})]);
+			assert.ok(route);
+			const { messages, ...upstream } = buildRouteRequestBody(route, body);
+			const snapshot = JSON.stringify({ ...upstream, model: route.providerModelName, _messages_count: Array.isArray(messages) ? messages.length : 0 });
+			const expectedHeaders = [
+				{ name: "X-Provider", source: "provider" },
+				{ name: "X-Shared", source: forceOverride ? "route" : "input" },
+			];
+			assert.deepEqual(requestParameterSourcesForLog(route, body, snapshot, inbound), {
+				body: forceOverride ? "p.prp.." : "p.pr...",
+				headers: expectedHeaders,
+			});
+			assert.deepEqual(requestParameterSourcesForLog(route, body, "{truncated", inbound), {
+				body: null,
+				headers: expectedHeaders,
+			});
+		}
+	});
+
 	it("P=NULL regression baseline: customParams stays null when neither side is configured", async () => {
 		const repos = reposWithProvider(baseProvider());
 		const [result] = await resolveRouteResultsFromRows(repos, [baseRoute()]);

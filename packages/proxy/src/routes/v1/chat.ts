@@ -66,6 +66,7 @@ chatRoutes.post('/', async (c) =>
 		accounting: {
 			requestBodyForLog: openAiRequestBodyForLog,
 			upstreamWireBodyForLog: openAiUpstreamWireBodyForLog,
+			requestBodyForSources: (body) => body,
 			describeOutcome: describeChatOutcome,
 		},
 		logForward: true,

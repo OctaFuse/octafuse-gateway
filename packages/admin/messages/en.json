@@ -2434,6 +2434,36 @@
 		"tools": "Tools"
 	},
 	"simulator": {
+		"inspection": {
+			"gatewayHeaders": "Headers to gateway",
+			"inputBody": "Request body (input)",
+			"actualBody": "Request body (actual)",
+			"gateway": "To gateway",
+			"upstream": "To upstream",
+			"preview": "Preview",
+			"submitted": "Submitted",
+			"modelInPath": "model (URL path)",
+			"modelInQuery": "{field} (URL query)",
+			"inputSource": "The other JSON fields come from your input. The gateway applies upstream settings after choosing a route.",
+			"multipartSource": "The form is built from the supported JSON fields and selected files.",
+			"frameSource": "The simulator builds the initial frames and URL from your input and the selected model.",
+			"upstreamAfterSend": "After sending, the request log shows the upstream selected by the gateway and its effective configuration.",
+			"waitingForLog": "Waiting for the gateway request log…",
+			"snapshotUnavailable": "The upstream snapshot for this request is unavailable.",
+			"upstreamSnapshot": "Redacted snapshot from the gateway request log.",
+			"upstreamHeaderSources": "Configured upstream header sources",
+			"upstreamBodySources": "Configured upstream field sources",
+			"sourcesUnavailable": "This log does not include parameter sources.",
+			"openThisLog": "Open this request log",
+			"source": {
+				"key": "Selected API key",
+				"protocol": "Protocol default",
+				"selection": "Selected model and route group",
+				"input": "Incoming request",
+				"provider": "Provider configuration",
+				"route": "Route configuration"
+			}
+		},
 		"toolsSubtitle": "Use a user API key to call tools and verify authentication, billing and invocation logs.",
 		"title": "Simulator",
 		"subtitle": "Use a user API key to simulate client requests and verify authentication, routing and failover.",

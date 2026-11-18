@@ -81,6 +81,7 @@
 		"./realtime-protocol": "./src/realtime-protocol.ts",
 		"./route-custom-params": "./src/route-custom-params.ts",
 		"./provider-custom-params": "./src/provider-custom-params.ts",
+		"./request-parameter-sources": "./src/request-parameter-sources.ts",
 		"./gemini-upstream-url": "./src/gemini-upstream-url.ts",
 		"./gcp-service-account-token": "./src/gcp-service-account-token.ts",
 		"./vertex-openai-model": "./src/vertex-openai-model.ts",

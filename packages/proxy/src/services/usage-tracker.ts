@@ -285,6 +285,7 @@ export async function recordUsage(
 					? { gemini: { action: params.gemini_wire_action } }
 					: {}),
 				...(params.sticky_trace ? { sticky: params.sticky_trace } : {}),
+				...(params.request_parameter_sources ? { request_sources: params.request_parameter_sources } : {}),
 			}),
 			inputTokens: params.usage.input_tokens,
 			outputTokens: params.usage.output_tokens,

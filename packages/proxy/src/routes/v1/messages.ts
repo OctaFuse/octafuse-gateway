@@ -66,6 +66,7 @@ messagesRoutes.post('/', async (c) =>
 			requestBodyForLog: anthropicRequestBodyForLog,
 			upstreamWireBodyForLog: anthropicUpstreamWireBodyForLog,
 			describeOutcome: describeMessagesOutcome,
+			requestBodyForSources: (body) => body,
 		},
 	})
 );

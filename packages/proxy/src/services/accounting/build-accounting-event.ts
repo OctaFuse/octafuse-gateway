@@ -32,6 +32,7 @@ export type BuildAccountingEventInput = {
 	requestOperation: string;
 	requestBodyForLog: string | null;
 	upstreamRequestBody: string | null;
+	requestParameterSources?: AccountingEvent['request_parameter_sources'];
 	chosenRoute: Pick<
 		RouteResult,
 		| 'providerId'
@@ -107,6 +108,7 @@ export function buildAccountingEvent(input: BuildAccountingEventInput): Accounti
 		provider_name: input.chosenRoute.providerName,
 		request_body: input.requestBodyForLog,
 		upstream_request_body: input.upstreamRequestBody,
+		request_parameter_sources: input.requestParameterSources,
 		request_protocol: input.requestProtocol,
 		request_operation: input.requestOperation,
 		upstream_protocol: input.chosenRoute.upstreamProtocol,

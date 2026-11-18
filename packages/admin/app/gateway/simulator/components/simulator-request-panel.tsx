@@ -13,17 +13,15 @@ import {
 import type { OpenaiLlmOperation } from '@/lib/invoke-kind';
 import type { SimulatorGeminiAction, SimulatorProtocol } from '@/lib/simulator/endpoint';
 import {
-	codeBlockClass,
 	inputClass,
 	labelClass,
-	prettyJsonBody,
 	type SimulatorClientSurfaceOptions,
 } from '../simulator-utils';
 import type { WirePreview } from '../types';
 
-import { AdminInspector } from '@/components/admin-inspector';
 import { LlmRequestEditor } from '@/components/model-test/llm-request-editor';
 import type { PlaygroundLlmFamily } from '@/lib/playground/samples';
+import { SimulatorActualRequest, SimulatorGatewayHeaders } from './simulator-request-inspection';
 
 type Props = {
 	llmFamily: PlaygroundLlmFamily | null;
@@ -45,6 +43,8 @@ type Props = {
 	infoHint: string | null;
 	bodyError: string | null;
 	displayWire: WirePreview | null;
+	requestLogId?: string | null;
+	selectedKeyId: string;
 	sending: boolean;
 	canSend: boolean;
 	sendBlockedHint: string | null;
@@ -89,6 +89,8 @@ export function SimulatorRequestPanel({
 	infoHint,
 	bodyError,
 	displayWire,
+	requestLogId,
+	selectedKeyId,
 	sending,
 	canSend,
 	sendBlockedHint,
@@ -110,6 +112,19 @@ export function SimulatorRequestPanel({
 }: Props) {
 	const t = useTranslations('simulator');
 	const tCommon = useTranslations('common');
+	const requestHeaders = <SimulatorGatewayHeaders wire={displayWire} />;
+	const actualRequest = (
+		<SimulatorActualRequest
+			wire={displayWire}
+			wireSent={wireSent}
+			protocol={protocol}
+			tool={hideProtocolControls}
+			showUpstream={Boolean(llmFamily || requestLogId)}
+			requestLogId={requestLogId}
+			selectedKeyId={selectedKeyId}
+			sending={sending}
+		/>
+	);
 
 	const supportedProtocols = supportedSurfaces.protocols;
 	const supportedOpenaiOps = supportedSurfaces.openaiLlmOperations;
@@ -214,7 +229,7 @@ export function SimulatorRequestPanel({
 	if (llmFamily)
 		return (
 			<LlmRequestEditor
-				previewInDialog
+				headingMark={<AdminContentMark icon={ArrowUpTrayIcon} compact />}
 				family={llmFamily}
 				modelHint={modelHint}
 				modelValue="<auto>"
@@ -234,15 +249,7 @@ export function SimulatorRequestPanel({
 				error={bodyError}
 				notice={infoHint}
 				url={displayWire?.url ?? null}
-				actualBody={displayWire ? prettyJsonBody(displayWire.bodyText) : null}
-				sent={wireSent}
-				headers={
-					<pre className="whitespace-pre-wrap break-all font-mono text-xs">
-						{Object.entries(displayWire?.headers ?? {})
-							.map(([k, v]) => `${k}: ${v}`)
-							.join('\n')}
-					</pre>
-				}
+				inlineInspection={{ headers: requestHeaders, body: actualRequest }}
 			/>
 		);
 
@@ -251,26 +258,6 @@ export function SimulatorRequestPanel({
 			<div className="flex flex-wrap items-center justify-between gap-2">
 				<h2 className="flex items-center gap-2 text-sm font-medium text-gray-900"><AdminContentMark icon={ArrowUpTrayIcon} compact />{t('requestBody')}</h2>
 				<div className="flex flex-wrap items-center gap-2">
-					<AdminInspector label={t('wirePreview')} disabled={!displayWire}>
-						{displayWire && (
-							<>
-								<p className="break-all font-mono text-xs text-gray-500">
-									{displayWire.method} {displayWire.url}
-								</p>
-								<details className="text-xs text-gray-600">
-									<summary className="cursor-pointer">{t('wireHeaders')}</summary>
-									<pre className={`${codeBlockClass} mt-3`}>
-										{Object.entries(displayWire.headers)
-											.map(([key, value]) => `${key}: ${value}`)
-											.join('\n')}
-									</pre>
-								</details>
-								<pre className={`${codeBlockClass} leading-6`}>
-									{displayWire.isMultipart ? displayWire.bodyText : prettyJsonBody(displayWire.bodyText)}
-								</pre>
-							</>
-						)}
-					</AdminInspector>
 					{sending ? (
 						<button
 							type="button"
@@ -484,7 +471,11 @@ export function SimulatorRequestPanel({
 					url={displayWire?.url}
 					emptyHint={t('requestTargetUrlEmpty')}
 				/>
+				{requestHeaders}
 				<div className="flex items-center justify-between gap-2">
+					<label htmlFor="simulator-json-body" className="text-xs font-medium text-gray-700">
+						{t('inspection.inputBody')}
+					</label>
 					<button
 						type="button"
 						onClick={onApplyTemplate}
@@ -493,9 +484,6 @@ export function SimulatorRequestPanel({
 					>
 						{t('applyTemplate')}
 					</button>
-					<label htmlFor="simulator-json-body" className="sr-only">
-						{t('requestBody')}
-					</label>
 				</div>
 				<textarea
 					id="simulator-json-body"
@@ -504,13 +492,14 @@ export function SimulatorRequestPanel({
 					rows={12}
 					disabled={sending}
 					spellCheck={false}
-					className={`${inputClass} min-h-[280px] flex-1 resize-y font-mono text-xs leading-6 xl:resize-none`}
+					className={`${inputClass} min-h-44 flex-[3] resize-y font-mono text-xs leading-6 xl:resize-none`}
 				/>
 				{bodyError && (
 					<p role="alert" className="max-h-24 shrink-0 overflow-auto text-xs leading-5 text-red-700">
 						{bodyError}
 					</p>
 				)}
+				{actualRequest}
 			</div>
 		</section>
 	);

@@ -20,7 +20,7 @@ import {
 	normalizeUpstreamProtocol,
 	parseProviderEndpoints,
 } from '@octafuse/core';
-import { resolveEffectiveCustomParams } from '@octafuse/core/provider-custom-params';
+import { resolveCustomParamsLayers } from '@octafuse/core/provider-custom-params';
 import { selectActiveRouteRows } from './route-selection';
 
 export interface RouteResult {
@@ -48,6 +48,7 @@ export interface RouteResult {
 	/** 自 `price_override.charged` 解析出的 JSON 字符串（无则 null）；用户预算 `charged_cost` 优先于此 */
 	routeChargedProfileJson: string | null;
 	customParams: Record<string, unknown> | null;
+	customParamsLayers?: ReturnType<typeof resolveCustomParamsLayers>;
 	routeGroup: string;
 	/** `model_routes.priority`；同层按 route strategy 排序 */
 	routePriority: number;
@@ -70,7 +71,7 @@ async function routeRowToResult(repos: GatewayRepositories, route: ModelRouteRow
 	 * Provider 默认值（按 protocol 筛选）+ Route 值合成为一份有效参数。两侧 JSON 解析均安全降级，
 	 * 一行脏数据不会让异常冒泡——尤其是 Provider 一侧，坏数据绝不能影响它名下所有 Route。
 	 */
-	const customParams = resolveEffectiveCustomParams(provider.custom_params, route.custom_params, protocol, {
+	const customParamsLayers = resolveCustomParamsLayers(provider.custom_params, route.custom_params, protocol, {
 		providerId: provider.id,
 		routeId: route.id,
 		modelId: route.model_id,
@@ -98,7 +99,8 @@ async function routeRowToResult(repos: GatewayRepositories, route: ModelRouteRow
 		priceOverrideRaw: route.price_override,
 		routeMeteredProfileJson: extractMeteredProfileFromPriceOverrideJson(route.price_override),
 		routeChargedProfileJson: extractChargedProfileFromPriceOverrideJson(route.price_override),
-		customParams,
+		customParams: customParamsLayers.effective,
+		customParamsLayers,
 		routeGroup,
 		routePriority: route.priority,
 		routeWeight,

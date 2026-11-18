@@ -37,6 +37,7 @@ import {
 import { EMPTY_USAGE, type ProxyResult } from './proxy';
 import type { FailoverDispatchOptions } from './failover-dispatch';
 import { RequestTimingCollector } from './request-timing';
+import { requestParameterSourcesForLog } from './request-log-shared';
 import {
 	DEFAULT_USAGE_SAFETY_TIMEOUT_MS,
 	resolveStreamTimeouts,
@@ -410,6 +411,9 @@ export async function runProxyPipeline<TBody>(
 					httpStatus: response.status,
 				});
 				const stickyTrace = proxyResult.stickyTrace ? await proxyResult.stickyTrace() : null;
+				const timingSnapshot = timing.snapshot();
+				const upstreamRequestBody = spec.accounting.upstreamWireBodyForLog(proxyResult.chosenRoute, body);
+				const sourceBody = spec.accounting.requestBodyForSources?.(body);
 				const event = buildAccountingEvent({
 					requestLogId,
 					apiKey,
@@ -425,15 +429,15 @@ export async function runProxyPipeline<TBody>(
 					requestProtocol: spec.requestProtocol,
 					requestOperation: spec.requestOperation,
 					requestBodyForLog,
-					upstreamRequestBody: spec.accounting.upstreamWireBodyForLog(
-						proxyResult.chosenRoute,
-						body
-					),
+					upstreamRequestBody,
+					requestParameterSources: sourceBody && timingSnapshot.finalUpstreamHeadersMs != null
+						? requestParameterSourcesForLog(proxyResult.chosenRoute, sourceBody, upstreamRequestBody, c.req.raw.headers)
+						: undefined,
 					chosenRoute: proxyResult.chosenRoute,
 					stickyTrace,
 					requestStartedAtMs: start,
 					latencyMs,
-					timing: timing.snapshot(),
+					timing: timingSnapshot,
 					circuitEvents: alertCircuitEvents,
 					suppressErrorAlert: proxyResult.suppressErrorAlert,
 				});

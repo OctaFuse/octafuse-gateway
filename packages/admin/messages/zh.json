@@ -2434,6 +2434,36 @@
 		"tools": "工具"
 	},
 	"simulator": {
+		"inspection": {
+			"gatewayHeaders": "发往网关的请求头",
+			"inputBody": "请求体（输入）",
+			"actualBody": "请求体（实际）",
+			"gateway": "发往网关",
+			"upstream": "发往上游",
+			"preview": "预览",
+			"submitted": "已提交",
+			"modelInPath": "model（URL 路径）",
+			"modelInQuery": "{field}（URL 查询参数）",
+			"inputSource": "其余 JSON 字段来自输入。网关选路后应用上游配置。",
+			"multipartSource": "表单由支持的 JSON 字段和所选附件组装。",
+			"frameSource": "模拟器根据输入和所选模型构造连接地址与初始帧。",
+			"upstreamAfterSend": "发送后可查看网关选中的上游，以及该请求生效的配置来源。",
+			"waitingForLog": "等待网关写入本次请求日志…",
+			"snapshotUnavailable": "本次请求的上游快照不可用。",
+			"upstreamSnapshot": "来自网关请求日志的脱敏快照。",
+			"upstreamHeaderSources": "上游自定义请求头来源",
+			"upstreamBodySources": "上游配置字段来源",
+			"sourcesUnavailable": "本条日志未记录参数来源。",
+			"openThisLog": "打开本次请求日志",
+			"source": {
+				"key": "所选 API Key",
+				"protocol": "协议默认",
+				"selection": "所选模型与路由组",
+				"input": "网关入口请求",
+				"provider": "供应商自定义参数",
+				"route": "路由自定义参数"
+			}
+		},
 		"toolsSubtitle": "使用用户 API 密钥调用工具，验证鉴权、计费与调用日志。",
 		"title": "模拟器",
 		"subtitle": "使用用户 API 密钥模拟客户端请求，验证网关鉴权、路由和故障转移。",
