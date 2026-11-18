@@ -73,6 +73,8 @@ export const providersTable = sqliteTable(
 		status: text('status').notNull().default('active'),
 		/** Operator note. Catalog introductions are resolved from static presets. */
 		note: text('note'),
+		/** JSON: `{ "<protocol>": { headers?, body? } }`，按协议分组的默认 custom_params，无 force_override。 */
+		customParams: text('custom_params'),
 		createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 	},
 	(t) => [uniqueIndex('uk_providers_name_kind').on(t.name, t.kind)]

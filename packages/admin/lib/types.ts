@@ -162,6 +162,8 @@ export interface GatewayProvider {
   };
   /** 协议端点 JSON；见 `providers.endpoints` */
   endpoints?: string | null;
+  /** 按上游协议分组的默认 custom_params（headers/body），无 force_override；见 `providers.custom_params` */
+  custom_params?: string | null;
   /** 脱敏预览；明文仅经 `GET /admin/providers/:id/api-key` */
   api_key?: string;
   /** `active` | `disabled` */

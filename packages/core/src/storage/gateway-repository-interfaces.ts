@@ -379,6 +379,8 @@ export interface ProvidersRepository {
 		note: unknown;
 		apiKey?: string;
 		status?: string;
+		/** `providers.custom_params` JSON 文本（按协议分组的默认 headers/body），未传 = `null`。 */
+		customParams?: string | null;
 	}): Promise<void>;
 	updateProviderByPatch(id: string, body: Record<string, unknown>): Promise<number>;
 	deleteProviderById(id: string): Promise<number>;

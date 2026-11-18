@@ -208,6 +208,62 @@ describe('provider credential form requests', () => {
 	});
 });
 
+describe('provider custom_params form requests', () => {
+	it('includes the per-protocol custom_params object in the save payload', async (context) => {
+		context.mock.method(
+			globalThis,
+			'fetch',
+			async (_url: string, options: RequestInit) => {
+				const body = JSON.parse(String(options.body));
+				assert.deepEqual(body.custom_params, {
+					openai: { headers: { 'X-Title': 'App' }, body: { max_tokens: 4096 } },
+				});
+				return json({ success: true });
+			}
+		);
+		await saveProvider(
+			{
+				...EMPTY_PROVIDER_FORM,
+				api_key: 'sk-test',
+				customParams: {
+					openai: {
+						headers: [{ name: 'X-Title', value: 'App' }],
+						bodyText: '{"max_tokens": 4096}',
+					},
+				},
+			},
+			null
+		);
+	});
+
+	it('rejects an invalid body JSON before making any network request', async (context) => {
+		const fetchMock = context.mock.method(globalThis, 'fetch');
+		const result = await saveProvider(
+			{
+				...EMPTY_PROVIDER_FORM,
+				api_key: 'sk-test',
+				customParams: { openai: { headers: [], bodyText: '{not json' } },
+			},
+			null
+		);
+		assert.equal(result.success, false);
+		assert.equal(fetchMock.mock.callCount(), 0);
+	});
+
+	it('sends an empty custom_params object when no protocol is configured', async (context) => {
+		context.mock.method(
+			globalThis,
+			'fetch',
+			async (_url: string, options: RequestInit) => {
+				const body = JSON.parse(String(options.body));
+				assert.deepEqual(body.custom_params, {});
+				return json({ success: true });
+			}
+		);
+		await saveProvider({ ...EMPTY_PROVIDER_FORM, api_key: 'sk-test' }, null);
+	});
+});
+
 describe('provider endpoint JSON preview', () => {
 	it('matches the actual submitted endpoints without exposing credentials or inactive drafts', async (context) => {
 		const forms = [
