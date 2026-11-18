@@ -60,7 +60,7 @@ jobs:
         run: npm ci --ignore-scripts --include=dev
 
       - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=moderate --registry=https://registry.npmjs.org
+        run: node scripts/ci/audit-prod.mjs
 
       - name: Typecheck all packages (including core tests)
         run: npm run typecheck

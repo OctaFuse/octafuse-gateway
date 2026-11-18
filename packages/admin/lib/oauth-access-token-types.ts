@@ -44,6 +44,26 @@ export interface OAuthApp {
   last_used_at: string | null;
 }
 
+/** 注册实例（`GET /admin/oauth/clients`）；secret 只在签发 / 重置时返回一次。 */
+export interface OAuthClient {
+  client_id: string;
+  app_id: string | null;
+  client_name: string;
+  /** 手工客户端：回调规则，空数组表示沿用所属应用的白名单 */
+  redirect_uris: string[];
+  registration_method: 'dcr' | 'manual' | 'cimd';
+  token_endpoint_auth_method: 'none' | 'client_secret_basic' | 'client_secret_post';
+  has_client_secret: boolean;
+  last_authorized_at: string | null;
+  created_at: string;
+  live_grant_count?: number;
+}
+
+export interface IssuedOAuthClient {
+  client: OAuthClient;
+  client_secret: string;
+}
+
 export interface OAuthAppsOverview {
   apps: OAuthApp[];
   /** 迁移前由外部授权服务器签发、没有归属应用的授权，按客户端名称成组 */

@@ -15,7 +15,7 @@ export function McpCatalogItemRow({
 	selected,
 	onSelect,
 	onToggle,
-	onAccept,
+	onReview,
 	onSavePricing,
 }: {
 	currency: string;
@@ -25,7 +25,7 @@ export function McpCatalogItemRow({
 	selected: boolean;
 	onSelect: (selected: boolean) => void;
 	onToggle: (enabled: boolean) => void;
-	onAccept: () => void;
+	onReview: () => void;
 	onSavePricing: (item: CatalogItem, pricing: Record<string, unknown> | null) => Promise<boolean>;
 }) {
 	const t = useTranslations('mcp');
@@ -74,31 +74,22 @@ export function McpCatalogItemRow({
 							</span>
 						) : null}
 					</div>
-
-					{!(
-						item.reviewState === 'changed' &&
-						item.pendingDefinition &&
-						item.status !== 'removed'
-					) ? (
-						<>
-							<p
-								className={`mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 ${
-									expandedDescription ? '' : 'line-clamp-2'
-								}`}
-							>
-								{description}
-							</p>
-							{longDescription ? (
-								<button
-									type="button"
-									aria-expanded={expandedDescription}
-									onClick={() => setExpandedDescription(!expandedDescription)}
-									className="mt-1 text-xs font-medium text-gray-400 hover:text-gray-700"
-								>
-									{t(expandedDescription ? 'collapseDescription' : 'expandDescription')}
-								</button>
-							) : null}
-						</>
+					<p
+						className={`mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-gray-600 ${
+							expandedDescription ? '' : 'line-clamp-2'
+						}`}
+					>
+						{description}
+					</p>
+					{longDescription ? (
+						<button
+							type="button"
+							aria-expanded={expandedDescription}
+							onClick={() => setExpandedDescription(!expandedDescription)}
+							className="mt-1 text-xs font-medium text-gray-400 hover:text-gray-700"
+						>
+							{t(expandedDescription ? 'collapseDescription' : 'expandDescription')}
+						</button>
 					) : null}
 				</div>
 				<div className="flex shrink-0 items-center gap-2">
@@ -137,42 +128,15 @@ export function McpCatalogItemRow({
 				</div>
 			</div>
 			{item.reviewState === 'changed' && item.pendingDefinition && item.status !== 'removed' ? (
-				<div className="mt-4 rounded-lg border border-sky-100 bg-sky-50/50 p-3">
-					<p className="mb-3 text-xs leading-5 text-sky-800">{t('changeHint')}</p>
-					<div className="grid gap-3 sm:grid-cols-2">
-						<div>
-							<p className="text-xs font-medium text-gray-500">{t('currentDescription')}</p>
-							<p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-700">
-								{item.definition?.description || '—'}
-							</p>
-						</div>
-						<div>
-							<p className="text-xs font-medium text-sky-700">{t('pendingDescription')}</p>
-							<p className="mt-1 whitespace-pre-wrap break-words text-sm text-sky-900">
-								{item.pendingDefinition.description || '—'}
-							</p>
-						</div>
-					</div>
-					<details className="mt-3">
-						<summary className="cursor-pointer text-xs font-medium text-sky-700">
-							{t('compareDefinitions')}
-						</summary>
-						<div className="mt-2 grid gap-2 sm:grid-cols-2">
-							<pre className="max-h-64 overflow-auto rounded-lg bg-white p-3 text-xs text-gray-600">
-								{JSON.stringify(item.definition, null, 2)}
-							</pre>
-							<pre className="max-h-64 overflow-auto rounded-lg bg-white p-3 text-xs text-sky-800">
-								{JSON.stringify(item.pendingDefinition, null, 2)}
-							</pre>
-						</div>
-					</details>
+				<div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-sky-100 bg-sky-50/60 px-3 py-2">
+					<p className="min-w-0 flex-1 text-xs leading-5 text-sky-800">{t('reviewChangedInline')}</p>
 					<button
 						type="button"
 						disabled={busy}
-						onClick={onAccept}
-						className="mt-3 rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-medium text-sky-800 hover:bg-sky-50 disabled:opacity-50"
+						onClick={onReview}
+						className="rounded-lg border border-sky-200 bg-white px-3 py-1 text-xs font-medium text-sky-800 hover:bg-sky-50 disabled:opacity-50"
 					>
-						{t('accept')}
+						{t('reviewItem')}
 					</button>
 				</div>
 			) : null}

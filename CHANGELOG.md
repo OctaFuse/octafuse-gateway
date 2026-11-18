@@ -4,18 +4,24 @@
 
 ### Proxy
 
+- **MCP OAuth 接入更多 Agent**：内置授权服务器支持机密客户端——动态注册可声明 `client_secret_basic` / `client_secret_post` 并获得一次性 `client_secret`，令牌与撤销端点按声明认证客户端，机密客户端可不带 PKCE。新增可选的客户端元数据文档（CIMD，MCP 2025-11-25）：在 OAuth 卡片中开启或设置 `MCP_OAUTH_CIMD_ENABLED=true` 后，接受以 https 地址为 `client_id` 的客户端，默认关闭。授权服务器元数据另在 `/.well-known/oauth-authorization-server/mcp[/{slug}]` 与 `/mcp/.well-known/oauth-authorization-server` 提供，资源元数据另在 `/mcp/.well-known/oauth-protected-resource` 提供；`/mcp` 的 401 `WWW-Authenticate` 增加 `scope="mcp"`。本机回调 `http://localhost` 与 `127.0.0.1` 一样忽略端口；被拒绝的注册会写一条 `registration rejected` 日志，方便补充应用规则。需要先执行迁移 0037（见[迁移说明](docs/operators/migrations/0037-oauth-client-credentials.md)）。
 - **Gemini thought signature 兜底**：上游返回 `HTTP 400: Corrupted thought signature.` 时，也会清洗历史签名后对同一上游重试一次，与 `Invalid thought signature` 的处理一致。此前故障转移到这类上游（如部分第三方中转）后，会话历史里别家签发的签名会让请求直接失败。
 
 ### Proxy
 
-- **Provider 级自定义参数**：`providers` 新增按上游协议分组的默认 `custom_params`（请求头 / 请求体），该 Provider 下所有 Route 默认生效，Route 仍可按需覆盖；不配置时行为与之前完全一致。典型场景：OpenCode 等渠道要求固定请求头、某些供应商要求固定 `max_tokens`，现在只需在 Provider 上配一次。受保护头（`Authorization`、`Content-Type` 等）与 `model` 字段仍不可被覆盖；原生透传（DashScope/MiniMax/ElevenLabs/Volcengine 的直连入口）与 WebSocket 入口的请求头可能因此变化，属于预期行为，请求体合并不变。新增迁移 `0037`，只新增可空列，默认不改变现有行为。
+- **Provider 级自定义参数**：`providers` 新增按上游协议分组的默认 `custom_params`（请求头 / 请求体），该 Provider 下所有 Route 默认生效，Route 仍可按需覆盖；不配置时行为与之前完全一致。典型场景：OpenCode 等渠道要求固定请求头、某些供应商要求固定 `max_tokens`，现在只需在 Provider 上配一次。受保护头（`Authorization`、`Content-Type` 等）与 `model` 字段仍不可被覆盖；原生透传（DashScope/MiniMax/ElevenLabs/Volcengine 的直连入口）与 WebSocket 入口的请求头可能因此变化，属于预期行为，请求体合并不变。新增迁移 `0038`，只新增可空列，默认不改变现有行为。
 
 ### Admin
 
 - **Provider 自定义参数**：Provider 编辑弹窗新增「自定义参数」页签，可按协议配置默认请求头 / 请求体；调试台预览与线上请求使用同一套合并逻辑。
+- **OpenCode 供应商模板**：OpenCode Zen 与 OpenCode Go 的静态端点改为 Console Inference。按量走 `https://opencode.ai/inference`，Go 走 `https://opencode.ai/inference/go`。两者都预填 OpenAI Chat、Responses、Anthropic Messages，以及 Bearer 鉴权的 Gemini `models.generate`（不写 `gemini.base`，因此不派生向量端点）。已导入的供应商不会自动改地址。
+- **GPT-6.2 Astra / Sol**：模型目录新增 `gpt-6.2-astra` 与 `gpt-6.2-sol`（2026-11-17）。上下文 1.05M，最大输出 128K，输入含文本和图像。刊例价：Astra $8 / $40 每百万 token，缓存命中 $0.4，缓存写入（30 分钟档）$10，较 GPT-6 Astra 输入输出价低 20%；Sol $2 / $10，缓存命中 $0.1，缓存写入 $2.5，与 GPT-6.1 Sol 相同；输入超过 272K 时输入与缓存价翻倍、输出价为 1.5 倍。API 拒绝 `reasoning.effort` 为 `none`；带工具调用必须走 Responses API，Chat Completions 仅支持不带工具的请求；不支持 `temperature`、`top_p` 与 `logprobs`。人民币价为美元刊例价 ×7 的换算占位价。
+- **MCP OAuth 应用规则与手工凭据**：应用的回调规则支持 `https://*.example.com` 子域通配和末尾 `*` 前缀匹配，客户端归属按匹配精确度排序，具体地址优先于通配。每个应用可签发「手工凭据」（固定 `client_id` + `client_secret`，可重置、删除），供要求填写服务端认证凭据、不支持动态注册的平台使用。预设新增 Claude Code、Cursor、VS Code、Gemini CLI 和兜底的「Local MCP clients」，WorkBuddy 预设补充 `*.tencent.com`、`*.workbuddy.cn`、`*.workbuddy.ai`、`*.codebuddy.cn` 回调。Admin API 新增 `POST /api/admin/oauth/apps/:id/clients`、`PATCH|DELETE /api/admin/oauth/clients/:clientId` 与 `POST /api/admin/oauth/clients/:clientId/secret`，客户端列表支持按 `registration_method` 筛选并返回 `has_client_secret`。
+- **MCP 目录变更审核**：同步目录后，MCP 服务页顶部显示审核横幅（待审总数、定义变更与新增各多少），提供「开始审核」「全部接受变更」「启用全部新增」；条目行里的整块对比卡片收成一行「审核变更」。新的审核弹窗按队列逐项处理：左侧待审列表，右侧是逐行高亮的定义差异（键顺序已规范化，未变化的部分折叠，并列出变更的顶层字段，如 `inputSchema`），接受或启用后自动跳到下一项，支持上一项 / 下一项（← →）与跳过。此前对比只展示描述，描述没变而参数结构变了时两栏一模一样，看不出改了什么。Admin API 新增 `POST /api/admin/mcp-servers/:id/items/accept`（`{ ids }`）批量接受定义变更。
 - **模型路由筛选**：模型与供应商改为两级多选，分别按模型厂商和供应商类型分组；支持整组或单项勾选、搜索、逐项移除，并在地址中保存筛选条件，兼容旧的单选筛选链接。
 - **Hy4 flash**：模型目录新增 `hy4-flash`（2026-11-16）。总参数 224B（含 64B Engram 参数），激活 12B，上下文 1M，最大输出约 64K，输入含文本和图像。刊例价：国内 ¥0.5 / ¥2 每百万 token，缓存命中 ¥0.02；国际 $0.07 / $0.281，缓存命中 $0.003；未计入 TokenHub 至 2026-11-30 的限时 5 折。`hy4-preview` 补记官方下线日期 `retired` 2026-12-07。
 - **Qwen4 Max**：模型目录新增正式版 `qwen4-max`（2026-11-16）。上下文 1M，最大输出 128K（思考与回答合计最长约 256K），输入含文本、图像和视频。刊例价：国内 ¥10 / ¥30 每百万 token，缓存命中 ¥0.5，缓存写入（5 分钟档）¥12.5；国际 $1.5 / $4.5，缓存命中 $0.075，缓存写入（5 分钟档）$1.875。思考档为 `low` / `high` / `xhigh`（默认 `high`），与预览版的 `low` / `medium` / `xhigh` 不同。`qwen4-max-preview` 仍保留，刊例价改为与 `qwen4-max` 一致（此前暂按 `qwen3.8-max` 对齐），官方预览期至 2026-11-25。
+- **Modelink 供应商模板**：Providers 导入模板新增 Modelink（七牛云 AI 的海外接入点 `api.modelink.ai`），预填 OpenAI Chat、Responses 与 Images（生成 / 编辑）直通、Anthropic、Gemini（Vertex 兼容 + Bearer）端点，并新增 Modelink 厂商与图标；`modelink.ai` 域名与名称不再归入七牛。中国大陆继续使用「七牛云 AI」模板（`api.qnaigc.com`）。
 
 ## 2.20.0
 

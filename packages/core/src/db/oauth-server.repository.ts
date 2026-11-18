@@ -4,7 +4,11 @@
  * 三种数据库共用同一份 SQL（`?` 占位符，各自适配器负责方言差异）；时间列统一为 ISO 文本。
  * 一次性消费一律用「条件 UPDATE + 按唯一标记查回」，不依赖 RETURNING 或受影响行数。
  */
-import { parseJsonStringList } from '../lib/oauth-server';
+import {
+	parseJsonStringList,
+	type OAuthClientRegistrationMethod,
+	type OAuthTokenEndpointAuthMethod,
+} from '../lib/oauth-server';
 import type { SqlExec } from './oauth-access-tokens.repository';
 
 export type OAuthAppRow = {
@@ -22,8 +26,16 @@ export type OAuthClientRow = {
 	client_id: string;
 	app_id: string | null;
 	client_name: string;
+	/** 动态注册 / 元数据文档为具体地址；手工客户端为回调规则，空数组表示沿用应用白名单。 */
 	redirect_uris: string[];
+	/** `dcr` | `manual` | `cimd` */
 	registration_method: string;
+	/** `none` | `client_secret_basic` | `client_secret_post` */
+	token_endpoint_auth_method: string;
+	/** 只存哈希；不要原样返回给 API。 */
+	client_secret_hash: string | null;
+	/** 元数据文档客户端最近一次成功获取文档的时间。 */
+	metadata_fetched_at: string | null;
 	last_authorized_at: string | null;
 	created_at: string;
 };
@@ -100,6 +112,9 @@ function mapClient(row: Record<string, unknown>): OAuthClientRow {
 		client_name: String(row.client_name ?? ''),
 		redirect_uris: parseJsonStringList(text(row.redirect_uris)),
 		registration_method: String(row.registration_method ?? 'dcr'),
+		token_endpoint_auth_method: String(row.token_endpoint_auth_method ?? 'none'),
+		client_secret_hash: text(row.client_secret_hash),
+		metadata_fetched_at: text(row.metadata_fetched_at),
 		last_authorized_at: text(row.last_authorized_at),
 		created_at: String(row.created_at ?? ''),
 	};
@@ -125,7 +140,8 @@ function mapRequest(row: Record<string, unknown>): OAuthAuthorizationRequestRow 
 }
 
 const APP_COLUMNS = 'id, slug, name, redirect_uris, client_name_patterns, enabled, created_at, updated_at';
-const CLIENT_COLUMNS = 'client_id, app_id, client_name, redirect_uris, registration_method, last_authorized_at, created_at';
+const CLIENT_COLUMNS =
+	'client_id, app_id, client_name, redirect_uris, registration_method, token_endpoint_auth_method, client_secret_hash, metadata_fetched_at, last_authorized_at, created_at';
 const REQUEST_COLUMNS =
 	'id_hash, client_id, redirect_uri, code_challenge, resource, state, scope, user_id, code_hash, code_expires_at, used_at, decided_at, expires_at, created_at';
 
@@ -205,9 +221,11 @@ export function createOAuthServerSqlRepository(exec: SqlExec) {
 			return getAppById(id);
 		},
 
+		/** 删除应用：手工客户端随应用一起删除，其它注册实例解除归属。 */
 		async deleteApp(id: string): Promise<boolean> {
 			const existing = await getAppById(id);
 			if (!existing) return false;
+			await exec("DELETE FROM oauth_clients WHERE app_id = ? AND registration_method = 'manual'", [id]);
 			await exec('UPDATE oauth_clients SET app_id = NULL WHERE app_id = ?', [id]);
 			await exec('DELETE FROM oauth_apps WHERE id = ?', [id]);
 			return true;
@@ -222,18 +240,81 @@ export function createOAuthServerSqlRepository(exec: SqlExec) {
 			clientName: string;
 			redirectUris: string[];
 			nowIso: string;
+			registrationMethod?: OAuthClientRegistrationMethod;
+			tokenEndpointAuthMethod?: OAuthTokenEndpointAuthMethod;
+			clientSecretHash?: string | null;
+			metadataFetchedAt?: string | null;
 		}): Promise<OAuthClientRow> {
 			await exec(
-				`INSERT INTO oauth_clients (client_id, app_id, client_name, redirect_uris, registration_method, last_authorized_at, created_at)
-				 VALUES (?, ?, ?, ?, 'dcr', NULL, ?)`,
-				[params.clientId, params.appId, params.clientName, JSON.stringify(params.redirectUris), params.nowIso]
+				`INSERT INTO oauth_clients
+				 (client_id, app_id, client_name, redirect_uris, registration_method, token_endpoint_auth_method,
+				  client_secret_hash, metadata_fetched_at, last_authorized_at, created_at)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)`,
+				[
+					params.clientId,
+					params.appId,
+					params.clientName,
+					JSON.stringify(params.redirectUris),
+					params.registrationMethod ?? 'dcr',
+					params.tokenEndpointAuthMethod ?? 'none',
+					params.clientSecretHash ?? null,
+					params.metadataFetchedAt ?? null,
+					params.nowIso,
+				]
 			);
 			const row = await getClient(params.clientId);
 			if (!row) throw new Error('oauth client missing after insert');
 			return row;
 		},
 
-		async listClients(filter: { appId?: string; page: number; pageSize: number; nowIso: string }): Promise<{
+		/** 元数据文档客户端重新获取文档后刷新名称、回调与归属。 */
+		async updateClientMetadata(
+			clientId: string,
+			params: { appId: string | null; clientName: string; redirectUris: string[]; metadataFetchedAt: string }
+		): Promise<void> {
+			await exec(
+				'UPDATE oauth_clients SET app_id = ?, client_name = ?, redirect_uris = ?, metadata_fetched_at = ? WHERE client_id = ?',
+				[params.appId, params.clientName, JSON.stringify(params.redirectUris), params.metadataFetchedAt, clientId]
+			);
+		},
+
+		/** 手工客户端：改名称 / 回调规则。 */
+		async updateClient(clientId: string, patch: { clientName?: string; redirectUris?: string[] }): Promise<OAuthClientRow | null> {
+			const sets: string[] = [];
+			const values: unknown[] = [];
+			if (patch.clientName !== undefined) {
+				sets.push('client_name = ?');
+				values.push(patch.clientName);
+			}
+			if (patch.redirectUris !== undefined) {
+				sets.push('redirect_uris = ?');
+				values.push(JSON.stringify(patch.redirectUris));
+			}
+			if (sets.length > 0) await exec(`UPDATE oauth_clients SET ${sets.join(', ')} WHERE client_id = ?`, [...values, clientId]);
+			return getClient(clientId);
+		},
+
+		async setClientSecret(clientId: string, params: { hash: string; authMethod: OAuthTokenEndpointAuthMethod }): Promise<void> {
+			await exec('UPDATE oauth_clients SET client_secret_hash = ?, token_endpoint_auth_method = ? WHERE client_id = ?', [
+				params.hash,
+				params.authMethod,
+				clientId,
+			]);
+		},
+
+		async deleteClient(clientId: string): Promise<boolean> {
+			if (!(await getClient(clientId))) return false;
+			await exec('DELETE FROM oauth_clients WHERE client_id = ?', [clientId]);
+			return true;
+		},
+
+		async listClients(filter: {
+			appId?: string;
+			registrationMethod?: string;
+			page: number;
+			pageSize: number;
+			nowIso: string;
+		}): Promise<{
 			rows: OAuthClientListRow[];
 			total: number;
 		}> {
@@ -243,6 +324,10 @@ export function createOAuthServerSqlRepository(exec: SqlExec) {
 			else if (filter.appId) {
 				conditions.push('c.app_id = ?');
 				values.push(filter.appId);
+			}
+			if (filter.registrationMethod) {
+				conditions.push('c.registration_method = ?');
+				values.push(filter.registrationMethod);
 			}
 			const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 			const count = await exec(`SELECT COUNT(*) AS total FROM oauth_clients c ${where}`, values);
@@ -286,9 +371,9 @@ export function createOAuthServerSqlRepository(exec: SqlExec) {
 			await exec('UPDATE oauth_clients SET last_authorized_at = ? WHERE client_id = ?', [nowIso, clientId]);
 		},
 
-		/** 清理注册后从未完成授权、且早于 cutoff 的注册实例，返回条数。 */
+		/** 清理注册后从未完成授权、且早于 cutoff 的注册实例（手工客户端除外），返回条数。 */
 		async deleteUnusedClients(cutoffIso: string): Promise<number> {
-			const where = `last_authorized_at IS NULL AND created_at < ?
+			const where = `last_authorized_at IS NULL AND created_at < ? AND registration_method <> 'manual'
 				 AND NOT EXISTS (SELECT 1 FROM oauth_access_tokens t WHERE t.client_id = oauth_clients.client_id)`;
 			const rows = await exec(`SELECT client_id FROM oauth_clients WHERE ${where}`, [cutoffIso]);
 			if (rows.length === 0) return 0;

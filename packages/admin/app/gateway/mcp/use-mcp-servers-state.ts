@@ -268,12 +268,32 @@ export function useMcpServersState() {
 	}
 
 	async function accept(itemId: string) {
-		if (!selectedId) return;
+		if (!selectedId) return false;
 		const id = selectedId;
 		return perform(`accept:${itemId}`, async () => {
 			await mutate(`/${id}/items/${itemId}/accept`, 'POST');
 			await refresh(id);
 			notify('success', t('accepted'));
+		});
+	}
+
+	/** Accepts several pending definition changes in one request; `confirmFirst` asks once for the whole batch. */
+	async function acceptMany(ids: string[], options: { confirmFirst?: boolean } = {}) {
+		if (!selectedId || !ids.length) return false;
+		const id = selectedId;
+		if (
+			options.confirmFirst &&
+			!(await confirm({
+				title: t('acceptAllTitle'),
+				message: t('acceptAllConfirm', { count: ids.length }),
+				confirmLabel: t('accept'),
+			}))
+		)
+			return false;
+		return perform('accept:batch', async () => {
+			const result = (await mutate(`/${id}/items/accept`, 'POST', { ids })) as { accepted: number };
+			await refresh(id);
+			notify('success', t('acceptedMany', { count: result.accepted }));
 		});
 	}
 
@@ -356,6 +376,7 @@ export function useMcpServersState() {
 		sync,
 		test,
 		accept,
+		acceptMany,
 		toggleServer,
 		setItemStatus,
 		savePricing,

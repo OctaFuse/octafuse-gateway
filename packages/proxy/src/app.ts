@@ -18,8 +18,8 @@ import { webSearchRoutes } from './routes/v1/tools/web-search';
 import { webFetchRoutes } from './routes/v1/tools/web-fetch';
 import { webDeepSearchRoutes } from './routes/v1/tools/web-deep-search';
 import { aiDetectionRoutes } from './routes/v1/tools/ai-detection';
-import { oauthProtectedResourceRoutes } from './routes/oauth-protected-resource';
-import { oauthServerMetadataRoutes, oauthServerRoutes } from './routes/oauth-server';
+import { oauthProtectedResourceRoutes, serveProtectedResourceMetadata } from './routes/oauth-protected-resource';
+import { oauthServerMetadataRoutes, oauthServerRoutes, serveAuthorizationServerMetadata } from './routes/oauth-server';
 import { oauthConsentRoutes } from './routes/oauth-consent';
 import { toolsPricingRoutes } from './routes/v1/tools/pricing';
 import { mcpRoutes } from './routes/mcp';
@@ -213,6 +213,9 @@ export function createProxyApp(resolveStorage: StorageResolver, options?: ProxyA
 	app.route('/v1/tools/web-deep-search', webDeepSearchRoutes);
 	app.route('/v1/tools/ai-detection', aiDetectionRoutes);
 	app.route('/v1/tools/pricing', toolsPricingRoutes);
+	// 部分客户端把 well-known 拼在 MCP 地址后面发现授权；必须在 `/mcp` 的鉴权中间件之前注册。
+	app.get('/mcp/.well-known/oauth-protected-resource', (c) => serveProtectedResourceMetadata(c, '/mcp'));
+	app.get('/mcp/.well-known/oauth-authorization-server', serveAuthorizationServerMetadata);
 	app.route('/mcp', mcpRoutes);
 	app.route('/.well-known/oauth-protected-resource', oauthProtectedResourceRoutes);
 	// 内置授权服务器（`MCP_OAUTH_ISSUER` 非空才启用，否则全部 404）。

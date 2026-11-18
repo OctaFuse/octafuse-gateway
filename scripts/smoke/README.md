@@ -49,7 +49,7 @@ CI 设置 `GATEWAY_SMOKE_STRICT=1` 并显式提供临时库的管理凭证，执
 数据库与容器在任务结束时删除，不访问生产环境。
 
 `npm run test:unit` 包含关键写入事务契约与冒烟配置回归；`npm run typecheck` 检查所有包，包含 Core 测试源码。
-CI 还执行生产依赖审计、管理后台静态检查与 Proxy 打包检查。开发依赖审计需另行运行 `npm audit`。
+CI 还执行生产依赖审计（`scripts/ci/audit-prod.mjs`，仅对上游无修复版本的通告做带过期时间的豁免）、管理后台静态检查与 Proxy 打包检查。开发依赖审计需另行运行 `npm audit`。
 
 ## 4. 协议与路由的手工回归
 

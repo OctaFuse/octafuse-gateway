@@ -4,7 +4,7 @@
  * 见 core `mcp-oauth-system-config`。
  */
 import type { GatewayRepositories } from '@octafuse/core';
-import { buildProtectedResourceMetadata, protectedResourceMetadataUrl, readMcpOAuthMode } from '@octafuse/core';
+import { MCP_OAUTH_SCOPE, buildProtectedResourceMetadata, protectedResourceMetadataUrl, readMcpOAuthMode } from '@octafuse/core';
 
 type RequestLike = { req: { header: (name: string) => string | undefined; url: string } };
 
@@ -44,7 +44,11 @@ export async function mcpUnauthorizedHeaders(
 	}
 	const params: string[] = [];
 	if (options.invalidToken) params.push('error="invalid_token"');
-	if (server) params.push(`resource_metadata="${protectedResourceMetadataUrl(publicOrigin(c), path)}"`);
+	if (server) {
+		params.push(`resource_metadata="${protectedResourceMetadataUrl(publicOrigin(c), path)}"`);
+		// MCP 2025-11-25：提示客户端申请哪个作用域，免得它们去猜或申请全部 scopes_supported。
+		params.push(`scope="${MCP_OAUTH_SCOPE}"`);
+	}
 	if (params.length === 0) return {};
 	return { 'WWW-Authenticate': `Bearer ${params.join(', ')}` };
 }

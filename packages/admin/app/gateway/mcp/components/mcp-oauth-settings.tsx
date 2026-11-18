@@ -8,11 +8,13 @@ import { readApiJson } from '@/lib/api-json';
 import type { SystemConfigRow } from '@/lib/types';
 import {
 	MCP_OAUTH_AUTHORIZATION_SERVER_KEY,
+	MCP_OAUTH_CIMD_ENABLED_KEY,
 	MCP_OAUTH_CONSENT_URL_KEY,
 	MCP_OAUTH_ISSUER_KEY,
 	MCP_OAUTH_PROTECTED_RESOURCE_PATH,
 	normalizeMcpOAuthAuthorizationServer,
 	normalizeMcpOAuthConsentUrl,
+	parseMcpOAuthCimdEnabled,
 	resolveMcpOAuthMode,
 } from '@octafuse/core/lib/mcp-oauth-system-config';
 
@@ -26,9 +28,11 @@ interface Values {
 	consentUrl: string;
 	/** 外部模式：外部授权服务器地址 */
 	authorizationServer: string;
+	/** 内置模式：是否接受以 https URL 作为 `client_id` 的客户端元数据文档（CIMD） */
+	cimd: boolean;
 }
 
-const EMPTY: Values = { mode: 'off', issuer: '', consentUrl: '', authorizationServer: '' };
+const EMPTY: Values = { mode: 'off', issuer: '', consentUrl: '', authorizationServer: '', cimd: false };
 
 const MODES: readonly Mode[] = ['off', 'builtin', 'external'];
 
@@ -42,10 +46,13 @@ const MODES: readonly Mode[] = ['off', 'builtin', 'external'];
 export function McpOAuthSettings({
 	onOpenGuide,
 	onSaved,
+	onDraftOffChange,
 	className = '',
 }: {
 	className?: string;
 	onOpenGuide: () => void;
+	/** 当前选中的模式是否为「关闭」（含未保存的草稿），供页面收起下方依赖 OAuth 的内容 */
+	onDraftOffChange?: (off: boolean) => void;
 	/** 回传当前生效的授权服务器根地址（内置为 issuer，外部为外部地址，关闭为空串） */
 	onSaved: (value: string) => void;
 }) {
@@ -77,6 +84,7 @@ export function McpOAuthSettings({
 					issuer: read(MCP_OAUTH_ISSUER_KEY),
 					authorizationServer: read(MCP_OAUTH_AUTHORIZATION_SERVER_KEY),
 					consentUrl: read(MCP_OAUTH_CONSENT_URL_KEY),
+					cimdEnabled: read(MCP_OAUTH_CIMD_ENABLED_KEY),
 				});
 				const values: Values = {
 					mode: resolved.mode,
@@ -84,6 +92,7 @@ export function McpOAuthSettings({
 					consentUrl: resolved.mode === 'builtin' ? resolved.consentUrl ?? '' : '',
 					authorizationServer:
 						resolved.mode === 'external' ? resolved.authorizationServer : read(MCP_OAUTH_AUTHORIZATION_SERVER_KEY),
+					cimd: parseMcpOAuthCimdEnabled(read(MCP_OAUTH_CIMD_ENABLED_KEY)),
 				};
 				setLoadFailed(false);
 				setSaved(values);
@@ -111,6 +120,7 @@ export function McpOAuthSettings({
 		issuer: v.mode === 'builtin' ? v.issuer.trim() : '',
 		consentUrl: v.mode === 'builtin' ? v.consentUrl.trim() : '',
 		authorizationServer: v.mode === 'external' ? v.authorizationServer.trim() : '',
+		cimd: v.mode === 'builtin' ? v.cimd : false,
 	});
 	const dirty = useMemo(
 		() => JSON.stringify(normalizeForCompare(draft)) !== JSON.stringify(normalizeForCompare(saved)),
@@ -119,6 +129,11 @@ export function McpOAuthSettings({
 	const missing =
 		(draft.mode === 'builtin' && draft.issuer.trim() === '') ||
 		(draft.mode === 'external' && draft.authorizationServer.trim() === '');
+
+	useEffect(() => {
+		if (loading || loadFailed) return;
+		onDraftOffChange?.(draft.mode === 'off');
+	}, [draft.mode, loading, loadFailed, onDraftOffChange]);
 
 	useEffect(() => {
 		if (!dirty) return;
@@ -170,12 +185,15 @@ export function McpOAuthSettings({
 			await putConfig(MCP_OAUTH_CONSENT_URL_KEY, consentUrl);
 			// 切到内置时保留外部地址不动，方便回滚；其余模式按草稿写入。
 			if (draft.mode !== 'builtin') await putConfig(MCP_OAUTH_AUTHORIZATION_SERVER_KEY, authorizationServer);
+			const cimd = draft.mode === 'builtin' && draft.cimd;
+			if (cimd !== saved.cimd) await putConfig(MCP_OAUTH_CIMD_ENABLED_KEY, cimd ? 'true' : '');
 			const next: Values = {
 				mode: draft.mode,
 				issuer,
 				consentUrl,
 				authorizationServer:
 					draft.mode === 'builtin' ? saved.authorizationServer : authorizationServer,
+				cimd,
 			};
 			setSaved(next);
 			setDraft(next);
@@ -264,23 +282,36 @@ export function McpOAuthSettings({
 								{t(`modes.${saved.mode}.title`)}
 							</span>
 						) : null}
-						{dirty ? <span className="text-xs text-amber-700">{tUx('unsaved')}</span> : null}
 					</div>
 					{loading ? (
 						<p role="status" className="mt-2 text-xs text-gray-500">
 							{tCommon('loading')}
 						</p>
 					) : !loadFailed ? (
-						<>
-							{savedServer ? (
-								<code className="mt-2 block break-all text-sm text-gray-800">{savedServer}</code>
-							) : null}
-							<p className="mt-2 text-xs leading-5 text-gray-500">{t(`scope.${saved.mode}`)}</p>
-						</>
+						<p className="mt-1.5 text-xs leading-5 text-gray-500">{t(`scope.${saved.mode}`)}</p>
 					) : null}
 				</div>
+				{savedServer && !dirty && !loading && !loadFailed ? (
+					<div className="flex shrink-0 flex-wrap items-center gap-2 text-sm">
+						<a
+							href={`${savedServer}/.well-known/oauth-authorization-server`}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="rounded-md px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+						>
+							{t('metadataLink')} ↗
+						</a>
+						<button
+							type="button"
+							onClick={onOpenGuide}
+							className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-800 hover:bg-gray-50"
+						>
+							{t('openGuide')}
+						</button>
+					</div>
+				) : null}
 			</header>
-			<div id="mcp-oauth-configuration" className="mt-5 border-t border-gray-100 pt-5">
+			<div id="mcp-oauth-configuration" className="mt-5 space-y-4 border-t border-gray-100 pt-5">
 				<div role="radiogroup" aria-label={t('modeLabel')} className="grid gap-3 md:grid-cols-3">
 					{MODES.map((mode) => (
 						<label
@@ -315,51 +346,73 @@ export function McpOAuthSettings({
 						</label>
 					))}
 				</div>
-				{notice && !dirty && !error ? (
-					<p role="status" className="mt-2 text-xs text-gray-400">
-						{notice}
-					</p>
-				) : null}
 				{draft.mode === 'builtin' ? (
-					<div className="mt-4 grid gap-4 md:grid-cols-2">
-						<div>
-							<label htmlFor="mcp-oauth-issuer" className="mb-1 block text-sm font-medium text-gray-700">
-								{t('issuerLabel')}
-							</label>
-							<input
-								id="mcp-oauth-issuer"
-								type="url"
-								disabled={saving || loading || loadFailed}
-								value={draft.issuer}
-								onChange={(e) => setField({ issuer: e.target.value })}
-								placeholder={t('issuerPlaceholder')}
-								spellCheck={false}
-								autoComplete="off"
-								className="w-full rounded-lg border border-gray-200 px-3 py-2 font-mono text-sm"
-							/>
-							<p className="mt-1 text-xs leading-5 text-gray-400">{t('issuerHint')}</p>
+					<div className="rounded-lg border border-gray-200 bg-gray-50/60">
+						<div className="grid gap-4 p-4 md:grid-cols-2">
+							<div>
+								<label htmlFor="mcp-oauth-issuer" className="mb-1 block text-sm font-medium text-gray-700">
+									{t('issuerLabel')}
+								</label>
+								<input
+									id="mcp-oauth-issuer"
+									type="url"
+									disabled={saving || loading || loadFailed}
+									value={draft.issuer}
+									onChange={(e) => setField({ issuer: e.target.value })}
+									placeholder={t('issuerPlaceholder')}
+									spellCheck={false}
+									autoComplete="off"
+									className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 font-mono text-sm"
+								/>
+								<p className="mt-1.5 text-xs leading-5 text-gray-400">{t('issuerHint')}</p>
+							</div>
+							<div>
+								<label htmlFor="mcp-oauth-consent" className="mb-1 block text-sm font-medium text-gray-700">
+									{t('consentLabel')}
+								</label>
+								<input
+									id="mcp-oauth-consent"
+									type="url"
+									disabled={saving || loading || loadFailed}
+									value={draft.consentUrl}
+									onChange={(e) => setField({ consentUrl: e.target.value })}
+									placeholder={t('consentPlaceholder')}
+									spellCheck={false}
+									autoComplete="off"
+									className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 font-mono text-sm"
+								/>
+								<p className="mt-1.5 text-xs leading-5 text-gray-400">{t('consentHint')}</p>
+							</div>
 						</div>
-						<div>
-							<label htmlFor="mcp-oauth-consent" className="mb-1 block text-sm font-medium text-gray-700">
-								{t('consentLabel')}
-							</label>
-							<input
-								id="mcp-oauth-consent"
-								type="url"
+						<div className="flex items-start justify-between gap-4 border-t border-gray-200 px-4 py-3">
+							<div className="min-w-0">
+								<p id="mcp-oauth-cimd-label" className="text-sm font-medium text-gray-700">
+									{t('cimdLabel')}
+								</p>
+								<p className="mt-0.5 text-xs leading-5 text-gray-400">{t('cimdHint')}</p>
+							</div>
+							<button
+								type="button"
+								role="switch"
+								aria-checked={draft.cimd}
+								aria-labelledby="mcp-oauth-cimd-label"
 								disabled={saving || loading || loadFailed}
-								value={draft.consentUrl}
-								onChange={(e) => setField({ consentUrl: e.target.value })}
-								placeholder={t('consentPlaceholder')}
-								spellCheck={false}
-								autoComplete="off"
-								className="w-full rounded-lg border border-gray-200 px-3 py-2 font-mono text-sm"
-							/>
-							<p className="mt-1 text-xs leading-5 text-gray-400">{t('consentHint')}</p>
+								onClick={() => setField({ cimd: !draft.cimd })}
+								className={`relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 ${
+									draft.cimd ? 'bg-gray-900' : 'bg-gray-300'
+								} disabled:opacity-50`}
+							>
+								<span
+									className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
+										draft.cimd ? 'translate-x-4' : ''
+									}`}
+								/>
+							</button>
 						</div>
 					</div>
 				) : null}
 				{draft.mode === 'external' ? (
-					<div className="mt-4">
+					<div className="rounded-lg border border-gray-200 bg-gray-50/60 p-4">
 						<label htmlFor="mcp-oauth-input" className="mb-1 block text-sm font-medium text-gray-700">
 							{t('label')}
 						</label>
@@ -372,41 +425,23 @@ export function McpOAuthSettings({
 							placeholder={t('placeholder')}
 							spellCheck={false}
 							autoComplete="off"
-							className="w-full rounded-lg border border-gray-200 px-3 py-2 font-mono text-sm"
+							className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 font-mono text-sm"
 						/>
 					</div>
 				) : null}
+				{footer ? <div>{footer}</div> : null}
+				{notice && !dirty && !error ? (
+					<p role="status" className="text-xs text-emerald-700">
+						{notice}
+					</p>
+				) : null}
 				{draft.mode !== 'off' ? (
-					<div className="mt-4">
-						{savedServer && !dirty ? (
-							<p role="status" className="text-xs text-emerald-700">
-								{ui('oauthSaved')}
-							</p>
-						) : null}
-						{savedServer && !dirty ? (
-							<div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-								<button
-									type="button"
-									onClick={onOpenGuide}
-									className="font-medium text-gray-800 hover:text-gray-800 hover:underline"
-								>
-									{t('openGuide')}
-								</button>
-								{savedServer ? (
-									<a
-										href={`${savedServer}/.well-known/oauth-authorization-server`}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="text-gray-500 hover:text-gray-700 hover:underline"
-									>
-										{t('metadataLink')} ↗
-									</a>
-								) : null}
-							</div>
-						) : null}
-						<details className="mt-3 text-xs leading-5 text-gray-500">
-							<summary className="cursor-pointer text-gray-600 hover:text-gray-800">{t('learnMore')}</summary>
-							<p className="mt-2 font-medium text-gray-700">{t('howTitle')}</p>
+					<details className="group text-xs leading-5 text-gray-500">
+						<summary className="cursor-pointer select-none text-gray-600 hover:text-gray-800">
+							{t('learnMore')}
+						</summary>
+						<div className="mt-2 rounded-lg bg-gray-50 px-4 py-3">
+							<p className="font-medium text-gray-700">{t('howTitle')}</p>
 							<ol className="mt-1 list-decimal space-y-1 pl-5">
 								<li>{t('how1')}</li>
 								<li>{t('how2')}</li>
@@ -416,10 +451,9 @@ export function McpOAuthSettings({
 							{savedServer ? (
 								<p className="mt-2">{t('statusOn', { path: `${MCP_OAUTH_PROTECTED_RESOURCE_PATH}/mcp` })}</p>
 							) : null}
-						</details>
-					</div>
+						</div>
+					</details>
 				) : null}
-				{footer ? <div className="mt-5 border-t border-gray-100 pt-4">{footer}</div> : null}
 			</div>
 		</section>
 	);

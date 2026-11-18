@@ -2,7 +2,7 @@
  * `/admin/oauth/*` — 内置 MCP OAuth 授权服务器的管理接口。
  *
  * - `authorization-requests/:id`（GET）、`.../accept`、`.../reject`：同意页使用，权限 `oauth.consent`。
- * - `apps*`、`clients`：应用目录、按应用统计与撤销，权限 `oauth.read` / `oauth.write`。
+ * - `apps*`、`clients*`：应用目录、按应用统计与撤销、手工客户端签发 / 重置 secret / 删除，权限 `oauth.read` / `oauth.write`。
  * 按用户撤销见 `/admin/users/:id/oauth-access-tokens/revoke`，访问令牌明细见 `/admin/oauth-access-tokens`。
  */
 import { Hono } from 'hono';
@@ -11,7 +11,9 @@ import type { AdminEnv } from '@/lib/admin-env';
 import { requireAdminPrincipal } from '@/lib/middleware/admin-auth';
 import {
 	acceptOAuthAuthorizationRequest,
+	createManualOAuthClient,
 	createOAuthApp,
+	deleteManualOAuthClient,
 	deleteOAuthApp,
 	getAuthorizationRequest,
 	isOAuthAuthorizationRequestError,
@@ -19,6 +21,8 @@ import {
 	listOAuthClients,
 	rejectOAuthAuthorizationRequest,
 	revokeOAuthAppGrants,
+	rotateManualOAuthClientSecret,
+	updateManualOAuthClient,
 	updateOAuthApp,
 } from '@/lib/services/admin/oauth-server-service';
 import { handleAdminRouteError, jsonErr } from './error-response';
@@ -125,15 +129,55 @@ adminOAuthRoutes.post('/apps/:id/revoke', async (c) => {
 	}
 });
 
+adminOAuthRoutes.post('/apps/:id/clients', async (c) => {
+	const body = (await readJson(c)) ?? {};
+	try {
+		const data = await createManualOAuthClient(c.get('repositories'), c.req.param('id'), body);
+		return c.json(normalizeApiTimeFields({ success: true as const, data }), 201);
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to create OAuth client');
+	}
+});
+
 adminOAuthRoutes.get('/clients', async (c) => {
 	try {
 		const data = await listOAuthClients(c.get('repositories'), {
 			app_id: c.req.query('app_id'),
+			registration_method: c.req.query('registration_method'),
 			page: c.req.query('page'),
 			page_size: c.req.query('page_size'),
 		});
 		return c.json(normalizeApiTimeFields({ success: true as const, data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to list OAuth clients');
+	}
+});
+
+adminOAuthRoutes.patch('/clients/:clientId', async (c) => {
+	const body = await readJson(c);
+	if (!body) return jsonErr(c, 400, 'Invalid JSON body');
+	try {
+		const data = await updateManualOAuthClient(c.get('repositories'), c.req.param('clientId'), body);
+		return c.json(normalizeApiTimeFields({ success: true as const, data }));
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to update OAuth client');
+	}
+});
+
+adminOAuthRoutes.post('/clients/:clientId/secret', async (c) => {
+	try {
+		const data = await rotateManualOAuthClientSecret(c.get('repositories'), c.req.param('clientId'));
+		return c.json(normalizeApiTimeFields({ success: true as const, data }));
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to rotate OAuth client secret');
+	}
+});
+
+adminOAuthRoutes.delete('/clients/:clientId', async (c) => {
+	try {
+		const data = await deleteManualOAuthClient(c.get('repositories'), c.req.param('clientId'));
+		return c.json({ success: true as const, data });
+	} catch (error) {
+		return handleAdminRouteError(c, error, 'Failed to delete OAuth client');
 	}
 });

@@ -2066,7 +2066,7 @@
 				"auth": "bearer"
 			}
 		},
-		"description": "Qiniu AI Token API (api.qnaigc.com): OpenAI chat/completions, Anthropic Messages root, Gemini Vertex-compatible bypass (/bypass/vertex/v1/models, Bearer), and OpenAI Responses bypass at /bypass/openai/v1/responses (GPT models). Image generation uses chat modalities, not /images/generations. Overseas host: swap api.qnaigc.com → api.modelink.ai (same paths, including Gemini). See developer.qiniu.com/aitokenapi.",
+		"description": "Qiniu AI Token API (api.qnaigc.com): OpenAI chat/completions, Anthropic Messages root, Gemini Vertex-compatible bypass (/bypass/vertex/v1/models, Bearer), and OpenAI Responses bypass at /bypass/openai/v1/responses (GPT models). Image generation uses chat modalities, not /images/generations. Overseas users should use the Modelink template (api.modelink.ai, same paths). See developer.qiniu.com/aitokenapi.",
 		"catalog": {
 			"i18n": {
 				"zh": {
@@ -2089,6 +2089,51 @@
 			"links": {
 				"platform": "https://www.qiniu.com/products/ai-token-api",
 				"api_keys": "https://portal.qiniu.com/ai-inference"
+			}
+		}
+	},
+	{
+		"name": "Modelink",
+		"vendor_key": "modelink",
+		"endpoints": {
+			"openai": {
+				"endpoints": {
+					"chat": "https://api.modelink.ai/v1/chat/completions",
+					"responses": "https://api.modelink.ai/bypass/openai/v1/responses",
+					"images.generations": "https://api.modelink.ai/bypass/openai/v1/images/generations",
+					"images.edits": "https://api.modelink.ai/bypass/openai/v1/images/edits"
+				}
+			},
+			"anthropic": {
+				"base": "https://api.modelink.ai"
+			},
+			"gemini": {
+				"base": "https://api.modelink.ai/bypass/vertex/v1/models",
+				"auth": "bearer"
+			}
+		},
+		"description": "Modelink overseas endpoint (api.modelink.ai): OpenAI chat/completions, OpenAI Responses and Images (generations/edits) bypass under /bypass/openai/v1 (GPT models), Anthropic Messages root, and Gemini Vertex-compatible bypass (/bypass/vertex/v1/models, Bearer). Mainland China users should use the Qiniu AI template (api.qnaigc.com, same paths). Video and Fal-queue image APIs are not covered by this template. See docs.modelink.ai.",
+		"catalog": {
+			"i18n": {
+				"zh": {
+					"name": "Modelink",
+					"description": "Modelink 海外接入点（七牛云 AI 海外品牌），支持 OpenAI Chat、Responses / Images 直通、Anthropic 与 Gemini（Vertex 兼容 + Bearer）。"
+				},
+				"en": {
+					"name": "Modelink",
+					"description": "Modelink overseas endpoint with OpenAI Chat, Responses and Images bypass, Anthropic, and Gemini (Vertex-compatible, Bearer)."
+				},
+				"ja": {
+					"name": "Modelink",
+					"description": "Modelink の海外エンドポイント。OpenAI Chat、Responses / Images パススルー、Anthropic、Gemini（Vertex 互換 + Bearer）に対応しています。"
+				},
+				"ko": {
+					"name": "Modelink",
+					"description": "Modelink 해외 엔드포인트. OpenAI Chat, Responses / Images 패스스루, Anthropic, Gemini(Vertex 호환 + Bearer)를 지원합니다."
+				}
+			},
+			"links": {
+				"platform": "https://modelink.ai/"
 			}
 		}
 	},
@@ -2137,39 +2182,43 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://opencode.ai/zen/v1/chat/completions"
+					"chat": "https://opencode.ai/inference/openai/v1/chat/completions",
+					"responses": "https://opencode.ai/inference/openai/v1/responses"
 				}
 			},
 			"anthropic": {
-				"base": "https://opencode.ai/zen"
+				"base": "https://opencode.ai/inference/anthropic"
 			},
 			"gemini": {
-				"base": "https://opencode.ai/zen/v1/models"
+				"auth": "bearer",
+				"endpoints": {
+					"models.generate": "https://opencode.ai/inference/google/v1beta/models/{model}:{action}"
+				}
 			}
 		},
-		"description": "OpenCode Zen pay-as-you-go gateway (/zen/v1…): OpenAI chat/completions, Anthropic Messages (root appends /v1/messages), and Gemini models base. Do not mix with OpenCode Go (/zen/go/v1…). Some GPT models on Zen use /v1/responses instead of chat/completions—route those separately if needed. See opencode.ai/docs/zen.",
+		"description": "OpenCode Console pay-as-you-go (https://opencode.ai/inference): OpenAI chat/completions and responses, Anthropic Messages (base appends /v1/messages), and Gemini generateContent / streamGenerateContent at /google/v1beta/models/{model}:{action} with Bearer auth. No openai.base, so images, audio, and embeddings are not implied. No gemini.base, so Gemini embeddings are not derived. Do not mix with OpenCode Go (/inference/go). Text models can also be called through the other APIs; Console translates. See opencode.ai/docs/console/harnesses.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "OpenCode Zen",
-					"description": "OpenCode Zen 按量网关（/zen/v1），支持 OpenAI、Anthropic 与 Gemini；勿与 Go 套餐端点混用。"
+					"description": "OpenCode 按量端点（/inference），支持 OpenAI Chat、Responses、Anthropic，以及 Bearer 鉴权的 Gemini。勿与 Go 套餐端点混用。"
 				},
 				"en": {
 					"name": "OpenCode Zen",
-					"description": "OpenCode Zen pay-as-you-go gateway (/zen/v1) with OpenAI, Anthropic, and Gemini; do not mix with Go endpoints."
+					"description": "OpenCode pay-as-you-go endpoints (/inference) for OpenAI Chat, Responses, Anthropic, and Bearer-authenticated Gemini. Do not mix with Go."
 				},
 				"ja": {
 					"name": "OpenCode Zen",
-					"description": "OpenCode Zen 従量課金ゲートウェイ（/zen/v1）。OpenAI、Anthropic、Gemini に対応しています。Go プランのエンドポイントと混在させないでください。"
+					"description": "OpenCode の従量課金エンドポイント（/inference）。OpenAI Chat、Responses、Anthropic、Bearer 認証の Gemini に対応しています。Go プランのエンドポイントと混在させないでください。"
 				},
 				"ko": {
 					"name": "OpenCode Zen",
-					"description": "OpenCode Zen 종량제 게이트웨이(/zen/v1). OpenAI, Anthropic, Gemini를 지원합니다. Go 플랜 엔드포인트와 섞어 쓰지 마세요."
+					"description": "OpenCode 종량제 엔드포인트(/inference). OpenAI Chat, Responses, Anthropic, Bearer 인증 Gemini를 지원합니다. Go 플랜 엔드포인트와 섞어 쓰지 마세요."
 				}
 			},
 			"links": {
-				"platform": "https://opencode.ai/zen",
-				"api_keys": "https://opencode.ai/auth"
+				"platform": "https://opencode.ai/console/models",
+				"api_keys": "https://opencode.ai/console/login"
 			}
 		}
 	},
@@ -2179,36 +2228,43 @@
 		"endpoints": {
 			"openai": {
 				"endpoints": {
-					"chat": "https://opencode.ai/zen/go/v1/chat/completions"
+					"chat": "https://opencode.ai/inference/go/openai/v1/chat/completions",
+					"responses": "https://opencode.ai/inference/go/openai/v1/responses"
 				}
 			},
 			"anthropic": {
-				"base": "https://opencode.ai/zen/go"
+				"base": "https://opencode.ai/inference/go/anthropic"
+			},
+			"gemini": {
+				"auth": "bearer",
+				"endpoints": {
+					"models.generate": "https://opencode.ai/inference/go/google/v1beta/models/{model}:{action}"
+				}
 			}
 		},
-		"description": "OpenCode Go subscription-only endpoints (/zen/go/v1…): OpenAI chat/completions + Anthropic Messages. Do not mix with OpenCode Zen (/zen/v1…) or plan quota will not apply. Model list is open-coding focused (no Gemini on this template). See opencode.ai/docs/go.",
+		"description": "OpenCode Go subscription endpoints (https://opencode.ai/inference/go): OpenAI chat/completions and responses, Anthropic Messages, and Gemini generateContent / streamGenerateContent with Bearer auth. No openai.base or gemini.base, so images, audio, and embeddings are not implied. Do not mix with pay-as-you-go (/inference) or plan quota will not apply. Go expects a stable session id via x-opencode-session, or a native session header it already recognizes. See opencode.ai/docs/console/go.",
 		"catalog": {
 			"i18n": {
 				"zh": {
 					"name": "OpenCode Go",
-					"description": "OpenCode Go 订阅套餐专用端点（/zen/go/v1），支持 OpenAI 与 Anthropic；勿与 Zen 按量端点混用。"
+					"description": "OpenCode Go 订阅端点（/inference/go），支持 OpenAI Chat、Responses、Anthropic，以及 Bearer 鉴权的 Gemini。勿与按量端点混用。"
 				},
 				"en": {
 					"name": "OpenCode Go",
-					"description": "OpenCode Go subscription endpoints (/zen/go/v1) for OpenAI and Anthropic; do not mix with Zen pay-as-you-go."
+					"description": "OpenCode Go subscription endpoints (/inference/go) for OpenAI Chat, Responses, Anthropic, and Bearer-authenticated Gemini. Do not mix with pay-as-you-go."
 				},
 				"ja": {
 					"name": "OpenCode Go",
-					"description": "OpenCode Go サブスクリプション専用エンドポイント（/zen/go/v1）。OpenAI と Anthropic に対応しています。Zen の従量課金エンドポイントと混在させないでください。"
+					"description": "OpenCode Go のサブスクリプション専用エンドポイント（/inference/go）。OpenAI Chat、Responses、Anthropic、Bearer 認証の Gemini に対応しています。従量課金エンドポイントと混在させないでください。"
 				},
 				"ko": {
 					"name": "OpenCode Go",
-					"description": "OpenCode Go 구독 플랜 전용 엔드포인트(/zen/go/v1). OpenAI와 Anthropic을 지원합니다. Zen 종량제 엔드포인트와 섞어 쓰지 마세요."
+					"description": "OpenCode Go 구독 전용 엔드포인트(/inference/go). OpenAI Chat, Responses, Anthropic, Bearer 인증 Gemini를 지원합니다. 종량제 엔드포인트와 섞어 쓰지 마세요."
 				}
 			},
 			"links": {
-				"platform": "https://opencode.ai/go",
-				"api_keys": "https://opencode.ai/auth"
+				"platform": "https://opencode.ai/console/go",
+				"api_keys": "https://opencode.ai/console/login"
 			}
 		}
 	},

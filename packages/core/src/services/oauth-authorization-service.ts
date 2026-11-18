@@ -5,6 +5,7 @@
  */
 import {
 	MCP_OAUTH_AUTHORIZATION_SERVER_KEY,
+	MCP_OAUTH_CIMD_ENABLED_KEY,
 	MCP_OAUTH_CONSENT_URL_KEY,
 	MCP_OAUTH_ISSUER_KEY,
 	resolveMcpOAuthMode,
@@ -21,14 +22,15 @@ import type { GatewayRepositories } from '../storage/repositories-types';
 
 type Repos = Pick<GatewayRepositories, 'systemConfig' | 'oauthServer' | 'users'>;
 
-/** 读取当前 MCP OAuth 模式（三项 system_config）。 */
+/** 读取当前 MCP OAuth 模式（`MCP_OAUTH_*` system_config）。 */
 export async function readMcpOAuthMode(repos: Pick<GatewayRepositories, 'systemConfig'>): Promise<McpOAuthMode> {
-	const [issuer, authorizationServer, consentUrl] = await Promise.all([
+	const [issuer, authorizationServer, consentUrl, cimdEnabled] = await Promise.all([
 		repos.systemConfig.getConfig(MCP_OAUTH_ISSUER_KEY),
 		repos.systemConfig.getConfig(MCP_OAUTH_AUTHORIZATION_SERVER_KEY),
 		repos.systemConfig.getConfig(MCP_OAUTH_CONSENT_URL_KEY),
+		repos.systemConfig.getConfig(MCP_OAUTH_CIMD_ENABLED_KEY),
 	]);
-	return resolveMcpOAuthMode({ issuer, authorizationServer, consentUrl });
+	return resolveMcpOAuthMode({ issuer, authorizationServer, consentUrl, cimdEnabled });
 }
 
 export type AuthorizationRequestStatus = 'pending' | 'approved' | 'denied' | 'expired' | 'used';

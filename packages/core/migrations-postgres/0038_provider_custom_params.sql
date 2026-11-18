@@ -5,4 +5,4 @@
 
 SET search_path TO octafuse_gateway;
 
-ALTER TABLE providers ADD COLUMN custom_params TEXT;
+ALTER TABLE providers ADD COLUMN IF NOT EXISTS custom_params TEXT;

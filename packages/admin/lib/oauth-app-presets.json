@@ -12,10 +12,34 @@
     "client_name_patterns": []
   },
   {
+    "slug": "claude-code",
+    "name": "Claude Code",
+    "redirect_uris": ["http://localhost/callback"],
+    "client_name_patterns": ["claude code"]
+  },
+  {
     "slug": "codex",
     "name": "Codex",
     "redirect_uris": ["http://127.0.0.1/callback"],
     "client_name_patterns": ["codex"]
+  },
+  {
+    "slug": "cursor",
+    "name": "Cursor",
+    "redirect_uris": ["cursor://anysphere.cursor-mcp/*"],
+    "client_name_patterns": []
+  },
+  {
+    "slug": "vscode",
+    "name": "VS Code",
+    "redirect_uris": ["http://127.0.0.1/", "https://vscode.dev/redirect", "https://insiders.vscode.dev/redirect"],
+    "client_name_patterns": ["visual studio code", "vscode"]
+  },
+  {
+    "slug": "gemini-cli",
+    "name": "Gemini CLI",
+    "redirect_uris": ["http://localhost/oauth/callback"],
+    "client_name_patterns": ["gemini"]
   },
   {
     "slug": "doubao",
@@ -26,7 +50,19 @@
   {
     "slug": "workbuddy",
     "name": "WorkBuddy",
-    "redirect_uris": ["http://127.0.0.1/oauth/callback"],
+    "redirect_uris": [
+      "http://127.0.0.1/oauth/callback",
+      "https://*.tencent.com",
+      "https://*.workbuddy.cn",
+      "https://*.workbuddy.ai",
+      "https://*.codebuddy.cn"
+    ],
+    "client_name_patterns": []
+  },
+  {
+    "slug": "local-clients",
+    "name": "Local MCP clients",
+    "redirect_uris": ["http://127.0.0.1/*", "http://localhost/*", "http://[::1]/*"],
     "client_name_patterns": []
   }
 ]

@@ -74,6 +74,7 @@ export * from './db/oauth-access-tokens.repository';
 export * from './db/oauth-server.repository';
 export * from './lib/oauth-access-tokens';
 export * from './lib/oauth-server';
+export * from './lib/oauth-client-metadata';
 export * from './services/oauth-authorization-service';
 export * from './mcp/hash';
 export * from './mcp/namespace';

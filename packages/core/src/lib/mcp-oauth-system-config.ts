@@ -14,6 +14,16 @@ export const MCP_OAUTH_AUTHORIZATION_SERVER_KEY = 'MCP_OAUTH_AUTHORIZATION_SERVE
 export const MCP_OAUTH_ISSUER_KEY = 'MCP_OAUTH_ISSUER';
 /** 外部同意页地址；留空使用内置 API Key 确认页。 */
 export const MCP_OAUTH_CONSENT_URL_KEY = 'MCP_OAUTH_CONSENT_URL';
+/**
+ * 内置模式下是否接受客户端元数据文档（`client_id` 为 https URL，Gateway 出站获取元数据）。
+ * 只认 `1` / `true`，默认关闭。
+ */
+export const MCP_OAUTH_CIMD_ENABLED_KEY = 'MCP_OAUTH_CIMD_ENABLED';
+
+export function parseMcpOAuthCimdEnabled(raw: string | null | undefined): boolean {
+	const value = (raw ?? '').trim().toLowerCase();
+	return value === '1' || value === 'true';
+}
 
 /** 受保护资源元数据里声明的作用域。 */
 export const MCP_OAUTH_SCOPE = 'mcp';
@@ -62,18 +72,24 @@ export function normalizeMcpOAuthConsentUrl(raw: string | null | undefined): str
 export type McpOAuthMode =
 	| { mode: 'off' }
 	| { mode: 'external'; authorizationServer: string }
-	| { mode: 'builtin'; issuer: string; consentUrl: string | null };
+	| { mode: 'builtin'; issuer: string; consentUrl: string | null; clientIdMetadataDocuments: boolean };
 
-/** 由三项原始配置解析当前模式；内置优先于外部；非法值视为未配置。 */
+/** 由原始配置解析当前模式；内置优先于外部；非法值视为未配置。 */
 export function resolveMcpOAuthMode(raw: {
 	issuer?: string | null;
 	authorizationServer?: string | null;
 	consentUrl?: string | null;
+	cimdEnabled?: string | null;
 }): McpOAuthMode {
 	const issuer = normalizeMcpOAuthIssuer(raw.issuer);
 	if (issuer) {
 		const consentUrl = normalizeMcpOAuthConsentUrl(raw.consentUrl);
-		return { mode: 'builtin', issuer, consentUrl: consentUrl ? consentUrl : null };
+		return {
+			mode: 'builtin',
+			issuer,
+			consentUrl: consentUrl ? consentUrl : null,
+			clientIdMetadataDocuments: parseMcpOAuthCimdEnabled(raw.cimdEnabled),
+		};
 	}
 	const authorizationServer = normalizeMcpOAuthAuthorizationServer(raw.authorizationServer);
 	if (authorizationServer) return { mode: 'external', authorizationServer };

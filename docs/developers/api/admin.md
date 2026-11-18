@@ -88,7 +88,9 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/routes/pools/:poolId/sticky/reset` | POST | bump `sticky_epoch`，使本 pool 全部绑定失效 | Admin UI |
 | `/admin/playground` | POST | Routes：`routeId` 或 `routeDraft` 直连上游；Tools：`toolId`+`provider` 读 catalog 直连引擎（均可测、不计费、不写日志、无 failover） | Admin UI、运维联调 |
 | `/admin/oauth/apps`、`/:id`、`/:id/revoke` | GET, POST, PATCH, DELETE | `oauth_apps` + `oauth_access_tokens` 统计；应用目录与按应用撤销（`oauth.read` / `oauth.write`；`/:id/revoke` 的 `none` 配 `client_name` 撤销「未归属」一组） | Admin UI |
-| `/admin/oauth/clients` | GET | `oauth_clients`（可按 `app_id` 筛选） | Admin UI |
+| `/admin/oauth/apps/:id/clients` | POST | 为应用签发手工客户端（body 可选 `client_name`、`redirect_uris`），响应含一次性 `client_secret` | Admin UI |
+| `/admin/oauth/clients` | GET | `oauth_clients`（可按 `app_id`、`registration_method`（`dcr` / `manual` / `cimd`）筛选；不返回 secret 哈希，只返回 `has_client_secret`） | Admin UI |
+| `/admin/oauth/clients/:clientId`、`/:clientId/secret` | PATCH, DELETE, POST | 仅手工客户端：改名称 / 回调规则、删除（先撤销其授权）、重置 secret（响应含新的一次性 `client_secret`） | Admin UI |
 | `/admin/oauth/authorization-requests/:id`、`/:id/accept`、`/:id/reject` | GET, POST | `oauth_authorization_requests`；同意页读取请求、提交决定（`oauth.consent`；`accept` 的 body 为 `{"user_id"}`，响应 `{"redirect_uri"}`） | 门户同意页 |
 | `/admin/oauth-access-tokens`、`/revoke`、`/cleanup`、`/:id/revoke` | GET, POST | `oauth_access_tokens`（列表支持 `app_id`、`client_name`、`status=active、renewable、expired、revoked`） | Admin UI |
 | `/admin/mcp-servers` | GET, POST | `mcp_servers`（列表脱敏 URL 与鉴权头） | Admin UI |
@@ -98,6 +100,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/mcp-servers/:id/sync` | POST | 拉取目录并返回新增、变更、移除差异；新条目默认停用 | Admin UI |
 | `/admin/mcp-servers/:id/items/status` | POST | 批量 `enabled` / `disabled` | Admin UI |
 | `/admin/mcp-servers/:id/items/:itemId` | PATCH | `{ pricing }` 设置工具按次价格（`v=2`、`unit=request`、`standard`、`chargedFactor`、`meteredFactor`、空 `config`；兼容 v1 独立单价），整组替换服务价格；`null` 恢复服务默认价格 | Admin UI |
+| `/admin/mcp-servers/:id/items/accept` | POST | 批量接受待发布定义：`{ "ids": [...] }`，返回 `{ accepted, skipped }`；已不在待审状态、已移除或不存在的 id 计入 `skipped`，不会报错 | Admin UI |
 | `/admin/mcp-servers/:id/items/:itemId/accept` | POST | 接受已启用条目的待发布定义 | Admin UI |
 | `/admin/stats` | GET | 多表聚合（含 `api_key_request_logs`、`api_keys` 等） | Admin UI |
 | `/admin/config` | GET, PUT | `system_config`（含 `ROUTE_STRATEGY`、`USER_CHARGED_COST_FACTOR_MODE`） | Admin UI |
