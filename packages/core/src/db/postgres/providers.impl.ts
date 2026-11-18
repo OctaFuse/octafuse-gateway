@@ -22,6 +22,7 @@ function mapPgProviderRow(r: {
 	apiKey: string;
 	status: string;
 	note: string | null;
+	customParams: string | null;
 	createdAt: string;
 }): ProviderRow {
 	return {
@@ -32,6 +33,7 @@ function mapPgProviderRow(r: {
 		api_key: r.apiKey,
 		status: r.status,
 		note: r.note,
+		custom_params: r.customParams,
 		created_at: r.createdAt,
 	};
 }
@@ -50,12 +52,13 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 					api_key: string;
 					status: string;
 					note: string | null;
+					custom_params: string | null;
 					created_at: string;
 					routes_count: number;
 					active_routes_count: number;
 				}>
 			>`
-		SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.note, p.created_at::text,
+		SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.note, p.custom_params, p.created_at::text,
 			(SELECT COUNT(*)::int FROM model_routes WHERE provider_id = p.id) AS routes_count,
 			(SELECT COUNT(*)::int FROM model_routes WHERE provider_id = p.id AND status = 'active') AS active_routes_count
 		FROM providers p ORDER BY p.created_at DESC
@@ -68,6 +71,7 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 				api_key: r.api_key,
 				status: r.status,
 				note: r.note,
+				custom_params: r.custom_params,
 				created_at: r.created_at,
 				routes_count: Number(r.routes_count ?? 0),
 				active_routes_count: Number(r.active_routes_count ?? 0),
@@ -87,6 +91,7 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 			note: unknown;
 			apiKey?: string;
 			status?: string;
+			customParams?: string | null;
 		}): Promise<void> {
 			const now = new Date().toISOString();
 			await drizzle.insert(pgProvidersTable).values({
@@ -97,6 +102,7 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 				apiKey: params.apiKey ?? '',
 				status: params.status ?? 'active',
 				note: params.note == null ? null : String(params.note),
+				customParams: params.customParams ?? null,
 				createdAt: now,
 			});
 		},
@@ -138,12 +144,13 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 					api_key: string;
 					status: string;
 					note: string | null;
+					custom_params: string | null;
 					created_at: string;
 					routes_count: number;
 					active_routes_count: number;
 				}>
 			>`
-		SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.note, p.created_at::text,
+		SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.note, p.custom_params, p.created_at::text,
 			(SELECT COUNT(*)::int FROM model_routes WHERE provider_id = p.id) AS routes_count,
 			(SELECT COUNT(*)::int FROM model_routes WHERE provider_id = p.id AND status = 'active') AS active_routes_count
 		FROM providers p WHERE p.id = ${id}
@@ -158,6 +165,7 @@ export function createPostgresProvidersRepository(db: PostgresDatabaseClient): P
 				api_key: r.api_key,
 				status: r.status,
 				note: r.note,
+				custom_params: r.custom_params,
 				created_at: r.created_at,
 				routes_count: Number(r.routes_count ?? 0),
 				active_routes_count: Number(r.active_routes_count ?? 0),

@@ -129,6 +129,11 @@ export type AdminProviderMutationInput = {
 	status?: unknown;
 	/** 运营备注。空串或 null 清空。 */
 	note?: unknown;
+	/**
+	 * 按上游协议分组的默认 `custom_params`：`{ "<protocol>": { headers?, body? } }` 对象或 JSON 字符串，
+	 * 无 `force_override`（该字段仍只属于 Route）。创建省略 = 不配置；PATCH 省略 = 不改，`null` = 清空。
+	 */
+	custom_params?: unknown;
 	[key: string]: unknown;
 };
 
@@ -307,6 +312,11 @@ export type AdminProviderRow = {
 		referral?: string;
 	};
 	endpoints: string | null;
+	/**
+	 * 按上游协议分组的默认 `custom_params`（headers/body），无 `force_override`；原样返回已规范化的信封，
+	 * 不含明文密钥（本来就不涉及，Provider 参数不含密钥字段）。
+	 */
+	custom_params?: string | null;
 	/** 列表/详情为脱敏预览；明文仅经 `GET /:id/api-key` */
 	api_key?: string;
 	/** `active` | `disabled` */

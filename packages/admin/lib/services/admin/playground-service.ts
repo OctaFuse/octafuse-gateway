@@ -11,6 +11,7 @@ import {
 } from '@octafuse/core';
 import { isDashScopeAsyncFileAdapter } from '@octafuse/core/adapters/registry';
 import { mergeRouteRequestBody } from '@octafuse/core/route-custom-params';
+import { resolveEffectiveCustomParams } from '@octafuse/core/provider-custom-params';
 import {
 	AUDIO_SPEECH_KNOWN_KEYS,
 	AUDIO_TRANSCRIPTION_KNOWN_KEYS,
@@ -206,10 +207,19 @@ async function resolvePlaygroundRouteFields(
 	}
 	const providerEndpoints = parseProviderEndpoints(provider);
 
-	const customParams = parseJsonObject(row.custom_params);
-	if (row.custom_params && !customParams) {
+	/**
+	 * 先按原有语义校验 Route 的 `custom_params` 是否为合法 JSON——Playground 面向正在编辑配置的用户，
+	 * 草稿里的坏 JSON 应该直接报错，而不是像线上请求那样静默降级（那样用户永远不知道自己写错了）。
+	 * 校验通过后，再用与 `model-router.ts` 完全相同的 `resolveEffectiveCustomParams` 计算有效参数
+	 * （Provider 默认值 + Route 值），保证调试台预览与线上真实请求永远用同一套合并结果。
+	 */
+	const routeCustomParamsForValidation = parseJsonObject(row.custom_params);
+	if (row.custom_params && !routeCustomParamsForValidation) {
 		throw badRequest('Invalid custom_params JSON on route');
 	}
+	const customParams = resolveEffectiveCustomParams(provider.custom_params, row.custom_params, protocol, {
+		providerId: provider.id,
+	});
 
 	const model = await repos.models.getModelDetailWithRouteCounts(row.model_id);
 	if (isDraft && !model) throw badRequest('Model not found');

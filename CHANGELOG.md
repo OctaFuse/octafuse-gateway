@@ -6,8 +6,13 @@
 
 - **Gemini thought signature 兜底**：上游返回 `HTTP 400: Corrupted thought signature.` 时，也会清洗历史签名后对同一上游重试一次，与 `Invalid thought signature` 的处理一致。此前故障转移到这类上游（如部分第三方中转）后，会话历史里别家签发的签名会让请求直接失败。
 
+### Proxy
+
+- **Provider 级自定义参数**：`providers` 新增按上游协议分组的默认 `custom_params`（请求头 / 请求体），该 Provider 下所有 Route 默认生效，Route 仍可按需覆盖；不配置时行为与之前完全一致。典型场景：OpenCode 等渠道要求固定请求头、某些供应商要求固定 `max_tokens`，现在只需在 Provider 上配一次。受保护头（`Authorization`、`Content-Type` 等）与 `model` 字段仍不可被覆盖；原生透传（DashScope/MiniMax/ElevenLabs/Volcengine 的直连入口）与 WebSocket 入口的请求头可能因此变化，属于预期行为，请求体合并不变。新增迁移 `0037`，只新增可空列，默认不改变现有行为。
+
 ### Admin
 
+- **Provider 自定义参数**：Provider 编辑弹窗新增「自定义参数」页签，可按协议配置默认请求头 / 请求体；调试台预览与线上请求使用同一套合并逻辑。
 - **模型路由筛选**：模型与供应商改为两级多选，分别按模型厂商和供应商类型分组；支持整组或单项勾选、搜索、逐项移除，并在地址中保存筛选条件，兼容旧的单选筛选链接。
 - **Hy4 flash**：模型目录新增 `hy4-flash`（2026-11-16）。总参数 224B（含 64B Engram 参数），激活 12B，上下文 1M，最大输出约 64K，输入含文本和图像。刊例价：国内 ¥0.5 / ¥2 每百万 token，缓存命中 ¥0.02；国际 $0.07 / $0.281，缓存命中 $0.003；未计入 TokenHub 至 2026-11-30 的限时 5 折。`hy4-preview` 补记官方下线日期 `retired` 2026-12-07。
 - **Qwen4 Max**：模型目录新增正式版 `qwen4-max`（2026-11-16）。上下文 1M，最大输出 128K（思考与回答合计最长约 256K），输入含文本、图像和视频。刊例价：国内 ¥10 / ¥30 每百万 token，缓存命中 ¥0.5，缓存写入（5 分钟档）¥12.5；国际 $1.5 / $4.5，缓存命中 $0.075，缓存写入（5 分钟档）$1.875。思考档为 `low` / `high` / `xhigh`（默认 `high`），与预览版的 `low` / `medium` / `xhigh` 不同。`qwen4-max-preview` 仍保留，刊例价改为与 `qwen4-max` 一致（此前暂按 `qwen3.8-max` 对齐），官方预览期至 2026-11-25。

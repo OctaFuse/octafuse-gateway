@@ -108,6 +108,20 @@ export type ProtocolEndpointForm = {
 	auth: GeminiAuthFormMode;
 };
 
+/**
+ * 单协议的 Provider 级默认 `custom_params` 表单状态。没有 `force_override`（该字段仍只属于 Route）。
+ * `bodyText` 是 body 的 JSON 文本；空字符串表示未配置，保存前需校验能否 `JSON.parse`。
+ */
+export type ProtocolCustomParamsForm = {
+	headers: Array<{ name: string; value: string }>;
+	bodyText: string;
+};
+
+export const EMPTY_PROTOCOL_CUSTOM_PARAMS_FORM: ProtocolCustomParamsForm = {
+	headers: [],
+	bodyText: '',
+};
+
 export type ProviderFormData = {
 	id: string;
 	name: string;
@@ -124,6 +138,8 @@ export type ProviderFormData = {
 	minimax: ProtocolEndpointForm;
 	volcengine: ProtocolEndpointForm;
 	elevenlabs: ProtocolEndpointForm;
+	/** 按上游协议分组的默认 `custom_params` 表单状态；缺失的协议键 = 未配置。 */
+	customParams: Partial<Record<UpstreamProtocol, ProtocolCustomParamsForm>>;
 	note: string;
 };
 
@@ -173,6 +189,7 @@ export const EMPTY_PROVIDER_FORM: ProviderFormData = {
 	minimax: { ...EMPTY_PROTOCOL_FORM },
 	volcengine: { ...EMPTY_PROTOCOL_FORM },
 	elevenlabs: { ...EMPTY_PROTOCOL_FORM },
+	customParams: {},
 	note: '',
 };
 
