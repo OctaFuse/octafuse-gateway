@@ -544,7 +544,7 @@
 			"routes": "关联路由",
 			"protocols": "协议",
 			"keyAndQuota": "密钥与额度",
-			"status": "状态"
+			"status": "启用状态"
 		},
 		"title": "供应商",
 		"subtitle": "管理供应商账号、API 密钥和协议端点，为模型路由提供上游服务。",

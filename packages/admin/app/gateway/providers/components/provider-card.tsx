@@ -61,7 +61,7 @@ const STATUS_BADGE: Record<ProviderKeyStatusKind, string> = {
 
 
 export const PROVIDER_LIST_COLUMNS =
-	'xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1.4fr)_minmax(0,0.85fr)_minmax(0,0.8fr)]';
+	'xl:grid-cols-[minmax(0,1.25fr)_7rem_minmax(0,1.4fr)_minmax(0,0.85fr)_minmax(0,0.8fr)]';
 
 function routeUsageClass(routesCount: number, activeRoutesCount: number): string {
 	if (routesCount <= 0) return 'text-slate-500';
@@ -120,18 +120,29 @@ export function ProviderCard(props: ProviderCardProps) {
 	const accountTitle = formatProviderAccountLabel(provider.name, kindLabel);
 	const statusLabel =
 		keyStatus === 'key_set' ? t('keySet') : keyStatus === 'pending' ? t('pending') : t('noKey');
-	const statusControl = (
+	const statusControl = (showTrack = false) => (
 		<button
 			type="button"
 			role="switch"
 			aria-checked={isActive}
 			disabled={statusTogglingId === provider.id}
 			onClick={(event) => { event.stopPropagation(); void onToggleStatus(provider); }}
-			className={`provider-status-control pointer-events-auto inline-flex min-h-6 items-center gap-1.5 rounded px-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-wait disabled:opacity-50 ${isActive ? 'text-emerald-700 hover:bg-emerald-50' : 'text-gray-500 hover:bg-gray-200'}`}
+			className={`provider-status-control pointer-events-auto inline-flex min-h-6 items-center gap-1.5 rounded px-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-wait disabled:opacity-50 ${isList && !showTrack ? 'xl:hidden' : ''} ${isActive ? 'text-emerald-700 hover:bg-emerald-50' : 'text-gray-500 hover:bg-gray-200'}`}
 			title={isActive ? t('providerEnabled') : t('providerDisabled')}
 			aria-label={isActive ? t('providerEnabled') : t('providerDisabled')}
 		>
-			{isActive ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden /> : <PowerIcon className="h-3 w-3 shrink-0" aria-hidden />}
+			{showTrack ? (
+				<span
+					aria-hidden
+					className={`inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 motion-safe:transition-colors ${isActive ? 'bg-emerald-600' : 'bg-slate-500'}`}
+				>
+					<span className={`h-4 w-4 shrink-0 rounded-full bg-white shadow-sm motion-safe:transition-transform ${isActive ? 'translate-x-4' : ''}`} />
+				</span>
+			) : isActive ? (
+				<span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden />
+			) : (
+				<PowerIcon className="h-3 w-3 shrink-0" aria-hidden />
+			)}
 			{tFilters(isActive ? 'active' : 'disabled')}
 		</button>
 	);
@@ -186,11 +197,17 @@ export function ProviderCard(props: ProviderCardProps) {
 					</h2>
 					<div className="provider-account-meta mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5">
 						{showKind ? <span className="min-w-0 truncate text-slate-500" title={kindLabel ?? undefined}>{kindLabel}</span> : null}
-						{statusControl}
+						{statusControl()}
 					</div>
 				</div>
 				{officialUpdateButton}
 			</div>
+
+			{isList ? (
+				<div className="pointer-events-none relative z-10 order-1 hidden min-w-0 items-center xl:flex">
+					{statusControl(true)}
+				</div>
+			) : null}
 
 			<div className={`provider-route-summary relative z-10 min-w-0 ${isList ? 'order-4' : ''}`}>
 				<button
