@@ -12,7 +12,7 @@ import type { StickyRefreshIntervalMs } from '../sticky-refresh-preference';
 import type { RouteFlowDensity, RouteWorkspaceView } from '../types';
 import { RouteOptionsDialog } from './route-options-dialog';
 import { StickyRefreshControl } from './sticky-refresh-control';
-import { useRoutePricingDisplay } from '../use-route-pricing-display';
+import { useRoutePricingDisplay, useRoutePricingPeriods } from '../use-route-pricing-display';
 import { useRoutePathDisplay } from '../use-route-path-display';
 
 type Props = {
@@ -47,6 +47,7 @@ export function RouteWorkspaceHeader(props: Props) {
 	} = props;
 	const t = useTranslations('routes.workspace');
 	const [pricingDisplay, setPricingDisplay] = useRoutePricingDisplay();
+	const [pricingPeriods, setPricingPeriods] = useRoutePricingPeriods();
 	const [pathDisplay, setPathDisplay] = useRoutePathDisplay();
 
 	return (
@@ -141,6 +142,12 @@ export function RouteWorkspaceHeader(props: Props) {
 							))}
 						</div>
 					</div>
+					<label className="flex cursor-pointer items-center justify-between gap-3 text-xs text-slate-600">
+						{t('expandPricingPeriods')}
+						<input type="checkbox" checked={pricingPeriods === 'all'}
+							onChange={event => setPricingPeriods(event.target.checked ? 'all' : 'current')}
+							className="h-4 w-4 accent-gray-900" />
+					</label>
 					<div
 						className="flex flex-wrap items-center justify-between gap-3"
 						role="group"

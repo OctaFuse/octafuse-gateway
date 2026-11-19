@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState, type CSSProperties } from 'react';
 import {
 	ArrowDownIcon,
 	ArrowRightEndOnRectangleIcon,
@@ -11,6 +11,7 @@ import {
 	CircleStackIcon,
 	ArrowsUpDownIcon,
 	CheckCircleIcon,
+	ChevronRightIcon,
 	CheckIcon,
 	ClipboardDocumentIcon,
 	PencilSquareIcon,
@@ -49,6 +50,7 @@ import { FailoverRulesDialog } from './failover-rules-dialog';
 import { ProviderStickyChip } from './provider-sticky-chip';
 import { RouteStickyUsage } from './route-sticky-usage';
 import { RouteTargetPricing } from './route-target-pricing';
+import { useRoutePricingPeriods } from '../use-route-pricing-display';
 import { useRoutePathDisplay } from '../use-route-path-display';
 
 const EMPTY_STICKY_COUNTS = new Map<string, number>();
@@ -97,7 +99,7 @@ type Props = {
 };
 
 function RouteTarget({
-	listView = false,
+	density,
 	route,
 	provider,
 	stickyBindingCount,
@@ -108,7 +110,7 @@ function RouteTarget({
 	onToggleStatus,
 	onOpenStickyBindings,
 }: {
-	listView?: boolean;
+	density: PoolDensity;
 	route: RouteListRow;
 	provider: GatewayProvider | undefined;
 	stickyBindingCount: number | null;
@@ -121,6 +123,10 @@ function RouteTarget({
 }) {
 	const t = useTranslations('routes.flow');
 	const tList = useTranslations('routes.listItem');
+	const [pricingPeriods] = useRoutePricingPeriods();
+	const modelList = density === 'model-list';
+	const modelCard = density === 'model-card';
+	const listView = modelList || density === 'list';
 	const tKind = useTranslations('providers.kind');
 	const locale = useLocale();
 	const providerName =
@@ -156,9 +162,15 @@ function RouteTarget({
 		</div>
 	);
 
+	const listWeight = (
+		<span className="route-provider-list-weight inline-flex shrink-0 items-center gap-1 tabular-nums" title={t('badgeWeightTooltip', { value: route.weight ?? 1 })}>
+			<span className="text-xs text-slate-500">{t('listWeight')}</span>
+			<span className={`${modelList ? 'rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-xs leading-4' : 'text-sm'} font-semibold ${available ? 'text-slate-900' : 'text-slate-600'}`}>{route.weight ?? 1}</span>
+		</span>
+	);
 
 	const statusBadges = (
-		<div className={listView ? 'route-provider-list-status flex min-w-0 flex-wrap items-center gap-1 text-xs' : 'flex flex-wrap items-center gap-1.5'}>
+		<div className={listView ? 'route-provider-list-status flex min-w-0 flex-wrap items-center gap-1 text-xs' : modelCard ? 'flex shrink-0 flex-col items-end gap-1 text-xs' : 'flex flex-wrap items-center gap-1.5'}>
 			<button
 				type="button"
 				onClick={() => onToggleStatus(route)}
@@ -173,7 +185,7 @@ function RouteTarget({
 			</button>
 			{providerDisabled ? (
 				<span className={listView ? 'route-provider-status-reason inline-flex items-center gap-1 text-xs text-amber-700' : 'rounded border border-amber-300 bg-amber-50 px-1 py-0.5 text-center text-xs font-medium leading-3 text-amber-800'} title={t('availabilityProviderDisabledTooltip')}>
-					{listView ? <span aria-hidden className="text-slate-300">·</span> : null}
+					{density === 'list' ? <span aria-hidden className="text-slate-300">·</span> : null}
 					{t('providerDisabled')}
 				</span>
 			) : null}
@@ -204,10 +216,25 @@ function RouteTarget({
 		/>
 	);
 
+	const cardMetrics = !listView && (
+		<div className="flex shrink-0 items-center gap-1.5">
+			<span
+				className={`inline-flex h-7 min-w-8 items-center justify-center gap-1 rounded-md border px-2 text-xs font-medium tabular-nums ${available ? 'border-gray-200 bg-gray-50 text-gray-800' : 'border-slate-300 bg-slate-100 text-slate-600'}`}
+				title={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
+				aria-label={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
+			>
+				<ScaleIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+				{route.weight ?? 1}
+			</span>
+			{stickyUsage}
+		</div>
+	);
+
 	return (
 		<div
 			role="listitem"
 			data-available={available}
+			data-provider-blocked={enabled && providerDisabled || undefined}
 			className={`route-provider-target relative ${listView ? 'route-provider-list-grid w-full min-w-0 border-y border-slate-200 first:border-t-0 last:border-b-0 gap-x-3 gap-y-2 px-3 py-2.5' : 'flex w-full min-w-0 flex-col overflow-hidden rounded-xl border transition'} ${
 				available
 					? listView ? 'bg-white hover:bg-emerald-50/40' : 'border-emerald-200 bg-white shadow-[0_2px_6px_-2px_rgba(15,23,42,0.14)] hover:border-emerald-300 hover:shadow-panel'
@@ -230,55 +257,54 @@ function RouteTarget({
 								<span className="flex items-center gap-1.5">
 									<span className={`${listView ? 'route-provider-list-name ' : 'route-provider-card-name '}min-w-0 truncate text-xs font-medium group-hover:text-gray-800 ${available ? 'text-slate-900' : 'text-slate-600'}`} title={providerName}>{providerName}</span>
 								</span>
-								{showKind && !listView ? (
+								{showKind && (modelList || !listView) ? (
 									<span className="mt-0.5 block truncate text-xs leading-4 text-slate-500" title={kindLabel ?? undefined}>
 										{showKind ? kindLabel : null}
 									</span>
 								) : null}
 							</button>
-							{listView ? (
+							{density === 'list' ? (
 								<div className="route-provider-list-secondary mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5">
 									{showKind ? <span className="min-w-0 truncate text-slate-500" title={kindLabel ?? undefined}>{kindLabel}</span> : null}
 									{statusBadges}
 								</div>
 							) : null}
-							{!listView ? (
-								<div className="flex shrink-0 items-center gap-1.5">
-									<span
-										className={`inline-flex h-7 min-w-8 items-center justify-center gap-1 rounded-md border px-2 text-xs font-medium tabular-nums ${available ? 'border-gray-200 bg-gray-50 text-gray-800' : 'border-slate-300 bg-slate-100 text-slate-600'}`}
-										title={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
-										aria-label={t('badgeWeightTooltip', { value: route.weight ?? 1 })}
-									>
-										<ScaleIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-										{route.weight ?? 1}
-									</span>
-									{stickyUsage}
-								</div>
-							) : null}
+							{!listView && (modelCard ? statusBadges : cardMetrics)}
 						</div>
 					</div>
 				</div>
 				{!listView ? upstreamModel : null}
-				{listView ? <div className="route-provider-list-model min-w-0">{upstreamModel}</div> : null}
+				{listView ? (
+					<div className="route-provider-list-model min-w-0">
+						{upstreamModel}
+						{modelList && (
+							<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+								{listWeight}
+								{params.headers || params.body ? paramsBadges : null}
+							</div>
+						)}
+					</div>
+				) : null}
 				<div className={listView ? 'route-provider-list-meta' : 'mt-3 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-4'}>
-					{!listView ? statusBadges : null}
-					{listView ? (
-						<span className="route-provider-list-weight inline-flex min-w-0 items-center justify-center gap-1 tabular-nums" title={t('badgeWeightTooltip', { value: route.weight ?? 1 })} aria-label={t('badgeWeightTooltip', { value: route.weight ?? 1 })}>
-							<span className="route-provider-mobile-label mr-1 text-xs text-slate-500">{t('listWeight')}</span>
-							<span className={`text-sm font-semibold ${available ? 'text-slate-900' : 'text-slate-600'}`}>{route.weight ?? 1}</span>
-						</span>
-					) : null}
+					{modelCard ? cardMetrics : (modelList || !listView) && statusBadges}
+					{density === 'list' ? listWeight : null}
 					{!listView && (params.headers || params.body) ? paramsBadges : null}
-					{listView && stickyEnabled ? (
+					{density === 'list' && stickyEnabled ? (
 						<div className="route-provider-list-sticky flex min-w-0 items-center justify-center gap-1">
 							<span className="route-provider-mobile-label text-xs text-slate-500">{t('listStickyUsers')}</span>
 							{stickyUsage}
 						</div>
 					) : null}
-					{listView && (params.headers || params.body) ? paramsBadges : null}
+					{density === 'list' && (params.headers || params.body) ? paramsBadges : null}
 				</div>
+				{modelList && (
+					<div className="route-model-list-sticky flex items-center gap-1">
+						<span className="text-xs text-slate-500">{t('listStickyUsers')}</span>
+						{stickyUsage}
+					</div>
+				)}
 			</div>
-			<RouteTargetPricing muted={!available} compact={listView} priceOverride={route.price_override} onEdit={() => onEdit(route, 'pricing')} />
+			<RouteTargetPricing key={pricingPeriods} initiallyExpanded={pricingPeriods === 'all'} summarize={modelList || density === 'model-card'} muted={!available} compact={listView} priceOverride={route.price_override} onEdit={() => onEdit(route, 'pricing')} />
 		</div>
 	);
 }
@@ -377,15 +403,7 @@ export function openSectionStickyDialog(
 	);
 }
 
-export function RouteGroupInfo({
-	centered = false,
-	modelId,
-	routeGroup,
-	copiedModelId,
-	onCopyModelId,
-	sticky,
-}: {
-	centered?: boolean;
+type RouteGroupDetailsProps = {
 	modelId: string;
 	routeGroup: string;
 	copiedModelId: string | null;
@@ -396,12 +414,55 @@ export function RouteGroupInfo({
 		poolId: string | null;
 		onClick: () => void;
 	};
+};
+
+function routeGroupModelId(modelId: string, group: string) {
+	return group === 'default' ? modelId : `${modelId}:${group}`;
+}
+
+function RouteGroupDetails({ modelId, routeGroup, copiedModelId, onCopyModelId, sticky, modelIdLabel }: RouteGroupDetailsProps & {
+	modelIdLabel?: string;
 }) {
-	const t = useTranslations('routes.flow');
 	const tCard = useTranslations('routes.card');
-	const requestedModelId = routeGroup === 'default' ? modelId : `${modelId}:${routeGroup}`;
-	const isDefaultGroup = routeGroup === 'default';
+	const requestedModelId = routeGroupModelId(modelId, routeGroup);
 	const copied = copiedModelId === requestedModelId;
+
+	return (
+		<div className="route-group-details">
+			<div className="flex min-w-0 items-start gap-1 pt-2">
+				{modelIdLabel && <span className="shrink-0 text-xs font-semibold text-slate-600">{modelIdLabel}</span>}
+				<span className="min-w-0 flex-1 font-mono text-xs leading-[14px] text-slate-600 [overflow-wrap:anywhere]" title={requestedModelId}>
+					{requestedModelId}
+				</span>
+				<button
+					type="button"
+					onClick={() => void onCopyModelId(requestedModelId)}
+					className={`shrink-0 rounded p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${copied ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400 hover:bg-slate-100 hover:text-gray-800'}`}
+					title={copied ? tCard('copiedModelId') : tCard('copyModelId', { id: requestedModelId })}
+					aria-label={copied ? tCard('copiedModelId') : tCard('copyModelId', { id: requestedModelId })}
+				>
+					<ClipboardDocumentIcon className="h-3.5 w-3.5" />
+				</button>
+			</div>
+			{sticky ? (
+				<div className="route-group-sticky mt-2 flex min-w-0">
+					<ProviderStickyChip
+						enabled={sticky.enabled}
+						idleTtlSeconds={sticky.idleTtlSeconds}
+						poolId={sticky.poolId}
+						onClick={sticky.onClick}
+					/>
+				</div>
+			) : null}
+		</div>
+	);
+}
+
+export function RouteGroupInfo({ centered = false, ...details }: RouteGroupDetailsProps & { centered?: boolean }) {
+	const t = useTranslations('routes.flow');
+	const { routeGroup, modelId } = details;
+	const requestedModelId = routeGroupModelId(modelId, routeGroup);
+	const isDefaultGroup = routeGroup === 'default';
 
 	return (
 		<div data-default-group={isDefaultGroup} className={`route-group-node route-group-info relative w-full min-w-0 ${centered ? 'grid grid-rows-2' : ''}`} aria-label={t('routeMatchAria', { group: routeGroup, model: requestedModelId })}>
@@ -410,32 +471,7 @@ export function RouteGroupInfo({
 				<span className={`min-w-0 truncate text-xs font-medium ${isDefaultGroup ? 'text-sky-900' : 'text-violet-900'}`} title={routeGroup}>{routeGroup}</span>
 			</div>
 			<span className={`route-group-rail absolute inset-x-0 h-px ${centered ? 'top-1/2' : 'top-8'} ${isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300'}`} aria-hidden />
-			<div className="route-group-details">
-				<div className="flex min-w-0 items-start gap-1 pt-2">
-					<span className="min-w-0 flex-1 font-mono text-xs leading-[14px] text-slate-600 [overflow-wrap:anywhere]" title={requestedModelId}>
-						{requestedModelId}
-					</span>
-					<button
-						type="button"
-						onClick={() => void onCopyModelId(requestedModelId)}
-						className={`shrink-0 rounded p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${copied ? 'bg-emerald-50 text-emerald-600' : 'text-slate-400 hover:bg-slate-100 hover:text-gray-800'}`}
-						title={copied ? tCard('copiedModelId') : tCard('copyModelId', { id: requestedModelId })}
-						aria-label={copied ? tCard('copiedModelId') : tCard('copyModelId', { id: requestedModelId })}
-					>
-						<ClipboardDocumentIcon className="h-3.5 w-3.5" />
-					</button>
-				</div>
-				{sticky ? (
-					<div className="mt-2 flex min-w-0">
-						<ProviderStickyChip
-							enabled={sticky.enabled}
-							idleTtlSeconds={sticky.idleTtlSeconds}
-							poolId={sticky.poolId}
-							onClick={sticky.onClick}
-						/>
-					</div>
-				) : null}
-			</div>
+			<RouteGroupDetails {...details} />
 		</div>
 	);
 }
@@ -443,9 +479,11 @@ export function RouteGroupInfo({
 export function RequestSurfaceNode({
 	surface,
 	modelId,
+	selection,
 }: {
 	surface: Pick<RequestSurfaceGroup, 'protocol' | 'protocolLabel' | 'requestOperation'>;
 	modelId?: string;
+	selection?: { selected: boolean; panelId: string; onSelect: () => void };
 }) {
 	const t = useTranslations('routes.flow');
 	const tGuide = useTranslations('routes.modal.guide');
@@ -472,41 +510,50 @@ export function RequestSurfaceNode({
 		}
 	}
 
+	const protocolBadge = (
+		<span
+			className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded ring-1 ring-inset ${protocolBadgeClass(surface.protocol)}`}
+			title={surface.protocolLabel}
+			aria-label={surface.protocolLabel}
+		>
+			<UpstreamProtocolBrandIcon protocol={surface.protocol} />
+		</span>
+	);
+
 	return (
-		<div className="route-entry-node w-full min-w-0 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-3">
-			<div className="flex items-center justify-between gap-2">
-				<span className="inline-flex items-center gap-1.5 text-xs font-medium normal-case tracking-normal text-blue-800">
-					<ArrowRightEndOnRectangleIcon className="h-4 w-4" aria-hidden />
-					{t('requestNode')}
-				</span>
-				<div className="ml-auto flex shrink-0 items-center gap-1.5">
-					<button
-						type="button"
-						onClick={() => void copyPath()}
-						aria-label={copyStatus === 'copied' ? tCommon('copied') : tGuide('copyPath')}
-						title={copyStatus === 'copied' ? tCommon('copied') : tGuide('copyPath')}
-						className="rounded p-0.5 text-gray-700 hover:bg-gray-100 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
-					>
-						{copyStatus === 'copied' ? <CheckIcon className="h-3.5 w-3.5" aria-hidden /> : <ClipboardDocumentIcon className="h-3.5 w-3.5" aria-hidden />}
-					</button>
-					<span
-						className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded ring-1 ring-inset ${protocolBadgeClass(surface.protocol)}`}
-						title={surface.protocolLabel}
-						aria-label={surface.protocolLabel}
-					>
-						<UpstreamProtocolBrandIcon protocol={surface.protocol} />
+		<div data-selected={selection?.selected} className="route-entry-node relative w-full min-w-0 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-3">
+			{selection && (
+				<button type="button" className="route-entry-select" onClick={selection.onSelect}
+					title={`${surface.protocolLabel} · ${surfacePath}`} aria-label={`${surface.protocolLabel} · ${surfacePath}`} aria-pressed={selection.selected} aria-controls={selection.panelId} />
+			)}
+			{!selection && (
+				<div className="flex items-center justify-between gap-2">
+					<span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-800">
+						<ArrowRightEndOnRectangleIcon className="h-4 w-4" aria-hidden />
+						{t('requestNode')}
 					</span>
+					{protocolBadge}
 				</div>
-			</div>
-			<div className="mt-1.5 min-w-0">
+			)}
+			<div className={`flex min-w-0 items-center ${selection ? 'gap-1.5' : 'mt-1.5 gap-1'}`}>
+				{selection && protocolBadge}
 				<code
-					className={`block w-full min-w-0 select-text font-mono text-xs font-medium leading-4 text-gray-800 ${pathDisplay === 'full' ? 'whitespace-normal [overflow-wrap:anywhere]' : 'truncate'}`}
+					className={`block min-w-0 flex-1 select-text font-mono text-xs font-medium leading-4 text-gray-800 ${pathDisplay === 'full' ? 'whitespace-normal [overflow-wrap:anywhere]' : 'truncate'}`}
 					title={surfacePath}
 				>
 					{pathDisplay === 'full' ? surfacePath.split(/(?=\/)/).map((segment, index) => (
 						<span key={index}><wbr />{segment}</span>
 					)) : surfacePath}
 				</code>
+				<button
+					type="button"
+					onClick={() => void copyPath()}
+					aria-label={copyStatus === 'copied' ? tCommon('copied') : `${tGuide('copyPath')} · ${surfacePath}`}
+					title={copyStatus === 'copied' ? tCommon('copied') : `${tGuide('copyPath')} · ${surfacePath}`}
+					className="route-path-copy inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-700 hover:bg-gray-100 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
+				>
+					{copyStatus === 'copied' ? <CheckIcon className="h-3.5 w-3.5" aria-hidden /> : <ClipboardDocumentIcon className="h-3.5 w-3.5" aria-hidden />}
+				</button>
 			</div>
 			<span role="status" className={copyStatus === 'failed' ? 'mt-1 block text-xs text-red-600' : 'sr-only'}>
 				{copyStatus === 'failed' ? tGuide('copyFailed') : copyStatus === 'copied' ? tCommon('copied') : ''}
@@ -526,6 +573,8 @@ function strategyDisplayKey(strategy: string): string {
 	}
 	return strategy;
 }
+
+type PoolDensity = RouteFlowDensity | 'model-card' | 'model-list';
 
 function PriorityTierPanel({
 	priority,
@@ -549,7 +598,7 @@ function PriorityTierPanel({
 	priority: number;
 	routes: RouteListRow[];
 	layerIndex: number;
-	density: RouteFlowDensity;
+	density: PoolDensity;
 	section: RouteProtocolGroupSection<RouteListRow>;
 	card: RouteModelGroup;
 	meta: GatewayModel | undefined;
@@ -566,7 +615,7 @@ function PriorityTierPanel({
 }) {
 	const t = useTranslations('routes.flow');
 	const tStrategy = useTranslations('routes.strategy');
-	const isList = density === 'list';
+	const isList = density === 'list' || density === 'model-list';
 	const availableCount = routes.filter(route => isRouteConfigurationAvailable(route, providerMeta.get(route.provider_id))).length;
 	const strategy = resolveEffectiveRouteStrategy({
 		poolStrategy: section.poolStrategy,
@@ -587,75 +636,87 @@ function PriorityTierPanel({
 			? tStrategy(`display.${displayKey}`)
 			: strategy.strategy;
 	const sourceLabel = t(`strategySource.${strategy.source}`);
-	const layerLabel = layerIndex === 0 ? t('firstAttempt') : t('fallbackLayer');
+	const layerLabel = t(layerIndex === 0 ? 'firstAttempt' : 'fallbackLayer');
 
 	return (
-		<div className="w-full min-w-0">
+		<div className="route-priority-tier w-full min-w-0" data-preferred={layerIndex === 0 || undefined}>
 			<div className={isList ? `route-priority-heading flex min-w-0 flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2 ${layerIndex > 0 ? 'border-t border-t-slate-200' : ''}` : 'route-priority-heading mb-3 flex min-w-0 flex-wrap items-center gap-2 px-0.5 py-1'}>
-				<span
-					className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 text-gray-900"
-					title={t('badgePriorityTooltip', { value: priority })}
-					aria-label={t('badgePriorityTooltip', { value: priority })}
-				>
-					<ArrowsUpDownIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-					<span className="text-sm font-semibold tabular-nums">{priority}</span>
-				</span>
-				{layerIndex > 0 ? (
-					<button type="button" onClick={onOpenFailover} title={t('failoverRules')} aria-label={t('failoverRules')} className="inline-flex items-center gap-1 rounded text-xs font-medium text-slate-600 hover:text-gray-800 focus-visible:outline-gray-500">
-						<ArrowDownIcon className="h-3 w-3" aria-hidden />
-						{layerLabel}
-					</button>
-				) : <span className="text-xs font-medium text-slate-700">{layerLabel}</span>}
-				<span
-					className={`text-xs tabular-nums ${availableCount > 0 ? 'text-slate-500' : 'font-medium text-amber-700'}`}
-					title={t('tierAvailableTooltip', {
-						active: availableCount,
-						total: routes.length,
-					})}
-				>
-					{t('tierActiveTotal', {
-						active: availableCount,
-						total: routes.length,
-					})}
-				</span>
-				<span className={isList ? 'min-w-3 flex-1' : 'h-px min-w-3 flex-1 bg-slate-200'} aria-hidden />
-				<div
-					className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5"
-				>
-					<button
-						type="button"
-						onClick={() =>
-							onOpenStrategyDialog(
-								card.model_id,
-								card.title,
-								section.protocol,
-								section.protocolLabel,
-								section.group,
-								section.poolId,
-								section.poolStrategy,
-								section.requestOperation,
-								{
-									priority,
-									poolTierStrategies: section.poolTierStrategies,
-								}
-							)
-						}
-						className={`inline-flex max-w-full items-center gap-1 rounded px-1 py-0.5 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${isList ? 'text-slate-500 hover:bg-white hover:text-gray-800' : 'text-gray-800 hover:bg-gray-50 hover:text-gray-900'}`}
-						title={t('tierStrategyEdit', {
-							strategy: displayName,
-							source: sourceLabel,
+				<div className="route-tier-label contents">
+					<span
+						className="route-tier-number inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 text-gray-900"
+						title={t('badgePriorityTooltip', { value: priority })}
+						aria-label={t('badgePriorityTooltip', { value: priority })}
+					>
+						{density !== 'model-list' && <ArrowsUpDownIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+						<span className="text-sm font-semibold tabular-nums">{priority}</span>
+					</span>
+					{layerIndex > 0 ? (
+						<button type="button" onClick={onOpenFailover} title={t('failoverRules')} aria-label={t('failoverRules')} className="inline-flex items-center gap-1 rounded text-xs font-medium text-slate-600 hover:text-gray-800 focus-visible:outline-gray-500">
+							{density !== 'model-list' && <ArrowDownIcon className="route-fallback-direction h-3 w-3" aria-hidden />}
+							{layerLabel}
+						</button>
+					) : <span className="text-xs font-medium text-slate-700">{layerLabel}</span>}
+				</div>
+				<div className="route-tier-details contents">
+					<span
+						className={`route-tier-availability text-xs tabular-nums ${availableCount > 0 ? 'text-slate-500' : 'font-medium text-amber-700'}`}
+						title={t('tierAvailableTooltip', {
+							active: availableCount,
+							total: routes.length,
 						})}
 					>
-						<span className="truncate">{displayName}</span>
-						<PencilSquareIcon className="h-3 w-3 shrink-0 text-gray-500" />
-					</button>
+						{density === 'model-list' && <>{t('availableShort')} </>}
+						{t('tierActiveTotal', {
+							active: availableCount,
+							total: routes.length,
+						})}
+					</span>
+					{density !== 'model-card' && (
+						<span className={density === 'list' ? 'min-w-3 flex-1' : 'h-px min-w-0 flex-1 bg-slate-200'} aria-hidden />
+					)}
+					<div
+						className="route-tier-strategy ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5"
+					>
+						{density === 'model-list' && <span className="shrink-0 text-xs text-slate-500">{t('allocationStrategy')}</span>}
+						<button
+							type="button"
+							onClick={() =>
+								onOpenStrategyDialog(
+									card.model_id,
+									card.title,
+									section.protocol,
+									section.protocolLabel,
+									section.group,
+									section.poolId,
+									section.poolStrategy,
+									section.requestOperation,
+									{
+										priority,
+										poolTierStrategies: section.poolTierStrategies,
+									}
+								)
+							}
+							className={`inline-flex max-w-full items-center gap-1 rounded px-1 py-0.5 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${isList ? 'text-slate-500 hover:bg-white hover:text-gray-800' : 'text-gray-800 hover:bg-gray-50 hover:text-gray-900'}`}
+							title={t('tierStrategyEdit', {
+								strategy: displayName,
+								source: sourceLabel,
+							})}
+						>
+							<span className="truncate">{displayName}</span>
+							<PencilSquareIcon className="h-3 w-3 shrink-0 text-gray-500" />
+						</button>
+					</div>
 				</div>
 			</div>
 
+
 			<div className={isList ? 'route-provider-list-body flex min-w-0 flex-col gap-1.5 bg-white' : 'route-provider-card-grid'} role="list" aria-label={t('listProvider')}>
+				{density === 'model-card' && layerIndex > 0 && (
+					<ChevronRightIcon className="route-tier-connector" aria-hidden />
+				)}
 				{routes.map((route) => (
 					<RouteTarget
-						listView={isList}
+						density={density}
 						key={route.id}
 						route={route}
 						provider={providerMeta.get(route.provider_id)}
@@ -682,7 +743,7 @@ type UpstreamPoolPanelProps = {
 	meta: GatewayModel | undefined;
 	providerMeta: Map<string, GatewayProvider>;
 	globalRouteStrategy: string | null;
-	density: RouteFlowDensity;
+	density: PoolDensity;
 	togglingId: string | null;
 	onEdit: Props['onEdit'];
 	onToggleStatus: Props['onToggleStatus'];
@@ -730,23 +791,34 @@ export function UpstreamPoolPanel({
 		);
 	}, [stickyPoolId, stickySummary]);
 
-	const isList = density === 'list';
-
 	return (
 		<>
 			<div
 				className={
-					isList
-						? 'route-upstream-pool route-provider-list flex min-w-0 flex-col items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_3px_10px_-2px_rgba(15,23,42,0.22)]'
+					density === 'model-list' ? 'route-provider-list route-model-provider-list min-w-0'
+					: density === 'list' ? 'route-upstream-pool route-provider-list flex min-w-0 flex-col items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_3px_10px_-2px_rgba(15,23,42,0.22)]'
+						: density === 'model-card' ? 'route-card-tiers'
 						: `route-upstream-pool route-provider-card-group flex min-w-0 flex-col gap-5 rounded-xl border border-slate-300/70 border-l-[3px] p-3 sm:p-4 ${section.group === 'default' ? 'border-l-sky-300' : 'border-l-violet-300'}`
 				}
 				role="group"
 				data-route-group={section.group}
+				data-paired={density === 'model-card' && priorityLayers.length === 2 && priorityLayers[1][1].length === 1
+					? (priorityLayers[0][1].length === 1 ? 'equal' : 'single-fallback') : undefined}
 				aria-label={t('routeGroupProviders', { group: section.group })}
 			>
+				{density === 'model-list' && priorityLayers.length > 0 && (
+					<div className="route-model-list-columns text-xs font-medium text-slate-600">
+						<span>{t('listProviderAccount')}</span>
+						<span>{t('listUpstreamModel')}</span>
+						<span>{t('listStatus')}</span>
+						<span className="text-center">{t('listStickyUsers')}</span>
+						<span>{t('pricingDetails')}</span>
+					</div>
+				)}
 				{priorityLayers.map(([priority, routes], layerIndex) => (
 					<div
 						key={priority}
+						data-single={routes.length === 1}
 						className="min-w-0"
 					>
 						<PriorityTierPanel
@@ -776,176 +848,91 @@ export function UpstreamPoolPanel({
 	);
 }
 
-function FlowBranch({
-	section,
-	card,
-	meta,
-	providerMeta,
-	globalRouteStrategy,
-	density,
-	branchIndex,
-	branchCount,
-	copiedModelId,
-	togglingId,
-	onCopyModelId,
-	onCreate,
-	onEdit,
-	onToggleStatus,
-	onOpenStrategyDialog,
-	onOpenProviderStickyDialog,
-}: UpstreamPoolPanelProps & {
-	branchIndex: number;
-	branchCount: number;
-	copiedModelId: string | null;
-	onCopyModelId: (modelId: string) => void;
-	onCreate: Props['onCreate'];
-	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
-}) {
+type FlowSectionProps = Omit<Props, 'onEditModel' | 'onCreate'> & {
+	surfaceGroups: RequestSurfaceGroup[];
+	surface: RequestSurfaceGroup;
+	selectSurface: (key: string) => void;
+	section: RouteProtocolGroupSection<RouteListRow>;
+	selectGroup: (group: string) => void;
+};
+
+function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGroup, card, density, providerMeta, copiedModelId, onCopyModelId, ...pool }: FlowSectionProps) {
 	const t = useTranslations('routes.flow');
 	const tKind = useTranslations('providers.kind');
 	const locale = useLocale();
-	const isDefaultGroup = section.group === 'default';
-	const groupRail = isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300';
-	const singleGroup = branchCount === 1;
-	const railClass = branchIndex === 0 ? 'top-14 bottom-0'
-		: branchIndex === branchCount - 1 ? 'top-0 bottom-[calc(100%-3.5rem)]' : 'inset-y-0';
+	const id = useId();
+	const tabId = (index: number) => `${id}-tab-${index}`;
+	const routes = section.routes;
+	const sections = surface.sections;
+	const groupSelector = (
+		<div role="tablist" aria-label={t('routeGroup')} className="route-card-group-switch">
+			{sections.map((item, index) => {
+				const active = item.routes.filter(route => isRouteConfigurationAvailable(route, providerMeta.get(route.provider_id))).length;
+				const total = item.routes.length;
+				const isSelected = item.key === section.key;
+				const hint = t('tierAvailableTooltip', { active, total });
+				return (
+					<button key={item.key} id={tabId(index)} type="button" role="tab" aria-selected={isSelected}
+						aria-controls={`${id}-panel`} tabIndex={isSelected ? 0 : -1}
+						className="route-card-group-tab" title={hint}
+						onClick={() => selectGroup(item.group)}
+						onKeyDown={event => {
+							let next: number;
+							switch (event.key) {
+								case 'ArrowRight': next = (index + 1) % sections.length; break;
+								case 'ArrowLeft': next = (index - 1 + sections.length) % sections.length; break;
+								case 'Home': next = 0; break;
+								case 'End': next = sections.length - 1; break;
+								default: return;
+							}
+							event.preventDefault();
+							selectGroup(sections[next].group);
+							document.getElementById(tabId(next))?.focus();
+						}}>
+						<span className="truncate">{item.group}</span>
+						<span className="text-xs font-normal tabular-nums" aria-label={hint}>
+							{t('tierActiveTotal', { active, total })}
+						</span>
+					</button>
+				);
+			})}
+		</div>
+	);
 
 	return (
-		<div className="route-flow-branch relative py-3 xl:pl-4">
-			{!singleGroup ? <span className={`absolute left-0 hidden w-px bg-gray-300 xl:block ${railClass}`} aria-hidden /> : null}
-			<span
-				className={`absolute left-0 hidden h-px w-4 bg-gray-300 xl:block ${singleGroup ? 'top-1/2' : 'top-14'}`}
-				aria-hidden
-			/>
-			<div className={`route-flow-branch-layout grid min-w-0 gap-y-3 xl:grid-cols-[minmax(160px,200px)_minmax(0,1fr)] ${singleGroup ? 'xl:items-center' : 'xl:items-start'}`}>
-				<div className={`route-flow-group relative flex min-w-0 flex-col xl:pr-8 ${singleGroup ? '' : 'mt-3'}`}>
-					<RouteGroupInfo
-						centered={singleGroup}
-						modelId={card.model_id}
-						routeGroup={section.group}
-						copiedModelId={copiedModelId}
-						onCopyModelId={onCopyModelId}
+		<section className="route-card-surface" aria-label={t('routeGroupProviders', { group: section.group })}
+			data-compact-targets={density === 'list' || routes.length > 2 ? undefined : routes.length}>
+			<div className="route-surface-toolbar">
+				<div role="group" aria-label={t('requestNode')} className="route-entry-picker">
+					<h3 className="text-xs font-semibold text-slate-600">{t('requestNode')}</h3>
+					<div className="route-entry-options">
+						{surfaceGroups.map(item => (
+							<RequestSurfaceNode key={item.key} surface={item} modelId={card.model_id}
+								selection={{ selected: item.key === surface.key, panelId: id, onSelect: () => selectSurface(item.key) }} />
+						))}
+					</div>
+				</div>
+				<div id={id} className="route-group-toolbar">
+					<div className="route-group-bookmarks">
+						<span className="text-xs font-semibold text-slate-600">{t('routeGroup')}</span>
+						{groupSelector}
+					</div>
+					<RouteGroupDetails modelId={card.model_id} routeGroup={section.group} copiedModelId={copiedModelId} onCopyModelId={onCopyModelId}
+						modelIdLabel={t('modelIdLabel')}
 						sticky={{
 							enabled: section.poolStickyEnabled,
 							idleTtlSeconds: section.poolStickyIdleTtlSeconds,
 							poolId: section.poolId,
-							onClick: () =>
-								openSectionStickyDialog(
-									onOpenProviderStickyDialog,
-									card,
-									section,
-									providerMeta,
-									locale,
-									tKind('custom'),
-								),
+							onClick: () => openSectionStickyDialog(pool.onOpenProviderStickyDialog, card, section, providerMeta, locale, tKind('custom')),
 						}}
 					/>
-					<FlowConnectorAdd
-						alignTop={!singleGroup}
-						railClass={groupRail}
-						label={t('addProvider')}
-						onClick={() =>
-							onCreate(card.model_id, {
-								protocol: section.protocol,
-								operation: section.requestOperation,
-								group: section.group,
-							})
-						}
-					/>
-				</div>
-				<UpstreamPoolPanel
-					section={section}
-					card={card}
-					meta={meta}
-					providerMeta={providerMeta}
-					globalRouteStrategy={globalRouteStrategy}
-					density={density}
-					togglingId={togglingId}
-					onEdit={onEdit}
-					onToggleStatus={onToggleStatus}
-					onOpenStrategyDialog={onOpenStrategyDialog}
-					onOpenProviderStickyDialog={onOpenProviderStickyDialog}
-				/>
-			</div>
-		</div>
-	);
-}
-
-function FlowSection({
-	surface,
-	card,
-	meta,
-	providerMeta,
-	globalRouteStrategy,
-	density,
-	copiedModelId,
-	togglingId,
-	onCopyModelId,
-	onCreate,
-	onEdit,
-	onToggleStatus,
-	onOpenStrategyDialog,
-	onOpenProviderStickyDialog,
-}: {
-	surface: RequestSurfaceGroup;
-	card: RouteModelGroup;
-	meta: GatewayModel | undefined;
-	providerMeta: Map<string, GatewayProvider>;
-	globalRouteStrategy: string | null;
-	density: RouteFlowDensity;
-	copiedModelId: string | null;
-	togglingId: string | null;
-	onCopyModelId: (modelId: string) => void;
-	onCreate: Props['onCreate'];
-	onEdit: Props['onEdit'];
-	onToggleStatus: Props['onToggleStatus'];
-	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
-	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
-}) {
-	const t = useTranslations('routes.flow');
-
-	return (
-		<div className="px-3 sm:px-4">
-			<div className="xl:grid xl:grid-cols-[minmax(152px,184px)_minmax(0,1fr)]">
-				<div className="route-flow-entry relative flex min-w-0 flex-col justify-center py-3 xl:pr-8">
-					<RequestSurfaceNode surface={surface} modelId={card.model_id} />
-					<FlowConnectorAdd
-						railClass="bg-gray-300"
-						label={t('addRouteGroup')}
-						onClick={() =>
-							onCreate(card.model_id, {
-								protocol: surface.protocol,
-								operation: surface.requestOperation,
-								group: '',
-							})
-						}
-					/>
-				</div>
-				<div>
-					{surface.sections.map((section, branchIndex) => (
-						<FlowBranch
-							key={section.key}
-							section={section}
-							card={card}
-							meta={meta}
-							providerMeta={providerMeta}
-							globalRouteStrategy={globalRouteStrategy}
-							density={density}
-							branchIndex={branchIndex}
-							branchCount={surface.sections.length}
-							copiedModelId={copiedModelId}
-							togglingId={togglingId}
-							onCopyModelId={onCopyModelId}
-							onCreate={onCreate}
-							onEdit={onEdit}
-							onToggleStatus={onToggleStatus}
-							onOpenStrategyDialog={onOpenStrategyDialog}
-							onOpenProviderStickyDialog={onOpenProviderStickyDialog}
-						/>
-					))}
 				</div>
 			</div>
-		</div>
+			<div id={`${id}-panel`} role="tabpanel" aria-labelledby={tabId(sections.indexOf(section))} className="route-card-upstreams"
+				style={density === 'list' ? undefined : { '--route-count': routes.length } as CSSProperties}>
+				<UpstreamPoolPanel key={section.key} {...pool} density={density === 'list' ? 'model-list' : 'model-card'} card={card} section={section} providerMeta={providerMeta} />
+			</div>
+		</section>
 	);
 }
 
@@ -977,59 +964,58 @@ export function RouteModelFlow(props: Props) {
 	const sections = splitRoutesByProtocolAndRouteGroup(card.groupRoutes);
 	const surfaceGroups = groupSectionsByRequestSurface(sections);
 
+	const [selectedKey, setSelectedKey] = useState<string | null>(null);
+	const surface = surfaceGroups.find(item => item.key === selectedKey) ?? surfaceGroups[0];
+
+	const [selectedGroups, setSelectedGroups] = useState<Record<string, string>>({});
+	const section = surface?.sections.find(item => item.group === selectedGroups[surface.key])
+		?? surface?.sections.find(item => item.group === 'default') ?? surface?.sections[0];
+
 	return (
-		<article className={`route-model-panel ${density === 'list' ? 'route-flow-list-layout route-model-list-layout ' : ''}overflow-hidden rounded-xl border border-gray-200 bg-white`}>
-			<header className="route-model-heading flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 bg-white px-4 py-4 sm:px-5">
+		<article className="route-model-panel overflow-hidden rounded-xl border border-gray-200 bg-white">
+			<header className="route-model-heading grid gap-3 border-b border-gray-100 bg-white px-4 py-4 sm:px-5">
 				<div className="min-w-0 flex-1">
-					<div className="flex min-w-0 flex-wrap items-center gap-2">
-						<span className="route-model-symbol" aria-hidden><ModelIcon className="h-4 w-4" /></span>
-						<button
-							type="button"
-							onClick={() => onEditModel(card.model_id)}
-							className="route-model-name truncate text-left text-base font-medium text-gray-900 underline-offset-2 hover:text-gray-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
-						>
-							{card.title}
-						</button>
-						<div className="flex shrink-0 items-center gap-0.5">
-							<button
-								type="button"
-								onClick={() => void onCopyModelId(card.model_id)}
-								className={`rounded-md p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${copiedModelId === card.model_id ? 'bg-emerald-50 text-emerald-600' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'}`}
-								title={copiedModelId === card.model_id ? t('copiedModelId') : t('copyModelId', { id: card.model_id })}
-							>
-								<ClipboardDocumentIcon className="h-4 w-4" />
-							</button>
+					<div className="flex items-center justify-between gap-3">
+						<div className="flex min-w-0 flex-wrap items-center gap-2">
+							<span className="route-model-symbol" aria-hidden><ModelIcon className="h-4 w-4" /></span>
 							<button
 								type="button"
 								onClick={() => onEditModel(card.model_id)}
-								className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 								title={t('editModel', { title: card.title })}
+								className="route-model-name truncate text-left text-base font-medium text-gray-900 underline-offset-2 hover:text-gray-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 							>
-								<PencilSquareIcon className="h-4 w-4" />
+								{card.title}
 							</button>
+							<span className="text-xs text-gray-500">{stats}</span>
+							{tags.slice(0, 4).map((tag) => (
+								<span key={tag} className={`rounded px-1.5 py-0.5 text-xs font-medium ${tagBadgeClass(tag)}`}>
+									{tag}
+								</span>
+							))}
 						</div>
-					</div>
-					<div className="mt-1 flex min-w-0 flex-wrap items-center gap-2">
-						<span className="min-w-0 font-mono text-xs text-gray-500 [overflow-wrap:anywhere]">{card.model_id}</span>
-						<span className="text-gray-300">·</span>
-						<span className="text-xs text-gray-500">{stats}</span>
-						<span className="border-l border-gray-200 pl-2 text-xs tabular-nums text-gray-500" title={t('routeSummaryHint')}>
-							{t('routeSummary', { active: card.activeCount, total: card.groupRoutes.length })}
-						</span>
-						{tags.slice(0, 4).map((tag) => (
-							<span key={tag} className={`rounded px-1.5 py-0.5 text-xs font-medium ${tagBadgeClass(tag)}`}>
-								{tag}
-							</span>
-						))}
+						{surface && section && (
+							<button type="button" className="route-model-add-provider"
+								aria-label={tFlow('addProvider')} title={tFlow('addProvider')}
+								onClick={() => onCreate(card.model_id, {
+								protocol: surface.protocol,
+								operation: surface.requestOperation,
+								group: section.group,
+							})}>
+								<PlusIcon aria-hidden className="h-4 w-4" />
+							</button>
+						)}
 					</div>
 				</div>
 			</header>
 
-			<div className={`route-model-surfaces ${density === 'list' ? 'route-model-list-surfaces' : 'divide-y divide-slate-300/80'} bg-gray-50 px-3 py-3 sm:px-4`}>
-				{surfaceGroups.length ? surfaceGroups.map((surface) => (
-					<FlowSection
-						key={surface.key}
+			<div className="route-model-surfaces route-model-card-surfaces">
+				{surface && section ? (
+					<ModelSurface
+						surfaceGroups={surfaceGroups}
 						surface={surface}
+						selectSurface={setSelectedKey}
+						section={section}
+						selectGroup={group => setSelectedGroups(previous => ({ ...previous, [surface.key]: group }))}
 						card={card}
 						meta={meta}
 						providerMeta={providerMeta}
@@ -1038,13 +1024,12 @@ export function RouteModelFlow(props: Props) {
 						copiedModelId={copiedModelId}
 						togglingId={togglingId}
 						onCopyModelId={onCopyModelId}
-						onCreate={onCreate}
 						onEdit={onEdit}
 						onToggleStatus={onToggleStatus}
 						onOpenStrategyDialog={onOpenStrategyDialog}
 						onOpenProviderStickyDialog={onOpenProviderStickyDialog}
 					/>
-				)) : (
+				) : (
 					<div className="flex min-h-20 items-center justify-center py-5 text-sm font-medium text-gray-400">
 						{tFlow('noProviders')}
 					</div>
