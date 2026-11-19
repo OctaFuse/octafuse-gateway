@@ -134,18 +134,42 @@
 	background: #f4f3fc;
 }
 .providers-design-workspace .provider-account[data-view='cards'] {
-	gap: 16px;
+	gap: 12px;
 	padding: 16px;
 }
 .providers-design-workspace .provider-account[data-view='cards'] .provider-capabilities {
-	padding: 12px;
+	padding: 8px 10px;
 	border-radius: 10px;
 	background: #f7f8fa;
+}
+.providers-design-workspace .provider-account[data-view='cards'] .provider-protocol-tile {
+	gap: 6px;
+	padding-block: 2px;
+}
+.providers-design-workspace .provider-account[data-view='cards'] .provider-protocol-symbol {
+	width: 20px;
+	height: 20px;
+	padding: 3px;
 }
 .providers-design-workspace .provider-account[data-view='cards'] .provider-key-well {
 	order: 4;
 	width: auto;
 	margin: 0;
+}
+.providers-design-workspace .provider-account[data-view='cards'] .provider-key-well > div {
+	width: 100%;
+	flex-wrap: nowrap;
+}
+.providers-design-workspace .provider-account[data-view='cards'] .provider-key-well[data-key-status='pending'] {
+	border-color: #f3d28a;
+	background: #fffae8;
+}
+.providers-design-workspace .provider-account[data-view='cards'] .provider-key-well[data-key-status='no_key'] {
+	border-color: #f1b6bf;
+	background: #fff1f3;
+}
+.providers-design-workspace .provider-account[data-view='cards'] .provider-key-well:is([data-key-status='pending'], [data-key-status='no_key']) .provider-key-label {
+	font-weight: 600;
 }
 .providers-design-workspace .provider-account[data-view='cards'] .provider-route-summary {
 	order: 3;

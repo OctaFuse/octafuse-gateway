@@ -10,19 +10,18 @@ import {
 	SpeakerWaveIcon,
 	CircleStackIcon,
 	ArrowsUpDownIcon,
-	CheckCircleIcon,
 	ChevronRightIcon,
 	CheckIcon,
 	ClipboardDocumentIcon,
 	PencilSquareIcon,
 	PlusIcon,
-	PowerIcon,
 	ScaleIcon,
 } from '@heroicons/react/24/outline';
 import { routeModelBillingLabel } from '../route-model-summary';
 import { providerAccountIdentity, providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provider-kind';
 import { useLocale, useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
+import { StatusSwitchTrack } from '@/components/status-switch-track';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
 import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
@@ -122,7 +121,6 @@ function RouteTarget({
 	onOpenStickyBindings: () => void;
 }) {
 	const t = useTranslations('routes.flow');
-	const tList = useTranslations('routes.listItem');
 	const [pricingPeriods] = useRoutePricingPeriods();
 	const modelList = density === 'model-list';
 	const modelCard = density === 'model-card';
@@ -169,23 +167,23 @@ function RouteTarget({
 		</span>
 	);
 
-	const statusBadges = (
-		<div className={listView ? 'route-provider-list-status flex min-w-0 flex-wrap items-center gap-1 text-xs' : modelCard ? 'flex shrink-0 flex-col items-end gap-1 text-xs' : 'flex flex-wrap items-center gap-1.5'}>
+	const routeStatus = (
+		<div className={`flex flex-col gap-1 text-xs ${listView ? 'route-provider-list-status min-w-0 items-start' : modelCard ? 'shrink-0 items-end' : 'items-start'}`}>
 			<button
 				type="button"
+				role="switch"
+				aria-checked={enabled}
+				aria-label={t('toggleRouteStatus', { model: route.provider_model_name })}
 				onClick={() => onToggleStatus(route)}
 				disabled={togglingId === route.id}
-				aria-pressed={enabled}
-				className={`inline-flex items-center gap-1 rounded font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-wait disabled:opacity-50 ${listView ? `route-provider-status-toggle ${available ? 'text-emerald-700 hover:bg-emerald-50' : 'text-slate-500 hover:bg-slate-200/70'}` : `px-1.5 py-0.5 ${available ? 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200/70 hover:bg-emerald-100' : enabled ? 'bg-white text-slate-600 ring-1 ring-inset ring-slate-300 hover:bg-slate-200' : 'bg-gray-100 text-gray-500 ring-1 ring-inset ring-gray-200 hover:bg-gray-200'}`}`}
-				title={`${availabilityHint} · ${enabled ? tList('routeEnabled') : tList('routeDisabled')}`}
-				aria-label={enabled ? tList('routeEnabled') : tList('routeDisabled')}
+				className={`route-provider-status-toggle inline-flex min-h-6 items-center gap-1.5 whitespace-nowrap rounded px-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-wait disabled:opacity-50 ${enabled ? 'text-emerald-700 hover:bg-emerald-50' : 'text-slate-600 hover:bg-slate-200/70'}`}
+				title={availabilityHint}
 			>
-				{available ? listView ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden /> : <CheckCircleIcon className="h-3 w-3" aria-hidden /> : <PowerIcon className="h-3 w-3 shrink-0" aria-hidden />}
-				{available ? t('availableShort') : enabled ? t('enabledShort') : t('disabledShort')}
+				<StatusSwitchTrack checked={enabled} compact={!listView} />
+				{t(enabled ? 'enabledShort' : 'disabledShort')}
 			</button>
 			{providerDisabled ? (
-				<span className={listView ? 'route-provider-status-reason inline-flex items-center gap-1 text-xs text-amber-700' : 'rounded border border-amber-300 bg-amber-50 px-1 py-0.5 text-center text-xs font-medium leading-3 text-amber-800'} title={t('availabilityProviderDisabledTooltip')}>
-					{density === 'list' ? <span aria-hidden className="text-slate-300">·</span> : null}
+				<span className="route-provider-status-reason rounded border border-amber-200 bg-amber-50 px-1 text-xs font-medium leading-4 text-amber-800" title={t('availabilityProviderDisabledTooltip')}>
 					{t('providerDisabled')}
 				</span>
 			) : null}
@@ -266,10 +264,10 @@ function RouteTarget({
 							{density === 'list' ? (
 								<div className="route-provider-list-secondary mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5">
 									{showKind ? <span className="min-w-0 truncate text-slate-500" title={kindLabel ?? undefined}>{kindLabel}</span> : null}
-									{statusBadges}
+									{routeStatus}
 								</div>
 							) : null}
-							{!listView && (modelCard ? statusBadges : cardMetrics)}
+							{!listView && (modelCard ? routeStatus : cardMetrics)}
 						</div>
 					</div>
 				</div>
@@ -286,7 +284,7 @@ function RouteTarget({
 					</div>
 				) : null}
 				<div className={listView ? 'route-provider-list-meta' : 'mt-3 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-4'}>
-					{modelCard ? cardMetrics : (modelList || !listView) && statusBadges}
+					{modelCard ? cardMetrics : (modelList || !listView) && routeStatus}
 					{density === 'list' ? listWeight : null}
 					{!listView && (params.headers || params.body) ? paramsBadges : null}
 					{density === 'list' && stickyEnabled ? (

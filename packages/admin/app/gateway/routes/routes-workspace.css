@@ -407,27 +407,12 @@
 .routes-design-workspace .route-provider-list-summary {
 	display: block;
 }
-.routes-design-workspace .route-provider-list-status {
-	margin-left: 0;
-	padding-top: 0;
-	justify-content: flex-start;
-	gap: 4px;
-}
-.routes-design-workspace .route-provider-status-toggle {
-	min-height: 24px;
-	gap: 4px;
-	padding: 0 4px;
-	white-space: nowrap;
-}
 .routes-design-workspace .route-provider-list-secondary > .route-provider-list-status:first-child {
 	margin-left: -4px;
 }
 .routes-design-workspace .route-provider-list-secondary > span + .route-provider-list-status {
 	border-left: 1px solid #dfe3e8;
 	padding-left: 4px;
-}
-.routes-design-workspace .route-provider-status-reason {
-	min-height: 24px;
 }
 .routes-design-workspace .route-provider-list-meta > * + * {
 	border-color: #e5e7eb;
@@ -625,15 +610,6 @@
 	border: 0;
 	border-bottom: 1px solid #e3e5e9;
 }
-.route-model-provider-list .route-provider-list-status {
-	flex-flow: column nowrap;
-	align-items: flex-start;
-	gap: 0;
-}
-.route-model-provider-list .route-provider-status-reason {
-	min-height: 0;
-	padding-inline-start: 4px;
-}
 .route-model-provider-list .route-provider-list-meta {
 	gap: 4px 8px;
 }
@@ -678,7 +654,7 @@
 @container route-providers (36rem <= width < 64rem) {
 	.route-model-provider-list .route-provider-list-grid {
 		grid-template-areas: "provider status pricing" "model sticky pricing";
-		grid-template-columns: minmax(0, 1fr) minmax(5rem, 0.35fr) minmax(15rem, 1.1fr);
+		grid-template-columns: minmax(0, 1fr) minmax(7rem, 0.35fr) minmax(15rem, 1.1fr);
 	}
 	.route-model-provider-list .route-provider-list-meta,
 	.route-model-provider-list .route-model-list-sticky {
@@ -727,7 +703,7 @@
 	.route-model-provider-list .route-model-list-columns,
 	.route-model-provider-list .route-provider-list-grid {
 		display: grid;
-		grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(6rem, 0.65fr) 4rem minmax(17rem, 1.4fr);
+		grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(7rem, 0.65fr) 4rem minmax(17rem, 1.4fr);
 		column-gap: 12px;
 		padding-inline: 12px;
 	}
