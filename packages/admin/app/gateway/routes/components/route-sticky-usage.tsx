@@ -82,7 +82,7 @@ export function RouteStickyUsage({
 							? 'text-sm font-semibold'
 							: 'text-xs font-medium text-slate-400'
 						: 'text-sm font-medium'
-				} tabular-nums`}
+				} route-sticky-count tabular-nums`}
 			>
 				{enabled ? displayCount : '—'}
 			</span>

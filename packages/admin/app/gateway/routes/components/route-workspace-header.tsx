@@ -12,13 +12,12 @@ import type { StickyRefreshIntervalMs } from '../sticky-refresh-preference';
 import type { RouteFlowDensity, RouteWorkspaceView } from '../types';
 import { RouteOptionsDialog } from './route-options-dialog';
 import { StickyRefreshControl } from './sticky-refresh-control';
-import { useRoutePricingDisplay } from '../use-route-pricing-display';
+import { useRoutePricingDisplay, useRoutePricingPeriods } from '../use-route-pricing-display';
 import { useRoutePathDisplay } from '../use-route-path-display';
 
 type Props = {
 	visibleModelCount: number;
 	visibleRouteCount: number;
-	availableRouteCount: number;
 	density: RouteFlowDensity;
 	onDensityChange: (density: RouteFlowDensity) => void;
 	view: RouteWorkspaceView;
@@ -38,7 +37,6 @@ export function RouteWorkspaceHeader(props: Props) {
 	const {
 		visibleModelCount,
 		visibleRouteCount,
-		availableRouteCount,
 		density,
 		onDensityChange,
 		view,
@@ -47,6 +45,7 @@ export function RouteWorkspaceHeader(props: Props) {
 	} = props;
 	const t = useTranslations('routes.workspace');
 	const [pricingDisplay, setPricingDisplay] = useRoutePricingDisplay();
+	const [pricingPeriods, setPricingPeriods] = useRoutePricingPeriods();
 	const [pathDisplay, setPathDisplay] = useRoutePathDisplay();
 
 	return (
@@ -60,15 +59,6 @@ export function RouteWorkspaceHeader(props: Props) {
 					{t('surfaceCounts', { models: visibleModelCount, routes: visibleRouteCount })}
 				</p>
 			</div>
-            <div className="route-coverage-summary" title={t('coverageHint')}>
-                <div className="flex items-baseline justify-between gap-3 text-xs text-gray-500">
-                    <span>{t('coverageTitle')}</span>
-                    <span className="font-mono text-lg font-medium tabular-nums text-gray-900">{availableRouteCount}<span className="ml-1 text-xs font-normal text-gray-400">/ {visibleRouteCount}</span></span>
-                </div>
-                <div className="mt-2 flex h-1.5 overflow-hidden rounded-full bg-gray-100" role="meter" aria-label={t('coverageHint')} aria-valuemin={0} aria-valuemax={visibleRouteCount || 1} aria-valuenow={availableRouteCount}>
-                    <span className="h-full rounded-full bg-emerald-500" style={{width: `${visibleRouteCount ? availableRouteCount / visibleRouteCount * 100 : 0}%`}} />
-                </div>
-            </div>
 			<div className="flex min-w-0 flex-wrap items-center gap-1 sm:justify-end sm:gap-3">
 				<div className="flex items-center gap-2" role="group" aria-label={t('organizationLabel')}>
 					<div className={VIEW_SWITCH_GROUP_CLASS}>
@@ -141,6 +131,12 @@ export function RouteWorkspaceHeader(props: Props) {
 							))}
 						</div>
 					</div>
+					<label className="flex cursor-pointer items-center justify-between gap-3 text-xs text-slate-600">
+						{t('expandPricingPeriods')}
+						<input type="checkbox" checked={pricingPeriods === 'all'}
+							onChange={event => setPricingPeriods(event.target.checked ? 'all' : 'current')}
+							className="h-4 w-4 accent-gray-900" />
+					</label>
 					<div
 						className="flex flex-wrap items-center justify-between gap-3"
 						role="group"

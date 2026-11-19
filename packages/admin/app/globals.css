@@ -141,22 +141,6 @@
   width: 100%;
 }
 
-/* Separate request surfaces with breathing room and a quiet, inset rule. */
-.route-model-list-surfaces > * + * {
-  position: relative;
-  margin-top: 1rem;
-  padding-top: 1.25rem;
-}
-
-.route-model-list-surfaces > * + *::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  inset-inline: 1rem;
-  height: 1px;
-  background: #e4e4e7;
-}
-
 .route-provider-list-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -347,24 +331,6 @@
 
   .route-flow-list-layout .route-group-details > :last-child {
     margin-top: 0;
-  }
-}
-
-/* Keep model metadata readable before the narrow header actions. */
-@media (max-width: 639px) {
-  .route-model-list-layout > header {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .route-model-list-layout > header > div {
-    width: 100%;
-  }
-
-  .route-model-list-layout > header > :last-child {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
   }
 }
 

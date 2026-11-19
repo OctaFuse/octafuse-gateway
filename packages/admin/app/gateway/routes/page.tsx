@@ -20,7 +20,7 @@ import { RouteVendorGroup } from './components/route-vendor-group';
 import { useCatalogView } from '../components/use-catalog-view';
 import { RouteWorkspaceHeader } from './components/route-workspace-header';
 import { RouteSurfaceCatalog, UnroutedModelsPanel } from './components/route-surface-catalog';
-import { isRouteConfigurationAvailable, buildRouteSurfaceCatalog } from './route-utils';
+import { buildRouteSurfaceCatalog } from './route-utils';
 import {
 	readStickyRefreshInterval,
 	subscribeStickyRefreshInterval,
@@ -100,8 +100,6 @@ function RoutesContent() {
 		return { vendorGroups, unrouted };
 	}, [state.routeCardVendorGroups, state.routeCards]);
 
-	const availableRouteCount = state.routeCards.reduce((count, card) => count + card.groupRoutes.filter(route => isRouteConfigurationAvailable(route, state.providerMeta.get(route.provider_id))).length, 0);
-
 	if (state.isLoading) {
 		return (
 			<div className="flex min-h-full items-center justify-center bg-gray-50">
@@ -146,7 +144,6 @@ function RoutesContent() {
 				<RouteWorkspaceHeader
 					visibleModelCount={state.visibleModelCount}
 					visibleRouteCount={state.visibleRouteCount}
-					availableRouteCount={availableRouteCount}
 					density={density}
 					onDensityChange={setDensity}
 					view={workspaceView}

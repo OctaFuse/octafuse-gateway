@@ -4,45 +4,48 @@ import { useSyncExternalStore } from 'react';
 
 export type RoutePricingDisplay = 'effective' | 'configured';
 
-const STORAGE_KEY = 'octafuse.admin.routes.pricingDisplay';
-const CHANGE_EVENT = 'octafuse-admin-routes-pricing-display';
-let memoryFallback: RoutePricingDisplay | undefined;
+function createPricingPreference<T extends string>(storageKey: string, defaultValue: T, alternateValue: T) {
+	const event = storageKey + '.change';
+	let memoryFallback: T | undefined;
 
-function readDisplay(): RoutePricingDisplay {
-	if (memoryFallback) return memoryFallback;
-	if (typeof window === 'undefined') return 'effective';
-	try {
-		return window.localStorage.getItem(STORAGE_KEY) === 'configured' ? 'configured' : 'effective';
-	} catch {
-		return 'effective';
+	function read(): T {
+		if (memoryFallback !== undefined) return memoryFallback;
+		try {
+			return window.localStorage.getItem(storageKey) === alternateValue ? alternateValue : defaultValue;
+		} catch {
+			return defaultValue;
+		}
 	}
-}
 
-function subscribe(onChange: () => void) {
-	window.addEventListener('storage', onChange);
-	window.addEventListener(CHANGE_EVENT, onChange);
-	return () => {
-		window.removeEventListener('storage', onChange);
-		window.removeEventListener(CHANGE_EVENT, onChange);
+	function write(value: T) {
+		try {
+			window.localStorage.setItem(storageKey, value);
+			memoryFallback = undefined;
+		} catch {
+			memoryFallback = value;
+		}
+		window.dispatchEvent(new Event(event));
+	}
+
+	function subscribe(onChange: () => void) {
+		window.addEventListener('storage', onChange);
+		window.addEventListener(event, onChange);
+		return () => {
+			window.removeEventListener('storage', onChange);
+			window.removeEventListener(event, onChange);
+		};
+	}
+
+	const serverSnapshot = () => defaultValue;
+	return function usePreference() {
+		return [useSyncExternalStore(subscribe, read, serverSnapshot), write] as const;
 	};
 }
 
-function serverSnapshot(): RoutePricingDisplay {
-	return 'effective';
-}
+export const useRoutePricingDisplay = createPricingPreference<RoutePricingDisplay>(
+	'octafuse.admin.routes.pricingDisplay', 'effective', 'configured',
+);
 
-function writeDisplay(display: RoutePricingDisplay) {
-	try {
-		window.localStorage.setItem(STORAGE_KEY, display);
-		memoryFallback = undefined;
-	} catch {
-		memoryFallback = display;
-		// Keep switching available when preference persistence is blocked.
-	}
-	window.dispatchEvent(new Event(CHANGE_EVENT));
-}
-
-export function useRoutePricingDisplay() {
-	const display = useSyncExternalStore(subscribe, readDisplay, serverSnapshot);
-	return [display, writeDisplay] as const;
-}
+export const useRoutePricingPeriods = createPricingPreference(
+	'octafuse.admin.routes.pricingPeriods', 'current', 'all',
+);

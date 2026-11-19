@@ -140,6 +140,7 @@ export function UnroutedModelsPanel({
 
 	return (
 		<details
+			open
 			className="group mt-3 rounded-lg border border-amber-200/70 bg-amber-50/50 px-3 py-2"
 			title={t('unroutedHint')}
 		>
