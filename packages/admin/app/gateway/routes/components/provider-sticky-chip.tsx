@@ -10,6 +10,7 @@ type Props = {
 	idleTtlSeconds: number;
 	poolId?: string | null;
 	disabled?: boolean;
+	showLabel?: boolean;
 	onClick: () => void;
 };
 
@@ -22,7 +23,7 @@ function ChipSep() {
 }
 
 export function ProviderStickyChip(props: Props) {
-	const { enabled, idleTtlSeconds, poolId, disabled, onClick } = props;
+	const { enabled, idleTtlSeconds, poolId, disabled, showLabel = true, onClick } = props;
 	const t = useTranslations('routes.providerSticky');
 	const ttl = formatStickyIdleTtlShort(idleTtlSeconds);
 	const summary = useStickySummary(enabled ? poolId : null);
@@ -48,9 +49,13 @@ export function ProviderStickyChip(props: Props) {
 					: 'inline-flex max-w-full items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 shadow-sm ring-1 ring-inset ring-slate-300 transition hover:bg-slate-200/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-not-allowed disabled:opacity-50'
 			}
 		>
-			<LinkIcon className="h-3 w-3 shrink-0" aria-hidden />
-			<span className="truncate">{t('chipLabel')}</span>
-			<ChipSep />
+			{showLabel && (
+				<>
+					<LinkIcon className="h-3 w-3 shrink-0" aria-hidden />
+					<span className="truncate">{t('chipLabel')}</span>
+					<ChipSep />
+				</>
+			)}
 			{enabled ? (
 				<>
 					<ClockIcon className="h-3 w-3 shrink-0" aria-hidden />

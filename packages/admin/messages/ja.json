@@ -1324,7 +1324,8 @@
 			"displaySettings": "表示設定"
 		},
 		"flow": {
-			"modelIdLabel": "モデル ID：",
+			"modelIdLabel": "モデル ID",
+			"stickyConfigLabel": "固定設定",
 			"requestNode": "リクエスト入口",
 			"catalogColumnSurface": "リクエスト入口",
 			"catalogColumnModel": "モデル",
@@ -1372,7 +1373,6 @@
 			"addRoute": "ルートを追加",
 			"noProviders": "利用可能なプロバイダーがありません",
 			"listPriority": "優先度",
-			"allocationStrategy": "割り当て方式",
 			"firstAttempt": "最初の試行",
 			"fallback": "失敗時に続行",
 			"fallbackLayer": "フォールバック",

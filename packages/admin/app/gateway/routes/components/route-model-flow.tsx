@@ -295,7 +295,7 @@ function RouteTarget({
 					) : null}
 					{density === 'list' && (params.headers || params.body) ? paramsBadges : null}
 				</div>
-				{modelList && (
+				{modelList && stickyEnabled && (
 					<div className="route-model-list-sticky flex items-center gap-1">
 						<span className="text-xs text-slate-500">{t('listStickyUsers')}</span>
 						{stickyUsage}
@@ -418,8 +418,9 @@ function routeGroupModelId(modelId: string, group: string) {
 	return group === 'default' ? modelId : `${modelId}:${group}`;
 }
 
-function RouteGroupDetails({ modelId, routeGroup, copiedModelId, onCopyModelId, sticky, modelIdLabel }: RouteGroupDetailsProps & {
+function RouteGroupDetails({ modelId, routeGroup, copiedModelId, onCopyModelId, sticky, modelIdLabel, stickyLabel }: RouteGroupDetailsProps & {
 	modelIdLabel?: string;
+	stickyLabel?: string;
 }) {
 	const tCard = useTranslations('routes.card');
 	const requestedModelId = routeGroupModelId(modelId, routeGroup);
@@ -444,7 +445,9 @@ function RouteGroupDetails({ modelId, routeGroup, copiedModelId, onCopyModelId, 
 			</div>
 			{sticky ? (
 				<div className="route-group-sticky mt-2 flex min-w-0">
+					{stickyLabel && <span className="text-xs font-semibold text-slate-600">{stickyLabel}</span>}
 					<ProviderStickyChip
+						showLabel={!stickyLabel}
 						enabled={sticky.enabled}
 						idleTtlSeconds={sticky.idleTtlSeconds}
 						poolId={sticky.poolId}
@@ -669,13 +672,12 @@ function PriorityTierPanel({
 							total: routes.length,
 						})}
 					</span>
-					{density !== 'model-card' && (
+					{density !== 'model-card' && density !== 'model-list' && (
 						<span className={density === 'list' ? 'min-w-3 flex-1' : 'h-px min-w-0 flex-1 bg-slate-200'} aria-hidden />
 					)}
 					<div
 						className="route-tier-strategy ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5"
 					>
-						{density === 'model-list' && <span className="shrink-0 text-xs text-slate-500">{t('allocationStrategy')}</span>}
 						<button
 							type="button"
 							onClick={() =>
@@ -800,6 +802,7 @@ export function UpstreamPoolPanel({
 				}
 				role="group"
 				data-route-group={section.group}
+				data-sticky-enabled={(density === 'model-list' && section.poolStickyEnabled) || undefined}
 				data-paired={density === 'model-card' && priorityLayers.length === 2 && priorityLayers[1][1].length === 1
 					? (priorityLayers[0][1].length === 1 ? 'equal' : 'single-fallback') : undefined}
 				aria-label={t('routeGroupProviders', { group: section.group })}
@@ -809,7 +812,7 @@ export function UpstreamPoolPanel({
 						<span>{t('listProviderAccount')}</span>
 						<span>{t('listUpstreamModel')}</span>
 						<span>{t('listStatus')}</span>
-						<span className="text-center">{t('listStickyUsers')}</span>
+						{section.poolStickyEnabled && <span className="text-center">{t('listStickyUsers')}</span>}
 						<span>{t('pricingDetails')}</span>
 					</div>
 				)}
@@ -898,7 +901,7 @@ function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGr
 	);
 
 	return (
-		<section className="route-card-surface" aria-label={t('routeGroupProviders', { group: section.group })}
+		<section className="route-card-surface route-model-surface-columns" aria-label={t('routeGroupProviders', { group: section.group })}
 			data-compact-targets={density === 'list' || routes.length > 2 ? undefined : routes.length}>
 			<div id={id} className="route-surface-toolbar">
 				<div role="group" aria-label={t('requestNode')} className="route-entry-picker">
@@ -915,7 +918,7 @@ function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGr
 					{groupSelector}
 				</div>
 				<RouteGroupDetails modelId={card.model_id} routeGroup={section.group} copiedModelId={copiedModelId} onCopyModelId={onCopyModelId}
-					modelIdLabel={t('modelIdLabel')}
+					modelIdLabel={t('modelIdLabel')} stickyLabel={t('stickyConfigLabel')}
 					sticky={{
 						enabled: section.poolStickyEnabled,
 						idleTtlSeconds: section.poolStickyIdleTtlSeconds,

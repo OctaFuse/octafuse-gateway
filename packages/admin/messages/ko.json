@@ -1324,7 +1324,8 @@
 			"displaySettings": "표시 설정"
 		},
 		"flow": {
-			"modelIdLabel": "모델 ID:",
+			"modelIdLabel": "모델 ID",
+			"stickyConfigLabel": "고정 설정",
 			"requestNode": "요청 진입점",
 			"catalogColumnSurface": "요청 진입점",
 			"catalogColumnModel": "모델",
@@ -1372,7 +1373,6 @@
 			"addRoute": "라우트 추가",
 			"noProviders": "사용 가능한 공급자가 없습니다",
 			"listPriority": "우선순위",
-			"allocationStrategy": "분배 전략",
 			"firstAttempt": "첫 시도",
 			"fallback": "실패 시 계속",
 			"fallbackLayer": "대체",

@@ -1324,7 +1324,8 @@
 			"displaySettings": "显示设置"
 		},
 		"flow": {
-			"modelIdLabel": "Model ID：",
+			"modelIdLabel": "模型 ID",
+			"stickyConfigLabel": "粘性配置",
 			"requestNode": "请求入口",
 			"catalogColumnSurface": "请求入口",
 			"catalogColumnModel": "模型",
@@ -1372,7 +1373,6 @@
 			"addRoute": "添加路由",
 			"noProviders": "当前没有可用供应商",
 			"listPriority": "优先级",
-			"allocationStrategy": "分配策略",
 			"firstAttempt": "首选",
 			"fallback": "失败后继续",
 			"fallbackLayer": "回退",

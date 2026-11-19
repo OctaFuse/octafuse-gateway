@@ -97,41 +97,46 @@
 .route-model-card-surfaces:lang(zh) {
 	--route-label-width: 3rem;
 }
+.route-model-surface-columns {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 20px;
+}
+.route-surface-toolbar {
+	display: grid;
+	min-width: 0;
+	align-content: start;
+	gap: 12px;
+	padding-bottom: 20px;
+	border-bottom: 1px dashed var(--route-panel-border);
+}
 .route-entry-picker,
-.route-group-bookmarks {
+.route-group-bookmarks,
+.route-surface-toolbar .route-group-details > div {
 	display: grid;
 	grid-template-columns: var(--route-label-width) minmax(0, 1fr);
 	align-items: center;
 	min-width: 0;
 	gap: 10px;
 }
-.route-surface-toolbar {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
-	gap: 12px;
-	margin-bottom: 12px;
-	padding-bottom: 8px;
-	border-bottom: 1px solid #e4e8ec;
+.route-entry-picker {
+	align-items: start;
+}
+.route-entry-picker > h3 {
+	padding-top: 7px;
 }
 .route-entry-options {
-	display: flex;
-	gap: 6px;
+	display: grid;
 	min-width: 0;
-	overflow-x: auto;
-	padding: 3px;
-	margin: -3px;
-	scroll-snap-type: x proximity;
-	scroll-padding-inline: 3px;
+	gap: 6px;
 }
 .route-entry-options .route-entry-node {
-	flex: none;
-	width: max-content;
-	max-width: min(18rem, 100%);
+	width: 100%;
+	min-width: 0;
 	padding: 3px 7px;
-	border-color: var(--route-panel-border);
+	border-color: transparent;
 	border-radius: 7px;
-	background: white;
-	scroll-snap-align: start;
+	background: #f5f6f8;
 }
 .route-entry-options .route-entry-node:hover {
 	border-color: #90a1b4;
@@ -183,30 +188,31 @@
 	min-width: 0;
 }
 .route-surface-toolbar > .route-group-details {
-	grid-column: 1 / -1;
-	display: flex;
-	min-width: 0;
-	align-items: center;
-	gap: 14px;
+	display: grid;
+	align-content: start;
+	gap: 8px;
+	margin-top: 8px;
+	padding-top: 20px;
+	border-top: 1px dashed var(--route-panel-border);
 }
-.route-surface-toolbar > .route-group-details > div {
-	align-items: center;
-	margin-block: 0;
+.route-surface-toolbar .route-group-details > div {
+	margin: 0;
 	padding: 0;
 }
-.route-surface-toolbar .route-group-sticky {
-	flex: none;
-	margin-inline-start: auto;
+.route-surface-toolbar .route-group-details > :first-child {
+	grid-template-columns: var(--route-label-width) minmax(0, 1fr) auto;
 }
-@container route-model (min-width: 80rem) {
-	.route-surface-toolbar {
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		align-items: center;
-		column-gap: 20px;
+.route-surface-toolbar .route-group-sticky > button {
+	justify-self: start;
+}
+@container route-model (min-width: 48rem) {
+	.route-model-surface-columns {
+		grid-template-columns: clamp(17rem, 28%, 22rem) minmax(0, 1fr);
 	}
-	.route-group-bookmarks {
-		padding-inline-start: 20px;
-		border-inline-start: 1px solid var(--route-panel-border);
+	.route-surface-toolbar {
+		padding: 4px 20px 4px 0;
+		border-bottom: 0;
+		border-inline-end: 1px dashed var(--route-panel-border);
 	}
 }
 .route-card-group-tab {
@@ -241,7 +247,7 @@
 .route-card-group-switch {
 	display: flex;
 	min-width: 0;
-	overflow-x: auto;
+	flex-wrap: wrap;
 }
 .route-card-group-switch[role='tablist'] {
 	gap: 6px;
@@ -600,6 +606,9 @@
 	height: 24px;
 	padding-inline: 4px;
 }
+.route-model-provider-list[data-sticky-enabled] {
+	--route-sticky-column: 4rem;
+}
 .route-model-list-columns {
 	display: none;
 }
@@ -622,6 +631,9 @@
 	line-height: 1.5rem;
 }
 @container route-providers (width < 64rem) {
+	.route-model-provider-list:not([data-sticky-enabled]) .route-provider-list-model {
+		grid-column: 1 / span 2;
+	}
 	.route-model-provider-list .route-provider-list-content {
 		display: contents;
 	}
@@ -654,7 +666,7 @@
 @container route-providers (36rem <= width < 64rem) {
 	.route-model-provider-list .route-provider-list-grid {
 		grid-template-areas: "provider status pricing" "model sticky pricing";
-		grid-template-columns: minmax(0, 1fr) minmax(7rem, 0.35fr) minmax(15rem, 1.1fr);
+		grid-template-columns: minmax(0, 1fr) 6.5rem minmax(15rem, 1.1fr);
 	}
 	.route-model-provider-list .route-provider-list-meta,
 	.route-model-provider-list .route-model-list-sticky {
@@ -703,7 +715,7 @@
 	.route-model-provider-list .route-model-list-columns,
 	.route-model-provider-list .route-provider-list-grid {
 		display: grid;
-		grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(7rem, 0.65fr) 4rem minmax(17rem, 1.4fr);
+		grid-template-columns: clamp(12rem, 22%, 20rem) minmax(0, 1fr) 6.5rem var(--route-sticky-column,) clamp(18rem, 35%, 30rem);
 		column-gap: 12px;
 		padding-inline: 12px;
 	}

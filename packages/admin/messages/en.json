@@ -1324,7 +1324,8 @@
 			"displaySettings": "Display settings"
 		},
 		"flow": {
-			"modelIdLabel": "Model ID:",
+			"modelIdLabel": "Model ID",
+			"stickyConfigLabel": "Sticky settings",
 			"requestNode": "Surface",
 			"catalogColumnSurface": "Surface",
 			"catalogColumnModel": "Model",
@@ -1372,7 +1373,6 @@
 			"addRoute": "Add route",
 			"noProviders": "No providers available",
 			"listPriority": "Priority",
-			"allocationStrategy": "Allocation strategy",
 			"firstAttempt": "First attempt",
 			"fallback": "On failure, continue",
 			"fallbackLayer": "Fallback",
