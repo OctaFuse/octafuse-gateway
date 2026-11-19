@@ -138,7 +138,13 @@
 	border-radius: 6px;
 	background: #fafbfc;
 }
-.route-entry-options .route-entry-node:hover {
+.route-entry-options .route-entry-node[data-selected='false'],
+.route-card-group-switch .route-card-group-tab[aria-selected='false'] {
+	border-style: dashed;
+	border-color: #c5cdd6;
+}
+.route-entry-options .route-entry-node[data-selected='false']:hover,
+.route-card-group-switch .route-card-group-tab[aria-selected='false']:hover {
 	border-color: #90a1b4;
 }
 .route-entry-options .route-entry-node[data-selected='true'],

@@ -165,8 +165,8 @@ export function RouteTargetPricing({
 							<button key={position} type="button" aria-expanded={false} onClick={() => setExpanded(true)}
 								title={`${period} · ${t('pricingDetails')}`}
 								className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-1.5 rounded py-1 text-left text-xs text-slate-600 hover:text-slate-900">
-								<span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-									<span className="me-2 inline-flex items-center gap-1">
+								<span className={`flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 ${compact ? 'justify-end' : ''}`}>
+									<span className={`inline-flex items-center gap-1 ${compact ? 'me-auto' : 'me-2'}`}>
 										<ClockIcon className="h-3.5 w-3.5" aria-hidden />{windows.length ? modal('catalogScheduleNow') : period}
 									</span>
 									{configuredView && <span className="inline-flex items-center gap-1.5">{t('pricingProviderFactor')}{providerChip}</span>}
