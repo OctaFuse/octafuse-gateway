@@ -5,10 +5,6 @@
 	border-radius: 16px;
 	box-shadow: 0 1px 2px rgb(24 24 27 / 2%);
 }
-.routes-design-workspace .route-coverage-summary {
-	width: 168px;
-	margin-inline: auto;
-}
 .routes-design-workspace .route-vendor-section {
 	min-width: 0;
 	padding: 16px;
@@ -186,38 +182,21 @@
 	container: route-card-upstreams / inline-size;
 	min-width: 0;
 }
-.route-group-toolbar {
-	display: grid;
-	gap: 6px;
-	min-width: 0;
-}
-.route-group-toolbar .route-group-details {
+.route-surface-toolbar > .route-group-details {
+	grid-column: 1 / -1;
 	display: flex;
 	min-width: 0;
 	align-items: center;
+	gap: 14px;
 }
-.route-group-toolbar .route-group-details {
-	flex-wrap: wrap;
-	gap: 6px 14px;
-}
-.route-group-toolbar .route-group-details > div {
+.route-surface-toolbar > .route-group-details > div {
 	align-items: center;
 	margin-block: 0;
 	padding: 0;
 }
-.route-group-toolbar .route-group-sticky {
+.route-surface-toolbar .route-group-sticky {
+	flex: none;
 	margin-inline-start: auto;
-}
-@container route-model (min-width: 60rem) {
-	.route-group-toolbar {
-		grid-template-columns: fit-content(45%) minmax(0, 1fr);
-		align-items: center;
-		gap: 16px;
-	}
-	.route-group-toolbar .route-group-details {
-		border-inline-start: 1px solid var(--route-panel-border);
-		padding-inline-start: 16px;
-	}
 }
 @container route-model (min-width: 80rem) {
 	.route-surface-toolbar {
@@ -225,7 +204,7 @@
 		align-items: center;
 		column-gap: 20px;
 	}
-	.route-group-toolbar {
+	.route-group-bookmarks {
 		padding-inline-start: 20px;
 		border-inline-start: 1px solid var(--route-panel-border);
 	}
@@ -579,10 +558,6 @@
 	}
 	.routes-design-workspace .route-workspace-toolbar > :last-child {
 		width: 100%;
-	}
-	.routes-design-workspace .route-coverage-summary {
-		width: 128px;
-		margin-inline: 0;
 	}
 	.routes-design-workspace .route-model-surfaces {
 		padding: 12px;

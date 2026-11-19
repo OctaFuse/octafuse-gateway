@@ -226,7 +226,7 @@ function RouteTarget({
 				<ScaleIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
 				{route.weight ?? 1}
 			</span>
-			{stickyUsage}
+			{stickyEnabled && stickyUsage}
 		</div>
 	);
 
@@ -902,7 +902,7 @@ function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGr
 	return (
 		<section className="route-card-surface" aria-label={t('routeGroupProviders', { group: section.group })}
 			data-compact-targets={density === 'list' || routes.length > 2 ? undefined : routes.length}>
-			<div className="route-surface-toolbar">
+			<div id={id} className="route-surface-toolbar">
 				<div role="group" aria-label={t('requestNode')} className="route-entry-picker">
 					<h3 className="text-xs font-semibold text-slate-600">{t('requestNode')}</h3>
 					<div className="route-entry-options">
@@ -912,21 +912,19 @@ function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGr
 						))}
 					</div>
 				</div>
-				<div id={id} className="route-group-toolbar">
-					<div className="route-group-bookmarks">
-						<span className="text-xs font-semibold text-slate-600">{t('routeGroup')}</span>
-						{groupSelector}
-					</div>
-					<RouteGroupDetails modelId={card.model_id} routeGroup={section.group} copiedModelId={copiedModelId} onCopyModelId={onCopyModelId}
-						modelIdLabel={t('modelIdLabel')}
-						sticky={{
-							enabled: section.poolStickyEnabled,
-							idleTtlSeconds: section.poolStickyIdleTtlSeconds,
-							poolId: section.poolId,
-							onClick: () => openSectionStickyDialog(pool.onOpenProviderStickyDialog, card, section, providerMeta, locale, tKind('custom')),
-						}}
-					/>
+				<div className="route-group-bookmarks">
+					<span className="text-xs font-semibold text-slate-600">{t('routeGroup')}</span>
+					{groupSelector}
 				</div>
+				<RouteGroupDetails modelId={card.model_id} routeGroup={section.group} copiedModelId={copiedModelId} onCopyModelId={onCopyModelId}
+					modelIdLabel={t('modelIdLabel')}
+					sticky={{
+						enabled: section.poolStickyEnabled,
+						idleTtlSeconds: section.poolStickyIdleTtlSeconds,
+						poolId: section.poolId,
+						onClick: () => openSectionStickyDialog(pool.onOpenProviderStickyDialog, card, section, providerMeta, locale, tKind('custom')),
+					}}
+				/>
 			</div>
 			<div id={`${id}-panel`} role="tabpanel" aria-labelledby={tabId(sections.indexOf(section))} className="route-card-upstreams"
 				style={density === 'list' ? undefined : { '--route-count': routes.length } as CSSProperties}>
