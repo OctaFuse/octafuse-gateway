@@ -1,5 +1,56 @@
 [
 	{
+		"id": "gemini-4-neon",
+		"display_name": "Gemini 4 Neon",
+		"description": "Google's frontier-level Gemini model that balances depth and speed for complex coding, multimodal enterprise workflows, and long-running agents. Input, thinking, and output share a 1M window; synchronous output defaults to 64K, and long decode can reach 1M. Thinking level is low, medium, high (default), or xhigh and cannot be turned off. Official list price is $3 / $15 per 1M tokens with implicit cache at $0.15. 人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+		"i18n": {
+			"en": "Google's frontier-level Gemini model that balances depth and speed for complex coding, multimodal enterprise workflows, and long-running agents. Input, thinking, and output share a 1M window; synchronous output defaults to 64K, and long decode can reach 1M. Thinking level is low, medium, high (default), or xhigh and cannot be turned off. Official list price is $3 / $15 per 1M tokens with implicit cache at $0.15. 人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"zh": "兼顾推理深度与响应速度的前沿 Gemini 模型，面向复杂编码、多模态企业工作流与长时间运行的 Agent。输入、思考与输出共用 1M 窗口；同步输出默认 64K，长解码最高可达 1M。思考档位为 low、medium、high（默认）或 xhigh，不能关闭。官方刊例为每 1M token 输入 $3、输出 $15，隐式缓存 $0.15。人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"ja": "推論の深さと速度のバランスをとった、最先端の Gemini モデルです。複雑なコーディング、マルチモーダルな業務ワークフロー、長時間動作するエージェントに向いています。入力と思考と出力は 1M のウィンドウを共有します。同期出力の初期値は 64K で、長いデコードは最大 1M です。思考レベルは low、medium、high（初期値）、xhigh で、オフにはできません。公式定価は 1M トークンあたり入力 $3、出力 $15、暗黙キャッシュ $0.15 です。人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
+			"ko": "추론 깊이와 속도의 균형을 맞춘 최첨단 Gemini 모델로, 복잡한 코딩, 멀티모달 기업 워크플로, 장시간 실행되는 에이전트에 적합합니다. 입력, 사고, 출력은 1M 창을 공유합니다. 동기 출력 기본값은 64K이고 긴 디코드는 최대 1M입니다. 사고 수준은 low, medium, high(기본값), xhigh이며 끌 수 없습니다. 공식 정가는 1M 토큰당 입력 $3, 출력 $15, 암시적 캐시 $0.15입니다. 人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。"
+		},
+		"vendor": "google",
+		"context_window": 1000000,
+		"max_tokens": 64000,
+		"pricing": {
+			"usd": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 3,
+						"output_price": 15,
+						"cache_read_price": 0.15,
+						"cache_write_price": null
+					}
+				]
+			},
+			"cny": {
+				"tiers": [
+					{
+						"upto": null,
+						"input_price": 21,
+						"output_price": 105,
+						"cache_read_price": 1.05,
+						"cache_write_price": null
+					}
+				]
+			}
+		},
+		"modalities": {
+			"input": [
+				"text",
+				"image",
+				"audio",
+				"video",
+				"file"
+			],
+			"output": [
+				"text"
+			]
+		},
+		"released": "2026-11-18"
+	},
+	{
 		"id": "gemini-4-hydrogen",
 		"display_name": "Gemini 4 Hydrogen",
 		"description": "Google's fast Gemini model for everyday coding and agentic workflows, adapted from Gemini 4 Carbon. Input, thinking, and output share a 1M window; synchronous output defaults to 64K, and long decode can reach 1M. Thinking level is low, medium, high (default), or xhigh. Official list price is a flat $1.50 / $7.50 per 1M tokens across the whole window, with implicit cache at $0.075. 人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。",
