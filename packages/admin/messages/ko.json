@@ -1324,8 +1324,14 @@
 			"displaySettings": "표시 설정"
 		},
 		"flow": {
-			"modelIdLabel": "모델 ID",
-			"stickyConfigLabel": "고정 설정",
+			"controls": {
+				"entry": "진입점",
+				"group": "그룹",
+				"model": "모델",
+				"modelHelpLabel": "호출할 때 어떤 모델 ID를 사용하나요?",
+				"modelHelp": "호출 시 전달할 모델 ID",
+				"sticky": "고정"
+			},
 			"requestNode": "요청 진입점",
 			"catalogColumnSurface": "요청 진입점",
 			"catalogColumnModel": "모델",
@@ -1366,6 +1372,7 @@
 			"availabilityAvailableTooltip": "라우트와 공급자가 모두 활성화되어 있습니다. 실시간 연결 확인 결과는 아닙니다.",
 			"availabilityRouteDisabledTooltip": "라우트가 비활성화되어 요청을 받지 않습니다.",
 			"availabilityProviderDisabledTooltip": "공급자가 비활성화되어 이 라우트는 요청을 받을 수 없습니다.",
+			"groupAvailableCount": "사용 가능한 라우트 {active}개 (라우트와 공급자 모두 활성화)",
 			"tierAvailableTooltip": "사용 가능 {active} / 전체 {total}개 (라우트와 공급자 모두 활성화)",
 			"enabledShort": "활성",
 			"disabledShort": "비활성",

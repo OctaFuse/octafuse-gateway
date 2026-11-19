@@ -88,14 +88,14 @@
 	color: #525866;
 }
 .route-model-card-surfaces {
-	--route-label-width: 5.5rem;
+	--route-label-width: 4rem;
 	--route-arrow-color: var(--route-accent);
 	--route-card-width: 20rem;
 	--route-card-gap: 0.75rem;
 	--route-tier-gap: 2rem;
 }
 .route-model-card-surfaces:lang(zh) {
-	--route-label-width: 3rem;
+	--route-label-width: 2rem;
 }
 .route-model-surface-columns {
 	display: grid;
@@ -134,25 +134,25 @@
 	width: 100%;
 	min-width: 0;
 	padding: 3px 7px;
-	border-color: transparent;
-	border-radius: 7px;
-	background: #f5f6f8;
+	border-color: #e4e7eb;
+	border-radius: 6px;
+	background: #fafbfc;
 }
 .route-entry-options .route-entry-node:hover {
 	border-color: #90a1b4;
 }
 .route-entry-options .route-entry-node[data-selected='true'],
 .route-card-group-switch .route-card-group-tab[aria-selected='true'] {
-	border-color: var(--route-accent);
-	background: #e8f1fa;
-	box-shadow: inset 0 -2px var(--route-accent);
+	border-color: #aec5db;
+	background: #edf4fa;
+	box-shadow: none;
 }
 .route-entry-options .route-entry-node code {
 	font-weight: 500;
 }
 .route-entry-options .route-entry-node[data-selected='true'] code {
 	color: #183c61;
-	font-weight: 650;
+	font-weight: 600;
 }
 .route-entry-select {
 	position: absolute;
@@ -200,10 +200,19 @@
 	padding: 0;
 }
 .route-surface-toolbar .route-group-details > :first-child {
-	grid-template-columns: var(--route-label-width) minmax(0, 1fr) auto;
+	grid-template-columns: var(--route-label-width) minmax(0, max-content) auto;
+	justify-content: start;
+}
+.route-surface-toolbar .route-group-details > :first-child > button {
+	display: inline-grid;
+	width: 24px;
+	height: 24px;
+	place-items: center;
 }
 .route-surface-toolbar .route-group-sticky > button {
 	justify-self: start;
+	min-height: 24px;
+	border-radius: 6px;
 }
 @container route-model (min-width: 48rem) {
 	.route-model-surface-columns {
@@ -256,8 +265,8 @@
 	flex: none;
 	gap: 8px;
 	max-width: 100%;
-	min-height: 30px;
-	padding: 4px 11px;
+	min-height: 28px;
+	padding: 3px 8px;
 	border: 1px solid var(--route-panel-border);
 	border-radius: 7px;
 	background: white;
@@ -271,6 +280,11 @@
 .route-card-group-tab[aria-selected='true'] {
 	color: #183c61;
 	font-weight: 600;
+}
+.route-card-group-tab > [aria-label] {
+	padding-inline-start: 6px;
+	border-inline-start: 1px solid var(--route-panel-border);
+	color: #53677a;
 }
 .route-card-group-tab:focus-visible {
 	outline: 2px solid currentColor;

@@ -1324,8 +1324,14 @@
 			"displaySettings": "表示設定"
 		},
 		"flow": {
-			"modelIdLabel": "モデル ID",
-			"stickyConfigLabel": "固定設定",
+			"controls": {
+				"entry": "入口",
+				"group": "グループ",
+				"model": "モデル",
+				"modelHelpLabel": "リクエストで指定するモデル ID",
+				"modelHelp": "呼び出し時に指定するモデル ID",
+				"sticky": "固定"
+			},
 			"requestNode": "リクエスト入口",
 			"catalogColumnSurface": "リクエスト入口",
 			"catalogColumnModel": "モデル",
@@ -1366,6 +1372,7 @@
 			"availabilityAvailableTooltip": "ルートとプロバイダーが有効です。リアルタイムの接続確認ではありません。",
 			"availabilityRouteDisabledTooltip": "ルートが無効のため、リクエストは割り当てられません。",
 			"availabilityProviderDisabledTooltip": "プロバイダーが無効のため、このルートはリクエストを受信できません。",
+			"groupAvailableCount": "利用可能なルート数：{active}（ルートとプロバイダーが有効）",
 			"tierAvailableTooltip": "利用可能 {active} / 全 {total} ルート（ルートとプロバイダーが有効）",
 			"enabledShort": "有効",
 			"disabledShort": "無効",

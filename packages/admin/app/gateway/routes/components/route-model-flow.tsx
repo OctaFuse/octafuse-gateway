@@ -20,6 +20,7 @@ import {
 import { routeModelBillingLabel } from '../route-model-summary';
 import { providerAccountIdentity, providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provider-kind';
 import { useLocale, useTranslations } from 'next-intl';
+import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { VendorIcon } from '@/components/model-vendor-icon';
 import { StatusSwitchTrack } from '@/components/status-switch-track';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
@@ -423,16 +424,27 @@ function RouteGroupDetails({ modelId, routeGroup, copiedModelId, onCopyModelId, 
 	stickyLabel?: string;
 }) {
 	const tCard = useTranslations('routes.card');
+	const tControls = useTranslations('routes.flow.controls');
 	const requestedModelId = routeGroupModelId(modelId, routeGroup);
 	const copied = copiedModelId === requestedModelId;
 
 	return (
 		<div className="route-group-details">
 			<div className="flex min-w-0 items-start gap-1 pt-2">
-				{modelIdLabel && <span className="shrink-0 text-xs font-semibold text-slate-600">{modelIdLabel}</span>}
-				<span className="min-w-0 flex-1 font-mono text-xs leading-[14px] text-slate-600 [overflow-wrap:anywhere]" title={requestedModelId}>
-					{requestedModelId}
-				</span>
+				{modelIdLabel && <span className="shrink-0 text-xs font-medium text-slate-600">{modelIdLabel}</span>}
+				{modelIdLabel ? (
+					<InfoHintPopover
+						label={`${requestedModelId} · ${tControls('modelHelpLabel')}`}
+						openOnHover openOnFocus portal align="start"
+						icon={<span className="cursor-help select-text text-left font-mono text-xs text-slate-600 underline decoration-dashed decoration-slate-400 underline-offset-4 [overflow-wrap:anywhere]">{requestedModelId}</span>}
+					>
+						<p className="leading-5">{tControls('modelHelp')}</p>
+					</InfoHintPopover>
+				) : (
+					<span className="min-w-0 flex-1 font-mono text-xs leading-[14px] text-slate-600 [overflow-wrap:anywhere]" title={requestedModelId}>
+						{requestedModelId}
+					</span>
+				)}
 				<button
 					type="button"
 					onClick={() => void onCopyModelId(requestedModelId)}
@@ -445,7 +457,7 @@ function RouteGroupDetails({ modelId, routeGroup, copiedModelId, onCopyModelId, 
 			</div>
 			{sticky ? (
 				<div className="route-group-sticky mt-2 flex min-w-0">
-					{stickyLabel && <span className="text-xs font-semibold text-slate-600">{stickyLabel}</span>}
+					{stickyLabel && <span className="text-xs font-medium text-slate-600">{stickyLabel}</span>}
 					<ProviderStickyChip
 						showLabel={!stickyLabel}
 						enabled={sticky.enabled}
@@ -869,9 +881,8 @@ function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGr
 		<div role="tablist" aria-label={t('routeGroup')} className="route-card-group-switch">
 			{sections.map((item, index) => {
 				const active = item.routes.filter(route => isRouteConfigurationAvailable(route, providerMeta.get(route.provider_id))).length;
-				const total = item.routes.length;
 				const isSelected = item.key === section.key;
-				const hint = t('tierAvailableTooltip', { active, total });
+				const hint = t('groupAvailableCount', { active });
 				return (
 					<button key={item.key} id={tabId(index)} type="button" role="tab" aria-selected={isSelected}
 						aria-controls={`${id}-panel`} tabIndex={isSelected ? 0 : -1}
@@ -892,7 +903,7 @@ function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGr
 						}}>
 						<span className="truncate">{item.group}</span>
 						<span className="text-xs font-normal tabular-nums" aria-label={hint}>
-							{t('tierActiveTotal', { active, total })}
+							{active}
 						</span>
 					</button>
 				);
@@ -905,7 +916,7 @@ function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGr
 			data-compact-targets={density === 'list' || routes.length > 2 ? undefined : routes.length}>
 			<div id={id} className="route-surface-toolbar">
 				<div role="group" aria-label={t('requestNode')} className="route-entry-picker">
-					<h3 className="text-xs font-semibold text-slate-600">{t('requestNode')}</h3>
+					<h3 className="text-xs font-medium text-slate-600">{t('controls.entry')}</h3>
 					<div className="route-entry-options">
 						{surfaceGroups.map(item => (
 							<RequestSurfaceNode key={item.key} surface={item} modelId={card.model_id}
@@ -914,11 +925,11 @@ function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGr
 					</div>
 				</div>
 				<div className="route-group-bookmarks">
-					<span className="text-xs font-semibold text-slate-600">{t('routeGroup')}</span>
+					<span className="text-xs font-medium text-slate-600">{t('controls.group')}</span>
 					{groupSelector}
 				</div>
 				<RouteGroupDetails modelId={card.model_id} routeGroup={section.group} copiedModelId={copiedModelId} onCopyModelId={onCopyModelId}
-					modelIdLabel={t('modelIdLabel')} stickyLabel={t('stickyConfigLabel')}
+					modelIdLabel={t('controls.model')} stickyLabel={t('controls.sticky')}
 					sticky={{
 						enabled: section.poolStickyEnabled,
 						idleTtlSeconds: section.poolStickyIdleTtlSeconds,

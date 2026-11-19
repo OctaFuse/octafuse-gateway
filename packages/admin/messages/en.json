@@ -1324,8 +1324,14 @@
 			"displaySettings": "Display settings"
 		},
 		"flow": {
-			"modelIdLabel": "Model ID",
-			"stickyConfigLabel": "Sticky settings",
+			"controls": {
+				"entry": "Entry",
+				"group": "Group",
+				"model": "Model",
+				"modelHelpLabel": "Which model ID should I send?",
+				"modelHelp": "Model ID to send in the request",
+				"sticky": "Sticky"
+			},
 			"requestNode": "Surface",
 			"catalogColumnSurface": "Surface",
 			"catalogColumnModel": "Model",
@@ -1366,6 +1372,7 @@
 			"availabilityAvailableTooltip": "The route and provider are enabled. This is not a live connectivity check.",
 			"availabilityRouteDisabledTooltip": "This route is disabled and will not receive requests.",
 			"availabilityProviderDisabledTooltip": "The provider is disabled, so this route cannot receive requests.",
+			"groupAvailableCount": "Available routes: {active} (both route and provider enabled)",
 			"tierAvailableTooltip": "Available {active} / {total} routes (both route and provider enabled)",
 			"enabledShort": "Enabled",
 			"disabledShort": "Disabled",
