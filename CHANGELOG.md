@@ -2,32 +2,37 @@
 
 ## Unreleased
 
-### Proxy
-
-- **MCP OAuth 接入更多 Agent**：内置授权服务器支持机密客户端——动态注册可声明 `client_secret_basic` / `client_secret_post` 并获得一次性 `client_secret`，令牌与撤销端点按声明认证客户端，机密客户端可不带 PKCE。新增可选的客户端元数据文档（CIMD，MCP 2025-11-25）：在 OAuth 卡片中开启或设置 `MCP_OAUTH_CIMD_ENABLED=true` 后，接受以 https 地址为 `client_id` 的客户端，默认关闭。授权服务器元数据另在 `/.well-known/oauth-authorization-server/mcp[/{slug}]` 与 `/mcp/.well-known/oauth-authorization-server` 提供，资源元数据另在 `/mcp/.well-known/oauth-protected-resource` 提供；`/mcp` 的 401 `WWW-Authenticate` 增加 `scope="mcp"`。本机回调 `http://localhost` 与 `127.0.0.1` 一样忽略端口；被拒绝的注册会写一条 `registration rejected` 日志，方便补充应用规则。需要先执行迁移 0037（见[迁移说明](docs/operators/migrations/0037-oauth-client-credentials.md)）。
-- **Gemini thought signature 兜底**：上游返回 `HTTP 400: Corrupted thought signature.` 时，也会清洗历史签名后对同一上游重试一次，与 `Invalid thought signature` 的处理一致。此前故障转移到这类上游（如部分第三方中转）后，会话历史里别家签发的签名会让请求直接失败。
+**升级前请先执行数据库迁移。** `0037` 为 OAuth 客户端增加凭据字段，`0038` 为供应商增加可空的 `custom_params` 字段。[0037 迁移与回退说明](docs/operators/migrations/0037-oauth-client-credentials.md)
 
 ### Proxy
 
-- **Provider 级自定义参数**：`providers` 新增按上游协议分组的默认 `custom_params`（请求头 / 请求体），该 Provider 下所有 Route 默认生效，Route 仍可按需覆盖；不配置时行为与之前完全一致。典型场景：OpenCode 等渠道要求固定请求头、某些供应商要求固定 `max_tokens`，现在只需在 Provider 上配一次。受保护头（`Authorization`、`Content-Type` 等）与 `model` 字段仍不可被覆盖；原生透传（DashScope/MiniMax/ElevenLabs/Volcengine 的直连入口）与 WebSocket 入口的请求头可能因此变化，属于预期行为，请求体合并不变。新增迁移 `0038`，只新增可空列，默认不改变现有行为。
+- **MCP OAuth** 支持机密客户端动态注册，注册时返回一次性可见的 `client_secret`。令牌与撤销端点支持 `client_secret_basic` 和 `client_secret_post`，机密客户端可省略 PKCE。需要通过 HTTPS 元数据文档标识客户端（CIMD）时，可在 OAuth 卡片中开启，或设置 `MCP_OAUTH_CIMD_ENABLED=true`，默认关闭。
+- **MCP 客户端兼容性** 新增授权服务器发现地址 `/.well-known/oauth-authorization-server/mcp[/{slug}]` 和 `/mcp/.well-known/oauth-authorization-server`，资源元数据也可从 `/mcp/.well-known/oauth-protected-resource` 获取。`/mcp` 的 401 响应声明 `scope="mcp"`。本机 `localhost` 回调与 `127.0.0.1` 一样支持动态端口。注册被拒时可搜索 `registration rejected` 日志排查应用规则。
+- **供应商默认请求参数** 可按上游协议设置请求头和请求体，路由可单独覆盖。受保护的请求头及 `model` 字段仍由网关管理。原生透传与 WebSocket 入口也会应用配置的请求头。
+- **Gemini 签名错误重试** 上游返回 `Corrupted thought signature` 时，网关会清理会话历史中的思考签名，并向同一上游重试一次。
 
 ### Admin
 
-- 路由配置工具栏移除了「配置可用」计数和进度条。当前筛选下有未接线模型时，模型清单默认展开，可手动收起。
-- **按模型查看路由列表**：列表与卡片共用入口选择和路由组书签，切换展示形式时保留当前入口和分组。宽屏列表共用一行表头。首选和回退各层在供应商行上方显示优先级和可用数，右侧可编辑该层的分配策略。上游模型名下依次显示权重数字标签和请求参数，粘性绑定数独立成列并放大显示。供应商停用时，原因显示在路由状态下方。未配置分时段的路由标为「全时段」，已配置的路由默认显示当前生效时段。摘要与明细使用紧凑的倍率标签。摘要中的时段与倍率分组留白，标签靠左排列，展开箭头位于右端，配色与明细一致。可在「显示设置」中一次展开卡片和列表的全部时段价格明细。浏览器会记住此偏好。列表随供应商区域宽度调整：宽屏逐列对齐，中等宽度分两行展示路由信息，窄屏按优先级展示单列路由卡片。宽屏列表的价格列加宽，时段、日期和「当前」标识按同一文字基线排列。
-- **模型路由卡片**：供应商卡片仅在路由组开启粘性时显示绑定人数。模型面板足够宽时，请求入口与路由组在标题下方左右分栏；面板较窄时按入口、路由组的顺序分行展示，协议图标、调用路径与复制按钮水平排列，空间不足时可横向滚动。请求入口和路由组的标签与选项分列对齐。当前入口用浅蓝底、蓝色底边和加重的路径文字突出显示。多个路由组通过独立描边标签切换，当前组沿用请求入口的浅蓝底和蓝色底边，只有一个路由组时也默认选中并显示可用数，下方展示供应商及首选、回退顺序。Model ID 和粘性设置在请求入口与路由组下方独占一行，粘性按钮靠右对齐。点击模型标题行右端的加号即可为当前入口和路由组添加供应商。「Model ID：」和「路由组」使用相同字重和颜色。窄屏分行显示。模型规格与标签紧随模型名称，空间不足时换行。模型标题省去复制、编辑图标和路由数量摘要，点击名称可编辑模型，Model ID 在路由组行展示和复制，分组标签旁移除「添加路由组」按钮。供应商名称旁显示路由状态，下方集中展示权重、粘性和请求参数。可用卡片使用绿色侧边和浅绿色价格栏，未启用卡片使用浅灰底，已启用但供应商停用时使用琥珀色边框。调用路径右侧可复制完整路径。不同入口和优先级使用相同宽度和基础高度的供应商卡片，价格统一放在底部；窄屏自动换行，展开明细时卡片按内容增高。首选与回退标题行用留白隔开优先级和右侧分配策略。宽屏下单供应商回退紧接首选层最后一列，右向箭头居中显示在两层卡片之间，面板按能排下的整列卡片收紧。供应商卡默认显示当前实际计费和成本倍率，点击可展开完整时段明细。
-- **Gemini 4 Neon**：模型目录新增 `gemini-4-neon`（2026-11-18）。输入、思考与输出共用 1M 窗口，同步输出默认 64K，长解码最高可达 1M，输入含文本、图像、音频、视频和文件。刊例价每百万 token 输入 $3、输出 $15，隐式缓存 $0.15（不支持显式缓存）；不分阶梯，不对免费层开放。思考档为 `low` / `medium` / `high` / `xhigh`（默认 `high`），不能关闭，传 `minimal` 或 `thinking_budget` 会返回 400；`temperature`、`top_p`、`top_k` 的自定义值会被忽略。人民币价为美元刊例价 ×7 的换算占位价。
-- **模拟器请求检查**：并列展示输入 JSON 与发往网关的请求，标注模型、路由组及鉴权来源。语言模型调用结束后可按本次请求 ID 查看脱敏的上游快照和生效的供应商、路由配置字段。
-- **调试台请求检查**：模型测试模板下方直接展示请求头、输入请求体和实际上游请求体。请求头和生效的配置字段标注供应商或路由来源，发送后切换为服务端回传的请求。「测试请求」标题增加发送方向图标，与路由和响应栏对齐。
-- **Provider 自定义参数**：Provider 编辑弹窗新增「自定义参数」页签，可按协议配置默认请求头 / 请求体；调试台预览与线上请求使用同一套合并逻辑。
-- **OpenCode 供应商模板**：OpenCode Zen 与 OpenCode Go 的静态端点改为 Console Inference。按量走 `https://opencode.ai/inference`，Go 走 `https://opencode.ai/inference/go`。两者都预填 OpenAI Chat、Responses、Anthropic Messages，以及 Bearer 鉴权的 Gemini `models.generate`（不写 `gemini.base`，因此不派生向量端点）。已导入的供应商不会自动改地址。
-- **GPT-6.2 Astra / Sol**：模型目录新增 `gpt-6.2-astra` 与 `gpt-6.2-sol`（2026-11-17）。上下文 1.05M，最大输出 128K，输入含文本和图像。刊例价：Astra $8 / $40 每百万 token，缓存命中 $0.4，缓存写入（30 分钟档）$10，较 GPT-6 Astra 输入输出价低 20%；Sol $2 / $10，缓存命中 $0.1，缓存写入 $2.5，与 GPT-6.1 Sol 相同；输入超过 272K 时输入与缓存价翻倍、输出价为 1.5 倍。API 拒绝 `reasoning.effort` 为 `none`；带工具调用必须走 Responses API，Chat Completions 仅支持不带工具的请求；不支持 `temperature`、`top_p` 与 `logprobs`。人民币价为美元刊例价 ×7 的换算占位价。
-- **MCP OAuth 应用规则与手工凭据**：应用的回调规则支持 `https://*.example.com` 子域通配和末尾 `*` 前缀匹配，客户端归属按匹配精确度排序，具体地址优先于通配。每个应用可签发「手工凭据」（固定 `client_id` + `client_secret`，可重置、删除），供要求填写服务端认证凭据、不支持动态注册的平台使用。预设新增 Claude Code、Cursor、VS Code、Gemini CLI 和兜底的「Local MCP clients」，WorkBuddy 预设补充 `*.tencent.com`、`*.workbuddy.cn`、`*.workbuddy.ai`、`*.codebuddy.cn` 回调。Admin API 新增 `POST /api/admin/oauth/apps/:id/clients`、`PATCH|DELETE /api/admin/oauth/clients/:clientId` 与 `POST /api/admin/oauth/clients/:clientId/secret`，客户端列表支持按 `registration_method` 筛选并返回 `has_client_secret`。
-- **MCP 目录变更审核**：同步目录后，MCP 服务页顶部显示审核横幅（待审总数、定义变更与新增各多少），提供「开始审核」「全部接受变更」「启用全部新增」；条目行里的整块对比卡片收成一行「审核变更」。新的审核弹窗按队列逐项处理：左侧待审列表，右侧是逐行高亮的定义差异（键顺序已规范化，未变化的部分折叠，并列出变更的顶层字段，如 `inputSchema`），接受或启用后自动跳到下一项，支持上一项 / 下一项（← →）与跳过。此前对比只展示描述，描述没变而参数结构变了时两栏一模一样，看不出改了什么。Admin API 新增 `POST /api/admin/mcp-servers/:id/items/accept`（`{ ids }`）批量接受定义变更。
-- **模型路由筛选**：模型与供应商改为两级多选，分别按模型厂商和供应商类型分组；支持整组或单项勾选、搜索、逐项移除，并在地址中保存筛选条件，兼容旧的单选筛选链接。
-- **Hy4 flash**：模型目录新增 `hy4-flash`（2026-11-16）。总参数 224B（含 64B Engram 参数），激活 12B，上下文 1M，最大输出约 64K，输入含文本和图像。刊例价：国内 ¥0.5 / ¥2 每百万 token，缓存命中 ¥0.02；国际 $0.07 / $0.281，缓存命中 $0.003；未计入 TokenHub 至 2026-11-30 的限时 5 折。`hy4-preview` 补记官方下线日期 `retired` 2026-12-07。
-- **Qwen4 Max**：模型目录新增正式版 `qwen4-max`（2026-11-16）。上下文 1M，最大输出 128K（思考与回答合计最长约 256K），输入含文本、图像和视频。刊例价：国内 ¥10 / ¥30 每百万 token，缓存命中 ¥0.5，缓存写入（5 分钟档）¥12.5；国际 $1.5 / $4.5，缓存命中 $0.075，缓存写入（5 分钟档）$1.875。思考档为 `low` / `high` / `xhigh`（默认 `high`），与预览版的 `low` / `medium` / `xhigh` 不同。`qwen4-max-preview` 仍保留，刊例价改为与 `qwen4-max` 一致（此前暂按 `qwen3.8-max` 对齐），官方预览期至 2026-11-25。
-- **Modelink 供应商模板**：Providers 导入模板新增 Modelink（七牛云 AI 的海外接入点 `api.modelink.ai`），预填 OpenAI Chat、Responses 与 Images（生成 / 编辑）直通、Anthropic、Gemini（Vertex 兼容 + Bearer）端点，并新增 Modelink 厂商与图标；`modelink.ai` 域名与名称不再归入七牛。中国大陆继续使用「七牛云 AI」模板（`api.qnaigc.com`）。
+- **路由筛选与切换** 模型和供应商支持搜索、分组多选及逐项移除，筛选条件可通过链接分享，旧单选链接仍有效。切换卡片和列表会保留当前请求入口和路由组。当前筛选下有未接线模型时默认展开清单。工具栏移除了「配置可用」汇总，组内仍显示可用数。
+- **路由配置** 可复制调用路径和 Model ID，点击模型名称编辑模型，点击标题旁的加号为当前入口和路由组添加供应商。Model ID 和粘性设置单独成行。首选和回退层分别展示优先级、可用数和分配策略，可直接编辑各层策略。供应商卡片仅在开启粘性时显示绑定人数，列表可查看供应商停用原因。
+- **路由价格** 卡片和列表默认显示当前生效时段的实际计费与成本倍率，未配置分时段的路由显示「全时段」。可逐条展开明细，也可在「显示设置」中全部展开，浏览器会记住偏好。
+- **请求参数与调试** 供应商编辑页新增「自定义参数」页签。调试台按线上合并规则预览请求头和请求体，标明配置来自供应商还是路由，发送后展示服务端回传的上游请求。模拟器可对照输入 JSON 与网关请求，查看模型、路由组及鉴权来源。语言模型调用完成后，可按请求 ID 查看脱敏的上游快照和生效配置。
+- **OAuth 应用管理** 可为不支持动态注册的客户端手工签发固定凭据、重置密钥或删除客户端。回调规则支持子域通配和末尾 `*` 前缀匹配，具体地址优先。新增 Claude Code、Cursor、VS Code、Gemini CLI 和本地 MCP 客户端预设，并补充 WorkBuddy 回调域名。客户端列表 API 支持按 `registration_method` 筛选，并通过 `has_client_secret` 标明是否配置密钥。[Admin API](docs/developers/api/admin.md)
+- **MCP 目录审核** 同步后可逐项对比工具定义及参数结构的变化，接受、启用或跳过后继续审核下一项。支持批量接受定义变更、批量启用新增条目。批量接受接口为 `POST /api/admin/mcp-servers/:id/items/accept`。
+
+### 供应商模板
+
+- **OpenCode** Zen 和 Go 的导入模板分别使用 `https://opencode.ai/inference` 和 `https://opencode.ai/inference/go`，预填 Chat、Responses、Anthropic Messages 和使用 Bearer 鉴权的 Gemini 生成端点。已有供应商如需切换，须手动更新地址。
+- **Modelink** 新增七牛云 AI 海外接入模板（`api.modelink.ai`），预填 OpenAI Chat、Responses、Images 生成与编辑、Anthropic 及 Vertex 兼容的 Gemini 端点。中国大陆继续使用「七牛云 AI」模板（`api.qnaigc.com`）。
+
+### 模型目录
+
+以下输入和输出价格均按每百万 token 计。Gemini 和 GPT 的人民币目录价按美元刊例价 ×7 换算。完整规格、缓存价格及参数限制见[模型预设](packages/admin/lib/model-presets/)。
+
+- **Gemini 4 Neon**（`gemini-4-neon`）支持多模态输入，输入、思考与输出共享 1M 窗口，同步输出默认 64K。输入 $3，输出 $15，隐式缓存 $0.15。思考默认 `high`，不支持关闭，传入 `minimal` 或 `thinking_budget` 会返回 400。
+- **GPT-6.2 Astra / Sol**（`gpt-6.2-astra`、`gpt-6.2-sol`）支持 1.05M 上下文、128K 输出。Astra 输入 $8、输出 $40，Sol 输入 $2、输出 $10。输入超过 272K 时，输入与缓存价翻倍，输出价为 1.5 倍。工具调用须使用 Responses API，两款模型均不接受 `reasoning.effort=none`。
+- **Hy4 flash**（`hy4-flash`）支持 1M 上下文、约 64K 输出。国内输入 ¥0.5、输出 ¥2，国际输入 $0.07、输出 $0.281。目录价未计入截至 2026-11-30 的 TokenHub 五折优惠。`hy4-preview` 已标记于 2026-12-07 下线。
+- **Qwen4 Max**（`qwen4-max`）正式版支持 1M 上下文、128K 输出，默认思考档为 `high`。国内输入 ¥10、输出 ¥30，国际输入 $1.5、输出 $4.5。`qwen4-max-preview` 的目录价已与正式版对齐，官方预览期至 2026-11-25。
 
 ## 2.20.0
 
