@@ -5,6 +5,7 @@ import {
 	validateAndNormalizeProviderEndpoints,
 	type ProviderEndpointsMap,
 } from '@octafuse/core/provider-endpoints';
+import { parseAndNormalizeProviderCustomParams } from '@octafuse/core/provider-custom-params';
 import {
 	isPendingProviderImportApiKey,
 	maskProviderApiKeyForAdmin,
@@ -37,6 +38,21 @@ function resolveEndpointsFromMutation(body: AdminProviderMutationInput): string 
 		throw badRequest(e instanceof Error ? e.message : 'Invalid endpoints');
 	}
 	return serializeProviderEndpoints(map);
+}
+
+/**
+ * 解析 + 校验 `custom_params`（按协议分组的默认 headers/body，无 `force_override`）。
+ * `undefined`/`null`/空对象一律视为未配置，返回 `null`；非法头名、受保护头、非法协议 key、超长，统一转 400。
+ */
+function resolveCustomParamsFromMutation(body: AdminProviderMutationInput): string | null {
+	if (body.custom_params === undefined || body.custom_params === null) {
+		return null;
+	}
+	try {
+		return parseAndNormalizeProviderCustomParams(body.custom_params);
+	} catch (e) {
+		throw badRequest(e instanceof Error ? e.message : 'Invalid custom_params');
+	}
 }
 
 function normalizeProviderStatus(raw: unknown): 'active' | 'disabled' {
@@ -123,6 +139,7 @@ export async function createProviderService(
 	}
 
 	const endpointsJson = resolveEndpointsFromMutation(body);
+	const customParamsJson = resolveCustomParamsFromMutation(body);
 	const status = normalizeProviderStatus(body.status);
 	const kind = normalizeProviderKind(body.kind, true);
 
@@ -140,6 +157,7 @@ export async function createProviderService(
 			note: body.note,
 			apiKey,
 			status,
+			customParams: customParamsJson,
 		})
 	);
 
@@ -191,6 +209,9 @@ export async function updateProviderService(
 	}
 	if ('endpoints' in body) {
 		patch.endpoints = resolveEndpointsFromMutation(body);
+	}
+	if ('custom_params' in body) {
+		patch.custom_params = resolveCustomParamsFromMutation(body);
 	}
 	if (body.status !== undefined) {
 		patch.status = normalizeProviderStatus(body.status);

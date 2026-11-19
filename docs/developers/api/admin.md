@@ -713,15 +713,17 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/admin/providers` | 列表；`api_key` **脱敏**；含 `kind`、`endpoints`、`status`、`has_pending_key`、`quota_supported`、`routes_count`、`active_routes_count` |
-| POST | `/admin/providers` | 创建；**`name` + `api_key` + `kind` 必填**；`kind` 须为已知模板英文名或 `__custom__`；管理后台不提交 `id`，由服务端生成 UUID。API 仍可传可选 `id`。另可传 `note`、`endpoints`、`status` |
+| GET | `/admin/providers` | 列表；`api_key` **脱敏**；含 `kind`、`endpoints`、`custom_params`、`status`、`has_pending_key`、`quota_supported`、`routes_count`、`active_routes_count` |
+| POST | `/admin/providers` | 创建；**`name` + `api_key` + `kind` 必填**；`kind` 须为已知模板英文名或 `__custom__`；管理后台不提交 `id`，由服务端生成 UUID。API 仍可传可选 `id`。另可传 `note`、`endpoints`、`custom_params`、`status` |
 | GET | `/admin/providers/:id` | 详情（脱敏 `api_key`） |
-| PATCH | `/admin/providers/:id` | 部分更新；省略 `kind` = 不改类型；`kind: ""` = 标为尚未分类；省略 `api_key` = **不改密钥**；显式 `api_key: ""`（或 `null`）= **清空密钥**；`status` 仅 `active` \| `disabled`。改 `kind` 不覆盖已有 `endpoints` |
+| PATCH | `/admin/providers/:id` | 部分更新；省略 `kind` = 不改类型；`kind: ""` = 标为尚未分类；省略 `api_key` = **不改密钥**；显式 `api_key: ""`（或 `null`）= **清空密钥**；`status` 仅 `active` \| `disabled`。改 `kind` 不覆盖已有 `endpoints`；省略 `custom_params` = 不改，显式 `null` = 清空 |
 | DELETE | `/admin/providers/:id` | 删除；仍被 `model_routes` 引用时返回 **409**，须先删除或改绑对应 Target |
 | GET | `/admin/providers/:id/api-key` | **揭示明文** `api_key`（`{ success, data: { api_key } }`） |
 | GET | `/admin/providers/:id/quota` | 用该账号现有 `api_key` 实时查询额度。权限是 `providers.read`，响应不含密钥。不支持的 `kind`、空密钥或导入占位密钥返回 **400**。上游非 2xx 或响应无法解析返回 **502**（`message` 只有状态码，没有响应体）。超时返回 **504** |
 | GET / POST | `/admin/providers/sync/diff`、`/sync/apply` | 与官方模板同步：`diff` 只读，只比对端点；`note` 不参与。差异只在管理员手动检查时计算，列表接口不带 |
 | GET / POST | `/admin/providers/import/catalog`、`/import` | 静态模板导入（占位 key，须手动替换）。写入 `kind =` 模板英文名；`name` 按 `locale`（`zh` 中文，`ja` 日文，`ko` 韩文，其余英文）；介绍不入库。仅同一 `kind` 下同名才追加 `(2)` 后缀 |
+
+**`custom_params`（Provider 级默认参数下界）**：JSON 对象，按**上游协议**分组，形如 `{ "openai": { "headers": {...}, "body": {...} }, "gemini": { "body": {...} } }`；协议 key 须为已支持的上游协议（`openai` / `anthropic` / `gemini` / `dashscope` / `minimax` / `volcengine` / `elevenlabs`），非法 key 返回 **400**。单个分组内的 `headers` / `body` 形状与 Route 级 `custom_params` 信封里的同名字段一致（受保护头不可配置，返回 **400**）；但 Provider 层**没有** `force_override`（该字段仍只属于 Route）。运行时该 Provider 下每条 Route 按自身 `upstream_protocol` 取出对应分组，与 Route 自己的 `custom_params` 合并为一份有效参数后再发往上游：headers 优先级为「协议默认头 < Provider < Route < 客户端（Route 未开 `force_override.headers` 时）」，body 优先级为「适配器默认 < Provider < Route < 客户端同名字段（Route 未开 `force_override.body` 时）」；**Route 打开 `force_override.body` 后，整份合并后的有效 body（含其中的 Provider 默认值）一起强制覆盖客户端**，不是只强制 Route 自己配置的字段。Provider 未配置该协议或该字段为空时行为与改造前完全一致。原生透传入口（DashScope / MiniMax / ElevenLabs / Volcengine 的直连路径）不合并 body 默认值（只替换 `model`），但仍会合并 headers。序列化后超过 32KB 返回 **400**。
 
 `GET /admin/providers/:id/quota` 的 `data` 是归一化快照，不保存。请求发往与该 `kind` 默认域名同一注册域的 https origin；保存的 Endpoint 若换了注册域，则回退默认 origin。
 

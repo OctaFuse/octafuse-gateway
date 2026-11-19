@@ -3,6 +3,7 @@
  * 纯数据，不含 Promise / 函数；阶段二 spool 将直接缓冲本对象。
  */
 import type { UpstreamProtocol } from '@octafuse/core';
+import type { RequestParameterSources } from '@octafuse/core/request-parameter-sources';
 import type { GatewayCircuitAlertEvent } from '../circuit-alert-types';
 import type { UsageFromStream } from '../proxy';
 import type { RequestTimingSnapshot } from '../request-timing';
@@ -26,6 +27,7 @@ export type RecordUsageParams = {
 	provider_name?: string | null;
 	request_body?: string | null;
 	upstream_request_body?: string | null;
+	request_parameter_sources?: RequestParameterSources;
 	request_protocol: UpstreamProtocol;
 	request_operation?: string | null;
 	upstream_protocol: UpstreamProtocol;

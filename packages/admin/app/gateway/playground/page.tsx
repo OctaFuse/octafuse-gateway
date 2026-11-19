@@ -135,6 +135,7 @@ function PlaygroundPageInner() {
 									onGeminiActionChange={s.setGeminiAction}
 									lastSentWireBody={s.lastSentWireBody}
 									lastSentWireHeaders={s.lastSentWireHeaders}
+									lastSentRequestSources={s.lastSentRequestSources}
 								/>
 								<PlaygroundResponsePanel
 									llm={llm}

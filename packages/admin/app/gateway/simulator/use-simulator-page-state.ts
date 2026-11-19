@@ -1702,12 +1702,14 @@ export function useSimulatorPageState() {
 			if (abortRef.current !== ac) return;
 			const latencyMs = String(Math.round(performance.now() - t0));
 			const ct = res.headers.get('Content-Type') ?? '';
+			const requestLogId = res.headers.get('X-OctaFuse-Request-Id');
 
 			setResponseMeta({
 				status: res.status,
 				latencyMs,
 				requestUrl: built.url,
 				contentType: ct,
+				requestLogId,
 			});
 
 			if (

@@ -14,7 +14,7 @@ export function createD1ProvidersRepository(db: D1DatabaseClient): ProvidersRepo
 		async listProviders(): Promise<ProviderAdminRow[]> {
 			const rows = await raw
 				.prepare(
-					`SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.note, p.created_at,
+					`SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.note, p.custom_params, p.created_at,
 				(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id) AS routes_count,
 				(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id AND status = 'active') AS active_routes_count
 			 FROM providers p ORDER BY p.created_at DESC`
@@ -36,11 +36,12 @@ export function createD1ProvidersRepository(db: D1DatabaseClient): ProvidersRepo
 			note: unknown;
 			apiKey?: string;
 			status?: string;
+			customParams?: string | null;
 		}): Promise<void> {
 			await raw
 				.prepare(
-					`INSERT INTO providers (id, name, kind, endpoints, api_key, status, note)
-			 VALUES (?, ?, ?, ?, ?, ?, ?)`
+					`INSERT INTO providers (id, name, kind, endpoints, api_key, status, note, custom_params)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 				)
 				.bind(
 					params.id,
@@ -49,7 +50,8 @@ export function createD1ProvidersRepository(db: D1DatabaseClient): ProvidersRepo
 					params.endpoints,
 					params.apiKey ?? '',
 					params.status ?? 'active',
-					params.note ?? null
+					params.note ?? null,
+					params.customParams ?? null
 				)
 				.run();
 		},
@@ -80,7 +82,7 @@ export function createD1ProvidersRepository(db: D1DatabaseClient): ProvidersRepo
 		async getProviderRowById(id: string): Promise<ProviderAdminRow | null> {
 			const row = await raw
 				.prepare(
-					`SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.note, p.created_at,
+					`SELECT p.id, p.name, p.kind, p.endpoints, p.api_key, p.status, p.note, p.custom_params, p.created_at,
 				(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id) AS routes_count,
 				(SELECT COUNT(*) FROM model_routes WHERE provider_id = p.id AND status = 'active') AS active_routes_count
 			 FROM providers p WHERE p.id = ?`

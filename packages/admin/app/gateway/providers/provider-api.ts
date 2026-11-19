@@ -4,7 +4,7 @@ import { sortProvidersByKindThenName } from '@/lib/provider-kind';
 import type { GatewayProvider } from '@/lib/types';
 import type { RouteListRow } from '../routes/types';
 import { deleteRoute } from '../routes/route-api';
-import { formDataToEndpointsMap } from './provider-utils';
+import { findInvalidCustomParamsBodyProtocol, formDataToCustomParamsMap, formDataToEndpointsMap } from './provider-utils';
 import type {
 	ProviderSyncApplyBody,
 	ProviderSyncApplyOutput,
@@ -26,11 +26,20 @@ export async function saveProvider(
 	editingProviderId: string | null,
 	{ updateApiKey = true }: { updateApiKey?: boolean } = {}
 ): Promise<{ success: true } | { success: false; message: string }> {
+	const invalidCustomParamsProtocol = findInvalidCustomParamsBodyProtocol(formData);
+	if (invalidCustomParamsProtocol) {
+		return {
+			success: false,
+			message: `Invalid custom_params.${invalidCustomParamsProtocol}.body JSON`,
+		};
+	}
+
 	const payload: Record<string, unknown> = {
 		name: formData.name,
 		kind: formData.kind,
 		note: formData.note,
 		endpoints: formDataToEndpointsMap(formData),
+		custom_params: formDataToCustomParamsMap(formData),
 		status: formData.status === 'disabled' ? 'disabled' : 'active',
 	};
 

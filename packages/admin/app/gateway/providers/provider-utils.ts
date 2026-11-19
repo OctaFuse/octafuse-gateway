@@ -13,6 +13,7 @@ import { GEMINI_GENERATE_OPERATION } from "@octafuse/core/route-topology";
 import type { UpstreamProtocol } from "@octafuse/core/upstream-protocol";
 import type {
 	GeminiLegacyPerActionEndpoints,
+	ProtocolCustomParamsForm,
 	ProtocolEndpointForm,
 	ProviderCapabilityBadge,
 	ProviderFormData,
@@ -21,6 +22,7 @@ import type {
 	ProviderProtocolSummary,
 } from "./types";
 import { EMPTY_PROTOCOL_FORM } from "./types";
+import { UPSTREAM_PROTOCOLS } from "@octafuse/core/upstream-protocol";
 import { PROVIDER_ENDPOINT_FIELDS } from "./provider-endpoint-fields";
 
 /** Fixed-width middle mask; never show short credentials or private service-account fields. */
@@ -149,6 +151,41 @@ function protocolFormFromConfig(
 	return form;
 }
 
+/** `providers.custom_params` JSON → 按协议分组的表单状态；缺失/非法一律视为未配置（前端容错优先，不抛错）。 */
+export function providerCustomParamsToFormData(
+	provider: GatewayProvider
+): Partial<Record<UpstreamProtocol, ProtocolCustomParamsForm>> {
+	const raw = provider.custom_params;
+	if (!raw) return {};
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(raw);
+	} catch {
+		return {};
+	}
+	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+	const result: Partial<Record<UpstreamProtocol, ProtocolCustomParamsForm>> = {};
+	for (const protocol of UPSTREAM_PROTOCOLS) {
+		const entry = (parsed as Record<string, unknown>)[protocol];
+		if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+		const { headers, body } = entry as { headers?: unknown; body?: unknown };
+		const headerRows =
+			headers && typeof headers === "object" && !Array.isArray(headers)
+				? Object.entries(headers as Record<string, unknown>).map(([name, value]) => ({
+						name,
+						value: typeof value === "string" ? value : String(value ?? ""),
+				  }))
+				: [];
+		const bodyText =
+			body && typeof body === "object" && !Array.isArray(body) && Object.keys(body).length > 0
+				? JSON.stringify(body, null, 2)
+				: "";
+		if (headerRows.length === 0 && !bodyText) continue;
+		result[protocol] = { headers: headerRows, bodyText };
+	}
+	return result;
+}
+
 /** Provider 行 → 弹窗表单；真实密钥由编辑器单独加载。 */
 export function providerToFormData(
 	provider: GatewayProvider
@@ -165,6 +202,7 @@ export function providerToFormData(
 		minimax: protocolFormFromConfig(map.minimax),
 		volcengine: protocolFormFromConfig(map.volcengine),
 		elevenlabs: protocolFormFromConfig(map.elevenlabs),
+		customParams: providerCustomParamsToFormData(provider),
 	};
 }
 
@@ -229,6 +267,61 @@ export function formDataToEndpointsMap(
 	if (volcengine) map.volcengine = volcengine;
 	if (elevenlabs) map.elevenlabs = elevenlabs;
 	return map;
+}
+
+/**
+ * 校验所有已填 `bodyText` 的协议分组均为合法 JSON 对象；保存前调用，失败时返回首个出错的协议名
+ * 供 UI 展示（不在这里静默吞掉非法 JSON，否则用户永远不知道自己写错了）。
+ */
+export function findInvalidCustomParamsBodyProtocol(
+	form: ProviderFormData
+): UpstreamProtocol | null {
+	for (const protocol of UPSTREAM_PROTOCOLS) {
+		const bodyText = form.customParams[protocol]?.bodyText?.trim();
+		if (!bodyText) continue;
+		try {
+			const parsed = JSON.parse(bodyText);
+			if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+				return protocol;
+			}
+		} catch {
+			return protocol;
+		}
+	}
+	return null;
+}
+
+/** 表单 → API `custom_params` 对象；调用前应先用 {@link findInvalidCustomParamsBodyProtocol} 校验。 */
+export function formDataToCustomParamsMap(
+	form: ProviderFormData
+): Record<string, { headers?: Record<string, string>; body?: Record<string, unknown> }> {
+	const result: Record<string, { headers?: Record<string, string>; body?: Record<string, unknown> }> = {};
+	for (const protocol of UPSTREAM_PROTOCOLS) {
+		const entry = form.customParams[protocol];
+		if (!entry) continue;
+		const headers: Record<string, string> = {};
+		for (const { name, value } of entry.headers) {
+			const trimmedName = name.trim();
+			if (trimmedName) headers[trimmedName] = value;
+		}
+		let body: Record<string, unknown> | undefined;
+		const bodyText = entry.bodyText.trim();
+		if (bodyText) {
+			try {
+				const parsed = JSON.parse(bodyText) as unknown;
+				if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+					body = parsed as Record<string, unknown>;
+				}
+			} catch {
+				// 调用方应已通过 findInvalidCustomParamsBodyProtocol 拦截；此处兜底忽略，不让保存请求崩溃
+			}
+		}
+		const hasHeaders = Object.keys(headers).length > 0;
+		if (hasHeaders || body) {
+			result[protocol] = { ...(hasHeaders ? { headers } : {}), ...(body ? { body } : {}) };
+		}
+	}
+	return result;
 }
 
 /** Read-only preview of the exact endpoints field submitted by the provider form. */

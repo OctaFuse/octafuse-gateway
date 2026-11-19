@@ -3,6 +3,13 @@ import { afterEach, describe, it, mock } from 'node:test';
 import { Hono } from 'hono';
 import type { GatewayRepositories } from '@octafuse/core';
 import type { AdminEnv } from '@/lib/admin-env';
+import { decodePlaygroundRequestHeadersHeader } from '@/lib/playground/outbound-headers';
+import {
+	PLAYGROUND_REQUEST_SOURCES_HEADER,
+	playgroundBodySourceRows,
+	playgroundHeaderSourceRows,
+	type PlaygroundRequestInspection,
+} from '@/lib/playground/request-sources';
 import type { PlaygroundRouteDraft } from '@/lib/playground/route-draft';
 import { adminPlaygroundRoutes } from '@/lib/routes/admin/playground';
 import { invokePlaygroundUpstream } from './playground-service';
@@ -21,7 +28,14 @@ const draft: PlaygroundRouteDraft = {
 };
 
 function repositories(
-	options: { disabled?: boolean; noKey?: boolean; noModel?: boolean; noEndpoint?: boolean } = {}
+	options: {
+		disabled?: boolean;
+		noKey?: boolean;
+		noModel?: boolean;
+		noEndpoint?: boolean;
+		providerParams?: Record<string, unknown>;
+		routeParams?: Record<string, unknown>;
+	} = {}
 ) {
 	// Only reads are supplied. Any accidental insert/update or route lookup for a draft fails the test.
 	return {
@@ -32,6 +46,7 @@ function repositories(
 				endpoints: options.noEndpoint
 					? null
 					: JSON.stringify({ openai: { base: 'https://upstream.example/v1' } }),
+				custom_params: options.providerParams ? JSON.stringify(options.providerParams) : null,
 			}),
 			getProviderApiKeyPlaintext: async () => ({ api_key: options.noKey ? '' : 'test-secret' }),
 		},
@@ -44,24 +59,28 @@ function repositories(
 		routes: {
 			getModelRouteRowById: async (id: string) => {
 				assert.equal(id, 'saved-route');
-				return { ...draft, provider_model_name: 'saved-model' };
+				return {
+					...draft,
+					provider_model_name: 'saved-model',
+					custom_params: options.routeParams ? JSON.stringify(options.routeParams) : null,
+				};
 			},
 		},
 	} as unknown as GatewayRepositories;
 }
 
-function app(authenticated = true) {
+function app(authenticated = true, repos = repositories()) {
 	const app = new Hono<AdminEnv>();
 	app.use('*', async (c, next) => {
-		c.set('repositories', repositories());
+		c.set('repositories', repos);
 		if (authenticated) c.set('principal', { type: 'console', id: 'console:test', username: 'test' });
 		await next();
 	});
 	app.route('/playground', adminPlaygroundRoutes);
 	return app;
 }
-function post(body: unknown, authenticated = true) {
-	return app(authenticated).request('/playground', {
+function post(body: unknown, authenticated = true, repos?: GatewayRepositories) {
+	return app(authenticated, repos).request('/playground', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(body),
@@ -130,6 +149,68 @@ describe('Playground route drafts', () => {
 		assert.equal((await post({ routeId: 'saved-route', body: {} })).status, 200);
 	});
 
+	it('previews and reports the same winning request sources before and after sending', async () => {
+		const fetchMock = mock.method(globalThis, 'fetch', async () => Response.json({ ok: true }));
+		const payload = {
+			routeId: 'saved-route',
+			body: { max_tokens: 256, reasoning: { client: true, effort: 'high' }, headers: 'input' },
+		};
+		const providerParams = {
+			openai: {
+				headers: { 'x-provider': 'provider', 'x-shared': 'provider' },
+				body: { max_tokens: 256, reasoning: 'provider', temperature: 0.2, headers: 'reserved' },
+			},
+			anthropic: { body: { top_p: 0.1 } },
+		};
+		const routeParams = {
+			headers: { 'X-Shared': 'route' },
+			body: { reasoning: { effort: 'low', enabled: true }, model: 'saved-model', image: 'removed' },
+		};
+
+		for (const force of [false, true]) {
+			const repos = repositories({
+				providerParams,
+				routeParams: { ...routeParams, force_override: { body: force } },
+			});
+			const fetchesBeforePreview = fetchMock.mock.callCount();
+			const previewResponse = await post({ ...payload, preview: true }, true, repos);
+			assert.equal(previewResponse.status, 200);
+			assert.equal(fetchMock.mock.callCount(), fetchesBeforePreview);
+			const { data: preview } = await previewResponse.json() as { data: PlaygroundRequestInspection };
+			assert.equal(preview.headers.Authorization, 'Bearer ••••••••');
+			assert.deepEqual(playgroundHeaderSourceRows(preview.headers, preview.sources).filter((row) => row.source !== '.'), [
+				{ name: 'x-provider', value: 'provider', source: 'p' },
+				{ name: 'X-Shared', value: 'route', source: 'r' },
+			]);
+			const body = JSON.parse(preview.body);
+			assert.deepEqual(body, {
+				max_tokens: 256,
+				reasoning: { client: true, effort: force ? 'low' : 'high', enabled: true },
+				temperature: 0.2,
+				headers: 'input',
+				model: 'saved-model',
+			});
+			const expectedSources = [
+				...(force ? [
+					{ path: 'max_tokens', source: 'p' },
+					{ path: 'reasoning.effort', source: 'r' },
+				] : []),
+				{ path: 'reasoning.enabled', source: 'r' },
+				{ path: 'temperature', source: 'p' },
+			];
+			assert.deepEqual(playgroundBodySourceRows(preview.body, preview.sources), expectedSources);
+
+			const sent = await post({ ...payload, includeRequestSources: true }, true, repos);
+			assert.equal(sent.status, 200);
+			assert.equal(fetchMock.mock.callCount(), fetchesBeforePreview + 1);
+			const wireBody = decodeURIComponent(sent.headers.get('x-playground-request-body')!);
+			const wireHeaders = decodePlaygroundRequestHeadersHeader(sent);
+			assert.deepEqual(wireHeaders, preview.headers);
+			assert.deepEqual(JSON.parse(wireBody), body);
+			assert.equal(sent.headers.get(PLAYGROUND_REQUEST_SOURCES_HEADER), preview.sources);
+		}
+	});
+
 	it('returns streaming responses and forwards request cancellation', async () => {
 		const controller = new AbortController();
 		let upstreamSignal: AbortSignal | null | undefined;
@@ -167,6 +248,8 @@ describe('Playground route drafts', () => {
 			{ body: {} },
 			{ routeId: 'saved-route', routeDraft: draft, body: {} },
 			{ toolId: 'tool', routeDraft: draft, body: {} },
+			{ toolId: 'tool', preview: true, body: {} },
+			{ routeDraft: draft, preview: true, body: {} },
 			{ routeDraft: null, body: {} },
 			{ routeDraft: draft, body: [] },
 			{ routeDraft: { ...draft, provider_id: '' }, body: {} },

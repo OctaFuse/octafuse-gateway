@@ -188,6 +188,47 @@ describe('import catalog pricing preview follows billing currency', () => {
 		}
 	});
 
+	it('includes gemini-4-neon at the flat standard list price', () => {
+		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gemini-4-neon');
+		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gemini-4-neon');
+		assert.ok(usd);
+		assert.ok(cny);
+		assert.equal(usd!.kind, 'llm');
+		assert.equal(cny!.kind, 'llm');
+		assert.equal(usd!.display_name, 'Gemini 4 Neon');
+		assert.equal(usd!.context_window, 1000000);
+		assert.equal(usd!.max_tokens, 64000);
+		assert.equal(usd!.pricing_label, '$3 / $15 /M');
+		assert.equal(cny!.pricing_label, '¥21 / ¥105 /M');
+		const preset = listStaticModelPresets().find((p) => p.id === 'gemini-4-neon');
+		assert.ok(preset);
+		assert.equal(preset!.vendor, 'google');
+		assert.equal(preset!.released, '2026-11-18');
+		assert.equal(preset!.retired, undefined);
+		assert.deepEqual(preset!.modalities?.input, ['text', 'image', 'audio', 'video', 'file']);
+		assert.deepEqual(preset!.modalities?.output, ['text']);
+		const profile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'USD'))!);
+		assert.equal(profile?.tiers.length, 1);
+		assert.equal(profile?.tiers[0]?.input_price, 3);
+		assert.equal(profile?.tiers[0]?.output_price, 15);
+		assert.equal(profile?.tiers[0]?.cache_read_price, 0.15);
+		assert.equal(profile?.tiers[0]?.cache_write_price, null);
+		const cnyProfile = parsePricingProfile(coerceModelPricingProfileInput(pickPresetPricingRawForBillingCurrency(preset!, 'CNY'))!);
+		assert.equal(cnyProfile?.tiers[0]?.input_price, 21);
+		assert.equal(cnyProfile?.tiers[0]?.output_price, 105);
+		assert.equal(cnyProfile?.tiers[0]?.cache_read_price, 1.05);
+		assert.equal(cnyProfile?.tiers[0]?.cache_write_price, null);
+		const note = '人民币价为美元刊例价 ×7 的换算占位价，非官方人民币刊例。';
+		for (const text of [preset!.description, preset!.i18n?.en, preset!.i18n?.zh, preset!.i18n?.ja, preset!.i18n?.ko]) {
+			assert.equal(text?.endsWith(note), true);
+			assert.match(text ?? '', /1M/);
+			assert.match(text ?? '', /64K/);
+			assert.match(text ?? '', /xhigh/);
+			assert.doesNotMatch(text ?? '', /1000000|64000|65536|1048576/);
+		}
+		assert.match(preset!.description ?? '', /cannot be turned off/);
+	});
+
 	it('includes gemini-4-carbon at the standard list price, not the introductory rate', () => {
 		const usd = listStaticModelPresetCatalogForAdmin('USD').find((r) => r.id === 'gemini-4-carbon');
 		const cny = listStaticModelPresetCatalogForAdmin('CNY').find((r) => r.id === 'gemini-4-carbon');

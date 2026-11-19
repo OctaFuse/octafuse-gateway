@@ -28,6 +28,7 @@ export type DescribedOutcome = {
 export type ProxyEndpointAccounting<TBody> = {
 	requestBodyForLog: (body: TBody) => string | null;
 	upstreamWireBodyForLog: (route: RouteResult, body: TBody) => string | null;
+	requestBodyForSources?: (body: TBody) => Record<string, unknown>;
 	describeOutcome: (input: DescribeOutcomeInput<TBody>) => DescribedOutcome;
 };
 

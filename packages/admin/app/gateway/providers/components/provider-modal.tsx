@@ -10,6 +10,8 @@ import {
 	XMarkIcon,
 	InformationCircleIcon,
 	AdjustmentsHorizontalIcon,
+	Cog6ToothIcon,
+	PlusIcon,
 	ShareIcon,
 	KeyIcon,
 	ServerStackIcon,
@@ -53,9 +55,11 @@ import { VendorIcon } from "@/components/model-vendor-icon";
 import type { UpstreamProtocol } from "@octafuse/core/upstream-protocol";
 import type {
 	GatewayProvider,
+	ProtocolCustomParamsForm,
 	ProtocolEndpointForm,
 	ProviderFormData,
 } from "../types";
+import { EMPTY_PROTOCOL_CUSTOM_PARAMS_FORM } from "../types";
 import { ProviderCatalogOutboundLink } from "./provider-catalog-outbound-link";
 import { useProviderRoutes } from "../use-provider-routes";
 import { ProviderEndpointsJsonPreview } from "./provider-endpoints-json-preview";
@@ -65,7 +69,7 @@ import { PROVIDER_ENDPOINT_FIELDS } from "../provider-endpoint-fields";
 
 type ProviderModalProps = {
 	open: boolean;
-	initialTab?: "basic" | "endpoints" | "routes";
+	initialTab?: "basic" | "endpoints" | "params" | "routes";
 	editingProvider: GatewayProvider | null;
 	duplicateSourceId: string | null;
 	formData: ProviderFormData;
@@ -484,6 +488,104 @@ function ProtocolFields({
 	);
 }
 
+/** 单协议的 Provider 级默认 `custom_params` 编辑区：headers 键值对列表 + body JSON 文本框。没有 force_override 控件（Provider 层没有这个概念）。 */
+function CustomParamsFields({
+	protocol,
+	form,
+	onChange,
+}: {
+	protocol: UpstreamProtocol;
+	form: ProtocolCustomParamsForm;
+	onChange: (next: ProtocolCustomParamsForm) => void;
+}) {
+	const t = useTranslations("providers.modal");
+	const panelId = useId();
+	return (
+		<div className="provider-endpoint-fields overflow-hidden rounded-xl border border-gray-200 bg-white">
+			<div className="border-b border-gray-200 bg-gray-50/70 px-4 py-3">
+				<h4 className="text-sm font-medium text-gray-800">{t("paramsHeadersLabel")}</h4>
+				<p className="mt-1 text-xs leading-5 text-gray-500">{t("paramsHeadersHint")}</p>
+			</div>
+			<div className="divide-y divide-gray-100">
+				{form.headers.map((row, index) => (
+					<div key={index} className="flex items-center gap-2 px-4 py-2.5">
+						<input
+							type="text"
+							value={row.name}
+							onChange={(event) => {
+								const headers = [...form.headers];
+								headers[index] = { ...headers[index], name: event.target.value };
+								onChange({ ...form, headers });
+							}}
+							placeholder={t("paramsHeaderNamePlaceholder")}
+							spellCheck={false}
+							autoComplete="off"
+							className="min-w-0 flex-1 rounded-md border border-gray-200 bg-white px-2.5 py-1.5 font-mono text-[13px] text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
+						/>
+						<input
+							type="text"
+							value={row.value}
+							onChange={(event) => {
+								const headers = [...form.headers];
+								headers[index] = { ...headers[index], value: event.target.value };
+								onChange({ ...form, headers });
+							}}
+							placeholder={t("paramsHeaderValuePlaceholder")}
+							spellCheck={false}
+							autoComplete="off"
+							className="min-w-0 flex-[2] rounded-md border border-gray-200 bg-white px-2.5 py-1.5 font-mono text-[13px] text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
+						/>
+						<button
+							type="button"
+							onClick={() =>
+								onChange({
+									...form,
+									headers: form.headers.filter((_, i) => i !== index),
+								})
+							}
+							aria-label={t("paramsRemoveHeader")}
+							title={t("paramsRemoveHeader")}
+							className="shrink-0 rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
+						>
+							<XMarkIcon className="h-4 w-4" aria-hidden />
+						</button>
+					</div>
+				))}
+				<div className="px-4 py-2.5">
+					<button
+						type="button"
+						onClick={() =>
+							onChange({ ...form, headers: [...form.headers, { name: "", value: "" }] })
+						}
+						className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
+					>
+						<PlusIcon className="h-3.5 w-3.5" aria-hidden />
+						{t("paramsAddHeader")}
+					</button>
+				</div>
+			</div>
+			<div className="border-t border-gray-200 bg-gray-50/50 px-4 py-4">
+				<label
+					htmlFor={`${panelId}-body`}
+					className="mb-2 block text-sm font-medium text-gray-800"
+				>
+					{t("paramsBodyLabel")}
+				</label>
+				<textarea
+					id={`${panelId}-body`}
+					rows={6}
+					value={form.bodyText}
+					onChange={(event) => onChange({ ...form, bodyText: event.target.value })}
+					className="block w-full resize-y rounded-lg border border-gray-200 bg-white p-3 font-mono text-[13px] leading-5 text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
+					placeholder={t("paramsBodyPlaceholder")}
+					spellCheck={false}
+				/>
+				<p className="mt-2 text-xs leading-5 text-gray-500">{t("paramsBodyHint")}</p>
+			</div>
+		</div>
+	);
+}
+
 export function ProviderModal(props: ProviderModalProps) {
 	const {
 		open,
@@ -526,13 +628,14 @@ export function ProviderModal(props: ProviderModalProps) {
 		? tCommon("deleting")
 		: undefined;
 
-	const [activeTab, setActiveTab] = useState<"basic" | "endpoints" | "routes">(
-		"basic"
-	);
+	const [activeTab, setActiveTab] = useState<
+		"basic" | "endpoints" | "params" | "routes"
+	>("basic");
 	const dialogRef = useRef<HTMLDivElement>(null);
 	const titleId = useId();
 	const tabsId = useId();
 	const [endpointTab, setEndpointTab] = useState<UpstreamProtocol>("openai");
+	const [paramsTab, setParamsTab] = useState<UpstreamProtocol>("openai");
 	const [showEndpointsJson, setShowEndpointsJson] = useState(false);
 	const [showApiKey, setShowApiKey] = useState(false);
 	const [apiKeyFocused, setApiKeyFocused] = useState(false);
@@ -540,7 +643,7 @@ export function ProviderModal(props: ProviderModalProps) {
 		Boolean(editingProvider) && !showApiKey && !apiKeyFocused;
 	const [apiKeyCopied, setApiKeyCopied] = useState(false);
 	const mainTabs: Array<{
-		key: "basic" | "endpoints" | "routes";
+		key: "basic" | "endpoints" | "params" | "routes";
 		label: string;
 		Icon: typeof InformationCircleIcon;
 	}> = [
@@ -549,6 +652,11 @@ export function ProviderModal(props: ProviderModalProps) {
 			key: "endpoints",
 			label: t("endpointSettings"),
 			Icon: AdjustmentsHorizontalIcon,
+		},
+		{
+			key: "params",
+			label: t("paramsSettings"),
+			Icon: Cog6ToothIcon,
 		},
 		...(editingProvider
 			? [
@@ -593,6 +701,11 @@ export function ProviderModal(props: ProviderModalProps) {
 			protocolFormIsConfigured(key, formData[key])
 		);
 		setEndpointTab(firstConfigured?.key ?? "openai");
+		const firstConfiguredParams = PROTOCOL_TABS.find(({ key }) => {
+			const entry = formData.customParams[key];
+			return Boolean(entry && (entry.headers.length > 0 || entry.bodyText.trim()));
+		});
+		setParamsTab(firstConfiguredParams?.key ?? "openai");
 		// 仅在打开不同供应商时选中已配置协议；输入过程中不重置 Tab。
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [open, editingProvider?.id, duplicateSourceId]);
@@ -1086,6 +1199,82 @@ export function ProviderModal(props: ProviderModalProps) {
 								</div>
 							)}
 						</section>
+
+						<section
+							hidden={activeTab !== "params"}
+							role="tabpanel"
+							id={`${tabsId}-params-panel`}
+							aria-labelledby={`${tabsId}-params`}
+						>
+							<p className="mb-4 text-xs leading-5 text-gray-500">
+								{t("paramsSettingsHint")}
+							</p>
+							<div className="grid items-start gap-5 md:grid-cols-[160px_minmax(0,1fr)]">
+								<div
+									className="provider-endpoint-tabs flex flex-wrap gap-1 rounded-xl bg-gray-50 p-2 md:flex-col"
+									role="tablist"
+									aria-label={t("paramsTabsAria")}
+								>
+									{PROTOCOL_TABS.map(({ key, labelKey }) => {
+										const selected = paramsTab === key;
+										const entry = formData.customParams[key];
+										const configured = Boolean(
+											entry && (entry.headers.length > 0 || entry.bodyText.trim())
+										);
+										return (
+											<button
+												key={key}
+												type="button"
+												role="tab"
+												id={`provider-params-tab-${key}`}
+												aria-selected={selected}
+												aria-controls={`provider-params-panel-${key}`}
+												aria-label={t(labelKey)}
+												onClick={() => setParamsTab(key)}
+												onKeyDown={navigateTabs}
+												tabIndex={selected ? 0 : -1}
+												className={`inline-flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 ${
+													selected
+														? "bg-white text-gray-900 shadow-sm ring-1 ring-gray-200"
+														: "text-gray-600 hover:bg-white/70 hover:text-gray-900"
+												}`}
+											>
+												<span className="h-4 w-4 shrink-0" aria-hidden>
+													<ProviderProtocolIcon protocol={key} />
+												</span>
+												{t(labelKey)}
+												{configured ? (
+													<span
+														className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"
+														title={t("configured")}
+														aria-label={t("configured")}
+													/>
+												) : null}
+											</button>
+										);
+									})}
+								</div>
+								<div
+									key={paramsTab}
+									className="min-w-0"
+									role="tabpanel"
+									id={`provider-params-panel-${paramsTab}`}
+									aria-labelledby={`provider-params-tab-${paramsTab}`}
+								>
+									<CustomParamsFields
+										protocol={paramsTab}
+										form={formData.customParams[paramsTab] ?? EMPTY_PROTOCOL_CUSTOM_PARAMS_FORM}
+										onChange={(next) =>
+											onFormChange({
+												...formData,
+												customParams: { ...formData.customParams, [paramsTab]: next },
+											})
+										}
+									/>
+								</div>
+							</div>
+						</section>
+
 						{editingProvider ? (
 							<section
 								hidden={activeTab !== "routes"}

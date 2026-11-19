@@ -29,6 +29,11 @@ import {
 import type { GeminiAction, RouteListRow } from '../types';
 
 import { LlmRequestEditor } from '@/components/model-test/llm-request-editor';
+import {
+	PlaygroundInspectionBody,
+	PlaygroundInspectionHeaders,
+	usePlaygroundRequestInspection,
+} from './playground-request-inspection';
 
 type Props = {
 	llm: boolean;
@@ -73,6 +78,7 @@ type Props = {
 	onGeminiActionChange: (action: GeminiAction) => void;
 	lastSentWireBody: string | null;
 	lastSentWireHeaders: Record<string, string> | null;
+	lastSentRequestSources: string | null;
 };
 
 export function PlaygroundRequestPanel({
@@ -117,9 +123,18 @@ export function PlaygroundRequestPanel({
 	onGeminiActionChange,
 	lastSentWireBody,
 	lastSentWireHeaders,
+	lastSentRequestSources,
 }: Props) {
 	const t = useTranslations('playground');
 	const tCommon = useTranslations('common');
+	const inspection = usePlaygroundRequestInspection({
+		routeId: llm ? selected?.id ?? null : null,
+		bodyText,
+		geminiAction,
+		sentBody: lastSentWireBody,
+		sentHeaders: lastSentWireHeaders,
+		sentSources: lastSentRequestSources,
+	});
 	const showGemini =
 		normalizeProtocol(selected?.upstream_protocol ?? 'openai') === 'gemini' &&
 		!selectedIsImage &&
@@ -207,7 +222,7 @@ export function PlaygroundRequestPanel({
 	if (llm)
 		return (
 			<LlmRequestEditor
-				previewInDialog
+				headingMark={<AdminContentMark icon={ArrowUpTrayIcon} compact />}
 				family={llmFamily}
 				modelHint={`${selected?.model_id ?? ''} ${selected?.provider_model_name ?? ''}`.toLowerCase()}
 				bodyText={bodyText}
@@ -225,22 +240,10 @@ export function PlaygroundRequestPanel({
 				error={bodyError}
 				notice={bodyDirtyHint ? t('bodyDirtyHintLlm') : null}
 				url={requestTargetUrl}
-				actualBody={selected ? actualBodyJson : tCommon('selectRouteFirst')}
-				sent={Boolean(lastSentWireBody)}
-				headers={
-					selected ? (
-						<div className="space-y-1 font-mono text-xs">
-							{routeHeaderRows.map((row) => (
-								<p
-									key={row.name}
-									className={row.source === 'custom_params' ? 'break-all text-amber-800' : 'break-all'}
-								>
-									{row.name}: {row.value}
-								</p>
-							))}
-						</div>
-					) : null
-				}
+				inlineInspection={{
+					headers: <PlaygroundInspectionHeaders inspection={inspection} />,
+					body: <PlaygroundInspectionBody inspection={inspection} />,
+				}}
 			/>
 		);
 

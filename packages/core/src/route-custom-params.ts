@@ -334,7 +334,8 @@ export function applyRouteExtraHeaders(
 
 type JsonObject = Record<string, unknown>;
 
-function deepMergeJson(base: unknown, overlay: unknown): unknown {
+/** 导出供 `provider-custom-params.ts` 复用（Provider 默认值 vs Route 值的合并），其余调用方不要绕过 {@link mergeRouteRequestBody}。 */
+export function deepMergeJson(base: unknown, overlay: unknown): unknown {
 	if (overlay !== undefined) {
 		if (Array.isArray(overlay)) {
 			return overlay;

@@ -16,6 +16,7 @@ function repositories() {
 		status: 'active',
 	};
 	const patches: Record<string, unknown>[] = [];
+	const inserted: Record<string, unknown>[] = [];
 	const repos = {
 		providers: {
 			getProviderRowById: async (id: string) =>
@@ -30,9 +31,13 @@ function repositories() {
 				Object.assign(row, patch);
 				return 1;
 			},
+			insertProvider: async (params: Record<string, unknown>) => {
+				inserted.push(params);
+			},
+			providerIdExists: async () => false,
 		},
 	} as unknown as GatewayRepositories;
-	return { repos, row, patches };
+	return { repos, row, patches, inserted };
 }
 
 describe('provider API key update semantics', () => {
@@ -99,5 +104,62 @@ describe('provider API key update semantics', () => {
 			/api_key is required/
 		);
 		assert.deepEqual(patches, []);
+	});
+});
+
+describe('provider custom_params write/read semantics', () => {
+	it('normalizes and persists a valid per-protocol custom_params on create', async () => {
+		const { repos, inserted } = repositories();
+		await createProviderService(repos, {
+			name: 'New',
+			kind: '__custom__',
+			api_key: 'sk-test',
+			custom_params: {
+				openai: { headers: { 'X-Title': 'App' }, body: { max_tokens: 4096 } },
+			},
+		});
+		assert.equal(inserted.length, 1);
+		assert.deepEqual(
+			JSON.parse(inserted[0].customParams as string),
+			{ openai: { headers: { 'X-Title': 'App' }, body: { max_tokens: 4096 } } }
+		);
+	});
+
+	it('omits custom_params on create when not provided', async () => {
+		const { repos, inserted } = repositories();
+		await createProviderService(repos, { name: 'New', kind: '__custom__', api_key: 'sk-test' });
+		assert.equal(inserted[0].customParams, null);
+	});
+
+	it('leaves custom_params untouched when the PATCH omits it', async () => {
+		const { repos, patches } = repositories();
+		await updateProviderService(repos, 'p1', { name: 'Renamed' });
+		assert.equal(Object.hasOwn(patches[0], 'custom_params'), false);
+	});
+
+	it('clears custom_params when the PATCH sets it to null', async () => {
+		const { repos, patches } = repositories();
+		await updateProviderService(repos, 'p1', { custom_params: null });
+		assert.deepEqual(patches, [{ custom_params: null }]);
+	});
+
+	it('rejects a protected header in custom_params with a 400', async () => {
+		const { repos } = repositories();
+		await assert.rejects(
+			updateProviderService(repos, 'p1', {
+				custom_params: { openai: { headers: { Authorization: 'Bearer x' } } },
+			}),
+			(error: unknown) => error instanceof AdminServiceError && error.status === 400
+		);
+	});
+
+	it('rejects an unknown protocol key in custom_params with a 400', async () => {
+		const { repos } = repositories();
+		await assert.rejects(
+			updateProviderService(repos, 'p1', {
+				custom_params: { not_a_protocol: { body: { a: 1 } } },
+			}),
+			(error: unknown) => error instanceof AdminServiceError && error.status === 400
+		);
 	});
 });

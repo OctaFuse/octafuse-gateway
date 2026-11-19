@@ -105,6 +105,8 @@ export interface ProviderAdminRow {
 	routes_count?: number;
 	/** 其中 `status = active` 的数量。 */
 	active_routes_count?: number;
+	/** 按上游协议分组的默认 `custom_params`（headers/body），无 `force_override`；见 `@octafuse/core/provider-custom-params`。 */
+	custom_params?: string | null;
 }
 
 /** 分析：按模型 + 路由组聚合。 */

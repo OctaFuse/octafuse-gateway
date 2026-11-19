@@ -44,6 +44,7 @@ import {
 } from '@/lib/elevenlabs-realtime-client';
 import { miniMaxSpeechObjectUrl } from '@/lib/minimax-speech-preview';
 import { readApiJson } from '@/lib/api-json';
+import { PLAYGROUND_REQUEST_SOURCES_HEADER } from '@/lib/playground/request-sources';
 import type { AdminModelRow } from '@/lib/services/admin/types';
 import type { ApiResponse, GatewayProvider } from '@/lib/types';
 import { DEFAULT_KIND_FILTER, type ModelKindFilter } from '../models/types';
@@ -130,6 +131,7 @@ export function usePlaygroundPageState() {
 	const [imagePreviews, setImagePreviews] = useState<ImagePreviewItem[]>([]);
 	const [lastSentWireBody, setLastSentWireBody] = useState<string | null>(null);
 	const [lastSentWireHeaders, setLastSentWireHeaders] = useState<Record<string, string> | null>(null);
+	const [lastSentRequestSources, setLastSentRequestSources] = useState<string | null>(null);
 	const [lastSentInputSnapshot, setLastSentInputSnapshot] = useState<string | null>(null);
 	const streamEndRef = useRef<HTMLSpanElement>(null);
 	const mergedStreamEndRef = useRef<HTMLSpanElement>(null);
@@ -479,6 +481,7 @@ export function usePlaygroundPageState() {
 		setResponseMeta(null);
 		setLastSentWireBody(null);
 		setLastSentWireHeaders(null);
+		setLastSentRequestSources(null);
 		setLastSentInputSnapshot(null);
 		setResponseText('');
 		setUsageHint(null);
@@ -671,6 +674,7 @@ export function usePlaygroundPageState() {
 		setResponseMeta(null);
 		setLastSentWireBody(null);
 		setLastSentWireHeaders(null);
+		setLastSentRequestSources(null);
 		setLastSentInputSnapshot(null);
 		setResponseTab('merged');
 
@@ -846,7 +850,11 @@ export function usePlaygroundPageState() {
 			body: Record<string, unknown>;
 			geminiAction?: GeminiAction;
 			imageOperation?: ImageOperation;
+			includeRequestSources?: boolean;
 		} = { routeId: selected.id, body: bodyObj };
+		if (!selectedIsImage && !selectedIsAudio && !selectedIsEmbedding) {
+			payload.includeRequestSources = true;
+		}
 		if (proto === 'gemini') {
 			payload.geminiAction = geminiAction;
 		}
@@ -872,6 +880,7 @@ export function usePlaygroundPageState() {
 
 			setLastSentWireBody(decodeWireRequestBodyHeader(res, t('decodeWireFailed')));
 			setLastSentWireHeaders(decodePlaygroundRequestHeadersHeader(res));
+			setLastSentRequestSources(res.headers.get(PLAYGROUND_REQUEST_SOURCES_HEADER));
 			setLastSentInputSnapshot(requestFingerprint);
 
 			setResponseMeta({
@@ -1056,6 +1065,7 @@ export function usePlaygroundPageState() {
 			lastSentWireBody && lastSentInputSnapshot === requestFingerprint ? lastSentWireBody : null,
 		lastSentWireHeaders:
 			lastSentWireBody && lastSentInputSnapshot === requestFingerprint ? lastSentWireHeaders : null,
+		lastSentRequestSources: lastSentInputSnapshot === requestFingerprint ? lastSentRequestSources : null,
 		requestTargetUrl,
 		requestTargetMissing: requestTargetUrl ? null : previewUpstream.target,
 		selectedIsImage,

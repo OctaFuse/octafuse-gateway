@@ -11,6 +11,7 @@ import {
 } from '@octafuse/core';
 import { isDashScopeAsyncFileAdapter } from '@octafuse/core/adapters/registry';
 import { mergeRouteRequestBody } from '@octafuse/core/route-custom-params';
+import { resolveCustomParamsLayers } from '@octafuse/core/provider-custom-params';
 import {
 	AUDIO_SPEECH_KNOWN_KEYS,
 	AUDIO_TRANSCRIPTION_KNOWN_KEYS,
@@ -85,6 +86,7 @@ import type { PlaygroundRouteDraft } from '@/lib/playground/route-draft';
 import { parsePlaygroundRouteDraft } from './playground-route-draft';
 import { providerSupportsUpstreamProtocol } from './shared';
 import { redactPlaygroundOutboundHeaders } from '@/lib/playground/outbound-headers';
+import { playgroundRequestSourceCodes, type PlaygroundRequestInspection } from '@/lib/playground/request-sources';
 
 /** 与 Proxy `RouteResult` 对齐的最小子集，供合并默认参数与拼 URL。 */
 export type PlaygroundResolvedRoute = {
@@ -96,6 +98,7 @@ export type PlaygroundResolvedRoute = {
 	providerApiKey: string;
 	providerModelName: string;
 	customParams: Record<string, unknown> | null;
+	customParamsLayers?: ReturnType<typeof resolveCustomParamsLayers>;
 	/** 目录模型类型（`resolveModelKind`；无目录模型时为 llm）。 */
 	modelKind: ModelKind;
 };
@@ -206,10 +209,19 @@ async function resolvePlaygroundRouteFields(
 	}
 	const providerEndpoints = parseProviderEndpoints(provider);
 
-	const customParams = parseJsonObject(row.custom_params);
-	if (row.custom_params && !customParams) {
+	/**
+	 * 先按原有语义校验 Route 的 `custom_params` 是否为合法 JSON——Playground 面向正在编辑配置的用户，
+	 * 草稿里的坏 JSON 应该直接报错，而不是像线上请求那样静默降级（那样用户永远不知道自己写错了）。
+	 * 校验通过后，再用与 `model-router.ts` 相同的合并逻辑计算有效参数
+	 * （Provider 默认值 + Route 值），保证调试台预览与线上真实请求永远用同一套合并结果。
+	 */
+	const routeCustomParamsForValidation = parseJsonObject(row.custom_params);
+	if (row.custom_params && !routeCustomParamsForValidation) {
 		throw badRequest('Invalid custom_params JSON on route');
 	}
+	const customParamsLayers = resolveCustomParamsLayers(provider.custom_params, row.custom_params, protocol, {
+		providerId: provider.id,
+	});
 
 	const model = await repos.models.getModelDetailWithRouteCounts(row.model_id);
 	if (isDraft && !model) throw badRequest('Model not found');
@@ -229,7 +241,8 @@ async function resolvePlaygroundRouteFields(
 		providerId: provider.id,
 		providerApiKey: apiKey,
 		providerModelName: row.provider_model_name,
-		customParams,
+		customParams: customParamsLayers.effective,
+		customParamsLayers,
 		modelKind,
 	};
 }
@@ -306,6 +319,7 @@ export type PlaygroundInvokeInput = (
 	 * For edits, `body.image` / `body.images` should be data URL string(s).
 	 */
 	imageOperation?: ImageOperation;
+	includeRequestSources?: boolean;
 };
 
 type DecodedEditImage = {
@@ -1016,21 +1030,10 @@ export type PlaygroundInvokeResult = {
 	upstreamWireBodyJson: string;
 	/** 实际上游 fetch 请求头（密钥已脱敏） */
 	upstreamWireHeaders: Record<string, string>;
+	requestSourceCodes?: string;
 };
 
-/**
- * 发起一次上游请求并透传 `Response`（含 body stream）。不计费、不写日志。
- */
-export async function invokePlaygroundUpstream(
-	repos: GatewayRepositories,
-	input: PlaygroundInvokeInput,
-	requestSignal?: AbortSignal,
-): Promise<PlaygroundInvokeResult> {
-	const resolved =
-		input.routeDraft !== undefined
-			? await resolvePlaygroundRouteFields(repos, parsePlaygroundRouteDraft(input.routeDraft), true)
-			: await resolvePlaygroundRoute(repos, input.routeId ?? '');
-	const route = await applyPlaygroundUpstreamCredential(resolved);
+function preparePlaygroundUpstreamRequest(route: PlaygroundResolvedRoute, input: PlaygroundInvokeInput) {
 	const userBody = input.body;
 	if (!isPlainObject(userBody)) {
 		throw badRequest('body must be a JSON object');
@@ -1041,8 +1044,6 @@ export async function invokePlaygroundUpstream(
 	let headers: Record<string, string>;
 	let fetchBody: BodyInit;
 	let upstreamWireBodyJson: string;
-
-	const start = Date.now();
 
 	if (
 		route.modelKind === 'image' &&
@@ -1726,7 +1727,71 @@ export async function invokePlaygroundUpstream(
 		}
 	}
 
-	headers = applyRouteExtraHeaders(headers, route.customParams);
+	return {
+		url,
+		headers: applyRouteExtraHeaders(headers, route.customParams),
+		fetchBody,
+		upstreamWireBodyJson,
+	};
+}
+
+function inspectPlaygroundRequestSources(
+	route: PlaygroundResolvedRoute,
+	userBody: JsonObject,
+	wireBody: string | null,
+	headers: Record<string, string>,
+): string {
+	if (route.modelKind !== 'llm' || !route.customParamsLayers) return '';
+	return playgroundRequestSourceCodes({
+		layers: route.customParamsLayers,
+		userBody,
+		wireBody: route.adapter === 'gemini-image' ? null : wireBody,
+		headers,
+		writesModel: route.upstreamProtocol !== 'gemini',
+	});
+}
+
+/** Assemble the request using a placeholder credential without calling the upstream. */
+export async function previewPlaygroundUpstream(
+	repos: GatewayRepositories,
+	input: PlaygroundInvokeInput,
+): Promise<PlaygroundRequestInspection> {
+	const route = await resolvePlaygroundRoute(repos, input.routeId ?? '');
+	if (route.modelKind !== 'llm') throw badRequest('Request inspection is available for language models');
+	const gemini = route.providerEndpoints.gemini;
+	const useBearer = gemini && isGcpServiceAccountJson(route.providerApiKey);
+	const request = preparePlaygroundUpstreamRequest(
+		{
+			...route,
+			providerApiKey: '••••••••',
+			providerEndpoints: useBearer
+				? { ...route.providerEndpoints, gemini: { ...gemini, auth: 'bearer' } }
+				: route.providerEndpoints,
+		},
+		input,
+	);
+	return {
+		body: request.upstreamWireBodyJson,
+		headers: redactPlaygroundOutboundHeaders(request.headers),
+		sources: inspectPlaygroundRequestSources(route, input.body, request.upstreamWireBodyJson, request.headers),
+	};
+}
+
+/**
+ * 发起一次上游请求并透传 `Response`（含 body stream）。不计费、不写日志。
+ */
+export async function invokePlaygroundUpstream(
+	repos: GatewayRepositories,
+	input: PlaygroundInvokeInput,
+	requestSignal?: AbortSignal,
+): Promise<PlaygroundInvokeResult> {
+	const resolved =
+		input.routeDraft !== undefined
+			? await resolvePlaygroundRouteFields(repos, parsePlaygroundRouteDraft(input.routeDraft), true)
+			: await resolvePlaygroundRoute(repos, input.routeId ?? '');
+	const route = await applyPlaygroundUpstreamCredential(resolved);
+	const start = Date.now();
+	const { url, headers, fetchBody, upstreamWireBodyJson } = preparePlaygroundUpstreamRequest(route, input);
 
 	let response: Response;
 	try {
@@ -1829,23 +1894,27 @@ export async function invokePlaygroundUpstream(
 
 	/** 响应自定义头不宜过大；超长时截断并标注（避免中间截断破坏 JSON）。 */
 	const WIRE_BODY_HEADER_MAX = 6144;
-	if (upstreamWireBodyJson.length > WIRE_BODY_HEADER_MAX) {
-		upstreamWireBodyJson = JSON.stringify(
-			{
-				__playground_truncated: true,
-				__original_length: upstreamWireBodyJson.length,
-				__preview: upstreamWireBodyJson.slice(0, Math.min(4000, WIRE_BODY_HEADER_MAX - 200)),
-			},
-			null,
-			2,
-		);
-	}
+	const truncated = upstreamWireBodyJson.length > WIRE_BODY_HEADER_MAX;
+	const wireBody = truncated
+		? JSON.stringify(
+				{
+					__playground_truncated: true,
+					__original_length: upstreamWireBodyJson.length,
+					__preview: upstreamWireBodyJson.slice(0, Math.min(4000, WIRE_BODY_HEADER_MAX - 200)),
+				},
+				null,
+				2,
+			)
+		: upstreamWireBodyJson;
 
 	return {
 		response,
 		upstreamUrlForHeader,
 		latencyMs,
-		upstreamWireBodyJson,
+		upstreamWireBodyJson: wireBody,
 		upstreamWireHeaders: redactPlaygroundOutboundHeaders(headers),
+		requestSourceCodes: input.includeRequestSources
+			? inspectPlaygroundRequestSources(route, input.body, truncated ? null : wireBody, headers)
+			: undefined,
 	};
 }

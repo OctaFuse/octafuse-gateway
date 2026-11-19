@@ -4,8 +4,11 @@ import { parseProviderEndpoints } from '@octafuse/core/provider-endpoints';
 import { listStaticProviderImportCatalogForAdmin } from '@/lib/provider-import-preset';
 import {
 	providerApiKeyPreview,
+	findInvalidCustomParamsBodyProtocol,
+	formDataToCustomParamsMap,
 	formDataToEndpointsMap,
 	getProviderKeyStatus,
+	providerCustomParamsToFormData,
 	providerMatchesListFilter,
 	providerToFormData,
 	tryCollapseGeminiLegacyEndpoints,
@@ -213,4 +216,59 @@ describe('provider status and protocol filters', () => {
   ];
   assert.deepEqual(providers.filter(p => providerMatchesListFilter(p, selected.status) && providerMatchesListFilter(p, selected.protocol)).map(p => p.id), ['disabled']);
  });
+});
+
+describe('provider custom_params form conversion', () => {
+	it('treats a missing or malformed custom_params column as unconfigured', () => {
+		assert.deepEqual(providerCustomParamsToFormData(providerWithEndpoints({}, { custom_params: null })), {});
+		assert.deepEqual(
+			providerCustomParamsToFormData(providerWithEndpoints({}, { custom_params: '{not json' })),
+			{}
+		);
+	});
+
+	it('round-trips a configured protocol through form state and back to the API shape', () => {
+		const provider = providerWithEndpoints({}, {
+			custom_params: JSON.stringify({
+				openai: { headers: { 'X-Title': 'App' }, body: { max_tokens: 4096 } },
+			}),
+		});
+		const form = providerCustomParamsToFormData(provider);
+		assert.deepEqual(form.openai, {
+			headers: [{ name: 'X-Title', value: 'App' }],
+			bodyText: JSON.stringify({ max_tokens: 4096 }, null, 2),
+		});
+		const roundTripped = formDataToCustomParamsMap({ ...EMPTY_PROVIDER_FORM, customParams: form });
+		assert.deepEqual(roundTripped, {
+			openai: { headers: { 'X-Title': 'App' }, body: { max_tokens: 4096 } },
+		});
+	});
+
+	it('drops blank header names and an empty body on write-out', () => {
+		const map = formDataToCustomParamsMap({
+			...EMPTY_PROVIDER_FORM,
+			customParams: {
+				openai: { headers: [{ name: '  ', value: 'ignored' }], bodyText: '  ' },
+			},
+		});
+		assert.deepEqual(map, {});
+	});
+
+	it('flags the first protocol whose body text is not valid JSON', () => {
+		assert.equal(
+			findInvalidCustomParamsBodyProtocol({
+				...EMPTY_PROVIDER_FORM,
+				customParams: { openai: { headers: [], bodyText: '{not json' } },
+			}),
+			'openai'
+		);
+		assert.equal(
+			findInvalidCustomParamsBodyProtocol({
+				...EMPTY_PROVIDER_FORM,
+				customParams: { openai: { headers: [], bodyText: '{"max_tokens": 4096}' } },
+			}),
+			null
+		);
+		assert.equal(findInvalidCustomParamsBodyProtocol(EMPTY_PROVIDER_FORM), null);
+	});
 });

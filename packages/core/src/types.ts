@@ -116,6 +116,11 @@ export interface ProviderRow {
   /** 运营备注。类型介绍由静态模板按语言解析，不入库。 */
   note: string | null;
   created_at: string;
+  /**
+   * 按上游协议分组的默认 `custom_params`（headers/body），无 `force_override`；Route 级可覆盖。
+   * 见 `@octafuse/core/provider-custom-params` 的 `resolveEffectiveCustomParams`。
+   */
+  custom_params?: string | null;
 }
 
 /** `models` 查询结果；`tags` / `route_groups` 多为 `json_group_array` 生成的 JSON 字符串。 */
