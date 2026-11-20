@@ -147,7 +147,12 @@
 		"login": "登录",
 		"loggingIn": "登录中...",
 		"loggingOut": "退出中...",
-		"logout": "退出登录"
+		"logout": "退出登录",
+		"lockedOutTitle": "尝试次数过多",
+		"lockedOutDescription": "登录已临时锁定，请在倒计时结束后重试。",
+		"lockedOutCountdown": "{time} 后可重试",
+		"lockoutAcknowledge": "知道了",
+		"loginBusy": "已有登录尝试正在处理，请稍后重试。"
 	},
 	"sidebar": {
 		"openMenu": "打开导航菜单",

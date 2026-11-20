@@ -10,6 +10,7 @@ import { basename, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import next, { type NextConfig } from 'next';
 import { PLAYGROUND_REALTIME_PATH } from '../lib/playground-realtime-path';
+import { applyAdminLoginPeer } from '../lib/admin-node-login-peer';
 import {
 	handleAdminNodeRealtimeUpgrade,
 	incomingMessageToFetchRequest,
@@ -124,6 +125,7 @@ export async function startAdminNodeServer(
 				: null;
 	const websocketServer = createPlaygroundNodeWebSocketServer();
 	const server = createServer((req, res) => {
+		applyAdminLoginPeer(req);
 		void handle(req, res);
 	});
 

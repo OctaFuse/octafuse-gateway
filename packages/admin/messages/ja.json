@@ -147,7 +147,12 @@
 		"login": "ログイン",
 		"loggingIn": "ログイン中...",
 		"loggingOut": "ログアウト中...",
-		"logout": "ログアウト"
+		"logout": "ログアウト",
+		"lockedOutTitle": "試行回数が多すぎます",
+		"lockedOutDescription": "ログインは一時的にロックされています。カウントダウン後に再試行してください。",
+		"lockedOutCountdown": "あと {time} で再試行できます",
+		"lockoutAcknowledge": "了解",
+		"loginBusy": "ログイン処理中です。しばらくしてから再試行してください。"
 	},
 	"sidebar": {
 		"openMenu": "ナビゲーションメニューを開く",

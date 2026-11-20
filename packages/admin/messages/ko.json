@@ -147,7 +147,12 @@
 		"login": "로그인",
 		"loggingIn": "로그인 중...",
 		"loggingOut": "로그아웃 중...",
-		"logout": "로그아웃"
+		"logout": "로그아웃",
+		"lockedOutTitle": "시도 횟수가 너무 많습니다",
+		"lockedOutDescription": "로그인이 일시적으로 잠겼습니다. 카운트다운이 끝나면 다시 시도하세요.",
+		"lockedOutCountdown": "{time} 후 다시 시도할 수 있습니다",
+		"lockoutAcknowledge": "확인",
+		"loginBusy": "로그인 요청을 처리 중입니다. 잠시 후 다시 시도하세요."
 	},
 	"sidebar": {
 		"openMenu": "탐색 메뉴 열기",
