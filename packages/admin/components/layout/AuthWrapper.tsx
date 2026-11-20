@@ -15,6 +15,7 @@ import { ADMIN_SESSION_EXPIRED_EVENT_NAME } from '@/lib/admin-session-events';
 import { readApiJson, readJson } from '@/lib/api-json';
 import { adminAppVersion } from '@/lib/app-version';
 import AdminShell from './AdminShell';
+import LoginLockoutDialog from './LoginLockoutDialog';
 
 interface Props {
   children: ReactNode;
@@ -32,6 +33,21 @@ export default function AuthWrapper({ children }: Props) {
   const [loginError, setLoginError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [lockDeadline, setLockDeadline] = useState<number | null>(null);
+  const [lockRemaining, setLockRemaining] = useState(0);
+  const [showLockDialog, setShowLockDialog] = useState(false);
+
+  useEffect(() => {
+    if (lockDeadline === null) return;
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((lockDeadline - performance.now()) / 1000));
+      setLockRemaining(remaining);
+      if (remaining === 0) { setLockDeadline(null); setShowLockDialog(false); }
+    };
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [lockDeadline]);
 
   const checkAuth = useCallback(async () => {
     try {
@@ -72,7 +88,7 @@ export default function AuthWrapper({ children }: Props) {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || lockDeadline !== null) return;
     setLoginError('');
     setIsSubmitting(true);
 
@@ -85,12 +101,21 @@ export default function AuthWrapper({ children }: Props) {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await readApiJson(response);
+      const data = await readApiJson(response) as Awaited<ReturnType<typeof readApiJson>> & {
+        code?: string; retryAfterSeconds?: number;
+      };
 
       if (data.success) {
         setPassword('');
         setShowPassword(false);
         setIsAuthenticated(true);
+      } else if (response.status === 429 && data.code === 'ADMIN_LOGIN_LOCKED') {
+        const seconds = Number.isFinite(data.retryAfterSeconds) ? Math.max(1, Math.min(86400, Math.ceil(data.retryAfterSeconds!))) : 1;
+        setLockRemaining(seconds);
+        setLockDeadline(performance.now() + seconds * 1000);
+        setShowLockDialog(true);
+      } else if (response.status === 429 && data.code === 'ADMIN_LOGIN_BUSY') {
+        setLoginError(t('loginBusy'));
       } else {
         setLoginError(data.message || tCommon('loginFailed'));
       }
@@ -115,6 +140,7 @@ export default function AuthWrapper({ children }: Props) {
   if (!isAuthenticated) {
     return (
       <main className="flex h-dvh items-start justify-center overflow-y-auto bg-gray-50 px-4 py-8 sm:px-8">
+        {showLockDialog && lockRemaining > 0 && <LoginLockoutDialog remainingSeconds={lockRemaining} onClose={() => setShowLockDialog(false)} />}
         <div className="my-auto w-full max-w-[480px]">
           <section aria-labelledby="login-title" className="rounded-2xl border border-gray-200 bg-white shadow-sm">
             <header className="flex items-center justify-between gap-3 rounded-t-2xl border-b border-gray-100 bg-gray-50/80 px-6 py-5 sm:px-8">
@@ -192,7 +218,7 @@ export default function AuthWrapper({ children }: Props) {
                 )}
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || lockDeadline !== null}
                   aria-label={isSubmitting ? t('loggingIn') : t('login')}
                   className="admin-primary flex h-12 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
                 >

@@ -10,8 +10,14 @@
 export type AdminAuthEvent =
 	| 'admin.auth.login'
 	| 'admin.auth.login_failed'
+	| 'admin.auth.login_lockout_triggered'
+	| 'admin.auth.login_locked'
+	| 'admin.auth.guard_degraded'
 	| 'admin.auth.logout'
 	| 'admin.auth.unauthorized';
+
+const sampledEvents = new Map<string, number>();
+const SAMPLE_CAP = 512;
 
 function firstForwardedFor(value: string): string | null {
 	const first = value.split(',')[0]?.trim();
@@ -22,6 +28,8 @@ export function getClientIp(request: Request | undefined): string | null {
 	if (!request) return null;
 	const cfIp = request.headers.get('cf-connecting-ip');
 	if (cfIp) return cfIp;
+	const peer = request.headers.get('x-octafuse-peer-ip');
+	if (peer) return peer;
 	const forwarded = request.headers.get('x-forwarded-for');
 	return forwarded ? firstForwardedFor(forwarded) : null;
 }
@@ -46,23 +54,37 @@ export function logAdminAuthEvent(
 		keyPrefix?: string | null;
 		method?: string | null;
 		path?: string | null;
+		guardKey?: string | null;
 	} = {}
 ): void {
+	try {
 	const payload: Record<string, unknown> = {
 		event,
 		at: new Date().toISOString(),
 		client_ip: getClientIp(request),
-		user_agent: getUserAgent(request),
+		user_agent: getUserAgent(request)?.slice(0, 256),
 	};
-	if (details.username != null) payload.username = details.username;
+	if (details.username != null) payload.username = details.username.slice(0, 128);
 	if (details.keyPrefix != null) payload.key_prefix = details.keyPrefix;
 	if (details.method != null) payload.method = details.method;
 	if (details.path != null) payload.path = details.path;
+	if (details.guardKey != null) payload.guard_key = details.guardKey;
+	if (event === 'admin.auth.login_locked' || event === 'admin.auth.guard_degraded') {
+		const now = Date.now();
+		const sampleKey = `${event}:${details.guardKey ?? 'global'}`;
+		if (now - (sampledEvents.get(sampleKey) ?? 0) < 60_000) return;
+		if (sampledEvents.size >= SAMPLE_CAP) sampledEvents.clear();
+		sampledEvents.set(sampleKey, now);
+	}
 
-	const line = JSON.stringify(payload);
-	if (event === 'admin.auth.login_failed' || event === 'admin.auth.unauthorized') {
-		console.warn(line);
+	let line: string;
+	try { line = JSON.stringify(payload); } catch { return; }
+	if (event === 'admin.auth.login_failed' || event === 'admin.auth.unauthorized' ||
+		event === 'admin.auth.login_locked' || event === 'admin.auth.login_lockout_triggered' ||
+		event === 'admin.auth.guard_degraded') {
+		try { console.warn(line); } catch { /* Logging cannot change authentication. */ }
 		return;
 	}
-	console.log(line);
+	try { console.log(line); } catch { /* Logging cannot change authentication. */ }
+	} catch { /* Logging cannot change authentication. */ }
 }
