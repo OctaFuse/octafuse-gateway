@@ -39,7 +39,6 @@ import { FailoverRulesDialog } from './failover-rules-dialog';
 import { ProviderStickyChip } from './provider-sticky-chip';
 import { RouteStickyUsage } from './route-sticky-usage';
 import { RouteTargetPricing } from './route-target-pricing';
-import { useRoutePricingPeriods } from '../use-route-display-preferences';
 import { useRoutePathDisplay } from '../use-route-path-display';
 
 const EMPTY_STICKY_COUNTS = new Map<string, number>();
@@ -111,10 +110,8 @@ function RouteTarget({
 	onOpenStickyBindings: () => void;
 }) {
 	const t = useTranslations('routes.flow');
-	const [pricingPeriods] = useRoutePricingPeriods();
-	const modelList = density === 'model-list';
 	const modelCard = density === 'model-card';
-	const listView = modelList || density === 'list';
+	const listView = density === 'list';
 	const tKind = useTranslations('providers.kind');
 	const locale = useLocale();
 	const providerName =
@@ -153,7 +150,7 @@ function RouteTarget({
 	const listWeight = (
 		<span className="route-provider-list-weight inline-flex shrink-0 items-center gap-1 tabular-nums" title={t('badgeWeightTooltip', { value: route.weight ?? 1 })}>
 			<span className="text-xs text-slate-500">{t('listWeight')}</span>
-			<span className={`${modelList ? 'rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-xs leading-4' : 'text-sm'} font-semibold ${available ? 'text-slate-900' : 'text-slate-600'}`}>{route.weight ?? 1}</span>
+			<span className={`text-sm font-semibold ${available ? 'text-slate-900' : 'text-slate-600'}`}>{route.weight ?? 1}</span>
 		</span>
 	);
 
@@ -245,9 +242,9 @@ function RouteTarget({
 								<span className="flex items-center gap-1.5">
 									<span className={`${listView ? 'route-provider-list-name ' : 'route-provider-card-name '}min-w-0 truncate text-xs font-medium group-hover:text-gray-800 ${available ? 'text-slate-900' : 'text-slate-600'}`} title={providerName}>{providerName}</span>
 								</span>
-								{showKind && (modelList || !listView) ? (
+								{showKind && !listView ? (
 									<span className="mt-0.5 block truncate text-xs leading-4 text-slate-500" title={kindLabel ?? undefined}>
-										{showKind ? kindLabel : null}
+										{kindLabel}
 									</span>
 								) : null}
 							</button>
@@ -265,16 +262,10 @@ function RouteTarget({
 				{listView ? (
 					<div className="route-provider-list-model min-w-0">
 						{upstreamModel}
-						{modelList && (
-							<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-								{listWeight}
-								{params.headers || params.body ? paramsBadges : null}
-							</div>
-						)}
 					</div>
 				) : null}
 				<div className={listView ? 'route-provider-list-meta' : 'mt-3 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-4'}>
-					{modelCard ? cardMetrics : (modelList || !listView) && routeStatus}
+					{modelCard ? cardMetrics : !listView && routeStatus}
 					{density === 'list' ? listWeight : null}
 					{!listView && (params.headers || params.body) ? paramsBadges : null}
 					{density === 'list' && stickyEnabled ? (
@@ -285,14 +276,8 @@ function RouteTarget({
 					) : null}
 					{density === 'list' && (params.headers || params.body) ? paramsBadges : null}
 				</div>
-				{modelList && stickyEnabled && (
-					<div className="route-model-list-sticky flex items-center gap-1">
-						<span className="text-xs text-slate-500">{t('listStickyUsers')}</span>
-						{stickyUsage}
-					</div>
-				)}
 			</div>
-			<RouteTargetPricing key={pricingPeriods} initiallyExpanded={pricingPeriods === 'all'} summarize={modelList || density === 'model-card'} muted={!available} compact={listView} priceOverride={route.price_override} onEdit={() => onEdit(route, 'pricing')} />
+			<RouteTargetPricing muted={!available} compact={listView} priceOverride={route.price_override} onEdit={() => onEdit(route, 'pricing')} />
 		</div>
 	);
 }
@@ -576,7 +561,7 @@ function strategyDisplayKey(strategy: string): string {
 	return strategy;
 }
 
-type PoolDensity = RouteFlowDensity | 'model-card' | 'model-list';
+type PoolDensity = RouteFlowDensity | 'model-card';
 
 function PriorityTierPanel({
 	priority,
@@ -617,7 +602,7 @@ function PriorityTierPanel({
 }) {
 	const t = useTranslations('routes.flow');
 	const tStrategy = useTranslations('routes.strategy');
-	const isList = density === 'list' || density === 'model-list';
+	const isList = density === 'list';
 	const availableCount = routes.filter(route => isRouteConfigurationAvailable(route, providerMeta.get(route.provider_id))).length;
 	const strategy = resolveEffectiveRouteStrategy({
 		poolStrategy: section.poolStrategy,
@@ -649,12 +634,12 @@ function PriorityTierPanel({
 						title={t('badgePriorityTooltip', { value: priority })}
 						aria-label={t('badgePriorityTooltip', { value: priority })}
 					>
-						{density !== 'model-list' && <ArrowsUpDownIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+						<ArrowsUpDownIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
 						<span className="text-sm font-semibold tabular-nums">{priority}</span>
 					</span>
 					{layerIndex > 0 ? (
 						<button type="button" onClick={onOpenFailover} title={t('failoverRules')} aria-label={t('failoverRules')} className="inline-flex items-center gap-1 rounded text-xs font-medium text-slate-600 hover:text-gray-800 focus-visible:outline-gray-500">
-							{density !== 'model-list' && <ArrowDownIcon className="route-fallback-direction h-3 w-3" aria-hidden />}
+							<ArrowDownIcon className="route-fallback-direction h-3 w-3" aria-hidden />
 							{layerLabel}
 						</button>
 					) : <span className="text-xs font-medium text-slate-700">{layerLabel}</span>}
@@ -667,13 +652,12 @@ function PriorityTierPanel({
 							total: routes.length,
 						})}
 					>
-						{density === 'model-list' && <>{t('availableShort')} </>}
 						{t('tierActiveTotal', {
 							active: availableCount,
 							total: routes.length,
 						})}
 					</span>
-					{density !== 'model-card' && density !== 'model-list' && (
+					{density !== 'model-card' && (
 						<span className={density === 'list' ? 'min-w-3 flex-1' : 'h-px min-w-0 flex-1 bg-slate-200'} aria-hidden />
 					)}
 					<div
@@ -796,27 +780,16 @@ export function UpstreamPoolPanel({
 		<>
 			<div
 				className={
-					density === 'model-list' ? 'route-provider-list route-model-provider-list min-w-0'
-					: density === 'list' ? 'route-upstream-pool route-provider-list flex min-w-0 flex-col items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_3px_10px_-2px_rgba(15,23,42,0.22)]'
+					density === 'list' ? 'route-upstream-pool route-provider-list flex min-w-0 flex-col items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_3px_10px_-2px_rgba(15,23,42,0.22)]'
 						: density === 'model-card' ? 'route-card-tiers'
 						: `route-upstream-pool route-provider-card-group flex min-w-0 flex-col gap-5 rounded-xl border border-slate-300/70 border-l-[3px] p-3 sm:p-4 ${section.group === 'default' ? 'border-l-sky-300' : 'border-l-violet-300'}`
 				}
 				role="group"
 				data-route-group={section.group}
-				data-sticky-enabled={(density === 'model-list' && section.poolStickyEnabled) || undefined}
 				data-paired={density === 'model-card' && priorityLayers.length === 2 && priorityLayers[1][1].length === 1
 					? (priorityLayers[0][1].length === 1 ? 'equal' : 'single-fallback') : undefined}
 				aria-label={t('routeGroupProviders', { group: section.group })}
 			>
-				{density === 'model-list' && priorityLayers.length > 0 && (
-					<div className="route-model-list-columns text-xs font-medium text-slate-600">
-						<span>{t('listProviderAccount')}</span>
-						<span>{t('listUpstreamModel')}</span>
-						<span>{t('listStatus')}</span>
-						{section.poolStickyEnabled && <span className="text-center">{t('listStickyUsers')}</span>}
-						<span>{t('pricingDetails')}</span>
-					</div>
-				)}
 				{priorityLayers.map(([priority, routes], layerIndex) => (
 					<div
 						key={priority}
@@ -929,7 +902,7 @@ export function ModelSurface({ surfaceGroups, surface, selectSurface, section, s
 			</div>
 			<div id={`${id}-panel`} role="tabpanel" aria-labelledby={tabId(sections.indexOf(section))} className="route-card-upstreams"
 				style={density === 'list' ? undefined : { '--route-count': routes.length } as CSSProperties}>
-				<UpstreamPoolPanel key={section.key} {...pool} density={density === 'list' ? 'model-list' : 'model-card'} card={card} section={section} providerMeta={providerMeta} />
+				<UpstreamPoolPanel key={section.key} {...pool} density={density === 'list' ? 'list' : 'model-card'} card={card} section={section} providerMeta={providerMeta} />
 			</div>
 		</section>
 	);

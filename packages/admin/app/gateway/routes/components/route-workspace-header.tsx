@@ -15,7 +15,7 @@ import type { RouteFlowDensity, RouteWorkspaceView } from '../types';
 import { RouteOptionsDialog } from './route-options-dialog';
 import { StickyRefreshControl } from './sticky-refresh-control';
 import type { RouteModelLayout } from '../use-route-display-preferences';
-import { useRoutePricingDisplay, useRoutePricingPeriods } from '../use-route-display-preferences';
+import { useRoutePricingDisplay } from '../use-route-display-preferences';
 import { useRoutePathDisplay } from '../use-route-path-display';
 
 type Props = {
@@ -48,7 +48,6 @@ export function RouteWorkspaceHeader(props: Props) {
 	} = props;
 	const t = useTranslations('routes.workspace');
 	const [pricingDisplay, setPricingDisplay] = useRoutePricingDisplay();
-	const [pricingPeriods, setPricingPeriods] = useRoutePricingPeriods();
 	const [pathDisplay, setPathDisplay] = useRoutePathDisplay();
 
 	const toolbarRef = useRef<HTMLDivElement>(null);
@@ -143,12 +142,6 @@ export function RouteWorkspaceHeader(props: Props) {
 					))}
 				</div>
 			</div>
-			<label className="inline-flex cursor-pointer items-center gap-2 text-xs text-slate-600">
-				<input type="checkbox" checked={pricingPeriods === 'all'}
-					onChange={event => setPricingPeriods(event.target.checked ? 'all' : 'current')}
-					className="h-4 w-4 accent-gray-900" />
-				{t('expandPricingPeriods')}
-			</label>
 		</>
 	);
 

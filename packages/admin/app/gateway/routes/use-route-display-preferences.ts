@@ -46,10 +46,6 @@ export const useRoutePricingDisplay = createDisplayPreference<RoutePricingDispla
 	'octafuse.admin.routes.pricingDisplay', 'effective', 'configured',
 );
 
-export const useRoutePricingPeriods = createDisplayPreference(
-	'octafuse.admin.routes.pricingPeriods', 'current', 'all',
-);
-
 export const useRouteModelLayout = createDisplayPreference(
 	'octafuse.admin.routes.modelLayout', 'compact', 'tiled',
 );

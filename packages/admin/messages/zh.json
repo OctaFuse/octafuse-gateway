@@ -1313,7 +1313,6 @@
 			"pricingDisplayConfigured": "原始倍率",
 			"pricingDisplayEffectiveHint": "显示当前生效的供应商倍率与计费、成本倍率合成后的结果",
 			"pricingDisplayConfiguredHint": "分别显示原始设置的供应商、计费和成本倍率",
-			"expandPricingPeriods": "展开全部时段价格明细",
 			"pathDisplayLabel": "入口路径",
 			"pathDisplayFull": "完整",
 			"pathDisplayCompact": "省略",

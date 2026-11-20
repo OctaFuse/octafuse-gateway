@@ -394,10 +394,6 @@
 .route-card-tiers .route-provider-target[data-provider-blocked] {
 	border-color: #ddcba9;
 }
-.route-card-tiers .route-provider-target[data-available='true'] .route-provider-price-well {
-	background: #f3f9f6;
-	border-color: #d8e8df;
-}
 .route-card-tiers .route-provider-card-name {
 	font-weight: 600;
 }
@@ -623,150 +619,10 @@
 	}
 }
 
-.route-model-provider-list .route-tier-label {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-}
-.route-model-provider-list .route-tier-number {
-	justify-content: center;
-	min-width: 24px;
-	height: 24px;
-	padding-inline: 4px;
-}
-.route-model-provider-list[data-sticky-enabled] {
-	--route-sticky-column: 4rem;
-}
-.route-model-list-columns {
-	display: none;
-}
-.route-model-provider-list .route-provider-list-body {
-	gap: 0;
-}
-.route-model-provider-list .route-provider-list-body > .route-provider-target {
-	border: 0;
-	border-bottom: 1px solid #e3e5e9;
-}
-.route-model-provider-list .route-provider-list-meta {
-	gap: 4px 8px;
-}
-.route-model-provider-list .route-provider-list-meta > * + * {
-	padding-left: 0;
-	border: 0;
-}
-.route-model-list-sticky .route-sticky-count {
-	font-size: 1.25rem;
-	line-height: 1.5rem;
-}
-@container route-providers (width < 64rem) {
-	.route-model-provider-list:not([data-sticky-enabled]) .route-provider-list-model {
-		grid-column: 1 / span 2;
-	}
-	.route-model-provider-list .route-provider-list-content {
-		display: contents;
-	}
-	.route-model-provider-list .route-provider-list-grid {
-		grid-template-areas: "provider status" "model sticky" "pricing pricing";
-		grid-template-columns: minmax(0, 1fr) fit-content(38%);
-		gap: 8px 12px;
-	}
-	.route-model-provider-list .route-provider-list-summary {
-		grid-area: provider;
-	}
-	.route-model-provider-list .route-provider-list-model {
-		grid-area: model;
-		padding: 0;
-	}
-	.route-model-provider-list .route-provider-list-meta {
-		grid-area: status;
-		justify-self: end;
-		padding: 0;
-	}
-	.route-model-provider-list .route-model-list-sticky {
-		grid-area: sticky;
-		justify-self: end;
-	}
-	.route-model-provider-list .route-provider-list-pricing {
-		grid-area: pricing;
-		padding: 6px 8px;
-	}
-}
-@container route-providers (36rem <= width < 64rem) {
-	.route-model-provider-list .route-provider-list-grid {
-		grid-template-areas: "provider status pricing" "model sticky pricing";
-		grid-template-columns: minmax(0, 1fr) 6.5rem minmax(15rem, 1.1fr);
-	}
-	.route-model-provider-list .route-provider-list-meta,
-	.route-model-provider-list .route-model-list-sticky {
-		justify-self: start;
-	}
-}
 @container route-providers (width < 36rem) {
-	.route-model-provider-list .route-provider-list-name {
+	.route-provider-list-pricing .route-pricing-range {
 		white-space: normal;
 		overflow-wrap: anywhere;
-	}
-	.route-model-provider-list .route-provider-list-pricing .route-provider-pricing-columns {
-		grid-template-columns: minmax(0, 1fr) repeat(2, max-content);
-		column-gap: 4px;
-	}
-	.route-model-provider-list .route-provider-list-pricing .route-provider-pricing-configured {
-		grid-template-columns: minmax(0, 1fr) repeat(3, max-content);
-	}
-	.route-model-provider-list .route-provider-list-pricing .route-pricing-range {
-		white-space: normal;
-		overflow-wrap: anywhere;
-	}
-	.route-model-provider-list .route-provider-list-body {
-		gap: 8px;
-		padding-block: 8px;
-	}
-	.route-model-provider-list .route-provider-list-body > .route-provider-target {
-		overflow: hidden;
-		border: 1px solid #e3e5e9;
-		border-radius: 10px;
-	}
-}
-@container route-providers (min-width: 64rem) {
-	.route-model-provider-list .route-provider-pricing-columns {
-		grid-template-columns: minmax(0, 1fr) repeat(2, max-content);
-	}
-	.route-model-provider-list .route-provider-pricing-configured {
-		grid-template-columns: minmax(0, 1fr) repeat(3, max-content);
-	}
-	.route-model-list-sticky {
-		justify-content: center;
-	}
-	.route-model-list-sticky > span {
-		display: none;
-	}
-	.route-model-provider-list .route-model-list-columns,
-	.route-model-provider-list .route-provider-list-grid {
-		display: grid;
-		grid-template-columns: clamp(12rem, 22%, 20rem) minmax(0, 1fr) 6.5rem var(--route-sticky-column,) clamp(18rem, 35%, 30rem);
-		column-gap: 12px;
-		padding-inline: 12px;
-	}
-	.route-model-list-columns {
-		padding-block: 6px;
-		border-bottom: 1px solid #e3e5e9;
-	}
-	.route-model-provider-list .route-provider-list-content {
-		display: contents;
-	}
-	.route-model-provider-list .route-provider-list-summary,
-	.route-model-provider-list .route-provider-list-model,
-	.route-model-provider-list .route-provider-list-meta,
-	.route-model-provider-list .route-provider-list-pricing {
-		grid-column: auto;
-		grid-row: auto;
-		padding-left: 0;
-	}
-	.route-model-provider-list .route-provider-list-status {
-		width: 100%;
-	}
-	.route-model-provider-list .route-provider-list-pricing {
-		padding: 4px 8px;
 	}
 }
 

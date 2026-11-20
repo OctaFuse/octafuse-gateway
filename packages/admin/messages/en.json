@@ -1313,7 +1313,6 @@
 			"pricingDisplayConfigured": "Configured",
 			"pricingDisplayEffectiveHint": "Show billing and cost multipliers after applying the active provider factor",
 			"pricingDisplayConfiguredHint": "Show the configured provider, billing and cost multipliers separately",
-			"expandPricingPeriods": "Expand all pricing periods",
 			"pathDisplayLabel": "Request paths",
 			"pathDisplayFull": "Full",
 			"pathDisplayCompact": "Truncated",

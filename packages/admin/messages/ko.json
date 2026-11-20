@@ -1313,7 +1313,6 @@
 			"pricingDisplayConfigured": "설정 배율",
 			"pricingDisplayEffectiveHint": "현재 유효한 공급자 배율을 적용한 청구 및 원가 배율 표시",
 			"pricingDisplayConfiguredHint": "설정된 공급자, 청구 및 원가 배율을 각각 표시",
-			"expandPricingPeriods": "모든 시간대별 가격 상세 펼치기",
 			"pathDisplayLabel": "요청 경로",
 			"pathDisplayFull": "전체",
 			"pathDisplayCompact": "생략",
