@@ -102,7 +102,7 @@
 	--route-arrow-color: var(--route-accent);
 	--route-card-width: 20rem;
 	--route-card-gap: 0.75rem;
-	--route-tier-gap: 2rem;
+	--route-tier-gap: 3.5rem;
 }
 .route-model-card-surfaces:lang(zh) {
 	--route-label-width: 2rem;
@@ -320,7 +320,7 @@
 .route-tier-connector {
 	display: none;
 }
-@container route-card-upstreams (min-width: 42rem) {
+@container route-card-upstreams (min-width: 43.5rem) {
 	.route-card-tiers[data-paired] {
 		grid-template-columns: var(--route-card-width) var(--route-card-width);
 		column-gap: var(--route-tier-gap);
@@ -331,7 +331,7 @@
 	.route-card-tiers[data-paired] .route-fallback-direction {
 		display: none;
 	}
-	.route-card-tiers[data-paired] .route-provider-card-grid {
+	.route-card-tiers[data-paired] > [data-single] {
 		position: relative;
 	}
 	.route-card-tiers[data-paired] .route-tier-connector {
@@ -340,10 +340,10 @@
 		top: 50%;
 		left: calc(var(--route-tier-gap) / -2);
 		transform: translate(-50%, -50%);
-		width: 20px;
-		height: 20px;
-		color: var(--route-arrow-color);
-		stroke-width: 2;
+		width: 28px;
+		height: 28px;
+		color: #224c75;
+		stroke-width: 2.75;
 		pointer-events: none;
 	}
 }

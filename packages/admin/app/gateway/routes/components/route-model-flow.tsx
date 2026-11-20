@@ -5,7 +5,7 @@ import {
 	ArrowDownIcon,
 	ArrowRightEndOnRectangleIcon,
 	ArrowsUpDownIcon,
-	ChevronRightIcon,
+	ArrowRightIcon,
 	CheckIcon,
 	ClipboardDocumentIcon,
 	PencilSquareIcon,
@@ -696,9 +696,6 @@ function PriorityTierPanel({
 
 
 			<div className={isList ? 'route-provider-list-body flex min-w-0 flex-col gap-1.5 bg-white' : 'route-provider-card-grid'} role="list" aria-label={t('listProvider')}>
-				{density === 'model-card' && layerIndex > 0 && (
-					<ChevronRightIcon className="route-tier-connector" aria-hidden />
-				)}
 				{routes.map((route) => (
 					<RouteTarget
 						density={density}
@@ -796,6 +793,9 @@ export function UpstreamPoolPanel({
 						data-single={routes.length === 1}
 						className="min-w-0"
 					>
+						{density === 'model-card' && layerIndex > 0 && (
+							<ArrowRightIcon className="route-tier-connector" aria-hidden />
+						)}
 						<PriorityTierPanel
 							priority={priority}
 							routes={routes}
