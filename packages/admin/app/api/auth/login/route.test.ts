@@ -21,7 +21,7 @@ function request(body: string, ip = '203.0.113.50'): Request {
 
 test('login route locks on fifth confirmed failure before parsing later bodies', async () => {
   resetGuard();
-  const env: Partial<Pick<NodeJS.ProcessEnv, 'ADMIN_USERNAME' | 'ADMIN_PASSWORD'>> = process.env;
+  const env: Record<string, string | undefined> = process.env;
   const oldUser = env.ADMIN_USERNAME;
   const oldPassword = env.ADMIN_PASSWORD;
   env.ADMIN_USERNAME = 'admin';
