@@ -299,13 +299,6 @@ export function useRoutesPageState() {
 		[routeCards, filterVendor]
 	);
 
-	const visibleModelCount = routesByModel.length;
-
-	const visibleRouteCount = useMemo(
-		() => routesByModel.reduce((sum, g) => sum + g.groupRoutes.length, 0),
-		[routesByModel]
-	);
-
 	const hasActiveFilters = Boolean(
 		searchQuery ||
 		!isEmptyGroupedSelection(filterModels) ||
@@ -804,8 +797,6 @@ export function useRoutesPageState() {
 		setFilterKind,
 		hasActiveFilters,
 		clearAllFilters,
-		visibleModelCount,
-		visibleRouteCount,
 		statusCounts,
 		kindCounts,
 		routeGroupFilterOptions,

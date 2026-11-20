@@ -147,7 +147,12 @@
 		"login": "登录",
 		"loggingIn": "登录中...",
 		"loggingOut": "退出中...",
-		"logout": "退出登录"
+		"logout": "退出登录",
+		"lockedOutTitle": "尝试次数过多",
+		"lockedOutDescription": "登录已临时锁定，请在倒计时结束后重试。",
+		"lockedOutCountdown": "{time} 后可重试",
+		"lockoutAcknowledge": "知道了",
+		"loginBusy": "已有登录尝试正在处理，请稍后重试。"
 	},
 	"sidebar": {
 		"openMenu": "打开导航菜单",
@@ -544,7 +549,7 @@
 			"routes": "关联路由",
 			"protocols": "协议",
 			"keyAndQuota": "密钥与额度",
-			"status": "状态"
+			"status": "启用状态"
 		},
 		"title": "供应商",
 		"subtitle": "管理供应商账号、API 密钥和协议端点，为模型路由提供上游服务。",
@@ -579,6 +584,7 @@
 			"routes": "{count} 条路由",
 			"routesPlural": "{count} 条路由",
 			"activeRoutes": "{count} 条启用",
+			"enabledRouteRatio": "{active} / {total} 条路由已启用",
 			"routesTitle": "{routes}；{active}",
 			"placeholder": "占位",
 			"copyApiKey": "复制 API Key",
@@ -1293,6 +1299,9 @@
 			"filteredBy": "筛选条件：{summary}",
 			"allModelsRoutes": "全部模型与路由",
 			"organizationLabel": "组织方式",
+			"modelLayoutLabel": "布局模式",
+			"modelLayoutCompact": "紧凑",
+			"modelLayoutTiled": "平铺",
 			"displayLabel": "展示形式",
 			"viewGroupAria": "路由展示方式",
 			"viewOverview": "总览",
@@ -1304,7 +1313,6 @@
 			"pricingDisplayConfigured": "原始倍率",
 			"pricingDisplayEffectiveHint": "显示当前生效的供应商倍率与计费、成本倍率合成后的结果",
 			"pricingDisplayConfiguredHint": "分别显示原始设置的供应商、计费和成本倍率",
-			"expandPricingPeriods": "展开全部时段价格明细",
 			"pathDisplayLabel": "入口路径",
 			"pathDisplayFull": "完整",
 			"pathDisplayCompact": "省略",
@@ -1323,7 +1331,14 @@
 			"displaySettings": "显示设置"
 		},
 		"flow": {
-			"modelIdLabel": "Model ID：",
+			"controls": {
+				"entry": "入口",
+				"group": "分组",
+				"model": "模型",
+				"modelHelpLabel": "调用时使用哪个模型 ID？",
+				"modelHelp": "调用时传入的模型 ID",
+				"sticky": "粘性"
+			},
 			"requestNode": "请求入口",
 			"catalogColumnSurface": "请求入口",
 			"catalogColumnModel": "模型",
@@ -1364,13 +1379,14 @@
 			"availabilityAvailableTooltip": "路由与供应商均已启用；此状态不代表实时连通性检测。",
 			"availabilityRouteDisabledTooltip": "路由未启用，不会接收请求。",
 			"availabilityProviderDisabledTooltip": "供应商已停用，此路由当前无法接收请求。",
+			"groupAvailableCount": "可用 {active} 条（路由与供应商均已启用）",
 			"tierAvailableTooltip": "可用 {active} / 共 {total} 条（路由与供应商均已启用）",
 			"enabledShort": "已启用",
-			"disabledShort": "未启用",
+			"disabledShort": "已停用",
+			"toggleRouteStatus": "启用路由 {model}",
 			"addRoute": "添加路由",
 			"noProviders": "当前没有可用供应商",
 			"listPriority": "优先级",
-			"allocationStrategy": "分配策略",
 			"firstAttempt": "首选",
 			"fallback": "失败后继续",
 			"fallbackLayer": "回退",

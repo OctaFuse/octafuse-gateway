@@ -48,6 +48,14 @@
 .routes-design-workspace .route-model-surfaces > div {
 	padding-inline: 0;
 }
+.routes-design-workspace .route-model-tiled-surfaces {
+	padding-top: 4px;
+}
+.route-model-tiled-surfaces > * + * {
+	margin-top: 1rem;
+	border-top: 1px dashed #cbd5e1;
+	padding-top: 1rem;
+}
 .routes-design-workspace .route-entry-node {
 	border-color: #dfe7f1;
 	background: #f1f6fc;
@@ -88,66 +96,79 @@
 	color: #525866;
 }
 .route-model-card-surfaces {
-	--route-label-width: 5.5rem;
+	--route-label-width: 4rem;
+}
+.route-card-upstreams {
 	--route-arrow-color: var(--route-accent);
 	--route-card-width: 20rem;
 	--route-card-gap: 0.75rem;
-	--route-tier-gap: 2rem;
+	--route-tier-gap: 3.5rem;
 }
 .route-model-card-surfaces:lang(zh) {
-	--route-label-width: 3rem;
+	--route-label-width: 2rem;
+}
+.route-model-surface-columns {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 20px;
+}
+.route-surface-toolbar {
+	display: grid;
+	min-width: 0;
+	align-content: start;
+	gap: 12px;
+	padding-bottom: 20px;
+	border-bottom: 1px dashed var(--route-panel-border);
 }
 .route-entry-picker,
-.route-group-bookmarks {
+.route-group-bookmarks,
+.route-surface-toolbar .route-group-details > div {
 	display: grid;
 	grid-template-columns: var(--route-label-width) minmax(0, 1fr);
 	align-items: center;
 	min-width: 0;
 	gap: 10px;
 }
-.route-surface-toolbar {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
-	gap: 12px;
-	margin-bottom: 12px;
-	padding-bottom: 8px;
-	border-bottom: 1px solid #e4e8ec;
+.route-entry-picker {
+	align-items: start;
+}
+.route-entry-picker > h3 {
+	padding-top: 7px;
 }
 .route-entry-options {
-	display: flex;
-	gap: 6px;
+	display: grid;
 	min-width: 0;
-	overflow-x: auto;
-	padding: 3px;
-	margin: -3px;
-	scroll-snap-type: x proximity;
-	scroll-padding-inline: 3px;
+	gap: 6px;
 }
 .route-entry-options .route-entry-node {
-	flex: none;
-	width: max-content;
-	max-width: min(18rem, 100%);
+	width: 100%;
+	min-width: 0;
 	padding: 3px 7px;
-	border-color: var(--route-panel-border);
-	border-radius: 7px;
-	background: white;
-	scroll-snap-align: start;
+	border-color: #e4e7eb;
+	border-radius: 6px;
+	background: #fafbfc;
 }
-.route-entry-options .route-entry-node:hover {
+.route-entry-options .route-entry-node[data-selected='false'],
+.route-card-group-switch .route-card-group-tab[aria-selected='false'] {
+	border-style: dashed;
+	border-color: #c5cdd6;
+}
+.route-entry-options .route-entry-node[data-selected='false']:hover,
+.route-card-group-switch .route-card-group-tab[aria-selected='false']:hover {
 	border-color: #90a1b4;
 }
 .route-entry-options .route-entry-node[data-selected='true'],
 .route-card-group-switch .route-card-group-tab[aria-selected='true'] {
-	border-color: var(--route-accent);
-	background: #e8f1fa;
-	box-shadow: inset 0 -2px var(--route-accent);
+	border-color: #aec5db;
+	background: #edf4fa;
+	box-shadow: none;
 }
 .route-entry-options .route-entry-node code {
 	font-weight: 500;
 }
 .route-entry-options .route-entry-node[data-selected='true'] code {
 	color: #183c61;
-	font-weight: 650;
+	font-weight: 600;
 }
 .route-entry-select {
 	position: absolute;
@@ -164,15 +185,15 @@
 	position: relative;
 	z-index: 2;
 }
-.route-card-surface[data-compact-targets='1'] .route-card-upstreams {
+.route-card-upstreams[data-target-count='1'] {
 	max-width: var(--route-card-width);
 }
-.route-card-surface[data-compact-targets='2'] .route-card-upstreams {
+.route-card-upstreams[data-target-count='2'] {
 	max-width: calc(2 * var(--route-card-width) + var(--route-card-gap));
 }
 /* With one fallback beside the preferred tier, reserve its card and arrow,
    then fit whole preferred columns so the arrow meets the last card. */
-.route-card-surface .route-card-upstreams:has(.route-card-tiers[data-paired]) {
+.route-card-upstreams:has(.route-card-tiers[data-paired]) {
 	--card-step: calc(var(--route-card-width) + var(--route-card-gap));
 	--pair-base: calc(2 * var(--route-card-width) + var(--route-tier-gap));
 	width: calc(var(--pair-base) + round(down, max(0px, 100% - var(--pair-base)), var(--card-step)));
@@ -183,30 +204,40 @@
 	min-width: 0;
 }
 .route-surface-toolbar > .route-group-details {
-	grid-column: 1 / -1;
-	display: flex;
-	min-width: 0;
-	align-items: center;
-	gap: 14px;
+	display: grid;
+	align-content: start;
+	gap: 8px;
+	margin-top: 8px;
+	padding-top: 20px;
+	border-top: 1px dashed var(--route-panel-border);
 }
-.route-surface-toolbar > .route-group-details > div {
-	align-items: center;
-	margin-block: 0;
+.route-surface-toolbar .route-group-details > div {
+	margin: 0;
 	padding: 0;
 }
-.route-surface-toolbar .route-group-sticky {
-	flex: none;
-	margin-inline-start: auto;
+.route-surface-toolbar .route-group-details > :first-child {
+	grid-template-columns: var(--route-label-width) minmax(0, max-content) auto;
+	justify-content: start;
 }
-@container route-model (min-width: 80rem) {
-	.route-surface-toolbar {
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		align-items: center;
-		column-gap: 20px;
+.route-surface-toolbar .route-group-details > :first-child > button {
+	display: inline-grid;
+	width: 24px;
+	height: 24px;
+	place-items: center;
+}
+.route-surface-toolbar .route-group-sticky > button {
+	justify-self: start;
+	min-height: 24px;
+	border-radius: 6px;
+}
+@container route-model (min-width: 48rem) {
+	.route-model-surface-columns {
+		grid-template-columns: clamp(17rem, 28%, 22rem) minmax(0, 1fr);
 	}
-	.route-group-bookmarks {
-		padding-inline-start: 20px;
-		border-inline-start: 1px solid var(--route-panel-border);
+	.route-surface-toolbar {
+		padding: 4px 20px 4px 0;
+		border-bottom: 0;
+		border-inline-end: 1px dashed var(--route-panel-border);
 	}
 }
 .route-card-group-tab {
@@ -241,7 +272,7 @@
 .route-card-group-switch {
 	display: flex;
 	min-width: 0;
-	overflow-x: auto;
+	flex-wrap: wrap;
 }
 .route-card-group-switch[role='tablist'] {
 	gap: 6px;
@@ -250,8 +281,8 @@
 	flex: none;
 	gap: 8px;
 	max-width: 100%;
-	min-height: 30px;
-	padding: 4px 11px;
+	min-height: 28px;
+	padding: 3px 8px;
 	border: 1px solid var(--route-panel-border);
 	border-radius: 7px;
 	background: white;
@@ -265,6 +296,11 @@
 .route-card-group-tab[aria-selected='true'] {
 	color: #183c61;
 	font-weight: 600;
+}
+.route-card-group-tab > [aria-label] {
+	padding-inline-start: 6px;
+	border-inline-start: 1px solid var(--route-panel-border);
+	color: #53677a;
 }
 .route-card-group-tab:focus-visible {
 	outline: 2px solid currentColor;
@@ -284,7 +320,7 @@
 .route-tier-connector {
 	display: none;
 }
-@container route-card-upstreams (min-width: 42rem) {
+@container route-card-upstreams (min-width: 43.5rem) {
 	.route-card-tiers[data-paired] {
 		grid-template-columns: var(--route-card-width) var(--route-card-width);
 		column-gap: var(--route-tier-gap);
@@ -295,7 +331,7 @@
 	.route-card-tiers[data-paired] .route-fallback-direction {
 		display: none;
 	}
-	.route-card-tiers[data-paired] .route-provider-card-grid {
+	.route-card-tiers[data-paired] > [data-single] {
 		position: relative;
 	}
 	.route-card-tiers[data-paired] .route-tier-connector {
@@ -304,10 +340,10 @@
 		top: 50%;
 		left: calc(var(--route-tier-gap) / -2);
 		transform: translate(-50%, -50%);
-		width: 20px;
-		height: 20px;
-		color: var(--route-arrow-color);
-		stroke-width: 2;
+		width: 28px;
+		height: 28px;
+		color: #224c75;
+		stroke-width: 2.75;
 		pointer-events: none;
 	}
 }
@@ -333,7 +369,8 @@
 	margin-bottom: 6px;
 	background: transparent;
 }
-.route-card-surface [data-preferred] .route-tier-number {
+.route-card-surface [data-preferred] .route-tier-number,
+.route-card-tiers [data-preferred] .route-tier-number {
 	color: #254968;
 	background: #ebf2f8;
 	border-color: #cedce8;
@@ -356,10 +393,6 @@
 }
 .route-card-tiers .route-provider-target[data-provider-blocked] {
 	border-color: #ddcba9;
-}
-.route-card-tiers .route-provider-target[data-available='true'] .route-provider-price-well {
-	background: #f3f9f6;
-	border-color: #d8e8df;
 }
 .route-card-tiers .route-provider-card-name {
 	font-weight: 600;
@@ -407,27 +440,12 @@
 .routes-design-workspace .route-provider-list-summary {
 	display: block;
 }
-.routes-design-workspace .route-provider-list-status {
-	margin-left: 0;
-	padding-top: 0;
-	justify-content: flex-start;
-	gap: 4px;
-}
-.routes-design-workspace .route-provider-status-toggle {
-	min-height: 24px;
-	gap: 4px;
-	padding: 0 4px;
-	white-space: nowrap;
-}
 .routes-design-workspace .route-provider-list-secondary > .route-provider-list-status:first-child {
 	margin-left: -4px;
 }
 .routes-design-workspace .route-provider-list-secondary > span + .route-provider-list-status {
 	border-left: 1px solid #dfe3e8;
 	padding-left: 4px;
-}
-.routes-design-workspace .route-provider-status-reason {
-	min-height: 24px;
 }
 .routes-design-workspace .route-provider-list-meta > * + * {
 	border-color: #e5e7eb;
@@ -556,9 +574,6 @@
 		padding: 12px;
 		border-radius: 16px;
 	}
-	.routes-design-workspace .route-workspace-toolbar > :last-child {
-		width: 100%;
-	}
 	.routes-design-workspace .route-model-surfaces {
 		padding: 12px;
 	}
@@ -604,153 +619,10 @@
 	}
 }
 
-.route-model-provider-list .route-tier-label {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-}
-.route-model-provider-list .route-tier-number {
-	justify-content: center;
-	min-width: 24px;
-	height: 24px;
-	padding-inline: 4px;
-}
-.route-model-list-columns {
-	display: none;
-}
-.route-model-provider-list .route-provider-list-body {
-	gap: 0;
-}
-.route-model-provider-list .route-provider-list-body > .route-provider-target {
-	border: 0;
-	border-bottom: 1px solid #e3e5e9;
-}
-.route-model-provider-list .route-provider-list-status {
-	flex-flow: column nowrap;
-	align-items: flex-start;
-	gap: 0;
-}
-.route-model-provider-list .route-provider-status-reason {
-	min-height: 0;
-	padding-inline-start: 4px;
-}
-.route-model-provider-list .route-provider-list-meta {
-	gap: 4px 8px;
-}
-.route-model-provider-list .route-provider-list-meta > * + * {
-	padding-left: 0;
-	border: 0;
-}
-.route-model-list-sticky .route-sticky-count {
-	font-size: 1.25rem;
-	line-height: 1.5rem;
-}
-@container route-providers (width < 64rem) {
-	.route-model-provider-list .route-provider-list-content {
-		display: contents;
-	}
-	.route-model-provider-list .route-provider-list-grid {
-		grid-template-areas: "provider status" "model sticky" "pricing pricing";
-		grid-template-columns: minmax(0, 1fr) fit-content(38%);
-		gap: 8px 12px;
-	}
-	.route-model-provider-list .route-provider-list-summary {
-		grid-area: provider;
-	}
-	.route-model-provider-list .route-provider-list-model {
-		grid-area: model;
-		padding: 0;
-	}
-	.route-model-provider-list .route-provider-list-meta {
-		grid-area: status;
-		justify-self: end;
-		padding: 0;
-	}
-	.route-model-provider-list .route-model-list-sticky {
-		grid-area: sticky;
-		justify-self: end;
-	}
-	.route-model-provider-list .route-provider-list-pricing {
-		grid-area: pricing;
-		padding: 6px 8px;
-	}
-}
-@container route-providers (36rem <= width < 64rem) {
-	.route-model-provider-list .route-provider-list-grid {
-		grid-template-areas: "provider status pricing" "model sticky pricing";
-		grid-template-columns: minmax(0, 1fr) minmax(5rem, 0.35fr) minmax(15rem, 1.1fr);
-	}
-	.route-model-provider-list .route-provider-list-meta,
-	.route-model-provider-list .route-model-list-sticky {
-		justify-self: start;
-	}
-}
 @container route-providers (width < 36rem) {
-	.route-model-provider-list .route-provider-list-name {
+	.route-provider-list-pricing .route-pricing-range {
 		white-space: normal;
 		overflow-wrap: anywhere;
-	}
-	.route-model-provider-list .route-provider-list-pricing .route-provider-pricing-columns {
-		grid-template-columns: minmax(0, 1fr) repeat(2, max-content);
-		column-gap: 4px;
-	}
-	.route-model-provider-list .route-provider-list-pricing .route-provider-pricing-configured {
-		grid-template-columns: minmax(0, 1fr) repeat(3, max-content);
-	}
-	.route-model-provider-list .route-provider-list-pricing .route-pricing-range {
-		white-space: normal;
-		overflow-wrap: anywhere;
-	}
-	.route-model-provider-list .route-provider-list-body {
-		gap: 8px;
-		padding-block: 8px;
-	}
-	.route-model-provider-list .route-provider-list-body > .route-provider-target {
-		overflow: hidden;
-		border: 1px solid #e3e5e9;
-		border-radius: 10px;
-	}
-}
-@container route-providers (min-width: 64rem) {
-	.route-model-provider-list .route-provider-pricing-columns {
-		grid-template-columns: minmax(0, 1fr) repeat(2, max-content);
-	}
-	.route-model-provider-list .route-provider-pricing-configured {
-		grid-template-columns: minmax(0, 1fr) repeat(3, max-content);
-	}
-	.route-model-list-sticky {
-		justify-content: center;
-	}
-	.route-model-list-sticky > span {
-		display: none;
-	}
-	.route-model-provider-list .route-model-list-columns,
-	.route-model-provider-list .route-provider-list-grid {
-		display: grid;
-		grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(6rem, 0.65fr) 4rem minmax(17rem, 1.4fr);
-		column-gap: 12px;
-		padding-inline: 12px;
-	}
-	.route-model-list-columns {
-		padding-block: 6px;
-		border-bottom: 1px solid #e3e5e9;
-	}
-	.route-model-provider-list .route-provider-list-content {
-		display: contents;
-	}
-	.route-model-provider-list .route-provider-list-summary,
-	.route-model-provider-list .route-provider-list-model,
-	.route-model-provider-list .route-provider-list-meta,
-	.route-model-provider-list .route-provider-list-pricing {
-		grid-column: auto;
-		grid-row: auto;
-		padding-left: 0;
-	}
-	.route-model-provider-list .route-provider-list-status {
-		width: 100%;
-	}
-	.route-model-provider-list .route-provider-list-pricing {
-		padding: 4px 8px;
 	}
 }
 

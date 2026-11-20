@@ -6,6 +6,11 @@ import { generateSessionToken, hashSessionToken, resolveCookieSecure, timingSafe
 import { cookies } from 'next/headers';
 import { resolveAdminRequestRuntime } from '@/lib/admin-request-runtime';
 import { logAdminAuthEvent } from '@/lib/security-log';
+import {
+  checkLoginLockout, reserveLogin, commitLoginFailure, commitLoginSuccess,
+  rollbackLogin, getLoginGuardState, guardNow,
+  type GuardDecision, type Reservation,
+} from '@/lib/admin-login-guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,10 +19,87 @@ interface LoginRequest {
   password: string;
 }
 
-export async function POST(request: Request) {
+const MAX_BODY_BYTES = 4096;
+
+async function readLoginBody(request: Request): Promise<LoginRequest | Response> {
+  const reader = request.body?.getReader();
+  if (!reader) return Response.json({ success: false, message: 'Invalid JSON body' }, { status: 400 });
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    void reader.cancel().catch(() => {});
+  }, 10_000);
   try {
-    const body = await request.json() as LoginRequest;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_BODY_BYTES) {
+        void reader.cancel().catch(() => {});
+        return Response.json({ success: false, message: 'Request body too large' }, { status: 413 });
+      }
+      chunks.push(value);
+    }
+    if (timedOut) return Response.json({ success: false, message: 'Request timed out' }, { status: 408 });
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    const parsed: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) ||
+        typeof (parsed as LoginRequest).username !== 'string' ||
+        typeof (parsed as LoginRequest).password !== 'string') throw new Error('invalid shape');
+    return parsed as LoginRequest;
+  } catch {
+    if (timedOut) return Response.json({ success: false, message: 'Request timed out' }, { status: 408 });
+    return Response.json({ success: false, message: 'Invalid JSON body' }, { status: 400 });
+  } finally { clearTimeout(timeout); reader.releaseLock(); }
+}
+
+function guardResponse(decision: GuardDecision): Response | null {
+  if (decision.kind === 'reserved') return null;
+  if (decision.kind === 'busy') return Response.json(
+    { success: false, code: 'ADMIN_LOGIN_BUSY', message: 'Login is busy. Try again shortly.' },
+    { status: 429, headers: { 'Retry-After': '1' } },
+  );
+  return Response.json(
+    { success: false, code: 'ADMIN_LOGIN_LOCKED', message: 'Too many failed attempts. Try again later.', retryAfterSeconds: decision.retryAfterSeconds },
+    { status: 429, headers: { 'Retry-After': String(decision.retryAfterSeconds) } },
+  );
+}
+
+function guardFailure(request: Request, error: unknown): Response {
+  logAdminAuthEvent('admin.auth.guard_degraded', request);
+  void error;
+  return Response.json({ success: false, message: 'Login temporarily unavailable' }, { status: 503 });
+}
+
+async function postLogin(request: Request) {
+  let reservation: Reservation | null = null;
+  let guardState: ReturnType<typeof getLoginGuardState>;
+  try {
+    try { guardState = getLoginGuardState(); }
+    catch (error) { return guardFailure(request, error); }
+    const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-octafuse-peer-ip') || '';
+    try {
+      const locked = checkLoginLockout(guardState, ip, guardNow());
+      if (locked) {
+        logAdminAuthEvent('admin.auth.login_locked', request, { guardKey: locked.key });
+        return guardResponse(locked)!;
+      }
+    } catch (error) { return guardFailure(request, error); }
+    const parsed = await readLoginBody(request);
+    if (parsed instanceof Response) return parsed;
+    const body = parsed;
     const { username, password } = body;
+
+    try {
+      const decision = reserveLogin(guardState, ip, guardNow());
+      const refused = guardResponse(decision);
+      if (refused) return refused;
+      reservation = decision.kind === 'reserved' ? decision.reservation : null;
+    } catch (error) { return guardFailure(request, error); }
 
     // 凭据来自 OpenNext env；本地 dev 回退 process.env
     let adminUsername: string | undefined;
@@ -34,15 +116,21 @@ export async function POST(request: Request) {
 
     if (!adminUsername || !adminPassword) {
       console.error('Admin credentials not configured');
-      return Response.json(
-        { success: false, message: 'Server configuration error' },
-        { status: 500 }
-      );
+      throw new Error('Admin credentials not configured');
     }
 
     const passwordMatches = await timingSafeEqualSecret(String(password ?? ''), adminPassword);
     if (username !== adminUsername || !passwordMatches) {
       logAdminAuthEvent('admin.auth.login_failed', request, { username: String(username ?? '') });
+      let locked: GuardDecision | null;
+      try {
+        locked = commitLoginFailure(guardState, reservation!, guardNow());
+        reservation = null;
+      } catch (error) { return guardFailure(request, error); }
+      if (locked) {
+        if (locked.kind === 'locked') logAdminAuthEvent('admin.auth.login_lockout_triggered', request, { guardKey: locked.key });
+        return guardResponse(locked)!;
+      }
       await new Promise(resolve => setTimeout(resolve, 1000));
       return Response.json(
         { success: false, message: 'Invalid credentials' },
@@ -50,14 +138,18 @@ export async function POST(request: Request) {
       );
     }
 
+    if (reservation && guardNow() >= reservation.deadline) {
+      throw new Error('Login attempt expired');
+    }
     const sessionToken = generateSessionToken();
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
     const { storage } = await resolveAdminRequestRuntime(request);
     const now = new Date().toISOString();
     await storage.repositories.adminAccess.deleteExpiredSessions(now);
+    const tokenHash = await hashSessionToken(sessionToken);
     await storage.repositories.adminAccess.insertSession({
-      tokenHash: await hashSessionToken(sessionToken),
+      tokenHash,
       username,
       createdAt: now,
       expiresAt: expiresAt.toISOString(),
@@ -73,6 +165,14 @@ export async function POST(request: Request) {
     });
 
     logAdminAuthEvent('admin.auth.login', request, { username });
+    try {
+      commitLoginSuccess(guardState, reservation!);
+      reservation = null;
+    } catch (error) {
+      try { await storage.repositories.adminAccess.deleteSession(tokenHash); }
+      catch { /* Orphaned session expires under the existing session policy. */ }
+      return guardFailure(request, error);
+    }
 
     return Response.json({
       success: true,
@@ -81,11 +181,21 @@ export async function POST(request: Request) {
 
   } catch (error) {
     console.error('Login API error:', error);
+    if (reservation) {
+      try { rollbackLogin(guardState!, reservation); }
+      catch (guardError) { return guardFailure(request, guardError); }
+    }
     return Response.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: Request): Promise<Response> {
+  const response = await postLogin(request);
+  response.headers.set('Cache-Control', 'no-store');
+  return response;
 }
 
 export async function DELETE(request: Request) {

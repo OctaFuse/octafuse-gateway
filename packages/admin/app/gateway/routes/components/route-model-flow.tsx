@@ -4,41 +4,30 @@ import { useEffect, useId, useMemo, useState, type CSSProperties } from 'react';
 import {
 	ArrowDownIcon,
 	ArrowRightEndOnRectangleIcon,
-	ChatBubbleLeftRightIcon,
-	PhotoIcon,
-	MicrophoneIcon,
-	SpeakerWaveIcon,
-	CircleStackIcon,
 	ArrowsUpDownIcon,
-	CheckCircleIcon,
-	ChevronRightIcon,
+	ArrowRightIcon,
 	CheckIcon,
 	ClipboardDocumentIcon,
 	PencilSquareIcon,
 	PlusIcon,
-	PowerIcon,
 	ScaleIcon,
 } from '@heroicons/react/24/outline';
-import { routeModelBillingLabel } from '../route-model-summary';
 import { providerAccountIdentity, providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provider-kind';
 import { useLocale, useTranslations } from 'next-intl';
+import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { VendorIcon } from '@/components/model-vendor-icon';
+import { StatusSwitchTrack } from '@/components/status-switch-track';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
-import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
-import { tagBadgeClass } from '../../models/model-utils';
 import { useStickySummary } from '../sticky-summary-store';
 import type { RouteModelGroup, RequestSurfaceGroup } from '../route-utils';
 import {
 	compareRoutesWithinPriorityLayer,
-	groupSectionsByRequestSurface,
 	isRouteConfigurationAvailable,
-	parseModelTagsList,
 	protocolBadgeClass,
 	requestSurfacePath,
 	resolveEffectiveRouteStrategy,
 	summarizeRouteCustomParams,
-	splitRoutesByProtocolAndRouteGroup,
 } from '../route-utils';
 import {
 	type RouteEditorTab,
@@ -50,7 +39,6 @@ import { FailoverRulesDialog } from './failover-rules-dialog';
 import { ProviderStickyChip } from './provider-sticky-chip';
 import { RouteStickyUsage } from './route-sticky-usage';
 import { RouteTargetPricing } from './route-target-pricing';
-import { useRoutePricingPeriods } from '../use-route-pricing-display';
 import { useRoutePathDisplay } from '../use-route-path-display';
 
 const EMPTY_STICKY_COUNTS = new Map<string, number>();
@@ -81,7 +69,7 @@ type OpenProviderStickyDialog = (
 	initialTargetId?: string
 ) => void;
 
-type Props = {
+export type RouteModelFlowProps = {
 	card: RouteModelGroup;
 	meta: GatewayModel | undefined;
 	providerMeta: Map<string, GatewayProvider>;
@@ -122,11 +110,8 @@ function RouteTarget({
 	onOpenStickyBindings: () => void;
 }) {
 	const t = useTranslations('routes.flow');
-	const tList = useTranslations('routes.listItem');
-	const [pricingPeriods] = useRoutePricingPeriods();
-	const modelList = density === 'model-list';
 	const modelCard = density === 'model-card';
-	const listView = modelList || density === 'list';
+	const listView = density === 'list';
 	const tKind = useTranslations('providers.kind');
 	const locale = useLocale();
 	const providerName =
@@ -165,27 +150,27 @@ function RouteTarget({
 	const listWeight = (
 		<span className="route-provider-list-weight inline-flex shrink-0 items-center gap-1 tabular-nums" title={t('badgeWeightTooltip', { value: route.weight ?? 1 })}>
 			<span className="text-xs text-slate-500">{t('listWeight')}</span>
-			<span className={`${modelList ? 'rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-xs leading-4' : 'text-sm'} font-semibold ${available ? 'text-slate-900' : 'text-slate-600'}`}>{route.weight ?? 1}</span>
+			<span className={`text-sm font-semibold ${available ? 'text-slate-900' : 'text-slate-600'}`}>{route.weight ?? 1}</span>
 		</span>
 	);
 
-	const statusBadges = (
-		<div className={listView ? 'route-provider-list-status flex min-w-0 flex-wrap items-center gap-1 text-xs' : modelCard ? 'flex shrink-0 flex-col items-end gap-1 text-xs' : 'flex flex-wrap items-center gap-1.5'}>
+	const routeStatus = (
+		<div className={`flex flex-col gap-1 text-xs ${listView ? 'route-provider-list-status min-w-0 items-start' : modelCard ? 'shrink-0 items-end' : 'items-start'}`}>
 			<button
 				type="button"
+				role="switch"
+				aria-checked={enabled}
+				aria-label={t('toggleRouteStatus', { model: route.provider_model_name })}
 				onClick={() => onToggleStatus(route)}
 				disabled={togglingId === route.id}
-				aria-pressed={enabled}
-				className={`inline-flex items-center gap-1 rounded font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-wait disabled:opacity-50 ${listView ? `route-provider-status-toggle ${available ? 'text-emerald-700 hover:bg-emerald-50' : 'text-slate-500 hover:bg-slate-200/70'}` : `px-1.5 py-0.5 ${available ? 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200/70 hover:bg-emerald-100' : enabled ? 'bg-white text-slate-600 ring-1 ring-inset ring-slate-300 hover:bg-slate-200' : 'bg-gray-100 text-gray-500 ring-1 ring-inset ring-gray-200 hover:bg-gray-200'}`}`}
-				title={`${availabilityHint} · ${enabled ? tList('routeEnabled') : tList('routeDisabled')}`}
-				aria-label={enabled ? tList('routeEnabled') : tList('routeDisabled')}
+				className={`route-provider-status-toggle inline-flex min-h-6 items-center gap-1.5 whitespace-nowrap rounded px-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-wait disabled:opacity-50 ${enabled ? 'text-emerald-700 hover:bg-emerald-50' : 'text-slate-600 hover:bg-slate-200/70'}`}
+				title={availabilityHint}
 			>
-				{available ? listView ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden /> : <CheckCircleIcon className="h-3 w-3" aria-hidden /> : <PowerIcon className="h-3 w-3 shrink-0" aria-hidden />}
-				{available ? t('availableShort') : enabled ? t('enabledShort') : t('disabledShort')}
+				<StatusSwitchTrack checked={enabled} compact={!listView} />
+				{t(enabled ? 'enabledShort' : 'disabledShort')}
 			</button>
 			{providerDisabled ? (
-				<span className={listView ? 'route-provider-status-reason inline-flex items-center gap-1 text-xs text-amber-700' : 'rounded border border-amber-300 bg-amber-50 px-1 py-0.5 text-center text-xs font-medium leading-3 text-amber-800'} title={t('availabilityProviderDisabledTooltip')}>
-					{density === 'list' ? <span aria-hidden className="text-slate-300">·</span> : null}
+				<span className="route-provider-status-reason rounded border border-amber-200 bg-amber-50 px-1 text-xs font-medium leading-4 text-amber-800" title={t('availabilityProviderDisabledTooltip')}>
 					{t('providerDisabled')}
 				</span>
 			) : null}
@@ -257,19 +242,19 @@ function RouteTarget({
 								<span className="flex items-center gap-1.5">
 									<span className={`${listView ? 'route-provider-list-name ' : 'route-provider-card-name '}min-w-0 truncate text-xs font-medium group-hover:text-gray-800 ${available ? 'text-slate-900' : 'text-slate-600'}`} title={providerName}>{providerName}</span>
 								</span>
-								{showKind && (modelList || !listView) ? (
+								{showKind && !listView ? (
 									<span className="mt-0.5 block truncate text-xs leading-4 text-slate-500" title={kindLabel ?? undefined}>
-										{showKind ? kindLabel : null}
+										{kindLabel}
 									</span>
 								) : null}
 							</button>
 							{density === 'list' ? (
 								<div className="route-provider-list-secondary mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5">
 									{showKind ? <span className="min-w-0 truncate text-slate-500" title={kindLabel ?? undefined}>{kindLabel}</span> : null}
-									{statusBadges}
+									{routeStatus}
 								</div>
 							) : null}
-							{!listView && (modelCard ? statusBadges : cardMetrics)}
+							{!listView && (modelCard ? routeStatus : cardMetrics)}
 						</div>
 					</div>
 				</div>
@@ -277,16 +262,10 @@ function RouteTarget({
 				{listView ? (
 					<div className="route-provider-list-model min-w-0">
 						{upstreamModel}
-						{modelList && (
-							<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-								{listWeight}
-								{params.headers || params.body ? paramsBadges : null}
-							</div>
-						)}
 					</div>
 				) : null}
 				<div className={listView ? 'route-provider-list-meta' : 'mt-3 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-4'}>
-					{modelCard ? cardMetrics : (modelList || !listView) && statusBadges}
+					{modelCard ? cardMetrics : !listView && routeStatus}
 					{density === 'list' ? listWeight : null}
 					{!listView && (params.headers || params.body) ? paramsBadges : null}
 					{density === 'list' && stickyEnabled ? (
@@ -297,14 +276,8 @@ function RouteTarget({
 					) : null}
 					{density === 'list' && (params.headers || params.body) ? paramsBadges : null}
 				</div>
-				{modelList && (
-					<div className="route-model-list-sticky flex items-center gap-1">
-						<span className="text-xs text-slate-500">{t('listStickyUsers')}</span>
-						{stickyUsage}
-					</div>
-				)}
 			</div>
-			<RouteTargetPricing key={pricingPeriods} initiallyExpanded={pricingPeriods === 'all'} summarize={modelList || density === 'model-card'} muted={!available} compact={listView} priceOverride={route.price_override} onEdit={() => onEdit(route, 'pricing')} />
+			<RouteTargetPricing muted={!available} compact={listView} priceOverride={route.price_override} onEdit={() => onEdit(route, 'pricing')} />
 		</div>
 	);
 }
@@ -420,20 +393,32 @@ function routeGroupModelId(modelId: string, group: string) {
 	return group === 'default' ? modelId : `${modelId}:${group}`;
 }
 
-function RouteGroupDetails({ modelId, routeGroup, copiedModelId, onCopyModelId, sticky, modelIdLabel }: RouteGroupDetailsProps & {
+function RouteGroupDetails({ modelId, routeGroup, copiedModelId, onCopyModelId, sticky, modelIdLabel, stickyLabel }: RouteGroupDetailsProps & {
 	modelIdLabel?: string;
+	stickyLabel?: string;
 }) {
 	const tCard = useTranslations('routes.card');
+	const tControls = useTranslations('routes.flow.controls');
 	const requestedModelId = routeGroupModelId(modelId, routeGroup);
 	const copied = copiedModelId === requestedModelId;
 
 	return (
 		<div className="route-group-details">
 			<div className="flex min-w-0 items-start gap-1 pt-2">
-				{modelIdLabel && <span className="shrink-0 text-xs font-semibold text-slate-600">{modelIdLabel}</span>}
-				<span className="min-w-0 flex-1 font-mono text-xs leading-[14px] text-slate-600 [overflow-wrap:anywhere]" title={requestedModelId}>
-					{requestedModelId}
-				</span>
+				{modelIdLabel && <span className="shrink-0 text-xs font-medium text-slate-600">{modelIdLabel}</span>}
+				{modelIdLabel ? (
+					<InfoHintPopover
+						label={`${requestedModelId} · ${tControls('modelHelpLabel')}`}
+						openOnHover openOnFocus portal align="start"
+						icon={<span className="cursor-help select-text text-left font-mono text-xs text-slate-600 underline decoration-dashed decoration-slate-400 underline-offset-4 [overflow-wrap:anywhere]">{requestedModelId}</span>}
+					>
+						<p className="leading-5">{tControls('modelHelp')}</p>
+					</InfoHintPopover>
+				) : (
+					<span className="min-w-0 flex-1 font-mono text-xs leading-[14px] text-slate-600 [overflow-wrap:anywhere]" title={requestedModelId}>
+						{requestedModelId}
+					</span>
+				)}
 				<button
 					type="button"
 					onClick={() => void onCopyModelId(requestedModelId)}
@@ -446,7 +431,9 @@ function RouteGroupDetails({ modelId, routeGroup, copiedModelId, onCopyModelId, 
 			</div>
 			{sticky ? (
 				<div className="route-group-sticky mt-2 flex min-w-0">
+					{stickyLabel && <span className="text-xs font-medium text-slate-600">{stickyLabel}</span>}
 					<ProviderStickyChip
+						showLabel={!stickyLabel}
 						enabled={sticky.enabled}
 						idleTtlSeconds={sticky.idleTtlSeconds}
 						poolId={sticky.poolId}
@@ -574,7 +561,7 @@ function strategyDisplayKey(strategy: string): string {
 	return strategy;
 }
 
-type PoolDensity = RouteFlowDensity | 'model-card' | 'model-list';
+type PoolDensity = RouteFlowDensity | 'model-card';
 
 function PriorityTierPanel({
 	priority,
@@ -607,15 +594,15 @@ function PriorityTierPanel({
 	stickyCountsByTarget: Map<string, number>;
 	stickyTotal: number | null;
 	togglingId: string | null;
-	onEdit: Props['onEdit'];
-	onToggleStatus: Props['onToggleStatus'];
-	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
+	onEdit: RouteModelFlowProps['onEdit'];
+	onToggleStatus: RouteModelFlowProps['onToggleStatus'];
+	onOpenStrategyDialog: RouteModelFlowProps['onOpenStrategyDialog'];
 	onOpenFailover: () => void;
 	onOpenStickyBindings: (targetId: string) => void;
 }) {
 	const t = useTranslations('routes.flow');
 	const tStrategy = useTranslations('routes.strategy');
-	const isList = density === 'list' || density === 'model-list';
+	const isList = density === 'list';
 	const availableCount = routes.filter(route => isRouteConfigurationAvailable(route, providerMeta.get(route.provider_id))).length;
 	const strategy = resolveEffectiveRouteStrategy({
 		poolStrategy: section.poolStrategy,
@@ -647,12 +634,12 @@ function PriorityTierPanel({
 						title={t('badgePriorityTooltip', { value: priority })}
 						aria-label={t('badgePriorityTooltip', { value: priority })}
 					>
-						{density !== 'model-list' && <ArrowsUpDownIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+						<ArrowsUpDownIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
 						<span className="text-sm font-semibold tabular-nums">{priority}</span>
 					</span>
 					{layerIndex > 0 ? (
 						<button type="button" onClick={onOpenFailover} title={t('failoverRules')} aria-label={t('failoverRules')} className="inline-flex items-center gap-1 rounded text-xs font-medium text-slate-600 hover:text-gray-800 focus-visible:outline-gray-500">
-							{density !== 'model-list' && <ArrowDownIcon className="route-fallback-direction h-3 w-3" aria-hidden />}
+							<ArrowDownIcon className="route-fallback-direction h-3 w-3" aria-hidden />
 							{layerLabel}
 						</button>
 					) : <span className="text-xs font-medium text-slate-700">{layerLabel}</span>}
@@ -665,7 +652,6 @@ function PriorityTierPanel({
 							total: routes.length,
 						})}
 					>
-						{density === 'model-list' && <>{t('availableShort')} </>}
 						{t('tierActiveTotal', {
 							active: availableCount,
 							total: routes.length,
@@ -677,7 +663,6 @@ function PriorityTierPanel({
 					<div
 						className="route-tier-strategy ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1.5"
 					>
-						{density === 'model-list' && <span className="shrink-0 text-xs text-slate-500">{t('allocationStrategy')}</span>}
 						<button
 							type="button"
 							onClick={() =>
@@ -711,9 +696,6 @@ function PriorityTierPanel({
 
 
 			<div className={isList ? 'route-provider-list-body flex min-w-0 flex-col gap-1.5 bg-white' : 'route-provider-card-grid'} role="list" aria-label={t('listProvider')}>
-				{density === 'model-card' && layerIndex > 0 && (
-					<ChevronRightIcon className="route-tier-connector" aria-hidden />
-				)}
 				{routes.map((route) => (
 					<RouteTarget
 						density={density}
@@ -745,10 +727,10 @@ type UpstreamPoolPanelProps = {
 	globalRouteStrategy: string | null;
 	density: PoolDensity;
 	togglingId: string | null;
-	onEdit: Props['onEdit'];
-	onToggleStatus: Props['onToggleStatus'];
-	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
-	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
+	onEdit: RouteModelFlowProps['onEdit'];
+	onToggleStatus: RouteModelFlowProps['onToggleStatus'];
+	onOpenStrategyDialog: RouteModelFlowProps['onOpenStrategyDialog'];
+	onOpenProviderStickyDialog: RouteModelFlowProps['onOpenProviderStickyDialog'];
 };
 
 export function UpstreamPoolPanel({
@@ -795,8 +777,7 @@ export function UpstreamPoolPanel({
 		<>
 			<div
 				className={
-					density === 'model-list' ? 'route-provider-list route-model-provider-list min-w-0'
-					: density === 'list' ? 'route-upstream-pool route-provider-list flex min-w-0 flex-col items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_3px_10px_-2px_rgba(15,23,42,0.22)]'
+					density === 'list' ? 'route-upstream-pool route-provider-list flex min-w-0 flex-col items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_3px_10px_-2px_rgba(15,23,42,0.22)]'
 						: density === 'model-card' ? 'route-card-tiers'
 						: `route-upstream-pool route-provider-card-group flex min-w-0 flex-col gap-5 rounded-xl border border-slate-300/70 border-l-[3px] p-3 sm:p-4 ${section.group === 'default' ? 'border-l-sky-300' : 'border-l-violet-300'}`
 				}
@@ -806,21 +787,15 @@ export function UpstreamPoolPanel({
 					? (priorityLayers[0][1].length === 1 ? 'equal' : 'single-fallback') : undefined}
 				aria-label={t('routeGroupProviders', { group: section.group })}
 			>
-				{density === 'model-list' && priorityLayers.length > 0 && (
-					<div className="route-model-list-columns text-xs font-medium text-slate-600">
-						<span>{t('listProviderAccount')}</span>
-						<span>{t('listUpstreamModel')}</span>
-						<span>{t('listStatus')}</span>
-						<span className="text-center">{t('listStickyUsers')}</span>
-						<span>{t('pricingDetails')}</span>
-					</div>
-				)}
 				{priorityLayers.map(([priority, routes], layerIndex) => (
 					<div
 						key={priority}
 						data-single={routes.length === 1}
 						className="min-w-0"
 					>
+						{density === 'model-card' && layerIndex > 0 && (
+							<ArrowRightIcon className="route-tier-connector" aria-hidden />
+						)}
 						<PriorityTierPanel
 							priority={priority}
 							routes={routes}
@@ -848,7 +823,19 @@ export function UpstreamPoolPanel({
 	);
 }
 
-type FlowSectionProps = Omit<Props, 'onEditModel' | 'onCreate'> & {
+export function ModelUpstreamPool({ density, ...props }: Omit<UpstreamPoolPanelProps, 'density'> & { density: RouteFlowDensity }) {
+	if (density === 'list') return <UpstreamPoolPanel {...props} density="list" />;
+
+	const count = props.section.routes.length;
+	return (
+		<div className="route-card-upstreams" data-target-count={count}
+			style={{ '--route-count': count } as CSSProperties}>
+			<UpstreamPoolPanel {...props} density="model-card" />
+		</div>
+	);
+}
+
+type FlowSectionProps = Omit<RouteModelFlowProps, 'onEditModel' | 'onCreate'> & {
 	surfaceGroups: RequestSurfaceGroup[];
 	surface: RequestSurfaceGroup;
 	selectSurface: (key: string) => void;
@@ -856,21 +843,19 @@ type FlowSectionProps = Omit<Props, 'onEditModel' | 'onCreate'> & {
 	selectGroup: (group: string) => void;
 };
 
-function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGroup, card, density, providerMeta, copiedModelId, onCopyModelId, ...pool }: FlowSectionProps) {
+export function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGroup, card, density, providerMeta, copiedModelId, onCopyModelId, ...pool }: FlowSectionProps) {
 	const t = useTranslations('routes.flow');
 	const tKind = useTranslations('providers.kind');
 	const locale = useLocale();
 	const id = useId();
 	const tabId = (index: number) => `${id}-tab-${index}`;
-	const routes = section.routes;
 	const sections = surface.sections;
 	const groupSelector = (
 		<div role="tablist" aria-label={t('routeGroup')} className="route-card-group-switch">
 			{sections.map((item, index) => {
 				const active = item.routes.filter(route => isRouteConfigurationAvailable(route, providerMeta.get(route.provider_id))).length;
-				const total = item.routes.length;
 				const isSelected = item.key === section.key;
-				const hint = t('tierAvailableTooltip', { active, total });
+				const hint = t('groupAvailableCount', { active });
 				return (
 					<button key={item.key} id={tabId(index)} type="button" role="tab" aria-selected={isSelected}
 						aria-controls={`${id}-panel`} tabIndex={isSelected ? 0 : -1}
@@ -891,7 +876,7 @@ function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGr
 						}}>
 						<span className="truncate">{item.group}</span>
 						<span className="text-xs font-normal tabular-nums" aria-label={hint}>
-							{t('tierActiveTotal', { active, total })}
+							{active}
 						</span>
 					</button>
 				);
@@ -900,11 +885,10 @@ function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGr
 	);
 
 	return (
-		<section className="route-card-surface" aria-label={t('routeGroupProviders', { group: section.group })}
-			data-compact-targets={density === 'list' || routes.length > 2 ? undefined : routes.length}>
+		<section className="route-card-surface route-model-surface-columns" aria-label={t('routeGroupProviders', { group: section.group })}>
 			<div id={id} className="route-surface-toolbar">
 				<div role="group" aria-label={t('requestNode')} className="route-entry-picker">
-					<h3 className="text-xs font-semibold text-slate-600">{t('requestNode')}</h3>
+					<h3 className="text-xs font-medium text-slate-600">{t('controls.entry')}</h3>
 					<div className="route-entry-options">
 						{surfaceGroups.map(item => (
 							<RequestSurfaceNode key={item.key} surface={item} modelId={card.model_id}
@@ -913,11 +897,11 @@ function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGr
 					</div>
 				</div>
 				<div className="route-group-bookmarks">
-					<span className="text-xs font-semibold text-slate-600">{t('routeGroup')}</span>
+					<span className="text-xs font-medium text-slate-600">{t('controls.group')}</span>
 					{groupSelector}
 				</div>
 				<RouteGroupDetails modelId={card.model_id} routeGroup={section.group} copiedModelId={copiedModelId} onCopyModelId={onCopyModelId}
-					modelIdLabel={t('modelIdLabel')}
+					modelIdLabel={t('controls.model')} stickyLabel={t('controls.sticky')}
 					sticky={{
 						enabled: section.poolStickyEnabled,
 						idleTtlSeconds: section.poolStickyIdleTtlSeconds,
@@ -926,113 +910,9 @@ function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGr
 					}}
 				/>
 			</div>
-			<div id={`${id}-panel`} role="tabpanel" aria-labelledby={tabId(sections.indexOf(section))} className="route-card-upstreams"
-				style={density === 'list' ? undefined : { '--route-count': routes.length } as CSSProperties}>
-				<UpstreamPoolPanel key={section.key} {...pool} density={density === 'list' ? 'model-list' : 'model-card'} card={card} section={section} providerMeta={providerMeta} />
+			<div id={`${id}-panel`} role="tabpanel" aria-labelledby={tabId(sections.indexOf(section))} className="min-w-0">
+				<ModelUpstreamPool key={section.key} {...pool} density={density} card={card} section={section} providerMeta={providerMeta} />
 			</div>
 		</section>
-	);
-}
-
-export function RouteModelFlow(props: Props) {
-	const {
-		card,
-		meta,
-		providerMeta,
-		globalRouteStrategy,
-		density,
-		copiedModelId,
-		togglingId,
-		onCopyModelId,
-		onCreate,
-		onEdit,
-		onEditModel,
-		onToggleStatus,
-		onOpenStrategyDialog,
-		onOpenProviderStickyDialog,
-	} = props;
-	const t = useTranslations('routes.card');
-	const tFlow = useTranslations('routes.flow');
-	const billingLabel = meta ? routeModelBillingLabel(meta) : null;
-	const ModelIcon = billingLabel?.startsWith('image') ? PhotoIcon : billingLabel?.startsWith('asr') ? MicrophoneIcon : billingLabel?.startsWith('tts') ? SpeakerWaveIcon : billingLabel === 'embedding' ? CircleStackIcon : ChatBubbleLeftRightIcon;
-	const stats = billingLabel
-		? t(`modelBilling.${billingLabel}`)
-		: t('contextLine', { context: formatCompactTokens(meta?.context_window), max: formatCompactTokens(meta?.max_tokens) });
-	const tags = parseModelTagsList(meta);
-	const sections = splitRoutesByProtocolAndRouteGroup(card.groupRoutes);
-	const surfaceGroups = groupSectionsByRequestSurface(sections);
-
-	const [selectedKey, setSelectedKey] = useState<string | null>(null);
-	const surface = surfaceGroups.find(item => item.key === selectedKey) ?? surfaceGroups[0];
-
-	const [selectedGroups, setSelectedGroups] = useState<Record<string, string>>({});
-	const section = surface?.sections.find(item => item.group === selectedGroups[surface.key])
-		?? surface?.sections.find(item => item.group === 'default') ?? surface?.sections[0];
-
-	return (
-		<article className="route-model-panel overflow-hidden rounded-xl border border-gray-200 bg-white">
-			<header className="route-model-heading grid gap-3 border-b border-gray-100 bg-white px-4 py-4 sm:px-5">
-				<div className="min-w-0 flex-1">
-					<div className="flex items-center justify-between gap-3">
-						<div className="flex min-w-0 flex-wrap items-center gap-2">
-							<span className="route-model-symbol" aria-hidden><ModelIcon className="h-4 w-4" /></span>
-							<button
-								type="button"
-								onClick={() => onEditModel(card.model_id)}
-								title={t('editModel', { title: card.title })}
-								className="route-model-name truncate text-left text-base font-medium text-gray-900 underline-offset-2 hover:text-gray-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
-							>
-								{card.title}
-							</button>
-							<span className="text-xs text-gray-500">{stats}</span>
-							{tags.slice(0, 4).map((tag) => (
-								<span key={tag} className={`rounded px-1.5 py-0.5 text-xs font-medium ${tagBadgeClass(tag)}`}>
-									{tag}
-								</span>
-							))}
-						</div>
-						{surface && section && (
-							<button type="button" className="route-model-add-provider"
-								aria-label={tFlow('addProvider')} title={tFlow('addProvider')}
-								onClick={() => onCreate(card.model_id, {
-								protocol: surface.protocol,
-								operation: surface.requestOperation,
-								group: section.group,
-							})}>
-								<PlusIcon aria-hidden className="h-4 w-4" />
-							</button>
-						)}
-					</div>
-				</div>
-			</header>
-
-			<div className="route-model-surfaces route-model-card-surfaces">
-				{surface && section ? (
-					<ModelSurface
-						surfaceGroups={surfaceGroups}
-						surface={surface}
-						selectSurface={setSelectedKey}
-						section={section}
-						selectGroup={group => setSelectedGroups(previous => ({ ...previous, [surface.key]: group }))}
-						card={card}
-						meta={meta}
-						providerMeta={providerMeta}
-						globalRouteStrategy={globalRouteStrategy}
-						density={density}
-						copiedModelId={copiedModelId}
-						togglingId={togglingId}
-						onCopyModelId={onCopyModelId}
-						onEdit={onEdit}
-						onToggleStatus={onToggleStatus}
-						onOpenStrategyDialog={onOpenStrategyDialog}
-						onOpenProviderStickyDialog={onOpenProviderStickyDialog}
-					/>
-				) : (
-					<div className="flex min-h-20 items-center justify-center py-5 text-sm font-medium text-gray-400">
-						{tFlow('noProviders')}
-					</div>
-				)}
-			</div>
-		</article>
 	);
 }

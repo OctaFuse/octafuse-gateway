@@ -6,7 +6,8 @@ import { useTranslations } from 'next-intl';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
 import type { RouteFlowDensity, RouteListRow } from '../types';
 import type { RouteModelGroup } from '../route-utils';
-import { RouteModelFlow } from './route-model-flow';
+import type { RouteModelLayout } from '../use-route-display-preferences';
+import { RouteModelPanel } from './route-model-panel';
 
 type Props = {
 	vendor: string;
@@ -16,6 +17,7 @@ type Props = {
 	modelMeta: Map<string, GatewayModel>;
 	providerMeta: Map<string, GatewayProvider>;
 	globalRouteStrategy: string | null;
+	modelLayout: RouteModelLayout;
 	density: RouteFlowDensity;
 	copiedModelId: string | null;
 	togglingId: string | null;
@@ -96,7 +98,8 @@ export function RouteVendorGroup(props: Props) {
 			) : null}
 			<div className="route-vendor-models space-y-4">
 				{cards.map((card) => (
-					<RouteModelFlow
+					<RouteModelPanel
+						layout={props.modelLayout}
 						key={card.model_id}
 						card={card}
 						meta={modelMeta.get(card.model_id)}

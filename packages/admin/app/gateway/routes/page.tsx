@@ -17,6 +17,7 @@ import { RouteModal } from './components/route-modal';
 import { ProviderStickyDialog } from './components/provider-sticky-dialog';
 import { RoutePolicyDialog } from './components/route-policy-dialog';
 import { RouteVendorGroup } from './components/route-vendor-group';
+import { useRouteModelLayout } from './use-route-display-preferences';
 import { useCatalogView } from '../components/use-catalog-view';
 import { RouteWorkspaceHeader } from './components/route-workspace-header';
 import { RouteSurfaceCatalog, UnroutedModelsPanel } from './components/route-surface-catalog';
@@ -53,6 +54,7 @@ function subscribeFlowDensity(onStoreChange: () => void) {
 function RoutesContent() {
 	const t = useTranslations('routes');
 	const tCommon = useTranslations('common');
+	const [modelLayout, setModelLayout] = useRouteModelLayout();
 	const [catalogView, setCatalogView] = useCatalogView(ROUTE_DETAIL_STORAGE_KEY, 'topology');
 	const density: RouteFlowDensity = catalogView === 'cards' ? 'topology' : 'list';
 	const setDensity = useCallback((next: RouteFlowDensity) => {
@@ -142,10 +144,10 @@ function RoutesContent() {
 
 			<section className="min-w-0">
 				<RouteWorkspaceHeader
-					visibleModelCount={state.visibleModelCount}
-					visibleRouteCount={state.visibleRouteCount}
 					density={density}
 					onDensityChange={setDensity}
+					modelLayout={modelLayout}
+					onModelLayoutChange={setModelLayout}
 					view={workspaceView}
 					onViewChange={handleWorkspaceViewChange}
 					stickyRefreshIntervalMs={stickyRefreshIntervalMs}
@@ -203,6 +205,7 @@ function RoutesContent() {
 											cards={cards}
 											showHeader={showHeader}
 											vendorGroupIdx={vendorGroupIdx}
+											modelLayout={modelLayout}
 											modelMeta={state.modelMeta}
 											providerMeta={state.providerMeta}
 											globalRouteStrategy={state.globalRouteStrategy}

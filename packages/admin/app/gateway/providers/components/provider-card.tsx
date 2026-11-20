@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useLocale, useTranslations } from 'next-intl';
 import { VendorIcon } from '@/components/model-vendor-icon';
+import { StatusSwitchTrack } from '@/components/status-switch-track';
 import { formatProviderAccountLabel, providerKindDisplayLabel } from '@/lib/provider-kind';
 import type { CatalogView } from '../../components/catalog-view-toggle';
 import type { GatewayProvider, ProviderKeyStatusKind } from '../types';
@@ -61,7 +62,7 @@ const STATUS_BADGE: Record<ProviderKeyStatusKind, string> = {
 
 
 export const PROVIDER_LIST_COLUMNS =
-	'xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1.4fr)_minmax(0,0.85fr)_minmax(0,0.8fr)]';
+	'xl:grid-cols-[minmax(0,1.25fr)_7rem_minmax(0,1.4fr)_minmax(0,0.85fr)_minmax(0,0.8fr)]';
 
 function routeUsageClass(routesCount: number, activeRoutesCount: number): string {
 	if (routesCount <= 0) return 'text-slate-500';
@@ -120,18 +121,24 @@ export function ProviderCard(props: ProviderCardProps) {
 	const accountTitle = formatProviderAccountLabel(provider.name, kindLabel);
 	const statusLabel =
 		keyStatus === 'key_set' ? t('keySet') : keyStatus === 'pending' ? t('pending') : t('noKey');
-	const statusControl = (
+	const statusControl = (showTrack = !isList) => (
 		<button
 			type="button"
 			role="switch"
 			aria-checked={isActive}
 			disabled={statusTogglingId === provider.id}
 			onClick={(event) => { event.stopPropagation(); void onToggleStatus(provider); }}
-			className={`provider-status-control pointer-events-auto inline-flex min-h-6 items-center gap-1.5 rounded px-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-wait disabled:opacity-50 ${isActive ? 'text-emerald-700 hover:bg-emerald-50' : 'text-gray-500 hover:bg-gray-200'}`}
+			className={`provider-status-control pointer-events-auto inline-flex min-h-6 items-center gap-1.5 rounded px-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 disabled:cursor-wait disabled:opacity-50 ${isList && !showTrack ? 'xl:hidden' : ''} ${isActive ? 'text-emerald-700 hover:bg-emerald-50' : 'text-gray-500 hover:bg-gray-200'}`}
 			title={isActive ? t('providerEnabled') : t('providerDisabled')}
 			aria-label={isActive ? t('providerEnabled') : t('providerDisabled')}
 		>
-			{isActive ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden /> : <PowerIcon className="h-3 w-3 shrink-0" aria-hidden />}
+			{showTrack ? (
+				<StatusSwitchTrack checked={isActive} compact={!isList} />
+			) : isActive ? (
+				<span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden />
+			) : (
+				<PowerIcon className="h-3 w-3 shrink-0" aria-hidden />
+			)}
 			{tFilters(isActive ? 'active' : 'disabled')}
 		</button>
 	);
@@ -186,13 +193,19 @@ export function ProviderCard(props: ProviderCardProps) {
 					</h2>
 					<div className="provider-account-meta mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5">
 						{showKind ? <span className="min-w-0 truncate text-slate-500" title={kindLabel ?? undefined}>{kindLabel}</span> : null}
-						{statusControl}
+						{statusControl()}
 					</div>
 				</div>
 				{officialUpdateButton}
 			</div>
 
-			<div className={`provider-route-summary relative z-10 min-w-0 ${isList ? 'order-4' : ''}`}>
+			{isList ? (
+				<div className="pointer-events-none relative z-10 order-1 hidden min-w-0 items-center xl:flex">
+					{statusControl(true)}
+				</div>
+			) : null}
+
+			<div className={`provider-route-summary relative z-10 min-w-0 ${isList ? 'order-4' : 'mt-auto'}`}>
 				<button
 					type="button"
 					onClick={() => onViewRoutes(provider)}
@@ -201,14 +214,24 @@ export function ProviderCard(props: ProviderCardProps) {
 					className="provider-route-link inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg py-1 text-left text-xs leading-5 text-gray-600 hover:text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 				>
 					<span className="provider-route-symbol" aria-hidden><ShareIcon className="h-4 w-4" /></span>
-					<span>{routesCount <= 0 ? t('noRoutes') : routesLabel}</span>
-					{routesCount > 0 ? <span className={isActive ? routeUsageClass(routesCount, activeRoutesCount) : 'text-gray-500'}>{t('activeRoutes', { count: activeRoutesCount })}</span> : null}
+					{routesCount <= 0 ? (
+						<span>{t('noRoutes')}</span>
+					) : isList ? (
+						<>
+							<span>{routesLabel}</span>
+							<span className={isActive ? routeUsageClass(routesCount, activeRoutesCount) : 'text-gray-500'}>{t('activeRoutes', { count: activeRoutesCount })}</span>
+						</>
+					) : (
+						<span className={`tabular-nums ${isActive ? routeUsageClass(routesCount, activeRoutesCount) : 'text-gray-500'}`}>
+							{t('enabledRouteRatio', { active: activeRoutesCount, total: routesCount })}
+						</span>
+					)}
 					<ArrowUpRightIcon className="h-3 w-3 text-gray-400" aria-hidden />
 				</button>
 			</div>
 
-			<div className={`provider-capabilities pointer-events-none relative z-10 min-w-0 ${isList ? 'order-2' : 'flex-1'}`}>
-				{!isList ? <p className="mb-2 text-xs font-medium text-gray-500">{tList('protocols')}</p> : null}
+			<div className={`provider-capabilities pointer-events-none relative z-10 min-w-0 ${isList ? 'order-2' : ''}`}>
+				{!isList ? <p className="mb-1 text-xs font-medium text-gray-500">{tList('protocols')}</p> : null}
 				{protocols.length > 0 ? (
 					<button type="button" onClick={() => onViewEndpoints(provider)} aria-label={t('editEndpoints', { name: provider.name })} title={t('editEndpoints', { name: provider.name })} className="provider-protocol-trigger pointer-events-auto block w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500">
 						<ProviderProtocolBadges summaries={protocols} muted={!isActive} compact={isList} />
@@ -235,27 +258,29 @@ export function ProviderCard(props: ProviderCardProps) {
 						<KeyIcon className={`h-3.5 w-3.5 shrink-0 ${keyStatus === 'key_set' ? 'text-slate-400' : ''}`} aria-hidden />
 						<span className="truncate">{statusLabel}</span>
 					</span>
-					{canCopyKey ? (
-						<button
-							type="button"
-							onClick={(event) => {
-								event.stopPropagation();
-								void onCopyApiKey(provider);
-							}}
-							className="pointer-events-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
-							title={copiedId === apiKeyFeedbackId ? tCommon('copied') : t('copyApiKey')}
-							aria-label={copiedId === apiKeyFeedbackId ? tCommon('copied') : t('copyApiKey')}
-						>
-							{copiedId === apiKeyFeedbackId ? (
-								<CheckIcon className="h-4 w-4 text-emerald-600" aria-hidden />
-							) : (
-								<ClipboardDocumentIcon className="h-4 w-4" aria-hidden />
-							)}
-						</button>
-					) : null}
-					{provider.quota_supported && !provider.has_pending_key ? (
-						<ProviderQuotaButton providerId={provider.id} />
-					) : null}
+					<div className={isList ? 'contents' : 'ml-auto flex shrink-0 items-center gap-1'}>
+						{canCopyKey ? (
+							<button
+								type="button"
+								onClick={(event) => {
+									event.stopPropagation();
+									void onCopyApiKey(provider);
+								}}
+								className="pointer-events-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 hover:bg-slate-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+								title={copiedId === apiKeyFeedbackId ? tCommon('copied') : t('copyApiKey')}
+								aria-label={copiedId === apiKeyFeedbackId ? tCommon('copied') : t('copyApiKey')}
+							>
+								{copiedId === apiKeyFeedbackId ? (
+									<CheckIcon className="h-4 w-4 text-emerald-600" aria-hidden />
+								) : (
+									<ClipboardDocumentIcon className="h-4 w-4" aria-hidden />
+								)}
+							</button>
+						) : null}
+						{provider.quota_supported && !provider.has_pending_key ? (
+							<ProviderQuotaButton providerId={provider.id} />
+						) : null}
+					</div>
 				</div>
 			</div>
 		</article>

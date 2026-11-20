@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { ChevronDownIcon, ClockIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { useMemo } from 'react';
+import { ClockIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { useLocale, useNow, useTranslations } from 'next-intl';
 import {
 	isProviderFactorActive,
@@ -21,21 +21,17 @@ import {
 	providerFactorChipClass,
 	resolveRouteScheduleDisplay,
 } from '../route-utils';
-import { useRoutePricingDisplay } from '../use-route-pricing-display';
+import { useRoutePricingDisplay } from '../use-route-display-preferences';
 
 /** One line per period, showing effective results or the three configured factors. */
 export function RouteTargetPricing({
 	priceOverride,
 	onEdit,
 	compact = false,
-	summarize = false,
-	initiallyExpanded = false,
 	muted = false,
 }: {
 	priceOverride: string | null | undefined;
 	compact?: boolean;
-	summarize?: boolean;
-	initiallyExpanded?: boolean;
 	muted?: boolean;
 	onEdit: () => void;
 }) {
@@ -43,10 +39,7 @@ export function RouteTargetPricing({
 	const modal = useTranslations('routes.modal');
 	const list = useTranslations('routes.listItem');
 	const [pricingDisplay] = useRoutePricingDisplay();
-	const [expanded, setExpanded] = useState(initiallyExpanded);
 	const configuredView = pricingDisplay === 'configured';
-	const canFold = summarize && !(compact && configuredView);
-	const folded = canFold && !expanded;
 	const locale = useLocale();
 	const timezone = useBusinessTimezone();
 	const now = useNow({ updateInterval: 1000 });
@@ -87,14 +80,8 @@ export function RouteTargetPricing({
 
 	return (
 		<div className={`route-provider-price-well ${compact ? 'route-provider-list-pricing min-w-0 py-0.5 pr-0.5' : 'overflow-x-auto border-t border-slate-100 px-2.5 py-1.5'} ${muted ? 'grayscale' : ''}`}>
-			{canFold && expanded && (
-				<button type="button" aria-expanded={true} onClick={() => setExpanded(false)}
-					className="mb-1 flex w-full items-center justify-between rounded py-1 text-xs font-medium text-slate-600 hover:text-slate-900">
-					{t('pricingDetails')}<ChevronDownIcon className="h-3.5 w-3.5 rotate-180" aria-hidden />
-				</button>
-			)}
-			<div className={folded ? 'min-w-0' : compact ? `route-provider-pricing-columns min-w-0 ${configuredView ? 'route-provider-pricing-configured' : ''}` : `grid min-w-0 gap-x-1 ${configuredView ? 'grid-cols-[minmax(0,1fr)_repeat(3,3.25rem)]' : 'grid-cols-[minmax(0,1fr)_repeat(2,4.5rem)]'}`}>
-				{!folded && <div className={`${compact ? 'route-provider-price-heading' : ''} ${columns} pb-1.5 text-xs leading-4 text-slate-500`}>
+			<div className={compact ? `route-provider-pricing-columns min-w-0 ${configuredView ? 'route-provider-pricing-configured' : ''}` : `grid min-w-0 gap-x-1 ${configuredView ? 'grid-cols-[minmax(0,1fr)_repeat(3,3.25rem)]' : 'grid-cols-[minmax(0,1fr)_repeat(2,4.5rem)]'}`}>
+				<div className={`${compact ? 'route-provider-price-heading' : ''} ${columns} pb-1.5 text-xs leading-4 text-slate-500`}>
 					<span className="inline-flex items-center gap-1">
 						<ClockIcon className="h-3 w-3" aria-hidden />{t('pricingPeriod')}
 					</span>
@@ -107,9 +94,8 @@ export function RouteTargetPricing({
 					)) : (['charged', 'metered'] as const).map(side => (
 						<span key={side} className="inline-flex items-center justify-end gap-1 whitespace-nowrap">{t(`effectivePricing.${side}`)}</span>
 					))}
-				</div>}
+				</div>
 				{[null, ...windows].map((window, position) => {
-					if (folded && position !== currentIndex + 1) return null;
 					const validity = resolveProviderFactorValidity(bases, window ? {
 						start: window.start, end: window.end, factor: window.provider_factor,
 						...(window.provider_validity !== undefined ? { validity: window.provider_validity } : {}),
@@ -160,54 +146,26 @@ export function RouteTargetPricing({
 						);
 						return { side, effective, effectiveChip, configured, tooltip: `${period} · ${providerStatus} · ${formula}` };
 					});
-					if (folded) {
-						return (
-							<button key={position} type="button" aria-expanded={false} onClick={() => setExpanded(true)}
-								title={`${period} · ${t('pricingDetails')}`}
-								className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-1.5 rounded py-1 text-left text-xs text-slate-600 hover:text-slate-900">
-								<span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-									<span className="me-2 inline-flex items-center gap-1">
-										<ClockIcon className="h-3.5 w-3.5" aria-hidden />{windows.length ? modal('catalogScheduleNow') : period}
-									</span>
-									{configuredView && <span className="inline-flex items-center gap-1.5">{t('pricingProviderFactor')}{providerChip}</span>}
-									{factors.map(({ side, configured, effectiveChip }) => (
-										<span key={side} className="inline-flex items-center gap-1.5">
-											{configuredView ? t(side === 'charged' ? 'pricingBillingMultiplier' : 'pricingCostMultiplier') : t(`effectivePricing.${side}`)}
-											{configuredView ? <span className={`route-factor-value ${factorChipClassForValue(configured, side)}`}>{formatFactorMultiplierForChip(configured)}</span> : effectiveChip}
-										</span>
-									))}
-								</span>
-								<ChevronDownIcon className="h-3.5 w-3.5" aria-hidden />
-								<span className="sr-only">{t('pricingDetails')}</span>
-							</button>
-						);
-					}
 					return (
-						<div key={position} className={`${columns} w-full ${compact ? 'min-h-6' : 'min-h-8'} py-1 text-left text-xs transition hover:bg-slate-50 ${compact ? '' : 'border-t border-dashed border-slate-100'}`}>
-							<div className="flex min-w-0 items-center gap-1">
+						<div key={position} className={`${columns} w-full ${compact ? 'min-h-6' : 'min-h-8'} py-1 text-left text-xs transition ${isCurrent ? 'rounded-sm bg-sky-50' : 'hover:bg-slate-50'} ${compact ? '' : 'border-t border-dashed border-slate-100'}`}>
+							<div className={`flex min-w-0 items-center gap-1 ${windows.length ? 'self-stretch border-s-2 ps-1.5' : ''} ${isCurrent ? 'border-s-sky-600' : 'border-s-transparent'}`}>
 								<button
 									type="button"
 									onClick={onEdit}
 									className="block min-w-0 rounded text-left text-xs leading-4 text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
 									title={t('editRoute')}
+									aria-current={isCurrent ? 'time' : undefined}
 									aria-label={`${t('editRoute')} · ${period}`}
 								>
 									{window && <><span className="route-pricing-range whitespace-nowrap tabular-nums">{formatScheduleRange(window.start, window.end)}</span>{' '}</>}
 									<span className="text-slate-500">
 										{window ? formatDays(window.days) : period}
-										{isCurrent && <>
-											{'\u00a0'}
-											<span className="whitespace-nowrap font-medium text-gray-800">
-												<span aria-hidden>· </span>
-												{modal('catalogScheduleNow')}
-											</span>
-										</>}
 									</span>
 								</button>
 							</div>
 							{configuredView ? (
-								<span className="inline-flex justify-self-end">
-									<InfoHintPopover label={`${modal('providerFactor')} ${formatFactorMultiplier(provider)}`} openOnHover portal onActivate={onEdit} icon={providerChip}>
+								<span className="inline-flex items-center justify-self-end gap-1.5">
+									<InfoHintPopover label={`${modal('providerFactor')} ${formatFactorMultiplier(provider)}`} openOnHover openOnFocus portal onActivate={onEdit} icon={providerChip}>
 										<p className="font-medium text-slate-900">{modal('providerFactor')}</p>
 										<p className="mt-1 text-xs text-slate-500">{period}</p>
 										<p className={`mt-2 text-xs ${invalidOrInactive ? 'text-amber-700' : 'text-slate-600'}`}>
@@ -222,11 +180,14 @@ export function RouteTargetPricing({
 								</span>
 							) : null}
 							{factors.map(({ side, effective, effectiveChip, configured, tooltip }) => (
-								<span key={side} className="inline-flex justify-self-end">
-									{configuredView ? (
-										<button type="button" onClick={onEdit} className={`route-factor-value ${factorChipClassForValue(configured, side)} focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500`} title={tooltip} aria-label={`${t('editRoute')} · ${modal(side === 'charged' ? 'editor.chargedFactorLabel' : 'editor.meteredFactorLabel')} · ${period}`}>{formatFactorMultiplierForChip(configured)}</button>
-									) : <InfoHintPopover label={tooltip} openOnHover portal onActivate={onEdit} icon={effectiveChip}>
-										<p className="font-medium text-slate-900">{t(`effectivePricing.${side}`)}</p>
+								<span key={side} className="inline-flex items-center justify-self-end gap-1.5">
+									<InfoHintPopover label={tooltip} openOnHover openOnFocus portal onActivate={onEdit}
+										icon={configuredView ? (
+											<span className={`route-factor-value ${factorChipClassForValue(configured, side)}`}>{formatFactorMultiplierForChip(configured)}</span>
+										) : effectiveChip}>
+										<p className="font-medium text-slate-900">{configuredView
+											? modal(side === 'charged' ? 'editor.chargedFactorLabel' : 'editor.meteredFactorLabel')
+											: t(`effectivePricing.${side}`)}</p>
 										<p className="mt-1 text-xs text-slate-500">{period}</p>
 										<p className={`mt-2 flex items-center gap-1.5 text-xs ${!active ? 'text-amber-700' : providerApplied ? 'text-violet-700' : 'text-slate-500'}`}>
 											{providerApplied && <span className="h-1.5 w-1.5 rounded-full bg-violet-500" aria-hidden />}
@@ -244,7 +205,7 @@ export function RouteTargetPricing({
 											{validityInfo.length > 0 && <p>{t('providerFactorTimezone', { timezone })}</p>}
 											<p className="mt-2">{t('effectivePricing.breakdown.basis')}</p>
 										</div>
-									</InfoHintPopover>}
+									</InfoHintPopover>
 								</span>
 							))}
 						</div>

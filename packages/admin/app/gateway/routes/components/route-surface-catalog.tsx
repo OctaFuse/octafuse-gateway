@@ -16,7 +16,7 @@ import {
 	type SurfaceCatalogGroup,
 } from '../route-utils';
 import type { RouteFlowDensity, RouteListRow, RouteProtocolGroupSection } from '../types';
-import { FlowConnectorAdd, RequestSurfaceNode, RouteGroupInfo, UpstreamPoolPanel, openSectionStickyDialog } from './route-model-flow';
+import { FlowConnectorAdd, RequestSurfaceNode, RouteGroupInfo, ModelUpstreamPool, UpstreamPoolPanel, openSectionStickyDialog } from './route-model-flow';
 
 type Props = {
 	cards: RouteModelGroup[];
@@ -180,49 +180,8 @@ export function UnroutedModelsPanel({
 	);
 }
 
-function CatalogUpstream({
-	section,
-	card,
-	meta,
-	providerMeta,
-	globalRouteStrategy,
-	density,
-	togglingId,
-	onEdit,
-	onToggleStatus,
-	onOpenStrategyDialog,
-	onOpenProviderStickyDialog,
-}: {
-	section: RouteProtocolGroupSection<RouteListRow>;
-	card: RouteModelGroup;
-	meta: GatewayModel | undefined;
-	providerMeta: Map<string, GatewayProvider>;
-	globalRouteStrategy: string | null;
-	density: RouteFlowDensity;
-	togglingId: string | null;
-	onEdit: Props['onEdit'];
-	onToggleStatus: Props['onToggleStatus'];
-	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
-	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
-}) {
-	return (
-		<UpstreamPoolPanel
-			section={section}
-			card={card}
-			meta={meta}
-			providerMeta={providerMeta}
-			globalRouteStrategy={globalRouteStrategy}
-			density={density}
-			togglingId={togglingId}
-			onEdit={onEdit}
-			onToggleStatus={onToggleStatus}
-			onOpenStrategyDialog={onOpenStrategyDialog}
-			onOpenProviderStickyDialog={onOpenProviderStickyDialog}
-		/>
-	);
-}
-
-function GroupToUpstreamBranch({
+export function GroupToUpstreamBranch({
+	byModel = false,
 	section,
 	card,
 	meta,
@@ -240,6 +199,7 @@ function GroupToUpstreamBranch({
 	onOpenStrategyDialog,
 	onOpenProviderStickyDialog,
 }: {
+	byModel?: boolean;
 	section: RouteProtocolGroupSection<RouteListRow>;
 	card: RouteModelGroup;
 	meta: GatewayModel | undefined;
@@ -263,11 +223,12 @@ function GroupToUpstreamBranch({
 	const isDefaultGroup = section.group === 'default';
 	const railColor = isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300';
 	const singleGroup = branchCount === 1;
+	const PoolPanel = byModel ? ModelUpstreamPool : UpstreamPoolPanel;
 
 	return (
 		<div className="route-flow-branch relative py-3 xl:pl-4">
-			<BranchConnectors alignTop={!singleGroup} index={branchIndex} count={branchCount} colorClass={railColor} />
-			<div className={`route-flow-branch-layout grid min-w-0 gap-y-3 xl:grid-cols-[minmax(180px,240px)_minmax(0,1fr)] ${singleGroup ? 'xl:items-center' : 'xl:items-start'}`}>
+			<BranchConnectors alignTop={!singleGroup} index={branchIndex} count={branchCount} colorClass={byModel ? 'bg-gray-300' : railColor} />
+			<div className={`route-flow-branch-layout grid min-w-0 gap-y-3 ${byModel ? 'xl:grid-cols-[minmax(160px,200px)_minmax(0,1fr)]' : 'xl:grid-cols-[minmax(180px,240px)_minmax(0,1fr)]'} ${singleGroup ? 'xl:items-center' : 'xl:items-start'}`}>
 				<div className={`route-flow-group relative flex min-w-0 flex-col xl:pr-8 ${singleGroup ? '' : 'mt-3'}`}>
 					<RouteGroupInfo
 						centered={singleGroup}
@@ -303,7 +264,7 @@ function GroupToUpstreamBranch({
 						}
 					/>
 				</div>
-				<CatalogUpstream
+				<PoolPanel
 					section={section}
 					card={card}
 					meta={meta}

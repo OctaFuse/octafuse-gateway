@@ -132,6 +132,7 @@ function ProvidersContent() {
 						aria-hidden
 					>
 						<span>{t('list.provider')}</span>
+						<span>{t('list.status')}</span>
 						<span>{t('list.protocols')}</span>
 						<span>{t('list.keyAndQuota')}</span>
 						<span>{t('list.routes')}</span>
