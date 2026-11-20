@@ -21,10 +21,11 @@ function request(body: string, ip = '203.0.113.50'): Request {
 
 test('login route locks on fifth confirmed failure before parsing later bodies', async () => {
   resetGuard();
-  const oldUser = process.env.ADMIN_USERNAME;
-  const oldPassword = process.env.ADMIN_PASSWORD;
-  process.env.ADMIN_USERNAME = 'admin';
-  process.env.ADMIN_PASSWORD = 'correct-password';
+  const env: Partial<Pick<NodeJS.ProcessEnv, 'ADMIN_USERNAME' | 'ADMIN_PASSWORD'>> = process.env;
+  const oldUser = env.ADMIN_USERNAME;
+  const oldPassword = env.ADMIN_PASSWORD;
+  env.ADMIN_USERNAME = 'admin';
+  env.ADMIN_PASSWORD = 'correct-password';
   try {
     for (let i = 0; i < 4; i++) {
       const response = await POST(request('{"username":"admin","password":"wrong"}'));
@@ -39,10 +40,10 @@ test('login route locks on fifth confirmed failure before parsing later bodies',
     assert.equal(locked.status, 429); // Global lock precedes invalid JSON parsing.
     assert.equal((await locked.json() as { code: string }).code, 'ADMIN_LOGIN_LOCKED');
   } finally {
-    if (oldUser === undefined) delete process.env.ADMIN_USERNAME;
-    else process.env.ADMIN_USERNAME = oldUser;
-    if (oldPassword === undefined) delete process.env.ADMIN_PASSWORD;
-    else process.env.ADMIN_PASSWORD = oldPassword;
+    if (oldUser === undefined) delete env.ADMIN_USERNAME;
+    else env.ADMIN_USERNAME = oldUser;
+    if (oldPassword === undefined) delete env.ADMIN_PASSWORD;
+    else env.ADMIN_PASSWORD = oldPassword;
     resetGuard();
   }
 });
