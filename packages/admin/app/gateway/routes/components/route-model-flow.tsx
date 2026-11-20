@@ -4,11 +4,6 @@ import { useEffect, useId, useMemo, useState, type CSSProperties } from 'react';
 import {
 	ArrowDownIcon,
 	ArrowRightEndOnRectangleIcon,
-	ChatBubbleLeftRightIcon,
-	PhotoIcon,
-	MicrophoneIcon,
-	SpeakerWaveIcon,
-	CircleStackIcon,
 	ArrowsUpDownIcon,
 	ChevronRightIcon,
 	CheckIcon,
@@ -17,28 +12,22 @@ import {
 	PlusIcon,
 	ScaleIcon,
 } from '@heroicons/react/24/outline';
-import { routeModelBillingLabel } from '../route-model-summary';
 import { providerAccountIdentity, providerKindDisplayLabel, routeProviderAccountLabel } from '@/lib/provider-kind';
 import { useLocale, useTranslations } from 'next-intl';
 import { InfoHintPopover } from '@/components/InfoHintPopover';
 import { VendorIcon } from '@/components/model-vendor-icon';
 import { StatusSwitchTrack } from '@/components/status-switch-track';
 import { UpstreamProtocolBrandIcon } from '@/components/upstream-brand-logo';
-import { formatCompactTokens } from '@/lib/format-compact-tokens';
 import type { GatewayModel, GatewayProvider } from '@/lib/types';
-import { tagBadgeClass } from '../../models/model-utils';
 import { useStickySummary } from '../sticky-summary-store';
 import type { RouteModelGroup, RequestSurfaceGroup } from '../route-utils';
 import {
 	compareRoutesWithinPriorityLayer,
-	groupSectionsByRequestSurface,
 	isRouteConfigurationAvailable,
-	parseModelTagsList,
 	protocolBadgeClass,
 	requestSurfacePath,
 	resolveEffectiveRouteStrategy,
 	summarizeRouteCustomParams,
-	splitRoutesByProtocolAndRouteGroup,
 } from '../route-utils';
 import {
 	type RouteEditorTab,
@@ -50,7 +39,7 @@ import { FailoverRulesDialog } from './failover-rules-dialog';
 import { ProviderStickyChip } from './provider-sticky-chip';
 import { RouteStickyUsage } from './route-sticky-usage';
 import { RouteTargetPricing } from './route-target-pricing';
-import { useRoutePricingPeriods } from '../use-route-pricing-display';
+import { useRoutePricingPeriods } from '../use-route-display-preferences';
 import { useRoutePathDisplay } from '../use-route-path-display';
 
 const EMPTY_STICKY_COUNTS = new Map<string, number>();
@@ -81,7 +70,7 @@ type OpenProviderStickyDialog = (
 	initialTargetId?: string
 ) => void;
 
-type Props = {
+export type RouteModelFlowProps = {
 	card: RouteModelGroup;
 	meta: GatewayModel | undefined;
 	providerMeta: Map<string, GatewayProvider>;
@@ -620,9 +609,9 @@ function PriorityTierPanel({
 	stickyCountsByTarget: Map<string, number>;
 	stickyTotal: number | null;
 	togglingId: string | null;
-	onEdit: Props['onEdit'];
-	onToggleStatus: Props['onToggleStatus'];
-	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
+	onEdit: RouteModelFlowProps['onEdit'];
+	onToggleStatus: RouteModelFlowProps['onToggleStatus'];
+	onOpenStrategyDialog: RouteModelFlowProps['onOpenStrategyDialog'];
 	onOpenFailover: () => void;
 	onOpenStickyBindings: (targetId: string) => void;
 }) {
@@ -757,10 +746,10 @@ type UpstreamPoolPanelProps = {
 	globalRouteStrategy: string | null;
 	density: PoolDensity;
 	togglingId: string | null;
-	onEdit: Props['onEdit'];
-	onToggleStatus: Props['onToggleStatus'];
-	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
-	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
+	onEdit: RouteModelFlowProps['onEdit'];
+	onToggleStatus: RouteModelFlowProps['onToggleStatus'];
+	onOpenStrategyDialog: RouteModelFlowProps['onOpenStrategyDialog'];
+	onOpenProviderStickyDialog: RouteModelFlowProps['onOpenProviderStickyDialog'];
 };
 
 export function UpstreamPoolPanel({
@@ -861,7 +850,7 @@ export function UpstreamPoolPanel({
 	);
 }
 
-type FlowSectionProps = Omit<Props, 'onEditModel' | 'onCreate'> & {
+type FlowSectionProps = Omit<RouteModelFlowProps, 'onEditModel' | 'onCreate'> & {
 	surfaceGroups: RequestSurfaceGroup[];
 	surface: RequestSurfaceGroup;
 	selectSurface: (key: string) => void;
@@ -869,7 +858,7 @@ type FlowSectionProps = Omit<Props, 'onEditModel' | 'onCreate'> & {
 	selectGroup: (group: string) => void;
 };
 
-function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGroup, card, density, providerMeta, copiedModelId, onCopyModelId, ...pool }: FlowSectionProps) {
+export function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGroup, card, density, providerMeta, copiedModelId, onCopyModelId, ...pool }: FlowSectionProps) {
 	const t = useTranslations('routes.flow');
 	const tKind = useTranslations('providers.kind');
 	const locale = useLocale();
@@ -943,108 +932,5 @@ function ModelSurface({ surfaceGroups, surface, selectSurface, section, selectGr
 				<UpstreamPoolPanel key={section.key} {...pool} density={density === 'list' ? 'model-list' : 'model-card'} card={card} section={section} providerMeta={providerMeta} />
 			</div>
 		</section>
-	);
-}
-
-export function RouteModelFlow(props: Props) {
-	const {
-		card,
-		meta,
-		providerMeta,
-		globalRouteStrategy,
-		density,
-		copiedModelId,
-		togglingId,
-		onCopyModelId,
-		onCreate,
-		onEdit,
-		onEditModel,
-		onToggleStatus,
-		onOpenStrategyDialog,
-		onOpenProviderStickyDialog,
-	} = props;
-	const t = useTranslations('routes.card');
-	const tFlow = useTranslations('routes.flow');
-	const billingLabel = meta ? routeModelBillingLabel(meta) : null;
-	const ModelIcon = billingLabel?.startsWith('image') ? PhotoIcon : billingLabel?.startsWith('asr') ? MicrophoneIcon : billingLabel?.startsWith('tts') ? SpeakerWaveIcon : billingLabel === 'embedding' ? CircleStackIcon : ChatBubbleLeftRightIcon;
-	const stats = billingLabel
-		? t(`modelBilling.${billingLabel}`)
-		: t('contextLine', { context: formatCompactTokens(meta?.context_window), max: formatCompactTokens(meta?.max_tokens) });
-	const tags = parseModelTagsList(meta);
-	const sections = splitRoutesByProtocolAndRouteGroup(card.groupRoutes);
-	const surfaceGroups = groupSectionsByRequestSurface(sections);
-
-	const [selectedKey, setSelectedKey] = useState<string | null>(null);
-	const surface = surfaceGroups.find(item => item.key === selectedKey) ?? surfaceGroups[0];
-
-	const [selectedGroups, setSelectedGroups] = useState<Record<string, string>>({});
-	const section = surface?.sections.find(item => item.group === selectedGroups[surface.key])
-		?? surface?.sections.find(item => item.group === 'default') ?? surface?.sections[0];
-
-	return (
-		<article className="route-model-panel overflow-hidden rounded-xl border border-gray-200 bg-white">
-			<header className="route-model-heading grid gap-3 border-b border-gray-100 bg-white px-4 py-4 sm:px-5">
-				<div className="min-w-0 flex-1">
-					<div className="flex items-center justify-between gap-3">
-						<div className="flex min-w-0 flex-wrap items-center gap-2">
-							<span className="route-model-symbol" aria-hidden><ModelIcon className="h-4 w-4" /></span>
-							<button
-								type="button"
-								onClick={() => onEditModel(card.model_id)}
-								title={t('editModel', { title: card.title })}
-								className="route-model-name truncate text-left text-base font-medium text-gray-900 underline-offset-2 hover:text-gray-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500"
-							>
-								{card.title}
-							</button>
-							<span className="text-xs text-gray-500">{stats}</span>
-							{tags.slice(0, 4).map((tag) => (
-								<span key={tag} className={`rounded px-1.5 py-0.5 text-xs font-medium ${tagBadgeClass(tag)}`}>
-									{tag}
-								</span>
-							))}
-						</div>
-						{surface && section && (
-							<button type="button" className="route-model-add-provider"
-								aria-label={tFlow('addProvider')} title={tFlow('addProvider')}
-								onClick={() => onCreate(card.model_id, {
-								protocol: surface.protocol,
-								operation: surface.requestOperation,
-								group: section.group,
-							})}>
-								<PlusIcon aria-hidden className="h-4 w-4" />
-							</button>
-						)}
-					</div>
-				</div>
-			</header>
-
-			<div className="route-model-surfaces route-model-card-surfaces">
-				{surface && section ? (
-					<ModelSurface
-						surfaceGroups={surfaceGroups}
-						surface={surface}
-						selectSurface={setSelectedKey}
-						section={section}
-						selectGroup={group => setSelectedGroups(previous => ({ ...previous, [surface.key]: group }))}
-						card={card}
-						meta={meta}
-						providerMeta={providerMeta}
-						globalRouteStrategy={globalRouteStrategy}
-						density={density}
-						copiedModelId={copiedModelId}
-						togglingId={togglingId}
-						onCopyModelId={onCopyModelId}
-						onEdit={onEdit}
-						onToggleStatus={onToggleStatus}
-						onOpenStrategyDialog={onOpenStrategyDialog}
-						onOpenProviderStickyDialog={onOpenProviderStickyDialog}
-					/>
-				) : (
-					<div className="flex min-h-20 items-center justify-center py-5 text-sm font-medium text-gray-400">
-						{tFlow('noProviders')}
-					</div>
-				)}
-			</div>
-		</article>
 	);
 }

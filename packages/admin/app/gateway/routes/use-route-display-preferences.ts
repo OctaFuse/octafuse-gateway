@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
 
 export type RoutePricingDisplay = 'effective' | 'configured';
 
-function createPricingPreference<T extends string>(storageKey: string, defaultValue: T, alternateValue: T) {
+function createDisplayPreference<T extends string>(storageKey: string, defaultValue: T, alternateValue: T) {
 	const event = storageKey + '.change';
 	let memoryFallback: T | undefined;
 
@@ -42,10 +42,16 @@ function createPricingPreference<T extends string>(storageKey: string, defaultVa
 	};
 }
 
-export const useRoutePricingDisplay = createPricingPreference<RoutePricingDisplay>(
+export const useRoutePricingDisplay = createDisplayPreference<RoutePricingDisplay>(
 	'octafuse.admin.routes.pricingDisplay', 'effective', 'configured',
 );
 
-export const useRoutePricingPeriods = createPricingPreference(
+export const useRoutePricingPeriods = createDisplayPreference(
 	'octafuse.admin.routes.pricingPeriods', 'current', 'all',
 );
+
+export const useRouteModelLayout = createDisplayPreference(
+	'octafuse.admin.routes.modelLayout', 'compact', 'tiled',
+);
+
+export type RouteModelLayout = ReturnType<typeof useRouteModelLayout>[0];

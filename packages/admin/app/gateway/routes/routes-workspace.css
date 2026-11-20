@@ -48,6 +48,17 @@
 .routes-design-workspace .route-model-surfaces > div {
 	padding-inline: 0;
 }
+.routes-design-workspace .route-model-tiled-surfaces {
+	padding-top: 4px;
+}
+.route-model-tiled-surfaces > * + * {
+	border-top: 1px solid #cbd5e1;
+}
+.route-flow-list-layout .route-model-tiled-surfaces > * + * {
+	margin-top: 4px;
+	padding-top: 12px;
+	border-color: #ededf0;
+}
 .routes-design-workspace .route-entry-node {
 	border-color: #dfe7f1;
 	background: #f1f6fc;
@@ -566,9 +577,6 @@
 	.routes-design-workspace .route-vendor-section {
 		padding: 12px;
 		border-radius: 16px;
-	}
-	.routes-design-workspace .route-workspace-toolbar > :last-child {
-		width: 100%;
 	}
 	.routes-design-workspace .route-model-surfaces {
 		padding: 12px;

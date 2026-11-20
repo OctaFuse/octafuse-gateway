@@ -222,7 +222,8 @@ function CatalogUpstream({
 	);
 }
 
-function GroupToUpstreamBranch({
+export function GroupToUpstreamBranch({
+	byModel = false,
 	section,
 	card,
 	meta,
@@ -240,6 +241,7 @@ function GroupToUpstreamBranch({
 	onOpenStrategyDialog,
 	onOpenProviderStickyDialog,
 }: {
+	byModel?: boolean;
 	section: RouteProtocolGroupSection<RouteListRow>;
 	card: RouteModelGroup;
 	meta: GatewayModel | undefined;
@@ -266,8 +268,8 @@ function GroupToUpstreamBranch({
 
 	return (
 		<div className="route-flow-branch relative py-3 xl:pl-4">
-			<BranchConnectors alignTop={!singleGroup} index={branchIndex} count={branchCount} colorClass={railColor} />
-			<div className={`route-flow-branch-layout grid min-w-0 gap-y-3 xl:grid-cols-[minmax(180px,240px)_minmax(0,1fr)] ${singleGroup ? 'xl:items-center' : 'xl:items-start'}`}>
+			<BranchConnectors alignTop={!singleGroup} index={branchIndex} count={branchCount} colorClass={byModel ? 'bg-gray-300' : railColor} />
+			<div className={`route-flow-branch-layout grid min-w-0 gap-y-3 ${byModel ? 'xl:grid-cols-[minmax(160px,200px)_minmax(0,1fr)]' : 'xl:grid-cols-[minmax(180px,240px)_minmax(0,1fr)]'} ${singleGroup ? 'xl:items-center' : 'xl:items-start'}`}>
 				<div className={`route-flow-group relative flex min-w-0 flex-col xl:pr-8 ${singleGroup ? '' : 'mt-3'}`}>
 					<RouteGroupInfo
 						centered={singleGroup}

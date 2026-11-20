@@ -21,7 +21,7 @@ import {
 	providerFactorChipClass,
 	resolveRouteScheduleDisplay,
 } from '../route-utils';
-import { useRoutePricingDisplay } from '../use-route-pricing-display';
+import { useRoutePricingDisplay } from '../use-route-display-preferences';
 
 /** One line per period, showing effective results or the three configured factors. */
 export function RouteTargetPricing({
