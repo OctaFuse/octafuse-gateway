@@ -75,7 +75,6 @@ jobs:
         run: npm run build -w @octafuse/core && npm run build -w @octafuse/proxy && npm run verify:proxy-bundle
 
   smoke-node-pg:
-    needs: typecheck-admin
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -100,9 +99,6 @@ jobs:
 
       - name: Install smoke dependencies
         run: npm ci --ignore-scripts --include=dev
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Start postgres and apply migrations
         run: |
