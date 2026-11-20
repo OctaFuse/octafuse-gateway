@@ -52,12 +52,9 @@
 	padding-top: 4px;
 }
 .route-model-tiled-surfaces > * + * {
-	border-top: 1px solid #cbd5e1;
-}
-.route-flow-list-layout .route-model-tiled-surfaces > * + * {
-	margin-top: 4px;
-	padding-top: 12px;
-	border-color: #ededf0;
+	margin-top: 1rem;
+	border-top: 1px dashed #cbd5e1;
+	padding-top: 1rem;
 }
 .routes-design-workspace .route-entry-node {
 	border-color: #dfe7f1;
@@ -100,6 +97,8 @@
 }
 .route-model-card-surfaces {
 	--route-label-width: 4rem;
+}
+.route-card-upstreams {
 	--route-arrow-color: var(--route-accent);
 	--route-card-width: 20rem;
 	--route-card-gap: 0.75rem;
@@ -186,15 +185,15 @@
 	position: relative;
 	z-index: 2;
 }
-.route-card-surface[data-compact-targets='1'] .route-card-upstreams {
+.route-card-upstreams[data-target-count='1'] {
 	max-width: var(--route-card-width);
 }
-.route-card-surface[data-compact-targets='2'] .route-card-upstreams {
+.route-card-upstreams[data-target-count='2'] {
 	max-width: calc(2 * var(--route-card-width) + var(--route-card-gap));
 }
 /* With one fallback beside the preferred tier, reserve its card and arrow,
    then fit whole preferred columns so the arrow meets the last card. */
-.route-card-surface .route-card-upstreams:has(.route-card-tiers[data-paired]) {
+.route-card-upstreams:has(.route-card-tiers[data-paired]) {
 	--card-step: calc(var(--route-card-width) + var(--route-card-gap));
 	--pair-base: calc(2 * var(--route-card-width) + var(--route-tier-gap));
 	width: calc(var(--pair-base) + round(down, max(0px, 100% - var(--pair-base)), var(--card-step)));
@@ -370,7 +369,8 @@
 	margin-bottom: 6px;
 	background: transparent;
 }
-.route-card-surface [data-preferred] .route-tier-number {
+.route-card-surface [data-preferred] .route-tier-number,
+.route-card-tiers [data-preferred] .route-tier-number {
 	color: #254968;
 	background: #ebf2f8;
 	border-color: #cedce8;

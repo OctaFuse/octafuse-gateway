@@ -16,7 +16,7 @@ import {
 	type SurfaceCatalogGroup,
 } from '../route-utils';
 import type { RouteFlowDensity, RouteListRow, RouteProtocolGroupSection } from '../types';
-import { FlowConnectorAdd, RequestSurfaceNode, RouteGroupInfo, UpstreamPoolPanel, openSectionStickyDialog } from './route-model-flow';
+import { FlowConnectorAdd, RequestSurfaceNode, RouteGroupInfo, ModelUpstreamPool, UpstreamPoolPanel, openSectionStickyDialog } from './route-model-flow';
 
 type Props = {
 	cards: RouteModelGroup[];
@@ -180,48 +180,6 @@ export function UnroutedModelsPanel({
 	);
 }
 
-function CatalogUpstream({
-	section,
-	card,
-	meta,
-	providerMeta,
-	globalRouteStrategy,
-	density,
-	togglingId,
-	onEdit,
-	onToggleStatus,
-	onOpenStrategyDialog,
-	onOpenProviderStickyDialog,
-}: {
-	section: RouteProtocolGroupSection<RouteListRow>;
-	card: RouteModelGroup;
-	meta: GatewayModel | undefined;
-	providerMeta: Map<string, GatewayProvider>;
-	globalRouteStrategy: string | null;
-	density: RouteFlowDensity;
-	togglingId: string | null;
-	onEdit: Props['onEdit'];
-	onToggleStatus: Props['onToggleStatus'];
-	onOpenStrategyDialog: Props['onOpenStrategyDialog'];
-	onOpenProviderStickyDialog: Props['onOpenProviderStickyDialog'];
-}) {
-	return (
-		<UpstreamPoolPanel
-			section={section}
-			card={card}
-			meta={meta}
-			providerMeta={providerMeta}
-			globalRouteStrategy={globalRouteStrategy}
-			density={density}
-			togglingId={togglingId}
-			onEdit={onEdit}
-			onToggleStatus={onToggleStatus}
-			onOpenStrategyDialog={onOpenStrategyDialog}
-			onOpenProviderStickyDialog={onOpenProviderStickyDialog}
-		/>
-	);
-}
-
 export function GroupToUpstreamBranch({
 	byModel = false,
 	section,
@@ -265,6 +223,7 @@ export function GroupToUpstreamBranch({
 	const isDefaultGroup = section.group === 'default';
 	const railColor = isDefaultGroup ? 'bg-sky-300' : 'bg-violet-300';
 	const singleGroup = branchCount === 1;
+	const PoolPanel = byModel ? ModelUpstreamPool : UpstreamPoolPanel;
 
 	return (
 		<div className="route-flow-branch relative py-3 xl:pl-4">
@@ -305,7 +264,7 @@ export function GroupToUpstreamBranch({
 						}
 					/>
 				</div>
-				<CatalogUpstream
+				<PoolPanel
 					section={section}
 					card={card}
 					meta={meta}

@@ -823,6 +823,18 @@ export function UpstreamPoolPanel({
 	);
 }
 
+export function ModelUpstreamPool({ density, ...props }: Omit<UpstreamPoolPanelProps, 'density'> & { density: RouteFlowDensity }) {
+	if (density === 'list') return <UpstreamPoolPanel {...props} density="list" />;
+
+	const count = props.section.routes.length;
+	return (
+		<div className="route-card-upstreams" data-target-count={count}
+			style={{ '--route-count': count } as CSSProperties}>
+			<UpstreamPoolPanel {...props} density="model-card" />
+		</div>
+	);
+}
+
 type FlowSectionProps = Omit<RouteModelFlowProps, 'onEditModel' | 'onCreate'> & {
 	surfaceGroups: RequestSurfaceGroup[];
 	surface: RequestSurfaceGroup;
@@ -837,7 +849,6 @@ export function ModelSurface({ surfaceGroups, surface, selectSurface, section, s
 	const locale = useLocale();
 	const id = useId();
 	const tabId = (index: number) => `${id}-tab-${index}`;
-	const routes = section.routes;
 	const sections = surface.sections;
 	const groupSelector = (
 		<div role="tablist" aria-label={t('routeGroup')} className="route-card-group-switch">
@@ -874,8 +885,7 @@ export function ModelSurface({ surfaceGroups, surface, selectSurface, section, s
 	);
 
 	return (
-		<section className="route-card-surface route-model-surface-columns" aria-label={t('routeGroupProviders', { group: section.group })}
-			data-compact-targets={density === 'list' || routes.length > 2 ? undefined : routes.length}>
+		<section className="route-card-surface route-model-surface-columns" aria-label={t('routeGroupProviders', { group: section.group })}>
 			<div id={id} className="route-surface-toolbar">
 				<div role="group" aria-label={t('requestNode')} className="route-entry-picker">
 					<h3 className="text-xs font-medium text-slate-600">{t('controls.entry')}</h3>
@@ -900,9 +910,8 @@ export function ModelSurface({ surfaceGroups, surface, selectSurface, section, s
 					}}
 				/>
 			</div>
-			<div id={`${id}-panel`} role="tabpanel" aria-labelledby={tabId(sections.indexOf(section))} className="route-card-upstreams"
-				style={density === 'list' ? undefined : { '--route-count': routes.length } as CSSProperties}>
-				<UpstreamPoolPanel key={section.key} {...pool} density={density === 'list' ? 'list' : 'model-card'} card={card} section={section} providerMeta={providerMeta} />
+			<div id={`${id}-panel`} role="tabpanel" aria-labelledby={tabId(sections.indexOf(section))} className="min-w-0">
+				<ModelUpstreamPool key={section.key} {...pool} density={density} card={card} section={section} providerMeta={providerMeta} />
 			</div>
 		</section>
 	);
