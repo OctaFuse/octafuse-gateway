@@ -1902,6 +1902,7 @@
 			"currentLegacyValue": "current legacy value",
 			"providerModelName": "Provider model name *",
 			"providerModelPlaceholder": "e.g. gpt-4o-2024-11-20",
+			"providerModelOptions": { "current": "Current value", "noMatches": "No matching models", "empty": "No models returned. You can enter a model name manually.", "search": "Search model ID or display name", "truncated": "The API results were truncated; search covers only the models returned.", "loading": "Loading models…", "noKey": "Configure the provider API key to refresh models.", "refresh": "Refresh models", "retry": "Retry", "failed": "Unable to load this provider's model list. You can enter a model name manually.", "xiaomiConfirm": "Confirm the selected Xiaomi model ID works with your inference endpoint before saving." },
 			"routeGroup": "Route group",
 			"routeGroupPlaceholder": "default",
 			"routeGroupHint": "Routing pool for client modelId:group. Omit :group → default only. No active routes → 400.",

@@ -1902,6 +1902,7 @@
 			"currentLegacyValue": "当前历史值",
 			"providerModelName": "供应商模型名称 *",
 			"providerModelPlaceholder": "例如 gpt-4o-2024-11-20",
+			"providerModelOptions": { "current": "当前值", "noMatches": "没有匹配的模型", "empty": "未返回模型，可直接手工输入模型名称。", "search": "搜索模型 ID 或展示名", "truncated": "接口结果已截断；这里只能搜索本次取回的候选。", "loading": "正在加载模型…", "noKey": "请先在供应商配置 API Key，再刷新模型列表。", "refresh": "刷新模型", "retry": "重试", "failed": "暂时无法获取该供应商的模型列表，可直接手工输入模型名称。", "xiaomiConfirm": "保存前请确认所选小米模型 ID 可被推理端点接受。" },
 			"routeGroup": "路由组",
 			"routeGroupPlaceholder": "default",
 			"routeGroupHint": "客户端 modelId:group 的路由池。省略 :group → 仅 default。无活跃路由 → 400。",
