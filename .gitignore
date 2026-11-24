@@ -10,6 +10,13 @@ dist/
 !docker/deploy/.env.example
 *.log
 .DS_Store
+.idea/
+.vscode/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
 
 .dev.vars
 .provider

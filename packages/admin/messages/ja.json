@@ -1902,6 +1902,7 @@
 			"currentLegacyValue": "現在の旧設定値",
 			"providerModelName": "Provider モデル名 *",
 			"providerModelPlaceholder": "例：gpt-4o-2024-11-20",
+			"providerModelOptions": { "current": "現在の値", "noMatches": "一致するモデルがありません", "empty": "モデルが返されませんでした。モデル名を手動で入力できます。", "search": "モデル ID または表示名を検索", "truncated": "API の結果が途中で打ち切られました。検索できるのは取得済みの候補だけです。", "loading": "モデルを読み込み中…", "noKey": "モデル一覧を更新するには、プロバイダーの API キーを設定してください。", "refresh": "モデルを更新", "retry": "再試行", "failed": "このプロバイダーのモデル一覧を取得できません。モデル名を手動で入力できます。", "xiaomiConfirm": "保存する前に、選択した Xiaomi モデル ID が推論エンドポイントで使えることを確認してください。" },
 			"routeGroup": "Route Group",
 			"routeGroupPlaceholder": "default",
 			"routeGroupHint": "クライアントの modelId:group 用ルーティングプールです。:group を省略すると default のみ。アクティブな Route がない場合は 400。",

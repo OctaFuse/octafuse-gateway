@@ -64,13 +64,23 @@ test('normalizes deployment prefixes without guessing a Proxy from invalid or sc
 	assert.equal(toolApiUrl('web-fetch', ''), 'https://<YOUR_PROXY_URL>/v1/tools/web-fetch');
 });
 
-test('cURL examples parse in a shell, including quoted deployment paths, and use user key env vars', () => {
+test('cURL examples use user key env vars without provider credentials', () => {
 	for (const id of ids) {
 		const command = buildToolCurl(id, "https://gateway.example/path'quote");
-		assert.equal(spawnSync('sh', ['-n'], { input: command, encoding: 'utf8' }).status, 0);
 		assert.ok(command.includes('$OCTAFUSE_API_KEY'));
 		assert.ok(command.includes(`/v1/tools/${id}`));
 		assert.ok(!command.includes('providerApiKey'));
+	}
+});
+
+test('cURL examples parse in a POSIX shell, including quoted deployment paths', (t) => {
+	if (spawnSync('sh', ['-c', ':']).error) {
+		t.skip('POSIX sh is unavailable');
+		return;
+	}
+	for (const id of ids) {
+		const command = buildToolCurl(id, "https://gateway.example/path'quote");
+		assert.equal(spawnSync('sh', ['-n'], { input: command, encoding: 'utf8' }).status, 0);
 		// Stub cURL to inspect actual shell arguments without making any network request.
 		const parsed = spawnSync('sh', ['-c', 'curl() { printf "%s\\0" "$@"; };\n' + command], {
 			encoding: 'utf8',

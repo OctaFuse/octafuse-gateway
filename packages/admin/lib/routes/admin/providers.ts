@@ -15,6 +15,7 @@ import {
 	updateProviderService,
 } from "@/lib/services/admin/providers-service";
 import { getProviderQuotaService } from "@/lib/services/admin/provider-quota-service";
+import { getProviderModelOptionsService, refreshProviderModelOptionsService, ModelDiscoveryError } from "@/lib/services/admin/provider-model-options-service";
 import {
 	applyProviderSyncService,
 	getProviderSyncReportService,
@@ -30,6 +31,7 @@ import type {
 	AdminProvidersImportOutput,
 } from "@/lib/services/admin/types";
 import { handleAdminRouteError } from "./error-response";
+import { isSameOriginBrowserWrite } from '@/lib/admin-request-rewrite';
 import { normalizeApiTimeFields } from "@octafuse/core/lib/time-format";
 
 export const adminProvidersRoutes = new Hono<AdminEnv>();
@@ -166,6 +168,34 @@ adminProvidersRoutes.get("/:id/quota", async (c) => {
 		return c.json(normalizeApiTimeFields({ success: true, data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, "Failed to query provider quota");
+	}
+});
+
+/** 模型候选 GET 只返回能力状态；刷新结果不缓存、不落库。 */
+adminProvidersRoutes.get('/:id/model-options', async (c) => {
+	try {
+		const data = await getProviderModelOptionsService(c.get('repositories'), c.req.param('id'), { disabledKinds: c.env.PROVIDER_MODEL_DISCOVERY_DISABLED_KINDS });
+		return c.json({ success: true, data }, 200, { 'Cache-Control': 'no-store' });
+	} catch (error) {
+		const response = handleAdminRouteError(c, error, 'Failed to get model options');
+		response.headers.set('Cache-Control', 'no-store');
+		return response;
+	}
+});
+
+adminProvidersRoutes.post('/:id/model-options/refresh', async (c) => {
+	if (c.get('principal').type === 'console' && !(c.env.ADMIN_CSRF_SAME_ORIGIN ?? isSameOriginBrowserWrite(c.req.raw))) {
+		return c.json({ success: false, message: 'Forbidden: invalid Origin' }, 403, { 'Cache-Control': 'no-store' });
+	}
+	try {
+		const data = await refreshProviderModelOptionsService(c.get('repositories'), c.req.param('id'), { disabledKinds: c.env.PROVIDER_MODEL_DISCOVERY_DISABLED_KINDS });
+		return c.json({ success: true, data }, 200, { 'Cache-Control': 'no-store' });
+	} catch (error) {
+		const response = handleAdminRouteError(c, error, 'Failed to refresh model options');
+		response.headers.set('Cache-Control', 'no-store');
+		if (error instanceof ModelDiscoveryError) response.headers.set('X-OctaFuse-Error-Code', error.code);
+		if (error instanceof ModelDiscoveryError && error.retryAfterSeconds) response.headers.set('Retry-After', String(error.retryAfterSeconds));
+		return response;
 	}
 });
 
