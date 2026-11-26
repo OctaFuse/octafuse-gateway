@@ -122,8 +122,9 @@ export async function deleteModel(
 	return { success: false, message: data.message || 'Delete failed' };
 }
 
-export async function fetchImportCatalog(): Promise<PresetCatalogRow[]> {
-	const response = await fetch('/api/admin/models/import/catalog');
+export async function fetchImportCatalog(vendor?: string, signal?: AbortSignal): Promise<PresetCatalogRow[]> {
+	const query = vendor ? `?${new URLSearchParams({ vendor })}` : '';
+	const response = await fetch(`/api/admin/models/import/catalog${query}`, { cache: 'no-store', signal });
 	const data = await readApiJson<PresetCatalogRow[]>(response);
 	if (data.success && Array.isArray(data.data)) return data.data;
 	throw new Error(data.message || 'Failed to load catalog');

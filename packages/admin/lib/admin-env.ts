@@ -1,10 +1,11 @@
+import type { CatalogEnv } from '@/lib/catalog/catalog-config';
 import type { D1Database } from '@cloudflare/workers-types';
 import type { GatewayRepositories, StorageContext } from '@octafuse/core';
 import type { AdminPrincipal } from '@/lib/admin-principal';
 import type { PlaygroundRealtimeNodeDispatch } from '@/lib/services/admin/playground-realtime-service';
 
 /** Admin Hono 应用：Cloudflare 绑定与请求级变量。 */
-export type AdminBindings = {
+export type AdminBindings = CatalogEnv & {
 	DB?: D1Database;
 	ASSETS?: unknown;
 	/** Node / 自托管 Postgres：与 `@octafuse/proxy` 一致，使用 `DATABASE_URL`。 */
@@ -18,6 +19,8 @@ export type AdminBindings = {
 	 * Hono 不得只用 rewrite 后的 Origin / `c.req.url.origin`（可能被剥掉或变成内部 host）。
 	 */
 	ADMIN_CSRF_SAME_ORIGIN?: boolean;
+	/** Comma-separated exact provider kind names for disabling model-list refresh. */
+	PROVIDER_MODEL_DISCOVERY_DISABLED_KINDS?: string;
 	/** Node 自定义 HTTP 入口注入：调试台实时 WS 用 `ws` 桥上游。 */
 	NODE_PLAYGROUND_REALTIME_DISPATCH?: PlaygroundRealtimeNodeDispatch;
 };

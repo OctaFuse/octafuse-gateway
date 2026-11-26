@@ -6,7 +6,7 @@ import {
 	providerCatalogOutboundRel,
 	resolveProviderCatalogOutbound,
 	type ProviderCatalogLinks,
-} from '@/lib/provider-import-preset';
+} from '@/lib/provider-catalog-pure';
 
 type ProviderCatalogOutboundLinkProps = {
 	links: ProviderCatalogLinks | null | undefined;

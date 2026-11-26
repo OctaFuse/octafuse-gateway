@@ -19,7 +19,7 @@
 
 - **透传**：请求协议与上游协议相同、operation 相同，适配器为 `passthrough`。以 `packages/core/src/adapters/registry.ts` 的 `PASSTHROUGH_ADAPTERS` 和 `packages/proxy/src/app.ts` 的公开路径为准。
 - **协议转换**：客户端调用 OpenAI 入口，由转换适配器改写成上游原生请求。以注册表的 `CONVERSION_ADAPTERS` 和 `packages/proxy/src/services/egress/dispatch-table.ts` 为准。
-- **预设**：`packages/admin/lib/provider-import-presets.json`（供应商端点）与 `packages/admin/lib/model-presets/*.json`（模型目录价）。代码支持但预设缺失时，导入后需要手工补端点或模型。
+- **预设**：[OctaFuse 供应商目录](https://octafuse.dev/api/catalog/providers)（供应商端点）与 [OctaFuse 模型目录](https://octafuse.dev/api/catalog/models)（模型目录价）。代码支持但预设缺失时，导入后需要手工补端点或模型。
 
 | 标记 | 含义 |
 |------|------|
@@ -135,6 +135,6 @@ ElevenLabs 原生路径相对 `providers.endpoints.elevenlabs.base`（默认 `ht
 
 ## 更新方式
 
-- 新增或修改适配器、供应商预设、模型预设时，同一 PR 更新本文对应行。
+- 适配器变更时，在 Gateway 的同一 PR 更新本文。供应商和模型模板在官网仓库维护；目录变更影响本文的覆盖情况时，在 Gateway 更新对应行。
 - 官方发布新端点或新模型家族时，先在本文登记为 ❌ 或 ⚠️，实现后再改为 ✅。
 - 每次整表复核后刷新文首核对日期。

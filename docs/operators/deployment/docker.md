@@ -43,7 +43,11 @@
 |`ADMIN_PASSWORD`|是|控制台登录密码|
 |`ADMIN_COOKIE_SECURE`|否|**可选加固**：为 `admin_session` 加上 `Secure`。默认不设（明文 HTTP / quickstart 可登录）。仅在已用 HTTPS 访问管理后台、并希望进一步限制会话 Cookie 时设 `1`/`true`/`yes`/`on`（见 [§7.3](#73-生产-https-建议)）。|
 |`AUTO_MIGRATE`|否|与代理服务相同：真值时启动前自动迁移（见 §5）。默认关闭。|
+|`CATALOG_BASE_URL`|否|供应商 / 模型导入目录的 HTTPS 服务地址，默认 `https://octafuse.dev`。无法访问该站点时指向自建镜像。|
+|`CATALOG_TIMEOUT_MS` / `CATALOG_TTL_MS`|否|单次请求超时（默认 `3000`）与缓存时长（默认 `300000`），单位毫秒。|
 |迁移方式（备选）|—|未设 `AUTO_MIGRATE` 时：迁移由 `migrate` 服务独立执行，管理后台仅负责应用进程。|
+
+导入目录的变量只对管理后台生效。仓库内置 Compose 模板没有透传 `CATALOG_*`，需要时在 `gateway-admin` 的 `environment` 中自行添加。目录缓存仅保存在 Admin 容器的内存中，容器重启后会清空。缓存失效时的行为和镜像接口见[目录数据来源](../../developers/reference/provider-import-presets.md#数据来源)。
 
 迁移会把数据库中原有 `system_config.MASTER_KEY` 复制为普通全权限集成密钥 `legacy-master`，并删除该配置行。新版认证只读取 `admin_api_keys`。部署后请登录后台，在 **系统集成 → 集成密钥（Integration Keys）** 为外部系统创建具名最小权限 Key。
 

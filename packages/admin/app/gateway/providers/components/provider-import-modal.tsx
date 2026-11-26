@@ -3,7 +3,7 @@
 import { ArrowDownTrayIcon, ChevronDownIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useProviderDialog } from '../use-provider-dialog';
 import { VendorIcon } from '@/components/model-vendor-icon';
-import { providerImportCatalogCopy } from '@/lib/provider-import-preset';
+import { providerImportCatalogCopy } from '@/lib/provider-catalog-pure';
 import { useLocale, useTranslations } from 'next-intl';
 import { protocolSummariesFromEndpoints } from '../provider-utils';
 import type { ProviderImportCatalogRow } from '../types';

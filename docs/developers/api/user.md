@@ -610,7 +610,7 @@ Catalog 条目同样包含 `input_modalities`、`output_modalities`、`released_
 | 计入用户 RPM | 否 | 否 | 否 | 否 |
 | 主要用途 | Agent 兼容列表 | 门户 / 公开 discovery | 运维 CRUD | 用户个性化折扣 overlay |
 
-Admin 静态导入目录见 **`GET /admin/models/import/catalog`**（与上表无关，见 [管理接口](./admin.md#admin-vs-proxy-catalog)）。
+Admin 模型导入目录（读取 OctaFuse 模型目录）见 **`GET /admin/models/import/catalog`**（与上表无关，见 [管理接口](./admin.md#admin-vs-proxy-catalog)）。
 
 ### 示例
 
@@ -1219,7 +1219,7 @@ Content-Type: multipart/form-data
 
 **时长**：两种模式都会解析时长（上游 `verbose_json` 的 `duration`，缺失时按文件字节估算），并在 `pricing_audit.duration_source` 标注来源；按秒模式用其计费，token 模式主要用于预检与审计。
 
-Admin 静态预设（`packages/admin/lib/model-presets/openai-audio-asr.json`，与 [Speech to text](https://developers.openai.com/api/docs/guides/speech-to-text) 当前别名一致）：
+OctaFuse 模型目录中的预设（官网仓库 `catalog/models/openai-audio-asr.json`，与 [Speech to text](https://developers.openai.com/api/docs/guides/speech-to-text) 当前别名一致）：
 
 | model id | 计费模式 | 上游官方价（参考） | Gateway 目录价（USD） |
 |----------|----------|-------------------|----------------------|

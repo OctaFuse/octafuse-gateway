@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { buildModelSyncPatch, diffModelAgainstPreset } from '@/lib/model-sync-diff';
-import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/model-preset';
+import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/catalog/model-catalog-fixture';
 import { coerceModelPricingProfileInput } from '@/lib/services/admin/pricing-input';
 
 const pricing = (input: number, output: number) =>

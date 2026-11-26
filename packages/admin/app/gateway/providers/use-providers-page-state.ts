@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { providerImportCatalogMatchesQuery } from '@/lib/provider-import-preset';
+import { providerImportCatalogMatchesQuery } from '@/lib/provider-catalog-pure';
 import { sortProvidersByKindThenName } from '@/lib/provider-kind';
 import type { ProviderSyncReport } from '@/lib/provider-sync-diff';
 import { useFeedback } from '@/components/feedback';
@@ -88,6 +88,7 @@ export function useProvidersPageState() {
 	const [importSelected, setImportSelected] = useState<Record<string, boolean>>({});
 	const [importSubmitting, setImportSubmitting] = useState(false);
 	const [statusTogglingId, setStatusTogglingId] = useState<string | null>(null);
+	const catalogLoadingRef = useRef(false);
 	const apiKeyTouchedRef = useRef(false);
 	const apiKeyLoadGenRef = useRef(0);
 
@@ -325,20 +326,25 @@ export function useProvidersPageState() {
 	);
 
 	const loadImportCatalog = useCallback(async () => {
+		if (catalogLoadingRef.current) return;
+		catalogLoadingRef.current = true;
 		setImportCatalogLoading(true);
 		setImportCatalogError('');
 		try {
 			const rows = await fetchImportCatalog();
 			setImportCatalogRows(rows);
-			setImportSelected({});
 		} catch (error) {
 			console.error('Load provider import catalog error:', error);
 			setImportCatalogError(error instanceof Error ? error.message : 'Failed to load catalog');
-			setImportCatalogRows([]);
 		} finally {
+			catalogLoadingRef.current = false;
 			setImportCatalogLoading(false);
 		}
 	}, []);
+
+	useEffect(() => {
+		if (showModal && importCatalogRows.length === 0) void loadImportCatalog();
+	}, [showModal, importCatalogRows.length, loadImportCatalog]);
 
 	const openImportModal = useCallback(() => {
 		setShowImportModal(true);

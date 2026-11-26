@@ -19,6 +19,8 @@ import {
 	upstreamOperationsForProviderModel,
 } from '../route-utils';
 import type { RouteModalProps } from './route-modal-types';
+import { useProviderModelOptions } from '../use-provider-model-options';
+import { ProviderModelCombobox } from './provider-model-combobox';
 
 type Props = Pick<
 	RouteModalProps,
@@ -55,6 +57,18 @@ export function RouteMappingFields({
 	const tFlow = useTranslations('routes.flow');
 	const tKind = useTranslations('providers.kind');
 	const locale = useLocale();
+	const modelOptions = useProviderModelOptions(formData.provider_id);
+	const changeProviderModelName = (providerModelName: string) => {
+		const nextRequestOperations = requestOperationsForModel(selectedModel, formData.request_protocol, providerModelName);
+		const nextUpstreamOperations = upstreamOperationsForProviderModel(selectedProvider, selectedModel, formData.upstream_protocol, providerModelName);
+		// 模型名决定 DashScope ASR 生命周期，输入后同步纠正 surface 与 target。
+		onFormChange({
+			...formData,
+			provider_model_name: providerModelName,
+			request_operation: nextRequestOperations.includes(formData.request_operation) ? formData.request_operation : nextRequestOperations[0] ?? formData.request_operation,
+			upstream_operation: nextUpstreamOperations.includes(formData.upstream_operation) ? formData.upstream_operation : nextUpstreamOperations[0] ?? formData.upstream_operation,
+		});
+	};
 	const adapterLabel = (adapter: string) =>
 		t.has(`adapterNames.${adapter}`) ? t(`adapterNames.${adapter}`) : adapter;
 	const adapterOptionLabel = (descriptor: { id: string; labelKey?: string }) => {
@@ -367,39 +381,17 @@ export function RouteMappingFields({
 							<label htmlFor="route-field-providerModelName" className={editorLabelClass}>
 								{t('providerModelName')}
 							</label>
-							<input
-								id="route-field-providerModelName"
-								type="text"
-								value={formData.provider_model_name}
-								onChange={(e) => {
-									const providerModelName = e.target.value;
-									const nextRequestOperations = requestOperationsForModel(
-										selectedModel,
-										formData.request_protocol,
-										providerModelName
-									);
-									const nextUpstreamOperations = upstreamOperationsForProviderModel(
-										selectedProvider,
-										selectedModel,
-										formData.upstream_protocol,
-										providerModelName
-									);
-									// 模型名决定 DashScope ASR 生命周期，输入后同步纠正 surface 与 target。
-									onFormChange({
-										...formData,
-										provider_model_name: providerModelName,
-										request_operation: nextRequestOperations.includes(formData.request_operation)
-											? formData.request_operation
-											: nextRequestOperations[0] ?? formData.request_operation,
-										upstream_operation: nextUpstreamOperations.includes(formData.upstream_operation)
-											? formData.upstream_operation
-											: nextUpstreamOperations[0] ?? formData.upstream_operation,
-									});
-								}}
-								className={editorInputClass}
-								placeholder={t('providerModelPlaceholder')}
-								required
-							/>
+							<ProviderModelCombobox key={formData.provider_id} id="route-field-providerModelName" value={formData.provider_model_name} onChange={changeProviderModelName} onOpen={modelOptions.open} options={modelOptions.models} loading={modelOptions.loading || modelOptions.refreshing} attempted={modelOptions.attempted} operation={formData.upstream_operation} className={editorInputClass} placeholder={t('providerModelPlaceholder')} labels={{ noMatches: t('providerModelOptions.noMatches'), loading: t('providerModelOptions.loading'), search: t('providerModelOptions.search') }} />
+							{modelOptions.loading && <p className="mt-2 text-xs text-gray-500">{t('providerModelOptions.loading')}</p>}
+							{modelOptions.available && modelOptions.reason === 'no_key' && <p className="mt-2 text-xs text-gray-500">{t('providerModelOptions.noKey')}</p>}
+							{modelOptions.available && modelOptions.reason !== 'no_key' && <div className="mt-2 flex items-center gap-2">
+								<button type="button" onClick={() => void modelOptions.refresh()} disabled={modelOptions.refreshing || modelOptions.retryUntil > 0} className="rounded border border-gray-300 px-2 py-1 text-xs focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50 dark:border-gray-700">{modelOptions.failed ? t('providerModelOptions.retry') : t('providerModelOptions.refresh')}</button>
+								{modelOptions.refreshing && <span className="text-xs text-gray-500">{t('providerModelOptions.loading')}</span>}
+							</div>}
+							{modelOptions.failed && !modelOptions.loading && !modelOptions.refreshing && <p className="mt-2 text-xs text-gray-500">{t('providerModelOptions.failed')}</p>}
+							{modelOptions.hasRefreshed && !modelOptions.failed && modelOptions.models.length === 0 && <p className="mt-2 text-xs text-gray-500">{t('providerModelOptions.empty')}</p>}
+							{modelOptions.truncated && <p className="mt-2 text-xs text-gray-500">{t('providerModelOptions.truncated')}</p>}
+							{selectedProvider?.kind?.startsWith('Xiaomi MiMo') && modelOptions.models.length > 0 && <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">{t('providerModelOptions.xiaomiConfirm')}</p>}
 						</div>
 						{lockTopology ? (
 							<ProtocolSummary

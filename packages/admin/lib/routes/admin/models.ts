@@ -4,6 +4,7 @@
 import { Hono } from 'hono';
 import type { AdminEnv } from '@/lib/admin-env';
 import { requireAdminPrincipal } from '@/lib/middleware/admin-auth';
+import { MODEL_VENDOR_OPTIONS } from '@/lib/model-vendor';
 import {
 	createModelService,
 	deleteModelService,
@@ -29,11 +30,13 @@ export const adminModelsRoutes = new Hono<AdminEnv>();
 
 adminModelsRoutes.use('*', requireAdminPrincipal);
 
+const modelCatalogVendors = new Set(MODEL_VENDOR_OPTIONS.map(({ key }) => key).filter((key) => key !== 'other'));
+
 /** 全量列表（含 tags）。 */
 adminModelsRoutes.get('/', async (c) => {
 	try {
 		const repos = c.get('repositories');
-		const data = await listModelsService(repos);
+		const data = await listModelsService(repos, c.env);
 		return c.json(normalizeApiTimeFields({ success: true, data, count: data.length }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to list models');
@@ -57,11 +60,16 @@ adminModelsRoutes.post('/', async (c) => {
 	}
 });
 
-/** 列出内置静态目录中可导入的模型（不含完整 pricing JSON；价格预览按当前 BILLING_CURRENCY）。 */
+/** 列出当前模型目录中可导入的模型（不含完整 pricing JSON；价格预览按当前 BILLING_CURRENCY）。 */
 adminModelsRoutes.get('/import/catalog', async (c) => {
 	try {
+		const vendor = c.req.query('vendor');
+		if (vendor !== undefined && !modelCatalogVendors.has(vendor)) {
+			return c.json({ success: false, message: 'Unknown model catalog vendor' }, 400);
+		}
+		if (vendor !== undefined) c.header('Cache-Control', 'no-store');
 		const repos = c.get('repositories');
-		const { billing_currency, items } = await listStaticModelPresetCatalogForAdminService(repos);
+		const { billing_currency, items } = await listStaticModelPresetCatalogForAdminService(repos, c.env, vendor);
 		return c.json(
 			normalizeApiTimeFields({
 				success: true,
@@ -75,11 +83,14 @@ adminModelsRoutes.get('/import/catalog', async (c) => {
 	}
 });
 
-/** 从内置静态目录按请求体 `ids` 导入模型（按 `BILLING_CURRENCY` 选用 USD/CNY 价；同 id 不覆盖）。 */
+/** 从当前模型目录按请求体 `ids` 导入模型（按 `BILLING_CURRENCY` 选用 USD/CNY 价；同 id 不覆盖）。 */
 adminModelsRoutes.post('/import', async (c) => {
 	let body: AdminModelsImportBody;
 	try {
 		const raw = await c.req.json();
+		if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+			return c.json({ success: false, message: 'Invalid JSON body' }, 400);
+		}
 		body = raw as AdminModelsImportBody;
 	} catch {
 		return c.json({ success: false, message: 'Invalid JSON body' }, 400);
@@ -88,7 +99,7 @@ adminModelsRoutes.post('/import', async (c) => {
 		const repos = c.get('repositories');
 		const data: AdminModelsImportOutput = await importModelsFromStaticPresetsService(repos, {
 			ids: Array.isArray(body.ids) ? body.ids : [],
-		});
+		}, c.env);
 		const parts = [`created ${data.created}`];
 		if (data.skipped_existing.length) {
 			parts.push(`skipped ${data.skipped_existing.length} existing`);
@@ -112,7 +123,7 @@ adminModelsRoutes.post('/import', async (c) => {
 adminModelsRoutes.get('/sync/diff', async (c) => {
 	try {
 		const repos = c.get('repositories');
-		const data = await getModelSyncReportService(repos);
+		const data = await getModelSyncReportService(repos, c.env);
 		return c.json(normalizeApiTimeFields({ success: true, data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to compute model sync diff');
@@ -129,7 +140,7 @@ adminModelsRoutes.post('/sync/apply', async (c) => {
 	}
 	try {
 		const repos = c.get('repositories');
-		const data = await applyModelSyncService(repos, body);
+		const data = await applyModelSyncService(repos, body, c.env);
 		const parts = [`updated ${data.updated}`];
 		if (data.skipped) parts.push(`${data.skipped} skipped`);
 		if (data.failed.length) parts.push(`${data.failed.length} failed`);
@@ -146,7 +157,7 @@ adminModelsRoutes.get('/:id', async (c) => {
 	const id = c.req.param('id');
 	try {
 		const repos = c.get('repositories');
-		const model = await getModelService(repos, id);
+		const model = await getModelService(repos, id, c.env);
 		return c.json(normalizeApiTimeFields({ success: true, data: model }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, 'Failed to get model');

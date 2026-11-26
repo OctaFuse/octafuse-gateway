@@ -1,6 +1,6 @@
 /**
  * 模型厂商 `vendor`：**权威 key 列表**见 `model-vendors.json`（下拉、归一化、展示名）。
- * 管理端静态价目：仅有自研模型的 catalog key 才有 `model-presets/<key>.json`（见 `model-preset.ts`）；聚合/托管类 key 仅用于下拉与归一化。
+ * 模型目录仅收录有自研模型的厂商的预设；聚合/托管类 key 仅用于下拉与归一化。
  */
 import modelVendorsJson from './model-vendors.json';
 

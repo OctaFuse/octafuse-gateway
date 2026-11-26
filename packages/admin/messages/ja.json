@@ -862,7 +862,7 @@
 		},
 		"sync": {
 			"title": "公式と同期",
-			"subtitle": "各プロバイダーを内蔵の公式テンプレートと比較し、差分ごとに「公式を採用」か「現状を維持」を選びます。",
+			"subtitle": "各プロバイダーをカタログのテンプレートと比較し、差分ごとに「公式を採用」か「現状を維持」を選びます。",
 			"loading": "比較中…",
 			"loadFailed": "差分の読み込みに失敗しました",
 			"recheck": "再チェック",
@@ -935,7 +935,7 @@
 				"foundUpdates": "{providers} 件のプロバイダー（{kinds} タイプ）に公式の更新があります",
 				"foundOrphans": "{count} 件のプロバイダーでタイプの移行が必要です",
 				"review": "結果を表示",
-				"tooltip": "プロバイダーの静的データを同期：差分を比較し、確認後に適用"
+				"tooltip": "プロバイダーカタログとの差分を確認して適用"
 			}
 		},
 		"overviewSubtitle": "上流アカウント、API キー、プロトコルのエンドポイントを管理",
@@ -952,7 +952,7 @@
 		"title": "モデル",
 		"subtitle": "クライアントに提供するモデルを管理し、入出力の対応形式、料金、タグを設定します。",
 		"empty": "モデルが見つかりません",
-		"emptyHint": "組み込みカタログからインポートするか、モデルを手動で作成してください",
+		"emptyHint": "モデルカタログからインポートするか、モデルを手動で作成してください",
 		"createTitleAll": "新しいモデルを作成",
 		"createTitleVendor": "{vendor} にモデルを追加",
 		"addCard": {
@@ -1004,12 +1004,13 @@
 			"disabledHint": "画像単位の課金には対応していません。image_* token 料金を設定してください。"
 		},
 		"import": {
-			"title": "静的カタログからインポート",
+			"title": "モデルカタログからインポート",
 			"subtitle": "モデルを選んでインポートします。同じ ID の既存モデルは保持されます。料金は {currency} 表示です。",
 			"searchPlaceholder": "モデル ID または表示名を検索",
 			"clearSearch": "検索をクリア",
 			"clearSelection": "選択をクリア",
 			"reloadCatalog": "カタログを再読み込み",
+			"allVendors": "すべてのモデルベンダー",
 			"kind": "種類",
 			"kindFilterAria": "モデル種別でカタログを絞り込む",
 			"lifecycle": "提供状況",
@@ -1213,7 +1214,7 @@
 		},
 		"sync": {
 			"title": "公式カタログと同期",
-			"subtitle": "各モデルを内蔵の公式カタログと比較し、項目ごとに「公式を採用」か「現在の値を保持」を選びます。",
+			"subtitle": "各モデルをモデルカタログと比較し、項目ごとに「公式を採用」か「現在の値を保持」を選びます。",
 			"loading": "比較中…",
 			"loadFailed": "差分の読み込みに失敗しました",
 			"recheck": "再チェック",
@@ -1275,7 +1276,7 @@
 				"upToDate": "確認済み：すべてのモデルが公式カタログと一致",
 				"foundUpdates": "{models} モデル（{vendors} ベンダー）に公式の更新があります",
 				"review": "結果を表示",
-				"tooltip": "モデルの静的データを同期：差分を比較し、確認後に適用"
+				"tooltip": "モデルカタログとの差分を確認して適用"
 			}
 		},
 		"overviewSubtitle": "モデルの機能、標準料金、関連ルートを管理",
@@ -1902,6 +1903,7 @@
 			"currentLegacyValue": "現在の旧設定値",
 			"providerModelName": "Provider モデル名 *",
 			"providerModelPlaceholder": "例：gpt-4o-2024-11-20",
+			"providerModelOptions": { "current": "現在の値", "noMatches": "一致するモデルがありません", "empty": "モデルが返されませんでした。モデル名を手動で入力できます。", "search": "モデル ID または表示名を検索", "truncated": "API の結果が途中で打ち切られました。検索できるのは取得済みの候補だけです。", "loading": "モデルを読み込み中…", "noKey": "モデル一覧を更新するには、プロバイダーの API キーを設定してください。", "refresh": "モデルを更新", "retry": "再試行", "failed": "このプロバイダーのモデル一覧を取得できません。モデル名を手動で入力できます。", "xiaomiConfirm": "保存する前に、選択した Xiaomi モデル ID が推論エンドポイントで使えることを確認してください。" },
 			"routeGroup": "Route Group",
 			"routeGroupPlaceholder": "default",
 			"routeGroupHint": "クライアントの modelId:group 用ルーティングプールです。:group を省略すると default のみ。アクティブな Route がない場合は 400。",

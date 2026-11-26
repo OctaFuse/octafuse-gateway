@@ -4,7 +4,8 @@
 import { Hono } from "hono";
 import type { AdminEnv } from "@/lib/admin-env";
 import { requireAdminPrincipal } from "@/lib/middleware/admin-auth";
-import { listStaticProviderImportCatalogForAdmin } from "@/lib/provider-import-preset";
+import { getProviderCatalog } from "@/lib/provider-catalog";
+import { loadProviderCatalog } from "@/lib/catalog/catalog-loader";
 import {
 	createProviderService,
 	deleteProviderService,
@@ -15,6 +16,7 @@ import {
 	updateProviderService,
 } from "@/lib/services/admin/providers-service";
 import { getProviderQuotaService } from "@/lib/services/admin/provider-quota-service";
+import { getProviderModelOptionsService, refreshProviderModelOptionsService, ModelDiscoveryError } from "@/lib/services/admin/provider-model-options-service";
 import {
 	applyProviderSyncService,
 	getProviderSyncReportService,
@@ -30,6 +32,7 @@ import type {
 	AdminProvidersImportOutput,
 } from "@/lib/services/admin/types";
 import { handleAdminRouteError } from "./error-response";
+import { isSameOriginBrowserWrite } from '@/lib/admin-request-rewrite';
 import { normalizeApiTimeFields } from "@octafuse/core/lib/time-format";
 
 export const adminProvidersRoutes = new Hono<AdminEnv>();
@@ -40,7 +43,7 @@ adminProvidersRoutes.use("*", requireAdminPrincipal);
 adminProvidersRoutes.get("/", async (c) => {
 	try {
 		const repos = c.get("repositories");
-		const data = await listProvidersService(repos);
+		const data = await listProvidersService(repos, c.env);
 		return c.json(
 			normalizeApiTimeFields({ success: true, data, count: data.length })
 		);
@@ -59,7 +62,7 @@ adminProvidersRoutes.post("/", async (c) => {
 	}
 	try {
 		const repos = c.get("repositories");
-		const data = await createProviderService(repos, body);
+		const data = await createProviderService(repos, body, c.env);
 		return c.json(
 			normalizeApiTimeFields({
 				success: true,
@@ -72,10 +75,11 @@ adminProvidersRoutes.post("/", async (c) => {
 	}
 });
 
-/** 列出内置 Provider 导入模板（无密钥）。须注册在 `/:id` 之前。 */
+/** 列出当前目录的供应商模板（无密钥）。须注册在 `/:id` 之前。 */
 adminProvidersRoutes.get("/import/catalog", async (c) => {
 	try {
-		const data = listStaticProviderImportCatalogForAdmin();
+		const snapshot = await loadProviderCatalog(c.env);
+		const data = getProviderCatalog(snapshot.rows).listStaticProviderImportCatalogForAdmin();
 		return c.json(
 			normalizeApiTimeFields({ success: true, data, count: data.length })
 		);
@@ -88,11 +92,14 @@ adminProvidersRoutes.get("/import/catalog", async (c) => {
 	}
 });
 
-/** 从静态模板批量创建 Provider（每次新增；自动生成 id 与唯一显示名）。 */
+/** 从目录模板批量创建 Provider（每次新增；自动生成 id 与唯一显示名）。 */
 adminProvidersRoutes.post("/import", async (c) => {
 	let body: AdminProvidersImportBody;
 	try {
 		const raw = await c.req.json();
+		if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+			return c.json({ success: false, message: "Invalid JSON body" }, 400);
+		}
 		body = raw as AdminProvidersImportBody;
 	} catch {
 		return c.json({ success: false, message: "Invalid JSON body" }, 400);
@@ -103,7 +110,7 @@ adminProvidersRoutes.post("/import", async (c) => {
 			await importProvidersFromStaticPresetsService(repos, {
 				ids: Array.isArray(body.ids) ? body.ids : [],
 				locale: typeof body.locale === 'string' ? body.locale : undefined,
-			});
+			}, c.env);
 		const parts = [`created ${data.created}`];
 		if (data.failed.length) {
 			parts.push(`${data.failed.length} failed`);
@@ -124,7 +131,7 @@ adminProvidersRoutes.post("/import", async (c) => {
 adminProvidersRoutes.get("/sync/diff", async (c) => {
 	try {
 		const repos = c.get("repositories");
-		const data = await getProviderSyncReportService(repos);
+		const data = await getProviderSyncReportService(repos, c.env);
 		return c.json(normalizeApiTimeFields({ success: true, data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, "Failed to compute provider sync diff");
@@ -141,7 +148,7 @@ adminProvidersRoutes.post("/sync/apply", async (c) => {
 	}
 	try {
 		const repos = c.get("repositories");
-		const data = await applyProviderSyncService(repos, body);
+		const data = await applyProviderSyncService(repos, body, c.env);
 		const parts = [`updated ${data.updated}`];
 		if (data.skipped) parts.push(`${data.skipped} skipped`);
 		if (data.failed.length) parts.push(`${data.failed.length} failed`);
@@ -166,6 +173,34 @@ adminProvidersRoutes.get("/:id/quota", async (c) => {
 		return c.json(normalizeApiTimeFields({ success: true, data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, "Failed to query provider quota");
+	}
+});
+
+/** 模型候选 GET 只返回能力状态；刷新结果不缓存、不落库。 */
+adminProvidersRoutes.get('/:id/model-options', async (c) => {
+	try {
+		const data = await getProviderModelOptionsService(c.get('repositories'), c.req.param('id'), { disabledKinds: c.env.PROVIDER_MODEL_DISCOVERY_DISABLED_KINDS });
+		return c.json({ success: true, data }, 200, { 'Cache-Control': 'no-store' });
+	} catch (error) {
+		const response = handleAdminRouteError(c, error, 'Failed to get model options');
+		response.headers.set('Cache-Control', 'no-store');
+		return response;
+	}
+});
+
+adminProvidersRoutes.post('/:id/model-options/refresh', async (c) => {
+	if (c.get('principal').type === 'console' && !(c.env.ADMIN_CSRF_SAME_ORIGIN ?? isSameOriginBrowserWrite(c.req.raw))) {
+		return c.json({ success: false, message: 'Forbidden: invalid Origin' }, 403, { 'Cache-Control': 'no-store' });
+	}
+	try {
+		const data = await refreshProviderModelOptionsService(c.get('repositories'), c.req.param('id'), { disabledKinds: c.env.PROVIDER_MODEL_DISCOVERY_DISABLED_KINDS });
+		return c.json({ success: true, data }, 200, { 'Cache-Control': 'no-store' });
+	} catch (error) {
+		const response = handleAdminRouteError(c, error, 'Failed to refresh model options');
+		response.headers.set('Cache-Control', 'no-store');
+		if (error instanceof ModelDiscoveryError) response.headers.set('X-OctaFuse-Error-Code', error.code);
+		if (error instanceof ModelDiscoveryError && error.retryAfterSeconds) response.headers.set('Retry-After', String(error.retryAfterSeconds));
+		return response;
 	}
 });
 
@@ -219,7 +254,7 @@ adminProvidersRoutes.get("/:id", async (c) => {
 	const id = c.req.param("id");
 	try {
 		const repos = c.get("repositories");
-		const provider = await getProviderService(repos, id);
+		const provider = await getProviderService(repos, id, c.env);
 		return c.json(normalizeApiTimeFields({ success: true, data: provider }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, "Failed to get provider");
@@ -237,7 +272,7 @@ adminProvidersRoutes.patch("/:id", async (c) => {
 	}
 	try {
 		const repos = c.get("repositories");
-		await updateProviderService(repos, id, body);
+		await updateProviderService(repos, id, body, c.env);
 		return c.json({ success: true, message: "Provider updated successfully" });
 	} catch (error) {
 		return handleAdminRouteError(c, error, "Failed to update provider");

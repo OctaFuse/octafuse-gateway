@@ -17,8 +17,8 @@ Octafuse Gateway의 핵심 목표는 **1인 기업(OPC) 또는 기업 내부를 
 
 주요 기능은 다음과 같습니다.
 
-1. Provider 연결: 모델 벤더나 집계 플랫폼을 자유롭게 연결할 수 있습니다. Coding / Token Plan을 포함한 다양한 프리셋에서 엔드포인트를 원클릭으로 가져온 뒤 해당 API Key를 추가하면 됩니다. 전체 목록은 [Providers Catalog](https://octafuse.dev/en/catalog/providers/)를 참조하세요. 새로운 Provider 추가 PR도 환영합니다.
-2. AI 모델 연결: 내장 카탈로그에서 모델을 가져올 수 있어 일반적인 파라미터와 가격을 일일이 설정할 필요가 없습니다. 전체 목록은 [Models Catalog](https://octafuse.dev/en/catalog/models/)를 참조하세요. 새로운 모델 추가 PR도 환영합니다.
+1. Provider 연결: 모델 벤더나 집계 플랫폼을 자유롭게 연결할 수 있습니다. Coding / Token Plan을 포함한 다양한 프리셋에서 엔드포인트를 원클릭으로 가져온 뒤 해당 API Key를 추가하면 됩니다. 전체 목록은 [Providers Catalog](https://octafuse.dev/en/catalog/providers/)를 참조하세요. 새로운 Provider 추가 PR은 웹사이트 저장소 [octafuse-website](https://github.com/OctaFuse/octafuse-website)로 보내 주세요.
+2. AI 모델 연결: 공급자와 모델을 가져오거나 동기화할 때 기본적으로 공식 웹사이트의 카탈로그를 사용합니다. 모델 템플릿에는 주요 파라미터와 가격이 포함되어 있습니다. 전체 목록은 [Models Catalog](https://octafuse.dev/en/catalog/models/)를 참조하세요. 새로운 모델 추가 PR은 웹사이트 저장소 [octafuse-website](https://github.com/OctaFuse/octafuse-website)로 보내 주세요.
 3. 다중 프로토콜 지원:
     - OpenAI 엔드포인트:
       - Chat Completions: `POST /v1/chat/completions`

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { listProviderQuotaKinds } from '@octafuse/core/provider-quota';
-import { isKnownProviderKind } from './provider-import-preset';
+import { isKnownProviderKind } from './catalog/provider-catalog-fixture';
 import {
 	CUSTOM_PROVIDER_KIND,
 	UNCLASSIFIED_PROVIDER_KIND_FILTER,
