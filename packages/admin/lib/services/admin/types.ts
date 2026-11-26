@@ -137,7 +137,7 @@ export type AdminProviderMutationInput = {
 	[key: string]: unknown;
 };
 
-/** `GET /admin/providers/import/catalog`：内置 Provider 模板摘要（无密钥）。`id` 为 catalog 行键（数组下标），非入库 provider id。 */
+/** `GET /admin/providers/import/catalog` 返回公开目录的供应商模板摘要。`id` 为模板英文名。 */
 export type AdminProviderImportCatalogItem = {
 	id: string;
 	name: string;

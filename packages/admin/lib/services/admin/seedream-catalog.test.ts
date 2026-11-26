@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { listStaticModelPresetCatalogForAdmin } from './models-service';
-import { listStaticProviderImportPresets } from '@/lib/provider-import-preset';
+import { listStaticModelPresetCatalogForAdmin } from '@/lib/catalog/model-catalog-fixture';
+import { listStaticProviderImportPresets } from '@/lib/catalog/provider-catalog-fixture';
 
 describe('Seedream catalog + Volcengine Ark provider preset', () => {
 	it('uses official Volcengine model ids for all bytedance presets', () => {

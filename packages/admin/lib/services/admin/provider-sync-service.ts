@@ -5,12 +5,9 @@
  * 应用时服务端重新计算差异，不信任前端展示过的内容。
  */
 import type { GatewayRepositories } from '@octafuse/core';
-import {
-	getStaticProviderPresetByKind,
-	listProviderKindChoices,
-	suggestStaticProviderKindByEndpoints,
-	resolveStoredProviderPresentation,
-} from '@/lib/provider-import-preset';
+import { getProviderCatalog } from '@/lib/provider-catalog';
+import { loadProviderCatalog, requireCurrentCatalog } from '@/lib/catalog/catalog-loader';
+import type { CatalogEnv } from '@/lib/catalog/catalog-config';
 import { CUSTOM_PROVIDER_KIND } from '@/lib/provider-kind';
 import {
 	buildProviderSyncPatch,
@@ -22,11 +19,12 @@ import {
 	type ProviderSyncReport,
 } from '@/lib/provider-sync-diff';
 import { badRequest } from './errors';
-import { listProvidersService, updateProviderService } from './providers-service';
+import { updateProviderService } from './providers-service';
 
 /** 差异报告：按模板类型分组，另列出 kind 已失效的 provider。 */
-export async function getProviderSyncReportService(repos: GatewayRepositories): Promise<ProviderSyncReport> {
-	const providers = await listProvidersService(repos);
+export async function getProviderSyncReportService(repos: GatewayRepositories, env?: CatalogEnv): Promise<ProviderSyncReport> {
+	const catalog = getProviderCatalog((await loadProviderCatalog(env)).rows);
+	const providers = await repos.providers.listProviders();
 	const groupsByKind = new Map<string, ProviderSyncKindGroup>();
 	const orphans: ProviderSyncOrphanEntry[] = [];
 	let providersWithDiff = 0;
@@ -35,14 +33,14 @@ export async function getProviderSyncReportService(repos: GatewayRepositories): 
 		const kind = String(provider.kind ?? '').trim();
 		if (!kind || kind === CUSTOM_PROVIDER_KIND) continue;
 
-		const preset = getStaticProviderPresetByKind(kind);
+		const preset = catalog.getStaticProviderPresetByKind(kind);
 		if (!preset) {
 			orphans.push({
 				provider_id: provider.id,
 				provider_name: provider.name,
 				kind,
 				routes_count: Number(provider.routes_count ?? 0),
-				suggested_kind: suggestStaticProviderKindByEndpoints(provider.endpoints),
+				suggested_kind: catalog.suggestStaticProviderKindByEndpoints(provider.endpoints),
 			});
 			continue;
 		}
@@ -53,7 +51,7 @@ export async function getProviderSyncReportService(repos: GatewayRepositories): 
 
 		let group = groupsByKind.get(kind);
 		if (!group) {
-			const presentation = resolveStoredProviderPresentation({ kind });
+			const presentation = catalog.resolveStoredProviderPresentation({ kind });
 			group = {
 				kind,
 				label_en: presentation.kindLabels?.en ?? kind,
@@ -84,7 +82,7 @@ export async function getProviderSyncReportService(repos: GatewayRepositories): 
 	return {
 		groups,
 		orphans,
-		kind_choices: listProviderKindChoices().map((choice) => ({
+		kind_choices: catalog.listProviderKindChoices().map((choice) => ({
 			kind: choice.kind,
 			label_en: choice.labels.en,
 			label_zh: choice.labels.zh,
@@ -100,13 +98,15 @@ export async function getProviderSyncReportService(repos: GatewayRepositories): 
 /** 把选中的官方值写入各 provider；单个失败不影响其余。 */
 export async function applyProviderSyncService(
 	repos: GatewayRepositories,
-	body: ProviderSyncApplyBody
+	body: ProviderSyncApplyBody,
+	env?: CatalogEnv
 ): Promise<ProviderSyncApplyOutput> {
 	const items = Array.isArray(body?.items) ? body.items : [];
 	if (items.length === 0) {
 		throw badRequest('items must be a non-empty array');
 	}
 
+	const catalog = getProviderCatalog(requireCurrentCatalog(await loadProviderCatalog(env)));
 	let updated = 0;
 	let skipped = 0;
 	const failed: ProviderSyncApplyOutput['failed'] = [];
@@ -127,7 +127,7 @@ export async function applyProviderSyncService(
 				failed.push({ provider_id: providerId, message: 'Provider not found' });
 				continue;
 			}
-			const preset = getStaticProviderPresetByKind(String((row as { kind?: unknown }).kind ?? ''));
+			const preset = catalog.getStaticProviderPresetByKind(String((row as { kind?: unknown }).kind ?? ''));
 			if (!preset) {
 				skipped += 1;
 				continue;

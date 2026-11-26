@@ -50,11 +50,11 @@ MiniMax H3 Image 的目录预设走 OpenAI 兼容 Images API，用 `passthrough`
 
 ## 模型目录
 
-静态预设放在 `packages/admin/lib/model-presets/`，生图模型在 `<vendor>-image.json`。在管理后台的模型（Models）页导入预设；同 ID 已存在时不会覆盖，改价需要编辑模型，或对已知型号运行 `node scripts/db/migrate-image-billing-modes.mjs --apply`。
+管理后台从 [OctaFuse 模型目录](https://octafuse.dev/api/catalog/models) 读取预设。在管理后台的模型（Models）页导入预设；同 ID 已存在时不会覆盖，改价需要编辑模型，或对已知型号运行 `node scripts/db/migrate-image-billing-modes.mjs --apply`。
 
 目录 ID 一般与上游的供应商模型名一致。例外是 MiniMax：`minimax-image-01` / `minimax-image-01-live` 的上游模型名填 `image-01` / `image-01-live`；`minimax-h3-image` / `minimax-h3-image-highspeed` 填 `MiniMax-H3-Image` / `MiniMax-H3-Image-Highspeed`。火山方舟用推理接入点时，路由填 `ep-…`。预设不写 `suggested_provider_model_name` 或 `suggested_custom_params`，默认参数由客户端或路由 `custom_params` 注入。退役型号不进预设，库里的旧行需要手工清理。
 
-下面三张表由 `npm run docs:image-models` 从预设生成，请勿手改。CNY 一般按 USD × 7 换算，以预设为准。
+下面三张表由 `npm run docs:image-models` 从仓库保留的快照生成，请勿手改。管理后台导入时使用远端目录提供的定价。
 
 <!-- BEGIN GENERATED: image-models (npm run docs:image-models) -->
 
@@ -239,8 +239,8 @@ charged ≈
 
 ## 新增或更新模型
 
-1. 在 `packages/admin/lib/model-presets/` 改价或加型号，`modalities.output` 写 `image`，两种币种都写 `image_billing_mode`。
-2. 运行 `npm run docs:image-models` 重新生成本文的目录表。`npm run test:docs` 会在预设与文档不一致时失败。
+1. 在目录服务修改定价或新增模型，`modalities.output` 包含 `image`，提供的定价分支应填写 `image_billing_mode`。
+2. 过渡期更新仓库中的回滚快照时，运行 `npm run docs:image-models` 重新生成本文的目录表。`npm run test:docs` 会在预设与文档不一致时失败。
 3. 新厂商要先写厂商文档，并在 `scripts/docs/gen-image-models.mjs` 的 `VENDOR_DOCS` 登记，否则生成脚本会报错。
 4. 在厂商文档里更新参数规则，以及“官方来源”的核对日期。
 5. 已部署实例的模型不会自动更新。改价时在 `scripts/db/migrate-image-billing-modes.mjs` 同步单价，并在 `CHANGELOG.md` 的 Unreleased 说明需要手工改价或运行迁移脚本。

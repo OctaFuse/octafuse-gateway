@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { GatewayRepositories } from '@octafuse/core';
-import { listStaticModelPresets } from '@/lib/model-preset';
-import { applyModelSyncService, getModelSyncReportService } from './model-sync-service';
+import { listStaticModelPresets } from '@/lib/catalog/model-catalog-fixture';
+import { applyModelSyncService as applySync, getModelSyncReportService as getReport } from './model-sync-service';
+
+const localCatalog = { CATALOG_SOURCE: 'local' };
+const getModelSyncReportService = (repos: GatewayRepositories) => getReport(repos, localCatalog);
+const applyModelSyncService = (repos: GatewayRepositories, body: Parameters<typeof applySync>[1]) =>
+	applySync(repos, body, localCatalog);
 
 type Row = Record<string, unknown> & { id: string };
 

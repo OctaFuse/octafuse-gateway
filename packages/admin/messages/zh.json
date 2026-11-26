@@ -1010,6 +1010,7 @@
 			"clearSearch": "清除搜索",
 			"clearSelection": "清除选择",
 			"reloadCatalog": "重新加载目录",
+			"allVendors": "全部厂商",
 			"kind": "类型",
 			"kindFilterAria": "按模型类型筛选目录",
 			"lifecycle": "状态",

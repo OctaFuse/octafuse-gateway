@@ -1010,6 +1010,7 @@
 			"clearSearch": "검색 초기화",
 			"clearSelection": "선택 초기화",
 			"reloadCatalog": "카탈로그 다시 불러오기",
+			"allVendors": "모든 모델 공급사",
 			"kind": "유형",
 			"kindFilterAria": "모델 유형으로 카탈로그 필터링",
 			"lifecycle": "제공 상태",

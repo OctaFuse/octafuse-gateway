@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { resolveModelKind, validateModelKindConsistency } from '@octafuse/core/db/model-kind';
-import { pickPresetPricingRawForBillingCurrency, listStaticModelPresets } from '@/lib/model-preset';
-import { listStaticModelPresetCatalogForAdmin } from './models-service';
+import { pickPresetPricingRawForBillingCurrency, listStaticModelPresets } from '@/lib/catalog/model-catalog-fixture';
+import { listStaticModelPresetCatalogForAdmin } from '@/lib/catalog/model-catalog-fixture';
 
 /** 规则见 docs/developers/reference/model-kinds.md；新增预设若触发矛盾，应先修预设而不是放宽校验。 */
 describe('static model presets × model kind rules', () => {

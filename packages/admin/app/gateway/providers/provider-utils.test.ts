@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { parseProviderEndpoints } from '@octafuse/core/provider-endpoints';
-import { listStaticProviderImportCatalogForAdmin } from '@/lib/provider-import-preset';
+import { listStaticProviderImportCatalogForAdmin } from '@/lib/catalog/provider-catalog-fixture';
 import {
 	providerApiKeyPreview,
 	findInvalidCustomParamsBodyProtocol,

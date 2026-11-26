@@ -1010,6 +1010,7 @@
 			"clearSearch": "Clear search",
 			"clearSelection": "Clear",
 			"reloadCatalog": "Reload catalog",
+			"allVendors": "All model vendors",
 			"kind": "Kind",
 			"kindFilterAria": "Filter catalog by model kind",
 			"lifecycle": "Status",

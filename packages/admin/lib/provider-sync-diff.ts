@@ -1,5 +1,5 @@
 /**
- * Provider 与内置官方模板（`provider-import-presets.json`）的差异计算与应用。
+ * Provider 与官方目录模板的差异计算与应用。
  *
  * 纯函数：只做结构化比对，不读库、不依赖运行时。
  * 比对 `endpoints`，以协议为单位（`endpoints.<protocol>`）。

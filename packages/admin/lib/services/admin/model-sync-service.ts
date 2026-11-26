@@ -13,10 +13,11 @@ import {
 	type GatewaySupportedBillingCurrency,
 } from '@octafuse/core/lib/billing-currency';
 import {
-	listStaticModelPresets,
 	pickPresetPricingRawForBillingCurrency,
 	type StaticModelPresetRow,
 } from '@/lib/model-preset';
+import { loadModelCatalog, requireCurrentCatalog } from '@/lib/catalog/catalog-loader';
+import type { CatalogEnv } from '@/lib/catalog/catalog-config';
 import { getModelVendorLabel, normalizeModelVendorInput } from '@/lib/model-vendor';
 import {
 	buildModelSyncPatch,
@@ -59,18 +60,18 @@ function presetToSyncInput(
 	};
 }
 
-function presetMap(): Map<string, StaticModelPresetRow> {
+function presetMap(rows: readonly StaticModelPresetRow[]): Map<string, StaticModelPresetRow> {
 	return new Map(
-		listStaticModelPresets()
+		rows
 			.map((p) => [String(p.id ?? '').trim(), p] as const)
 			.filter(([id]) => id.length > 0)
 	);
 }
 
 /** 差异报告：按厂商分组，只含与目录同 id 且有差异的模型。 */
-export async function getModelSyncReportService(repos: GatewayRepositories): Promise<ModelSyncReport> {
+export async function getModelSyncReportService(repos: GatewayRepositories, env?: CatalogEnv): Promise<ModelSyncReport> {
 	const billing = await readBillingCurrency(repos);
-	const presets = presetMap();
+	const presets = presetMap((await loadModelCatalog(env)).rows);
 	const rows = await repos.models.listModelsWithRouteCounts();
 	const groups = new Map<string, ModelSyncVendorGroup>();
 	let modelsWithDiff = 0;
@@ -108,7 +109,8 @@ export async function getModelSyncReportService(repos: GatewayRepositories): Pro
 /** 把选中的官方值写入各模型；单个失败不影响其余。 */
 export async function applyModelSyncService(
 	repos: GatewayRepositories,
-	body: ModelSyncApplyBody
+	body: ModelSyncApplyBody,
+	env?: CatalogEnv
 ): Promise<ModelSyncApplyOutput> {
 	const items = Array.isArray(body?.items) ? body.items : [];
 	if (items.length === 0) {
@@ -116,7 +118,7 @@ export async function applyModelSyncService(
 	}
 
 	const billing = await readBillingCurrency(repos);
-	const presets = presetMap();
+	const presets = presetMap(requireCurrentCatalog(await loadModelCatalog(env)));
 	let updated = 0;
 	let skipped = 0;
 	const failed: ModelSyncApplyOutput['failed'] = [];

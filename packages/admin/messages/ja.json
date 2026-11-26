@@ -1010,6 +1010,7 @@
 			"clearSearch": "検索をクリア",
 			"clearSelection": "選択をクリア",
 			"reloadCatalog": "カタログを再読み込み",
+			"allVendors": "すべてのモデルベンダー",
 			"kind": "種類",
 			"kindFilterAria": "モデル種別でカタログを絞り込む",
 			"lifecycle": "提供状況",

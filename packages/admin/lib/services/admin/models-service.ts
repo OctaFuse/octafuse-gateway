@@ -22,11 +22,12 @@ import {
 } from '@octafuse/core/lib/billing-currency';
 import { getGatewayCurrencySymbol } from '@/lib/format-gateway-currency';
 import {
-	getStaticModelPresetRetired,
-	getStaticModelCatalogCopy,
-	listStaticModelPresets,
+	buildModelCatalogPresentation,
+	type StaticModelPresetRow,
 	pickPresetPricingRawForBillingCurrency,
 } from '@/lib/model-preset';
+import { loadModelCatalog, loadModelCatalogByVendor, optionalCatalog, requireCurrentCatalog } from '@/lib/catalog/catalog-loader';
+import type { CatalogEnv } from '@/lib/catalog/catalog-config';
 import { badRequest, conflict, notFound } from './errors';
 import {
 	catalogScheduleFromPricingProfile,
@@ -220,14 +221,29 @@ function assertModelKindConsistent(fields: ModelKindFields): void {
 	if (problem) throw badRequest(problem);
 }
 
+const modelPresentations = new WeakMap<readonly StaticModelPresetRow[], ReturnType<typeof buildModelCatalogPresentation>>();
+
+async function readModelPresentation(env?: CatalogEnv) {
+	const snapshot = await loadModelCatalog(env).catch(optionalCatalog);
+	if (!snapshot) return null;
+	let presentation = modelPresentations.get(snapshot.rows);
+	if (!presentation) {
+		presentation = buildModelCatalogPresentation(snapshot.rows);
+		modelPresentations.set(snapshot.rows, presentation);
+	}
+	return presentation;
+}
+
 /** 全部模型列表，`tags` 从 JSON 字符串解析为数组。 */
-export async function listModelsService(repos: GatewayRepositories): Promise<AdminModelRow[]> {
+export async function listModelsService(repos: GatewayRepositories, env?: CatalogEnv): Promise<AdminModelRow[]> {
 	const rows = await repos.models.listModelsWithRouteCounts();
+	if (rows.length === 0) return [];
+	const presentation = await readModelPresentation(env);
 	return rows.map((m) => ({
 		...m,
 		tags: parseTagsJson(m.tags as string | null),
-		retired_at: getStaticModelPresetRetired(m.id),
-		catalog_i18n: getStaticModelCatalogCopy(m.id),
+		retired_at: presentation?.retiredByModelId.get(m.id.trim()) ?? null,
+		catalog_i18n: presentation?.copyByModelId.get(m.id.trim()) ?? null,
 	})) as AdminModelRow[];
 }
 
@@ -293,14 +309,15 @@ export async function createModelService(repos: GatewayRepositories, body: Admin
 }
 
 /** 模型详情 + 路由计数 + 解析后的 tags。 */
-export async function getModelService(repos: GatewayRepositories, id: string): Promise<AdminModelRow> {
+export async function getModelService(repos: GatewayRepositories, id: string, env?: CatalogEnv): Promise<AdminModelRow> {
 	const model = await repos.models.getModelDetailWithRouteCounts(id);
 	if (!model) throw notFound('Model not found');
+	const presentation = await readModelPresentation(env);
 	return {
 		...model,
 		tags: parseTagsJson(model.tags as string | null),
-		retired_at: getStaticModelPresetRetired(model.id),
-		catalog_i18n: getStaticModelCatalogCopy(model.id),
+		retired_at: presentation?.retiredByModelId.get(model.id.trim()) ?? null,
+		catalog_i18n: presentation?.copyByModelId.get(model.id.trim()) ?? null,
 	} as AdminModelRow;
 }
 
@@ -386,9 +403,10 @@ export async function deleteModelService(repos: GatewayRepositories, id: string)
  * 价格预览按 `billing`（与导入写入同源的 USD/CNY 分支）；默认 USD 便于单测。
  */
 export function listStaticModelPresetCatalogForAdmin(
+	presets: readonly StaticModelPresetRow[],
 	billing: GatewaySupportedBillingCurrency = 'USD'
 ): AdminStaticModelPresetCatalogItem[] {
-	return listStaticModelPresets()
+	return presets
 		.map((p) => {
 			const id = String(p.id ?? '').trim();
 			const pricingRaw = pickPresetPricingRawForBillingCurrency(p, billing);
@@ -429,7 +447,9 @@ export function listStaticModelPresetCatalogForAdmin(
 
 /** 读取当前 `BILLING_CURRENCY` 后列出导入目录（价格预览与即将写入的分支一致）。 */
 export async function listStaticModelPresetCatalogForAdminService(
-	repos: GatewayRepositories
+	repos: GatewayRepositories,
+	env?: CatalogEnv,
+	vendor?: string
 ): Promise<{
 	billing_currency: GatewaySupportedBillingCurrency;
 	items: AdminStaticModelPresetCatalogItem[];
@@ -437,21 +457,23 @@ export async function listStaticModelPresetCatalogForAdminService(
 	const rawCurrency = await repos.systemConfig.getConfig(BILLING_CURRENCY_KEY);
 	const billing: GatewaySupportedBillingCurrency =
 		tryParseGatewaySupportedBillingCurrencyInput(rawCurrency ?? '') ?? 'USD';
+	const presets = vendor ? await loadModelCatalogByVendor(vendor, env) : (await loadModelCatalog(env)).rows;
 	return {
 		billing_currency: billing,
-		items: listStaticModelPresetCatalogForAdmin(billing),
+		items: listStaticModelPresetCatalogForAdmin(presets, billing),
 	};
 }
 
 /**
- * 从 `lib/model-presets/*.json`（经 `listStaticModelPresets` 合并）按 **指定 id** 导入模型：按当前 `BILLING_CURRENCY`（仅 USD/CNY 合法；否则按 USD 分支取价）写入完整 `pricing_profile`（含可选 `schedule`）。
+ * 从远端目录按 **指定 id** 导入模型：按当前 `BILLING_CURRENCY`（仅 USD/CNY 合法；否则按 USD 分支取价）写入完整 `pricing_profile`（含可选 `schedule`）。
  * 介绍留在静态目录，不写入 `note`。
  * **已存在同 id 的不导入、不覆盖**（记入 `skipped_existing`）。未知 id 或校验失败记入 `failed`。
  * 导入不写入 `model_tags`（标签由运营在导入后自行维护）。
  */
 export async function importModelsFromStaticPresetsService(
 	repos: GatewayRepositories,
-	input: { ids: string[] }
+	input: { ids: string[] },
+	env?: CatalogEnv
 ): Promise<AdminModelsImportOutput> {
 	const uniqueIds = [...new Set((input.ids ?? []).map((x) => String(x).trim()).filter((x) => x.length > 0))];
 	if (uniqueIds.length === 0) {
@@ -462,7 +484,7 @@ export async function importModelsFromStaticPresetsService(
 	const billingUsed: GatewaySupportedBillingCurrency =
 		tryParseGatewaySupportedBillingCurrencyInput(rawCurrency ?? '') ?? 'USD';
 
-	const allPresets = listStaticModelPresets();
+	const allPresets = requireCurrentCatalog(await loadModelCatalog(env));
 	const presetById = new Map(allPresets.map((p) => [String(p.id ?? '').trim(), p]));
 
 	let created = 0;
