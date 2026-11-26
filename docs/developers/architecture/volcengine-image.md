@@ -4,7 +4,7 @@
 
 ## 型号
 
-目录预设在 `packages/admin/lib/model-presets/bytedance-image.json`：
+目录预设在官网仓库 `catalog/models/bytedance-image.json`（经 OctaFuse 模型目录提供）：
 
 | 目录 ID | 官方型号 | 说明 |
 | ------- | -------- | ---- |
@@ -27,7 +27,7 @@ Seedream 没有 OpenAI 形态的 `/images/edits`。图生图和多图融合都�
 
 ## 供应商端点
 
-导入模板是 **Volcengine Ark** 与 **BytePlus ModelArk**（`packages/admin/lib/provider-import-presets.json`）。对话继续走 OpenAI 兼容端点；生图只配一个 `volcengine.base`：
+导入模板是 **Volcengine Ark** 与 **BytePlus ModelArk**（官网仓库 `catalog/providers.json`）。对话继续走 OpenAI 兼容端点；生图只配一个 `volcengine.base`：
 
 ```text
 openai.chat:       https://ark.cn-beijing.volces.com/api/v3/chat/completions

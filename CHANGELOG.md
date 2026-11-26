@@ -35,7 +35,7 @@
 
 ### 模型目录
 
-以下输入和输出价格均按每百万 token 计。Gemini 和 GPT 的人民币目录价按美元刊例价 ×7 换算。完整规格、缓存价格及参数限制见[模型预设](packages/admin/lib/model-presets/)。
+以下输入和输出价格均按每百万 token 计。Gemini 和 GPT 的人民币目录价按美元刊例价 ×7 换算。完整规格、缓存价格及参数限制见官网[模型目录](https://octafuse.dev/zh/catalog/models/)。
 
 - **Gemini 4 Neon**（`gemini-4-neon`）支持多模态输入，输入、思考与输出共享 1M 窗口，同步输出默认 64K。输入 $3，输出 $15，隐式缓存 $0.15。思考默认 `high`，不支持关闭，传入 `minimal` 或 `thinking_budget` 会返回 400。
 - **GPT-6.2 Astra / Sol**（`gpt-6.2-astra`、`gpt-6.2-sol`）支持 1.05M 上下文、128K 输出。Astra 输入 $8、输出 $40，Sol 输入 $2、输出 $10。输入超过 272K 时，输入与缓存价翻倍，输出价为 1.5 倍。工具调用须使用 Responses API，两款模型均不接受 `reasoning.effort=none`。

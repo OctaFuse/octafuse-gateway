@@ -47,7 +47,7 @@ After changing `@octafuse/core` types used by Admin (adapters, route topology, m
 | `lib/routes/admin/*` | Admin HTTP handlers |
 | `lib/services/admin/*` | Admin services (use `@octafuse/core`) |
 | `app/gateway/*` | Admin UI (`fetch('/api/admin/...')`) |
-| `lib/provider-import-presets.json` + `lib/provider-import-preset.ts` | Providers 静态导入模板（预填 endpoint；占位 API Key） |
+| `lib/catalog/*` | 供应商 / 模型导入目录加载器：默认从 `https://octafuse.dev/api/catalog/*` 拉取并缓存，`CATALOG_SOURCE=local` 时读本包快照（`lib/provider-import-presets.json`、`lib/model-presets/*.json`）。目录数据在 octafuse-website 的 `catalog/` 维护，快照不是新增条目的入口 |
 | `lib/routes/admin/playground.ts` | Playground: single-route upstream test (no `api_key_request_logs`, no billing, no failover) |
 
 ## Environment (Wrangler / `.dev.vars`)
@@ -60,6 +60,7 @@ After changing `@octafuse/core` types used by Admin (adapters, route topology, m
 | D1 `DB` | Shared logical DB `octafuse` with Proxy |
 | `DATABASE_URL` | **Node / self-hosted Postgres only** (same name as `@octafuse/proxy` Node; do not use on Cloudflare Workers D1 mode) |
 | `DATABASE_DRIVER` | **Node / self-hosted**: same semantics as Proxy (`@octafuse/core`); omit → `postgres`; invalid or inconsistent with `DATABASE_URL` → **error** |
+| `CATALOG_BASE_URL` / `CATALOG_TIMEOUT_MS` / `CATALOG_TTL_MS` / `CATALOG_SOURCE` | Optional. Import-catalog source: HTTPS base URL (default `https://octafuse.dev`), per-request timeout (default `3000`), cache TTL (default `300000`), and `local` to use the bundled snapshot. See [provider-import-presets.md](../../docs/developers/reference/provider-import-presets.md#数据来源) |
 
 Downstream portals: set **`GATEWAY_MASTER_URL`** to this app’s origin, create a named least-privilege key in **Integration Keys**, then call **`/api/admin/...`** with `Authorization: Bearer <ADMIN_API_KEY>`.
 
@@ -92,7 +93,7 @@ Admin UI uses **[next-intl](https://next-intl.dev)** in **without-i18n-routing**
 - Add strings to all files under `messages/` with identical key structure, using `messages/en.json` as the structural baseline (`sidebar`, `providers`, `config`, `common`, …).
 - Client components: `useTranslations('namespace')`; server layout/metadata: `getTranslations` from `next-intl/server`.
 - Do **not** hardcode user-visible English in JSX or `lib/*` UI helpers — pass `t()` or a labels object (see `lib/pricing-ui.ts` `PricingLabels`, `getBusinessTimezoneOptions`, `getBillingCurrencyOptions`).
-- **Out of scope**: Hono/service error messages (display `data.message` as-is), JSON presets (`provider-import-presets.json`, `model-presets/*`), provider/model IDs.
+- **Out of scope**: Hono/service error messages (display `data.message` as-is), JSON presets and the remote catalog (`provider-import-presets.json`, `model-presets/*`, `octafuse.dev` catalog), provider/model IDs.
 
 ## Docs
 

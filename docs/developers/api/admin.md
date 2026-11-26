@@ -75,9 +75,9 @@ Authorization: Bearer sk-admin-<64 hex characters>
 | `/admin/models` | GET, POST, GET/PATCH/DELETE `/:id` | `models`（含可选 `route_policy`），`model_tags` | Admin UI |
 | `/admin/providers/sync/diff` | GET | 各 Provider 与内置官方模板的差异报告：按 `kind` 分组，逐字段（`endpoints.<protocol>`）列出新增 / 变更 / 仅本地有。`note` 不参与比对。另列出 `kind` 已不在模板中的 provider（`orphans`） | Admin UI |
 | `/admin/providers/sync/apply` | POST | 请求体 `{"items":[{"provider_id","fields":["endpoints.openai",…]}]}`：服务端重算差异，只把选中的端点写成官方值；不写 `note` / `api_key` / `status` / `name` / `kind` | Admin UI |
-| `/admin/models/sync/diff` | GET | 各 Model 与内置静态目录的差异报告：按厂商分组，逐字段（`display_name`、`vendor`、`context_window`、`max_tokens`、`released_at`、`input_modalities`、`output_modalities`、`pricing_profile`）列出新增 / 变更。`note` 不参与比对。价格按 `BILLING_CURRENCY` 取目录价并逐叶子路径对比。目录里没有的自建模型、目录未给出的字段不参与 | Admin UI |
+| `/admin/models/sync/diff` | GET | 各 Model 与 [OctaFuse 模型目录](https://octafuse.dev/api/catalog/models)的差异报告：按厂商分组，逐字段（`display_name`、`vendor`、`context_window`、`max_tokens`、`released_at`、`input_modalities`、`output_modalities`、`pricing_profile`）列出新增 / 变更。`note` 不参与比对。价格按 `BILLING_CURRENCY` 取目录价并逐叶子路径对比。目录里没有的自建模型、目录未给出的字段不参与 | Admin UI |
 | `/admin/models/sync/apply` | POST | 请求体 `{"items":[{"model_id","fields":["pricing_profile",…]}]}`：服务端重算差异，只把选中字段写成官方值（经 `updateModelService`，路由价格覆盖时段对齐照常执行）；不写 `note` / `tags` / `metadata` / `route_policy` | Admin UI |
-| `/admin/models/import/catalog` | GET | 内置静态目录可选项摘要（不含完整 `pricing_profile`） | Admin UI |
+| `/admin/models/import/catalog` | GET | OctaFuse 模型目录可选项摘要（不含完整 `pricing_profile`）。可选 `vendor` 查询参数按厂商加载（未知厂商返回 `400`）；目录不可用时返回 `503` | Admin UI |
 | `/admin/models/import` | POST | 请求体 `{"ids":["…"]}`：仅导入指定预设 → `models`（按 `BILLING_CURRENCY` 选用 USD/CNY 价；**同 id 不覆盖**，记入 `skipped_existing`；**不**写入 `model_tags`） | Admin UI、运维脚本 |
 | `/admin/routes` | GET（`?model_id=&provider_id=`）, POST, GET/PATCH/DELETE `/:id` | `model_surfaces`、`route_pools`、`model_routes`（Surface → Pool → Target） | Admin UI |
 | `/admin/routes/pools/:poolId` | PATCH | `route_pools.strategy` / `tier_strategies` / `sticky_routing`（Pool 策略与 Provider 粘性） | Admin UI |
@@ -128,7 +128,7 @@ Authorization: Bearer sk-admin-<64 hex characters>
 |------|------|------|----------|
 | **`GET /catalog/models`**（Proxy） | `GATEWAY_URL` | 无 | **运行时**可调用模型 + `protocols` / `protocols_by_group` / `inbound`（由 active `model_routes` 聚合） |
 | **`GET /admin/models`** | Admin `/api/admin/*` | Console Session 或 `models.read` | 库内 **全部**模型 CRUD 列表（含 tags、路由计数；**不**含按 route 的协议聚合） |
-| **`GET /admin/models/import/catalog`** | Admin | Console Session 或 `models.read` | 仓库内 **静态 preset** 摘要，供导入 UI 勾选，**非**运行时 route 真相 |
+| **`GET /admin/models/import/catalog`** | Admin | Console Session 或 `models.read` | OctaFuse 模型目录（默认读取 `https://octafuse.dev/api/catalog/models`，见 [供应商导入模板](../reference/provider-import-presets.md#数据来源)）摘要，供导入 UI 勾选，**非**运行时 route 真相 |
 
 门户 / 公开站应使用 Proxy **`GET /catalog/models`**，详见 [用户接口 · 公开模型目录](./user.md#公开模型目录catalog-discovery)。用户个性化折扣用 **`GET /admin/users/:id/display-discounts`** overlay。门户仍走 Catalog + display-discounts；Agent 拉列表不再计入 RPM。Agent 与兼容客户端默认仍用 **`GET /v1/models`**（需用户 Key，默认 `default,free` route group）。
 
@@ -796,7 +796,7 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 ### Models / Routes
 
-- **`/admin/models`**：CRUD；`PATCH` 可写 **`route_policy`**（TEXT JSON 或 `null` 清空）和运营备注 **`note`**。列表与详情另附 **`catalog_i18n`**（按 `models.id` 从静态目录解析的中、英、日、韩介绍，不落库；目录没有该模型时为 `null`）。含 **`GET /admin/models/import/catalog`** 与 **`POST /admin/models/import`**。Image 路由使用 OpenAI 协议；Audio 路由支持 OpenAI 与 DashScope，按 operation / adapter 校验。
+- **`/admin/models`**：CRUD；`PATCH` 可写 **`route_policy`**（TEXT JSON 或 `null` 清空）和运营备注 **`note`**。列表与详情另附 **`catalog_i18n`**（按 `models.id` 从模型目录解析的中、英、日、韩介绍，不落库；目录没有该模型或目录暂不可用时为 `null`）。含 **`GET /admin/models/import/catalog`** 与 **`POST /admin/models/import`**。Image 路由使用 OpenAI 协议；Audio 路由支持 OpenAI 与 DashScope，按 operation / adapter 校验。
 - **`/admin/routes`**：REST `GET/POST`、`GET/PATCH/DELETE /:id`；列表支持 `?model_id=&provider_id=`。创建时校验 provider 对该协议是否配置了 `endpoints` base 或任一 capability，并创建或复用对应 Request Surface / Route Pool。
   - **`priority`**：层（Proxy 按 **DESC** 硬序）。
   - **`weight`**：同层权重，整数 **≥ 1**（默认 1）；非法 → **400**。
@@ -851,20 +851,20 @@ curl "http://localhost:8789/api/admin/keys/uuid-here/logs?page=1&page_size=10" \
 
 ### `GET /admin/models/sync/diff` 与 `POST /admin/models/sync/apply`
 
-- **用途**：静态目录（`packages/admin/lib/model-presets/*.json`）更新后，让已导入的 `models` 行与官方值对齐。差异只在管理员点「检查官方更新」时计算，`GET /admin/models` 列表不带差异信息。
-- **比对范围**：按 `models.id` 与目录项一一对应，字段为 `display_name`、`vendor`、`context_window`、`max_tokens`、`released_at`、`input_modalities`、`output_modalities`、`pricing_profile`。介绍只在静态目录里，`note` 是运营备注，两者都不参与比对。目录未给出（null）的字段不报差异，不会建议清空；模态不看顺序；价格按 `BILLING_CURRENCY` 选 `usd` / `cny` 分支，按叶子路径（如 `tiers[0].input_price`）展示新增 / 变更 / 仅本地有。
+- **用途**：OctaFuse 模型目录（官网仓库 `catalog/models/*.json`）更新后，让已导入的 `models` 行与官方值对齐。差异只在管理员点「检查官方更新」时计算，`GET /admin/models` 列表不带差异信息。
+- **比对范围**：按 `models.id` 与目录项一一对应，字段为 `display_name`、`vendor`、`context_window`、`max_tokens`、`released_at`、`input_modalities`、`output_modalities`、`pricing_profile`。介绍只在模型目录里，`note` 是运营备注，两者都不参与比对。目录未给出（null）的字段不报差异，不会建议清空；模态不看顺序；价格按 `BILLING_CURRENCY` 选 `usd` / `cny` 分支，按叶子路径（如 `tiers[0].input_price`）展示新增 / 变更 / 仅本地有。
 - **默认选择**：普通字段默认「采用官方」；`pricing_profile` 直接影响计费，默认「保留当前」，需管理员核对后再选。「保留当前」不落库，下次检查仍会显示。
 - **应用**：请求体 `{ "items": [{ "model_id": "...", "fields": ["pricing_profile"] }] }`。服务端重新计算差异，只处理确实存在差异的所选字段，经 `updateModelService` 写入（路由价格覆盖的时段对齐照常执行）。不写 `note`、`tags`、`metadata`、`route_policy`，不碰路由。响应 `{ updated, skipped, failed: [{ model_id, message }] }`，单个模型失败不影响其它。
 - **权限**：与其它 Admin 路由相同，后台 Session，或具有 `models.read` / `models.write` 的 `Authorization: Bearer <ADMIN_API_KEY>`。
 
 ### `GET /admin/models/import/catalog`
 
-- **行为**：返回 `packages/admin/lib/model-presets/*.json`（合并后）每条预设的摘要（`id`、`display_name`、`vendor`、`kind`、`context_window`、`max_tokens`、`description`、`i18n`、`tier_count`、`pricing_label`、`pricing_preview`），供管理端勾选后再调用 **`POST /admin/models/import`**。`kind` 为 `llm` \| `image` \| `asr` \| `tts` \| `embedding`（与管理后台模型列表 Kind 一致，规则见 [模型类型](../reference/model-kinds.md)）；语音识别与语音合成已分开，用户接口 `GET /v1/models?kind=asr` / `kind=tts` 与之对齐（`kind=audio` 为两者的兼容别名）。英文描述与本地化摘要直接维护在对应的模型预设记录中。价格预览按当前 **`BILLING_CURRENCY`** 选用 `usd` / `cny` 分支（与导入写入同源）；响应另含顶层 **`billing_currency`**。
+- **行为**：返回 OctaFuse 模型目录（各厂商文件合并后）每条预设的摘要（`id`、`display_name`、`vendor`、`kind`、`context_window`、`max_tokens`、`description`、`i18n`、`tier_count`、`pricing_label`、`pricing_preview`），供管理端勾选后再调用 **`POST /admin/models/import`**。`kind` 为 `llm` \| `image` \| `asr` \| `tts` \| `embedding`（与管理后台模型列表 Kind 一致，规则见 [模型类型](../reference/model-kinds.md)）；语音识别与语音合成已分开，用户接口 `GET /v1/models?kind=asr` / `kind=tts` 与之对齐（`kind=audio` 为两者的兼容别名）。英文描述与本地化摘要直接维护在对应的模型预设记录中。价格预览按当前 **`BILLING_CURRENCY`** 选用 `usd` / `cny` 分支（与导入写入同源）；响应另含顶层 **`billing_currency`**。
 
 ### `POST /admin/models/import`
 
-- **请求体**：`{ "ids": ["glm-5", "gpt-5.2", ...] }`（**`ids` 必填**；须为非空字符串数组；重复 id 会去重；顺序保留）。介绍留在静态目录，不写入 `note`。
-- **行为**：仅处理 `ids` 中在静态目录存在的 id；根据当前 **`BILLING_CURRENCY`**（`USD` → `usd` 分支，`CNY` → `cny` 分支；库内为其他历史值时按 **`USD`** 分支取价）把该分支**整段**写入 `models.pricing_profile`（含 `tiers` / 图音频单价，以及可选官方时段 `schedule`）；**已存在同 `id` 的不导入、不覆盖**，该 id 记入 **`skipped_existing`**；否则 **INSERT** 新建。标签由运营在导入后自行维护，导入**不**写入 `model_tags`。未知 id 或校验失败记入 **`failed`**，其余仍处理。
+- **请求体**：`{ "ids": ["glm-5", "gpt-5.2", ...] }`（**`ids` 必填**；须为非空字符串数组；重复 id 会去重；顺序保留）。介绍留在模型目录，不写入 `note`。
+- **行为**：仅处理 `ids` 中在模型目录存在的 id；根据当前 **`BILLING_CURRENCY`**（`USD` → `usd` 分支，`CNY` → `cny` 分支；库内为其他历史值时按 **`USD`** 分支取价）把该分支**整段**写入 `models.pricing_profile`（含 `tiers` / 图音频单价，以及可选官方时段 `schedule`）；**已存在同 `id` 的不导入、不覆盖**，该 id 记入 **`skipped_existing`**；否则 **INSERT** 新建。标签由运营在导入后自行维护，导入**不**写入 `model_tags`。未知 id 或校验失败记入 **`failed`**，其余仍处理。
 - **响应** `data`：`{ "billing_currency_used", "created", "updated"（恒为 0）, "skipped_existing": string[], "failed": [{ "id", "message" }] }`。
 
 ### 运维验收：文生图模型 `gpt-image-2`

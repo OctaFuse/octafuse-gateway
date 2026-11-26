@@ -4,11 +4,11 @@
 
 ## 数据来源
 
-管理后台在服务端读取 [OctaFuse 供应商目录](https://octafuse.dev/api/catalog/providers)。供应商模板包含英文 `name`、`vendor_key`、协议端点、各语言介绍和官网链接。厂商展示名继续由仓库内的 [厂商字典](../../../packages/admin/lib/model-vendors.json) 维护。
+管理后台在服务端读取 [OctaFuse 供应商目录](https://octafuse.dev/api/catalog/providers)。目录数据在官网仓库 [octafuse-website](https://github.com/OctaFuse/octafuse-website) 维护：供应商模板在 `catalog/providers.json`，模型模板在 `catalog/models/*.json`，随官网发布后生效，不需要发布 Gateway 版本。供应商模板包含英文 `name`、`vendor_key`、协议端点、各语言介绍和官网链接。厂商展示名由本仓库的 [厂商字典](../../../packages/admin/lib/model-vendors.json) 维护，官网生成目录时按指定的 Gateway 版本读取；新增厂商需先在这里加字典，发版后再同步到官网。
 
 目录默认缓存 5 分钟。刷新失败时，目录预览和已保存的供应商列表可以使用最近一次成功的远端快照。首次拉取失败时，供应商列表仍可读取，目录相关的展示字段会省略或回退为 `other`。依赖目录的导入、同步写入和类型校验在目录不可用时返回 `503`。
 
-自托管部署可用 `CATALOG_BASE_URL` 指定 HTTPS 目录服务地址，以 `CATALOG_TIMEOUT_MS` 和 `CATALOG_TTL_MS` 设置单次请求超时和缓存时长（默认分别为 `3000` 和 `300000` 毫秒）。过渡期可以显式设置 `CATALOG_SOURCE=local` 回滚到随版本提供的快照。
+自托管部署可用 `CATALOG_BASE_URL` 指定 HTTPS 目录服务地址（须提供与官网相同的 `/api/catalog/providers`、`/api/catalog/models` 和 `/api/catalog/models-by-vendor/{vendor}`），以 `CATALOG_TIMEOUT_MS` 和 `CATALOG_TTL_MS` 设置单次请求超时和缓存时长（默认分别为 `3000` 和 `300000` 毫秒）。无法访问 `octafuse.dev` 的部署（离线、内网或网络受限）应指向自建镜像，或设置 `CATALOG_SOURCE=local`，使用随 Gateway 版本打包的快照。该快照只在发版时更新，不会跟随官网目录变化，仅作应急与测试基线，不是新增条目的入口。变量须传到 Admin 进程；仓库内置 Compose 模板未透传这些变量，使用时需在 `gateway-admin` 的 `environment` 中自行添加。
 
 ## API
 
@@ -31,11 +31,11 @@
 
 ## 维护约定
 
-1. **新增模板**：在目录服务中添加模板。英文 `name` 会写入 `providers.kind`，是稳定键：**改名必须带数据迁移**，不能只改 JSON。同一类型下与已有账号别名撞车时，导入会自动加后缀。
+1. **新增模板**：向官网仓库提交 PR，修改 `catalog/providers.json`，并按官网 README「供应商和模型模板」运行同步脚本，把生成的 `src/data/catalog/` 一并提交；官网发布后 Admin 在缓存刷新时读取。不要只改本仓库的 `provider-import-presets.json` 快照。英文 `name` 会写入 `providers.kind`，是稳定键：**改名必须带数据迁移**，不能只改模板。同一类型下与已有账号别名撞车时，导入会自动加后缀。
 2. **核对 endpoint**：以各云厂商**当前官方文档**为准；OpenAI 可分别配置 `chat`、`responses`、Images、Audio 等能力端点，DashScope 使用独立协议配置；Gemini Vertex 兼容聚合商写完整 `{model}` 前缀并设 `gemini.auth: "bearer"`（如七牛、ZenMux）；正式 Vertex 用项目级占位 URL（`YOUR_PROJECT_ID`），OpenAI 只配 Chat Completions（`.../endpoints/openapi/chat/completions`），原生 Gemini 配 `auth: "bearer"`，密钥栏贴 **GCP 服务账号 JSON**（不是 Vertex API Key）；Azure OpenAI 的 Base 用 OpenAI v1 路径 `https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1`，Foundry 主机 `*.services.ai.azure.com` 同一路径也接受；网宿新版统一网关用 `https://api.edgecloudapp.com/v2/llm`：OpenAI 写 `.../openai` 这个 base，Anthropic Messages 写完整地址 `.../anthropic/messages`（路径里没有 `/v1`），Gemini 写 `.../gemini/v1beta/models` 并设 `auth: "bearer"`；`description` 中可提示「以控制台为准」。
 3. **占位密钥**：勿改为真实密钥写入仓库；占位串为 `PROVIDER_IMPORT_PENDING_API_KEY`（定义在 `@octafuse/core/db/provider-key-utils`）。
 4. **Catalog 链接**：`catalog.links.platform` 为官网；`api_keys` 为密钥管理页（可省略）；`referral` 仅在有可确认的邀请/注册 URL 时填写，**不要**用邀请链接覆盖 `platform`。Admin 与 Website 的「点击前往」出站顺序为 `referral` → `api_keys` → `platform`。管理后台从目录读取链接，`providers` 表只保存模板类型。已保存 `kind` 时只取该模板的链接；`kind` 为 `__custom__` 时不附带链接；`kind` 仍为空时，才按模板名或 endpoint 签名推断。
-5. **扩展**：目录服务新增模板后，管理后台会在缓存刷新时读取。
+5. **生效**：官网发布新目录后，管理后台会在缓存刷新时读取，已入库的 provider 需要管理员手动执行「检查官方更新」。
 
 ## 与模型导入的关系
 
