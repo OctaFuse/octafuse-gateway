@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import dns from 'node:dns/promises';
+import { syncBuiltinESMExports } from 'node:module';
 import { describe, it } from 'node:test';
 import { Hono } from 'hono';
 import type { AdminEnv } from '../../admin-env';
@@ -173,7 +175,7 @@ describe('provider model discovery', () => {
 		assert.deepEqual(data.models.map((option) => option.id), ['org/model']);
 	});
 
-	it('adds no-store to successful and failed route responses', async () => {
+	it('adds no-store to successful and failed route responses', async (t) => {
 		const row = provider('Ollama (Local)');
 		const app = new Hono<AdminEnv>();
 		app.use('*', async (c, next) => {
@@ -205,8 +207,20 @@ describe('provider model discovery', () => {
 		const authApp = new Hono<AdminEnv>();
 		authApp.use('*', async (c, next) => { c.set('repositories', repos(invalidAccount)); c.set('principal', { type: 'api_key', id: 'admin_key:test', keyId: 'test', permissions: ['providers.write'] }); await next(); });
 		authApp.route('/admin/providers', adminProvidersRoutes);
+		// The route checks DNS before attempting to sign with the invalid service account key.
+		const lookup = t.mock.method(dns, 'lookup', async (hostname: string) => {
+			assert.equal(hostname, 'aiplatform.googleapis.com');
+			return [{ address: '8.8.8.8', family: 4 }];
+		});
+		syncBuiltinESMExports();
+		t.after(() => {
+			lookup.mock.restore();
+			syncBuiltinESMExports();
+		});
 		const upstreamFailure = await authApp.request(`http://localhost/admin/providers/${invalidAccount.id}/model-options/refresh`, { method: 'POST' }, env);
+		assert.equal(lookup.mock.callCount(), 1);
 		assert.equal(upstreamFailure.status, 502);
+		assert.equal(upstreamFailure.headers.get('x-octafuse-error-code'), 'upstream_auth_failed');
 		assert.equal(upstreamFailure.headers.get('cache-control'), 'no-store');
 	});
 

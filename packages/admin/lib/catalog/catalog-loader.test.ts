@@ -9,6 +9,23 @@ const provider = {
 };
 const model = { id: 'sample-model', pricing: { cny: { tiers: [] } } };
 
+test('legacy local settings still load both catalogs from the configured API', async (t) => {
+	const requests: string[] = [];
+	t.mock.method(globalThis, 'fetch', async (url: URL) => {
+		requests.push(url.href);
+		return Response.json(url.pathname.endsWith('/providers') ? [provider] : [model]);
+	});
+	for (const baseUrl of [undefined, 'https://mirror.example/gateway']) {
+		const env = { CATALOG_SOURCE: 'local', CATALOG_BASE_URL: baseUrl };
+		assert.deepEqual((await loadProviderCatalog(env)).rows, [provider]);
+		assert.deepEqual((await loadModelCatalog(env)).rows, [model]);
+	}
+	assert.deepEqual(requests, [
+		'https://octafuse.dev/api/catalog/providers', 'https://octafuse.dev/api/catalog/models',
+		'https://mirror.example/gateway/api/catalog/providers', 'https://mirror.example/gateway/api/catalog/models',
+	]);
+});
+
 test('reads the live envelope and single-flights concurrent provider requests', async (t) => {
 	const env = { CATALOG_BASE_URL: 'https://provider.example' };
 	const fetch = t.mock.method(globalThis, 'fetch', async (url: URL, options: RequestInit) => {

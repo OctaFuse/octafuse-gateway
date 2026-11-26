@@ -862,7 +862,7 @@
 		},
 		"sync": {
 			"title": "Sync with official",
-			"subtitle": "Compare each provider with the built-in official template, then choose Use official or Keep current for every difference.",
+			"subtitle": "Compare each provider with the catalog template, then choose Use official or Keep current for every difference.",
 			"loading": "Comparing…",
 			"loadFailed": "Failed to load differences",
 			"recheck": "Check again",
@@ -935,7 +935,7 @@
 				"foundUpdates": "{providers} providers ({kinds} types) have official updates",
 				"foundOrphans": "{count} providers need their type migrated",
 				"review": "View result",
-				"tooltip": "Sync static provider data: compare changes, then confirm to apply"
+				"tooltip": "Compare with the provider catalog and confirm which changes to apply"
 			}
 		},
 		"overviewSubtitle": "Manage upstream accounts, API keys and protocol endpoints",
@@ -952,7 +952,7 @@
 		"title": "Models",
 		"subtitle": "Manage the models available to clients, including input and output capabilities, pricing and tags.",
 		"empty": "No models found",
-		"emptyHint": "Import from the built-in catalog or create a model manually",
+		"emptyHint": "Import from the model catalog or create a model manually",
 		"createTitleAll": "Create a new model",
 		"createTitleVendor": "New model under {vendor}",
 		"addCard": {
@@ -1004,7 +1004,7 @@
 			"disabledHint": "Per-image billing is not supported; configure image_* token rates."
 		},
 		"import": {
-			"title": "Import from Static Catalog",
+			"title": "Import from Model Catalog",
 			"subtitle": "Choose models to import. Existing model IDs are preserved. Prices are shown in {currency}.",
 			"searchPlaceholder": "Search model ID or display name",
 			"clearSearch": "Clear search",
@@ -1214,7 +1214,7 @@
 		},
 		"sync": {
 			"title": "Sync with official catalog",
-			"subtitle": "Compare each model with the built-in official catalog and choose \"Use official\" or \"Keep current\" per field.",
+			"subtitle": "Compare each model with the model catalog and choose \"Use official\" or \"Keep current\" per field.",
 			"loading": "Comparing…",
 			"loadFailed": "Failed to load differences",
 			"recheck": "Re-check",
@@ -1276,7 +1276,7 @@
 				"upToDate": "Checked: all models match the official catalog",
 				"foundUpdates": "{models} models ({vendors} vendors) have official updates",
 				"review": "View result",
-				"tooltip": "Sync static model data: compare changes, then confirm to apply"
+				"tooltip": "Compare with the model catalog and confirm which changes to apply"
 			}
 		},
 		"overviewSubtitle": "Manage model capabilities, catalog prices and routes",

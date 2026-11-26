@@ -1,7 +1,7 @@
 /**
  * 模型厂商生命周期（现役 / 退役）。
  *
- * 退役日期 `retired`（`YYYY-MM-DD`）只来自内置静态目录（`model-presets/*.json`），按 `models.id` 匹配，
+ * 退役日期 `retired`（`YYYY-MM-DD`）来自当前模型目录，按 `models.id` 匹配，
  * 不落库；目录里没有的模型一律视为现役。状态只由日期推导，仅用于 Admin 展示与筛选，不影响路由与计费。
  */
 

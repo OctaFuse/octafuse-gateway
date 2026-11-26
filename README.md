@@ -19,8 +19,8 @@ Octafuse Gateway 的核心目标是**构建统一超级个体（OPC）或企业�
 
 所以它具备以下这些核心能力：
 
-1. 供应商（Provider）接入：支持接入任意模型厂商或聚合平台的模型服务。同时，内置大量导入模板（含各种 Coding/Token Plan），无需复制黏贴各平台的接入端点，直接一键导入，然后复制对应的 API 密钥（ApiKey）即可完成接入。支持一键导入的完整列表见官网 [Providers Catalog](https://octafuse.dev/zh/catalog/providers/)，若有希望加入预置供应商的厂商，欢迎向官网仓库 [octafuse-website](https://github.com/OctaFuse/octafuse-website) 提交 PR。
-2. AI 模型接入：可直接从预置目录导入模型，无需逐项填写常用参数和价格。支持一键导入的模型列表见官网 [Models Catalog](https://octafuse.dev/zh/catalog/models/)；若希望接入新的模型，欢迎向官网仓库 [octafuse-website](https://github.com/OctaFuse/octafuse-website) 提交 PR。
+1. 供应商（Provider）接入：支持接入任意模型厂商或聚合平台的模型服务。可从模板导入端点（含 Coding / Token Plan），再填入对应的 API 密钥。支持一键导入的完整列表见官网 [Providers Catalog](https://octafuse.dev/zh/catalog/providers/)，若有希望加入预置供应商的厂商，欢迎向官网仓库 [octafuse-website](https://github.com/OctaFuse/octafuse-website) 提交 PR。
+2. AI 模型接入：供应商与模型的导入和同步默认读取官网目录。可从目录导入模型，无需逐项填写常用参数和价格。支持一键导入的模型列表见官网 [Models Catalog](https://octafuse.dev/zh/catalog/models/)；若希望接入新的模型，欢迎向官网仓库 [octafuse-website](https://github.com/OctaFuse/octafuse-website) 提交 PR。
 3. 多协议接入：AI 模型全协议接入，目前支持:
     - OpenAI 端点：
       - Chat Completions：`POST /v1/chat/completions`

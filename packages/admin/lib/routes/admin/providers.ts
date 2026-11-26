@@ -75,7 +75,7 @@ adminProvidersRoutes.post("/", async (c) => {
 	}
 });
 
-/** 列出内置 Provider 导入模板（无密钥）。须注册在 `/:id` 之前。 */
+/** 列出当前目录的供应商模板（无密钥）。须注册在 `/:id` 之前。 */
 adminProvidersRoutes.get("/import/catalog", async (c) => {
 	try {
 		const snapshot = await loadProviderCatalog(c.env);
@@ -92,7 +92,7 @@ adminProvidersRoutes.get("/import/catalog", async (c) => {
 	}
 });
 
-/** 从静态模板批量创建 Provider（每次新增；自动生成 id 与唯一显示名）。 */
+/** 从目录模板批量创建 Provider（每次新增；自动生成 id 与唯一显示名）。 */
 adminProvidersRoutes.post("/import", async (c) => {
 	let body: AdminProvidersImportBody;
 	try {

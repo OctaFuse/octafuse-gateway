@@ -4,11 +4,17 @@
 
 ## 数据来源
 
-管理后台在服务端读取 [OctaFuse 供应商目录](https://octafuse.dev/api/catalog/providers)。目录数据在官网仓库 [octafuse-website](https://github.com/OctaFuse/octafuse-website) 维护：供应商模板在 `catalog/providers.json`，模型模板在 `catalog/models/*.json`，随官网发布后生效，不需要发布 Gateway 版本。供应商模板包含英文 `name`、`vendor_key`、协议端点、各语言介绍和官网链接。厂商展示名由本仓库的 [厂商字典](../../../packages/admin/lib/model-vendors.json) 维护，官网生成目录时按指定的 Gateway 版本读取；新增厂商需先在这里加字典，发版后再同步到官网。
+Admin 通过 HTTPS 目录 API 导入、同步供应商和模型。默认读取[官网供应商目录](https://octafuse.dev/api/catalog/providers)和[官网模型目录](https://octafuse.dev/api/catalog/models)。按厂商查询时先请求 `/api/catalog/models-by-vendor/{vendor}`，失败时从同一服务的完整模型目录筛选。
 
-目录默认缓存 5 分钟。刷新失败时，目录预览和已保存的供应商列表可以使用最近一次成功的远端快照。首次拉取失败时，供应商列表仍可读取，目录相关的展示字段会省略或回退为 `other`。依赖目录的导入、同步写入和类型校验在目录不可用时返回 `503`。
+官网模板分别在 [octafuse-website](https://github.com/OctaFuse/octafuse-website) 的 `catalog/providers.json` 和 `catalog/models/*.json` 维护，随官网发布。厂商展示名另由 Gateway 的[厂商字典](../../../packages/admin/lib/model-vendors.json)维护，官网生成目录时读取指定 Gateway 版本的字典。
 
-自托管部署可用 `CATALOG_BASE_URL` 指定 HTTPS 目录服务地址（须提供与官网相同的 `/api/catalog/providers`、`/api/catalog/models` 和 `/api/catalog/models-by-vendor/{vendor}`），以 `CATALOG_TIMEOUT_MS` 和 `CATALOG_TTL_MS` 设置单次请求超时和缓存时长（默认分别为 `3000` 和 `300000` 毫秒）。无法访问 `octafuse.dev` 的部署（离线、内网或网络受限）应指向自建镜像，或设置 `CATALOG_SOURCE=local`，使用随 Gateway 版本打包的快照。该快照只在发版时更新，不会跟随官网目录变化，仅作应急与测试基线，不是新增条目的入口。变量须传到 Admin 进程；仓库内置 Compose 模板未透传这些变量，使用时需在 `gateway-admin` 的 `environment` 中自行添加。
+供应商和模型的完整目录仅缓存在各 Admin 实例的内存中，默认有效期为 5 分钟，重启后清空。
+
+- 缓存有效时，预览、导入和同步都可使用缓存。
+- 缓存过期且刷新失败时，导入列表和同步差异预览仍可使用旧缓存。确认导入和应用同步会返回 `503`。
+- 首次启动或重启后，如果目录 API 不可达，导入列表和同步差异预览也会返回 `503`。已保存的供应商仍可查看，目录相关字段会省略或显示为 `other`。已配置的模型和路由仍可正常处理请求。
+
+内网部署可将 Admin 的 `CATALOG_BASE_URL` 设为镜像的 HTTPS 基础地址（例如 `https://catalog.example.com`）。镜像应提供 `/api/catalog/providers`、`/api/catalog/models` 和 `/api/catalog/models-by-vendor/{vendor}`。`CATALOG_TIMEOUT_MS` 和 `CATALOG_TTL_MS` 分别控制单次请求超时和完整目录缓存时长，默认值为 `3000` 和 `300000` 毫秒。以上变量均设置在 Admin 进程。使用 Compose 时见 [Docker 部署配置](../../operators/deployment/docker.md#gateway-admin-容器)。
 
 ## API
 

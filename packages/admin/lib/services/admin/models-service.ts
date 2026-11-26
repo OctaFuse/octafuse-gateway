@@ -1,5 +1,5 @@
 /**
- * 管理后台 `models` + `model_tags`：列表/详情（含路由计数）、创建、部分更新、无路由删除、静态目录导入。
+ * 管理后台 `models` + `model_tags`：列表/详情（含路由计数）、创建、部分更新、无路由删除、模型目录导入。
  */
 import type { GatewayRepositories } from '@octafuse/core';
 import { catalogScheduleKeysEqual } from '@octafuse/core/db/pricing-schedule';
@@ -399,7 +399,7 @@ export async function deleteModelService(repos: GatewayRepositories, id: string)
 }
 
 /**
- * 列出内置静态预设（供导入前勾选）。
+ * 列出当前模型目录中的预设（供导入前勾选）。
  * 价格预览按 `billing`（与导入写入同源的 USD/CNY 分支）；默认 USD 便于单测。
  */
 export function listStaticModelPresetCatalogForAdmin(
@@ -466,7 +466,7 @@ export async function listStaticModelPresetCatalogForAdminService(
 
 /**
  * 从远端目录按 **指定 id** 导入模型：按当前 `BILLING_CURRENCY`（仅 USD/CNY 合法；否则按 USD 分支取价）写入完整 `pricing_profile`（含可选 `schedule`）。
- * 介绍留在静态目录，不写入 `note`。
+ * 介绍留在模型目录，不写入 `note`。
  * **已存在同 id 的不导入、不覆盖**（记入 `skipped_existing`）。未知 id 或校验失败记入 `failed`。
  * 导入不写入 `model_tags`（标签由运营在导入后自行维护）。
  */

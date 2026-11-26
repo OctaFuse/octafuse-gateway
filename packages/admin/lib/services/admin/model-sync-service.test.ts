@@ -1,13 +1,7 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { after, before, describe, it, mock } from 'node:test';
 import type { GatewayRepositories } from '@octafuse/core';
-import { listStaticModelPresets } from '@/lib/catalog/model-catalog-fixture';
-import { applyModelSyncService as applySync, getModelSyncReportService as getReport } from './model-sync-service';
-
-const localCatalog = { CATALOG_SOURCE: 'local' };
-const getModelSyncReportService = (repos: GatewayRepositories) => getReport(repos, localCatalog);
-const applyModelSyncService = (repos: GatewayRepositories, body: Parameters<typeof applySync>[1]) =>
-	applySync(repos, body, localCatalog);
+import { applyModelSyncService, getModelSyncReportService } from './model-sync-service';
 
 type Row = Record<string, unknown> & { id: string };
 
@@ -34,9 +28,16 @@ function fakeRepos(rows: Row[]) {
 }
 
 describe('model sync service', () => {
-	const preset = listStaticModelPresets().find((p) => p.display_name && p.context_window);
-	assert.ok(preset, 'need a bundled preset with display_name and context_window');
-	const id = String(preset.id);
+	const id = 'sync-test-model';
+	const preset = { id, vendor: 'openai', display_name: 'Test Model', context_window: 8192, pricing: { usd: { tiers: [] } } };
+	before(() => {
+		mock.method(globalThis, 'fetch', async (url: URL) => {
+			assert.equal(url.href, 'https://octafuse.dev/api/catalog/models');
+			return Response.json([preset]);
+		});
+	});
+
+	after(() => mock.restoreAll());
 
 	it('reports a stale imported model and ignores user-made models', async () => {
 		const { repos } = fakeRepos([

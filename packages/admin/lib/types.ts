@@ -154,7 +154,7 @@ export interface GatewayProvider {
   vendor_key?: string;
   /** 未设置 kind 时按预设推导；已设置 kind 时由模板决定。不单独写入 providers 表。 */
   icon_key?: string;
-  /** Admin API 根据内置预设叠加的官网 / 密钥 / 邀请链接；不写入 providers 表。 */
+  /** Admin API 根据供应商目录模板叠加的官网 / 密钥 / 邀请链接；不写入 providers 表。 */
   catalog_links?: {
     platform?: string;
     api_keys?: string;

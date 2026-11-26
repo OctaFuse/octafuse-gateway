@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Render the image model catalog tables in docs/developers/reference/image-models.md
- * from packages/admin/lib/model-presets/*.json (the only source of catalog prices).
+ * from packages/admin/lib/model-presets/*.json (the reference snapshot used for these tables).
  *
  * Usage:
  *   node scripts/docs/gen-image-models.mjs          # rewrite the generated block

@@ -2,7 +2,6 @@ export type CatalogEnv = {
 	CATALOG_BASE_URL?: string;
 	CATALOG_TIMEOUT_MS?: string;
 	CATALOG_TTL_MS?: string;
-	CATALOG_SOURCE?: string;
 };
 
 function positiveMilliseconds(value: string | undefined, fallback: number): number {
@@ -15,6 +14,5 @@ export function readCatalogConfig(env: CatalogEnv = {}) {
 		baseUrl: env.CATALOG_BASE_URL?.trim() || 'https://octafuse.dev',
 		timeoutMs: positiveMilliseconds(env.CATALOG_TIMEOUT_MS, 3_000),
 		ttlMs: positiveMilliseconds(env.CATALOG_TTL_MS, 300_000),
-		source: env.CATALOG_SOURCE?.trim() === 'local' ? 'local' as const : 'remote' as const,
 	};
 }

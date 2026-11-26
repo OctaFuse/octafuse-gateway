@@ -40,7 +40,6 @@ export async function resolveAdminRequestRuntime(request?: Request): Promise<{
 		CATALOG_BASE_URL: catalogEnv?.CATALOG_BASE_URL,
 		CATALOG_TIMEOUT_MS: catalogEnv?.CATALOG_TIMEOUT_MS,
 		CATALOG_TTL_MS: catalogEnv?.CATALOG_TTL_MS,
-		CATALOG_SOURCE: catalogEnv?.CATALOG_SOURCE,
 		DB: env?.DB,
 		ASSETS: env?.ASSETS,
 		DATABASE_URL: cloudflareRuntime ? undefined : process.env.DATABASE_URL,

@@ -60,7 +60,7 @@ adminModelsRoutes.post('/', async (c) => {
 	}
 });
 
-/** 列出内置静态目录中可导入的模型（不含完整 pricing JSON；价格预览按当前 BILLING_CURRENCY）。 */
+/** 列出当前模型目录中可导入的模型（不含完整 pricing JSON；价格预览按当前 BILLING_CURRENCY）。 */
 adminModelsRoutes.get('/import/catalog', async (c) => {
 	try {
 		const vendor = c.req.query('vendor');
@@ -83,7 +83,7 @@ adminModelsRoutes.get('/import/catalog', async (c) => {
 	}
 });
 
-/** 从内置静态目录按请求体 `ids` 导入模型（按 `BILLING_CURRENCY` 选用 USD/CNY 价；同 id 不覆盖）。 */
+/** 从当前模型目录按请求体 `ids` 导入模型（按 `BILLING_CURRENCY` 选用 USD/CNY 价；同 id 不覆盖）。 */
 adminModelsRoutes.post('/import', async (c) => {
 	let body: AdminModelsImportBody;
 	try {

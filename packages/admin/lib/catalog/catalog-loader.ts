@@ -4,7 +4,7 @@ import { readCatalogConfig, type CatalogEnv } from './catalog-config';
 import { CatalogFetchError, fetchCatalog } from './catalog-http';
 
 type Endpoint = 'providers' | 'models';
-type Freshness = 'remote' | 'stale' | 'local';
+type Freshness = 'remote' | 'stale';
 export type CatalogSnapshot<T> = {
 	rows: readonly T[];
 	fetchedAt: number;
@@ -100,8 +100,7 @@ async function requestCatalog(baseUrl: string, path: string, timeoutMs: number, 
 	}
 }
 
-function createLoader<T>(endpoint: Endpoint, parseRow: (row: Record<string, unknown>) => T | undefined, key: (row: T) => string,
-	loadLocal: () => Promise<readonly T[]>) {
+function createLoader<T>(endpoint: Endpoint, parseRow: (row: Record<string, unknown>) => T | undefined, key: (row: T) => string) {
 	type State = {
 		snapshot?: CatalogSnapshot<T>;
 		pending?: Promise<CatalogSnapshot<T>>;
@@ -109,10 +108,7 @@ function createLoader<T>(endpoint: Endpoint, parseRow: (row: Record<string, unkn
 	};
 	const states = new Map<string, State>();
 	return async (env?: CatalogEnv): Promise<CatalogSnapshot<T>> => {
-		const { baseUrl, timeoutMs, ttlMs, source } = readCatalogConfig(env);
-		if (source === 'local') {
-			return { rows: await loadLocal(), fetchedAt: Date.now(), etag: null, freshness: 'local' };
-		}
+		const { baseUrl, timeoutMs, ttlMs } = readCatalogConfig(env);
 		const stateKey = JSON.stringify([baseUrl, timeoutMs, ttlMs]);
 		let state = states.get(stateKey);
 		if (!state) {
@@ -159,28 +155,23 @@ function createLoader<T>(endpoint: Endpoint, parseRow: (row: Record<string, unkn
 	};
 }
 
-export const loadProviderCatalog = createLoader('providers', parseProvider, (row) => row.name,
-	async () => (await import('./local-provider-catalog')).localProviderRows);
-
-export const loadModelCatalog = createLoader('models', parseModel, (row) => row.id,
-	async () => (await import('./local-model-catalog')).listStaticModelPresets());
+export const loadProviderCatalog = createLoader('providers', parseProvider, (row) => row.name);
+export const loadModelCatalog = createLoader('models', parseModel, (row) => row.id);
 
 export async function loadModelCatalogByVendor(vendor: string, env?: CatalogEnv): Promise<readonly StaticModelPresetRow[]> {
-	const { baseUrl, timeoutMs, source } = readCatalogConfig(env);
-	if (source === 'remote') {
-		const endpoint = `models-by-vendor/${encodeURIComponent(vendor)}`;
-		const started = Date.now();
-		try {
-			const response = await requestCatalog(baseUrl, endpoint, timeoutMs, null);
-			if (response.notModified) throw new CatalogFetchError('unexpected_not_modified');
-			const rows = parseRows(response.payload, 'models', parseModel, (row) => row.id);
-			if (!rows.every((row) => row.vendor === vendor)) throw new CatalogFetchError('wrong_vendor');
-			console.info('catalog.fetch.ok', { endpoint, status: response.status, count: rows.length, elapsed_ms: Date.now() - started });
-			return rows;
-		} catch (error) {
-			console.warn('catalog.fetch.fail', { endpoint, status: error instanceof CatalogFetchError ? error.status : undefined,
-				error: error instanceof CatalogFetchError ? error.reason : 'invalid_config', elapsed_ms: Date.now() - started });
-		}
+	const { baseUrl, timeoutMs } = readCatalogConfig(env);
+	const endpoint = `models-by-vendor/${encodeURIComponent(vendor)}`;
+	const started = Date.now();
+	try {
+		const response = await requestCatalog(baseUrl, endpoint, timeoutMs, null);
+		if (response.notModified) throw new CatalogFetchError('unexpected_not_modified');
+		const rows = parseRows(response.payload, 'models', parseModel, (row) => row.id);
+		if (!rows.every((row) => row.vendor === vendor)) throw new CatalogFetchError('wrong_vendor');
+		console.info('catalog.fetch.ok', { endpoint, status: response.status, count: rows.length, elapsed_ms: Date.now() - started });
+		return rows;
+	} catch (error) {
+		console.warn('catalog.fetch.fail', { endpoint, status: error instanceof CatalogFetchError ? error.status : undefined,
+			error: error instanceof CatalogFetchError ? error.reason : 'invalid_config', elapsed_ms: Date.now() - started });
 	}
 	return (await loadModelCatalog(env)).rows.filter((row) => row.vendor === vendor);
 }

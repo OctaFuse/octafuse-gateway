@@ -239,7 +239,7 @@ export type AdminCreatedIdOutput = {
 	id: string;
 };
 
-/** `GET /admin/models/import/catalog`：可导入的静态预设摘要（不含完整 pricing JSON）。 */
+/** `GET /admin/models/import/catalog`：可导入的目录模板摘要（不含完整 pricing JSON）。 */
 export type AdminStaticModelPresetCatalogItem = {
 	id: string;
 	display_name: string | null;
@@ -276,7 +276,7 @@ export type AdminModelsImportBody = {
 	ids: string[];
 };
 
-/** `POST /admin/models/import`：从内置静态目录按当前 `BILLING_CURRENCY` 选用 USD/CNY 价写入库。 */
+/** `POST /admin/models/import`：从当前模型目录按当前 `BILLING_CURRENCY` 选用 USD/CNY 价写入库。 */
 export type AdminModelsImportOutput = {
 	/** 实际选用的价格分支（与 `BILLING_CURRENCY` 一致，非法历史值时回退为 USD） */
 	billing_currency_used: string;
@@ -292,7 +292,7 @@ export type AdminModelsImportOutput = {
 export type AdminProviderRow = {
 	id: string;
 	name: string;
-	/** 由内置 Provider 预设名称 / Endpoint 动态推导，或在 `kind` 已设置时由模板决定。不单独落库。 */
+	/** 由供应商目录模板名称 / Endpoint 动态推导，或在 `kind` 已设置时由模板决定。不单独落库。 */
 	vendor_key?: string;
 	/** 产品级图标。`kind` 已设置时来自对应模板，否则按 URL / 名称推断。不单独落库。 */
 	icon_key?: string;
@@ -305,7 +305,7 @@ export type AdminProviderRow = {
 		ja?: string;
 		ko?: string;
 	};
-	/** 由内置预设叠加的官网 / 密钥 / 邀请链接，不持久化。 */
+	/** 由供应商目录模板叠加的官网 / 密钥 / 邀请链接，不持久化。 */
 	catalog_links?: {
 		platform?: string;
 		api_keys?: string;
@@ -351,7 +351,7 @@ export type AdminModelRow = {
 	input_modalities: string | null;
 	output_modalities: string | null;
 	released_at: string | null;
-	/** 厂商退役日期 `YYYY-MM-DD`，由内置静态目录按 id 匹配得出（不落库）；null=仍在提供或目录无此模型 */
+	/** 厂商退役日期 `YYYY-MM-DD`，由当前模型目录按 id 匹配得出（不落库）；null=仍在提供或目录无此模型 */
 	retired_at?: string | null;
 	/** 运营备注。目录介绍见 `catalog_i18n`。 */
 	note: string | null;

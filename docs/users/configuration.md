@@ -41,7 +41,7 @@ Base URL 需包含对应的版本路径前缀，例如 OpenAI 的 `/v1`、Gemini
 
 删除供应商前，先在 **关联路由** 中检查使用它的模型、上游模型、协议、分组和启用状态。模型与上游名称合并展示，能力标签与端点配置使用相同名称和说明；完整路由 ID、模型 ID、原始能力标识和分组可通过详情图标查看；操作说明收在工具栏的信息浮层中。可以搜索后单条删除，或勾选路由批量删除；全选只影响当前搜索结果。路由删除经确认后立即生效，不依赖弹窗的保存操作，关闭或取消弹窗也不会撤销。移除全部关联路由后，即可点击「删除供应商」。
 
-供应商导入模板的维护说明见 [developers/reference/provider-import-presets.md](../developers/reference/provider-import-presets.md)。
+供应商和模型的导入、同步默认读取官网目录。内网镜像设置见[目录数据来源](../developers/reference/provider-import-presets.md#数据来源)。
 
 ![供应商列表：卡片展示密钥状态、协议能力与路由数，可按状态和协议筛选](../assets/screenshots/providers.webp)
 
@@ -63,7 +63,7 @@ Routes 工作台支持**总览（Overview）**与**按模型（By model）**两�
 4. 保持路由组为 `default`；只有明确需要免费组、套餐组时再增加其他分组。
 5. 保存后先用调试台验证单条上游路由，再用模拟器验证用户 Key、完整选路、计费和日志。
 
-从模型目录导入 `kimi-k3.1-pro`、`kimi-k3.1-pro-highspeed`、`claude-haiku-5-5`、`gemini-nano-banana-2.1`、`claude-sonnet-5-5`、`claude-fable-5-2`、`gemini-4-neon`、`gemini-4-hydrogen`、`gemini-4-carbon`、`minimax-h3-image`、`minimax-h3-image-highspeed`、`hy4-flash`、`hy4`、`hy4-preview`、`qwen3.8-flash`、`glm-5.3-flash`、`glm-5.3-flashx`、`glm-5v-turbo` 等预设时，只会创建模型记录，不会自动维护模型标签。需要按供应商、套餐或用途分类时，请在导入后自行添加标签。
+从目录导入模型时，管理后台只创建模型记录。需要按供应商、套餐或用途分类时，请在导入后添加标签。
 
 ### 3.1 选择协议适配器
 

@@ -1,5 +1,5 @@
 /**
- * 管理端内置 model 静态目录：用于一键导入 `models` 表。
+ * 测试用模型目录快照。
  *
  * 仅维护**有自研/自有模型**的厂商，见 `model-presets/<vendor-key>.json`。
  * 聚合平台（OpenRouter、SiliconFlow、Groq、Together、Ollama 等）与云托管面（AWS Bedrock、Azure、火山方舟接入层等）
