@@ -53,6 +53,7 @@
 | 2.18.0 升级（OAuth 访问令牌，0035） | [operators/migrations/0035-oauth-access-tokens.md](./operators/migrations/0035-oauth-access-tokens.md) |
 | 内置 OAuth 授权服务器（0036） | [operators/migrations/0036-oauth-authorization-server.md](./operators/migrations/0036-oauth-authorization-server.md) |
 | OAuth 机密客户端、手工客户端与客户端元数据文档（0037） | [operators/migrations/0037-oauth-client-credentials.md](./operators/migrations/0037-oauth-client-credentials.md) |
+| 供应商默认请求参数（0038） | [operators/migrations/0038-provider-custom-params.md](./operators/migrations/0038-provider-custom-params.md) |
 | 文档规范 | [CONVENTIONS.md](./CONVENTIONS.md) |
 
 ## 文档规范
