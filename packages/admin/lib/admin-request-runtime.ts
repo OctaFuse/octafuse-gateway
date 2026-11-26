@@ -47,6 +47,9 @@ export async function resolveAdminRequestRuntime(request?: Request): Promise<{
 		DATABASE_DRIVER: cloudflareRuntime
 			? (env as { DATABASE_DRIVER?: string } | undefined)?.DATABASE_DRIVER
 			: process.env.DATABASE_DRIVER,
+		PROVIDER_MODEL_DISCOVERY_DISABLED_KINDS: cloudflareRuntime
+			? (env as { PROVIDER_MODEL_DISCOVERY_DISABLED_KINDS?: string } | undefined)?.PROVIDER_MODEL_DISCOVERY_DISABLED_KINDS
+			: process.env.PROVIDER_MODEL_DISCOVERY_DISABLED_KINDS,
 	};
 	const storage = await resolveAdminStorageContext(bindings, cloudflareRuntime ? 'cloudflare' : 'node');
 	return { bindings, storage, ctx };

@@ -1903,6 +1903,7 @@
 			"currentLegacyValue": "현재 이전 값",
 			"providerModelName": "Provider 모델 이름 *",
 			"providerModelPlaceholder": "예: gpt-4o-2024-11-20",
+			"providerModelOptions": { "current": "현재 값", "noMatches": "일치하는 모델 없음", "empty": "반환된 모델이 없습니다. 모델 이름을 직접 입력할 수 있습니다.", "search": "모델 ID 또는 표시 이름 검색", "truncated": "API 결과가 잘렸습니다. 이번에 가져온 후보만 검색할 수 있습니다.", "loading": "모델 불러오는 중…", "noKey": "모델 목록을 새로 고치려면 공급자 API 키를 설정하세요.", "refresh": "모델 새로 고침", "retry": "다시 시도", "failed": "이 공급자의 모델 목록을 가져올 수 없습니다. 모델 이름을 직접 입력할 수 있습니다.", "xiaomiConfirm": "저장하기 전에 선택한 Xiaomi 모델 ID를 추론 엔드포인트에서 사용할 수 있는지 확인하세요." },
 			"routeGroup": "Route 그룹",
 			"routeGroupPlaceholder": "default",
 			"routeGroupHint": "클라이언트 modelId:group의 Routing 풀입니다. :group을 생략하면 default만 사용합니다. 활성 Route가 없으면 400을 반환합니다.",
