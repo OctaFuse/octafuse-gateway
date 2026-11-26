@@ -49,7 +49,7 @@ import {
 	type RouteModelGroup,
 } from './route-utils';
 import { getAdapterByOptionKey, listConversionAdapters } from '@octafuse/core/adapters/registry';
-import { listStaticProviderImportPresets } from '@/lib/provider-import-preset';
+import { listStaticProviderImportPresets } from '@/lib/catalog/provider-catalog-fixture';
 import { resolveRouteEffectiveFactors } from '@octafuse/core/db/pricing-schedule';
 import { EMPTY_ROUTE_FORM } from './types';
 

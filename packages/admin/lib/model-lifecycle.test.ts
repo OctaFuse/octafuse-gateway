@@ -6,7 +6,7 @@ import {
 	parseModelLifecycleFilter,
 	resolveModelLifecycle,
 } from './model-lifecycle';
-import { getStaticModelPresetRetired, listStaticModelPresets } from './model-preset';
+import { getStaticModelPresetRetired, listStaticModelPresets } from './catalog/model-catalog-fixture';
 
 const TODAY = '2026-10-16';
 

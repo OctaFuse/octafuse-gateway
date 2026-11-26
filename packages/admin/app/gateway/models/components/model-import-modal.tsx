@@ -35,6 +35,8 @@ type Props = {
 	filteredCatalogRows: PresetCatalogRow[];
 	catalogSearch: string;
 	catalogKind: ModelKindFilter;
+	catalogVendor: string;
+	catalogVendors: string[];
 	kindCounts: {
 		llm: number;
 		image: number;
@@ -55,6 +57,7 @@ type Props = {
 	onClose: () => void;
 	onCatalogSearchChange: (value: string) => void;
 	onCatalogKindChange: (kind: ModelKindFilter) => void;
+	onCatalogVendorChange: (vendor: string) => void;
 	onCatalogLifecycleChange: (lifecycle: ModelLifecycleFilter) => void;
 	onSelectAll: () => void;
 	onClearSelection: () => void;
@@ -231,6 +234,8 @@ export function ModelImportModal(props: Props) {
 		filteredCatalogRows,
 		catalogSearch,
 		catalogKind,
+		catalogVendor,
+		catalogVendors,
 		kindCounts,
 		catalogLifecycle,
 		lifecycleCounts,
@@ -244,6 +249,7 @@ export function ModelImportModal(props: Props) {
 		onClose,
 		onCatalogSearchChange,
 		onCatalogKindChange,
+		onCatalogVendorChange,
 		onCatalogLifecycleChange,
 		onSelectAll,
 		onClearSelection,
@@ -315,8 +321,8 @@ export function ModelImportModal(props: Props) {
 				</div>
 
 				<div className="flex shrink-0 flex-col gap-3 border-b border-gray-100 bg-white px-4 py-3 sm:px-6">
-					<div className="flex items-center gap-2">
-						<div className="relative min-w-0 flex-1">
+					<div className="flex flex-wrap items-center gap-2">
+						<div className="relative min-w-0 flex-[1_1_12rem]">
 							<MagnifyingGlassIcon
 								className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
 								aria-hidden
@@ -341,6 +347,21 @@ export function ModelImportModal(props: Props) {
 								</button>
 							)}
 						</div>
+						<label className="flex min-w-0 items-center gap-2 text-sm text-gray-700">
+							{t('vendor')}
+							<select
+								value={catalogVendor}
+								onChange={(event) => onCatalogVendorChange(event.target.value)}
+								disabled={submitting || catalogVendors.length === 0}
+								aria-busy={catalogLoading}
+								className="min-h-10 min-w-0 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50"
+							>
+								<option value="">{t('allVendors')}</option>
+								{catalogVendors.map((vendor) => ({ vendor, label: getModelVendorLabel(vendor) }))
+									.sort((a, b) => a.label.localeCompare(b.label, locale))
+									.map(({ vendor, label }) => <option key={vendor} value={vendor}>{label}</option>)}
+							</select>
+						</label>
 						<button
 							type="button"
 							onClick={onReload}

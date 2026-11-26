@@ -141,6 +141,9 @@ export function useModelsPageState() {
 	>([]);
 	const [importCatalogLoading, setImportCatalogLoading] = useState(false);
 	const [importCatalogError, setImportCatalogError] = useState('');
+	const [importCatalogVendor, setImportCatalogVendor] = useState('');
+	const [importCatalogVendors, setImportCatalogVendors] = useState<string[]>([]);
+	const importCatalogRequest = useRef<AbortController | null>(null);
 	const [importSelected, setImportSelected] = useState<Record<string, boolean>>(
 		{}
 	);
@@ -352,23 +355,46 @@ export function useModelsPageState() {
 		});
 	}, [showImportCatalogModal, importCatalogRows, existingModelIds]);
 
-	const loadImportCatalog = useCallback(async () => {
+	const loadImportCatalog = useCallback(async (vendor: string) => {
+		importCatalogRequest.current?.abort();
+		const request = new AbortController();
+		importCatalogRequest.current = request;
 		setImportCatalogLoading(true);
 		setImportCatalogError('');
+		setImportCatalogRows([]);
+		setImportSelected({});
 		try {
-			const rows = await fetchImportCatalog();
+			const rows = await fetchImportCatalog(vendor, request.signal);
+			if (request.signal.aborted) return;
 			setImportCatalogRows(rows);
-			setImportSelected({});
+			if (!vendor) {
+				setImportCatalogVendors([...new Set(rows.map((row) => row.vendor).filter((key) => key && key !== 'other'))]);
+			}
 		} catch (e) {
+			if (request.signal.aborted) return;
 			console.error('Load import catalog error:', e);
 			setImportCatalogError(
 				e instanceof Error ? e.message : 'Failed to load catalog'
 			);
-			setImportCatalogRows([]);
 		} finally {
-			setImportCatalogLoading(false);
+			if (importCatalogRequest.current === request) {
+				importCatalogRequest.current = null;
+				setImportCatalogLoading(false);
+			}
 		}
 	}, []);
+
+	const changeImportCatalogVendor = useCallback((vendor: string) => {
+		setImportCatalogVendor(vendor);
+		void loadImportCatalog(vendor);
+	}, [loadImportCatalog]);
+
+	const closeImportCatalogModal = useCallback(() => {
+		importCatalogRequest.current?.abort();
+		setShowImportCatalogModal(false);
+	}, []);
+
+	useEffect(() => () => importCatalogRequest.current?.abort(), []);
 
 	const openImportCatalogModal = useCallback(() => {
 		setShowImportCatalogModal(true);
@@ -379,9 +405,9 @@ export function useModelsPageState() {
 		setImportCatalogKind(
 			selectedKind === 'all' ? DEFAULT_KIND_FILTER : selectedKind
 		);
-		setImportSelected({});
-		void loadImportCatalog();
-	}, [loadImportCatalog, selectedKind]);
+		setImportCatalogVendors([]);
+		changeImportCatalogVendor('');
+	}, [changeImportCatalogVendor, selectedKind]);
 
 	const unpricedImportIds = useMemo(
 		() =>
@@ -1005,12 +1031,15 @@ export function useModelsPageState() {
 		isSaving,
 		isDeleting,
 		showImportCatalogModal,
-		setShowImportCatalogModal,
+		closeImportCatalogModal,
 		importCatalogRows,
 		importCatalogSearch,
 		setImportCatalogSearch,
 		importCatalogKind,
 		setImportCatalogKind,
+		importCatalogVendor,
+		importCatalogVendors,
+		changeImportCatalogVendor,
 		importCatalogKindCounts,
 		importCatalogLifecycle,
 		setImportCatalogLifecycle,

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { ParsedPricingProfile } from '@octafuse/core/db/pricing-profile';
-import { listStaticModelPresets } from '@/lib/model-preset';
-import { listStaticModelPresetCatalogForAdmin } from './models-service';
+import { listStaticModelPresets } from '@/lib/catalog/model-catalog-fixture';
+import { listStaticModelPresetCatalogForAdmin } from '@/lib/catalog/model-catalog-fixture';
 
 /** 静态目录中已支持计费与路由的音频模型（不含日期快照）。 */
 const EXPECTED_AUDIO_IDS = [

@@ -4,7 +4,8 @@
 import { Hono } from "hono";
 import type { AdminEnv } from "@/lib/admin-env";
 import { requireAdminPrincipal } from "@/lib/middleware/admin-auth";
-import { listStaticProviderImportCatalogForAdmin } from "@/lib/provider-import-preset";
+import { getProviderCatalog } from "@/lib/provider-catalog";
+import { loadProviderCatalog } from "@/lib/catalog/catalog-loader";
 import {
 	createProviderService,
 	deleteProviderService,
@@ -42,7 +43,7 @@ adminProvidersRoutes.use("*", requireAdminPrincipal);
 adminProvidersRoutes.get("/", async (c) => {
 	try {
 		const repos = c.get("repositories");
-		const data = await listProvidersService(repos);
+		const data = await listProvidersService(repos, c.env);
 		return c.json(
 			normalizeApiTimeFields({ success: true, data, count: data.length })
 		);
@@ -61,7 +62,7 @@ adminProvidersRoutes.post("/", async (c) => {
 	}
 	try {
 		const repos = c.get("repositories");
-		const data = await createProviderService(repos, body);
+		const data = await createProviderService(repos, body, c.env);
 		return c.json(
 			normalizeApiTimeFields({
 				success: true,
@@ -77,7 +78,8 @@ adminProvidersRoutes.post("/", async (c) => {
 /** 列出内置 Provider 导入模板（无密钥）。须注册在 `/:id` 之前。 */
 adminProvidersRoutes.get("/import/catalog", async (c) => {
 	try {
-		const data = listStaticProviderImportCatalogForAdmin();
+		const snapshot = await loadProviderCatalog(c.env);
+		const data = getProviderCatalog(snapshot.rows).listStaticProviderImportCatalogForAdmin();
 		return c.json(
 			normalizeApiTimeFields({ success: true, data, count: data.length })
 		);
@@ -95,6 +97,9 @@ adminProvidersRoutes.post("/import", async (c) => {
 	let body: AdminProvidersImportBody;
 	try {
 		const raw = await c.req.json();
+		if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+			return c.json({ success: false, message: "Invalid JSON body" }, 400);
+		}
 		body = raw as AdminProvidersImportBody;
 	} catch {
 		return c.json({ success: false, message: "Invalid JSON body" }, 400);
@@ -105,7 +110,7 @@ adminProvidersRoutes.post("/import", async (c) => {
 			await importProvidersFromStaticPresetsService(repos, {
 				ids: Array.isArray(body.ids) ? body.ids : [],
 				locale: typeof body.locale === 'string' ? body.locale : undefined,
-			});
+			}, c.env);
 		const parts = [`created ${data.created}`];
 		if (data.failed.length) {
 			parts.push(`${data.failed.length} failed`);
@@ -126,7 +131,7 @@ adminProvidersRoutes.post("/import", async (c) => {
 adminProvidersRoutes.get("/sync/diff", async (c) => {
 	try {
 		const repos = c.get("repositories");
-		const data = await getProviderSyncReportService(repos);
+		const data = await getProviderSyncReportService(repos, c.env);
 		return c.json(normalizeApiTimeFields({ success: true, data }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, "Failed to compute provider sync diff");
@@ -143,7 +148,7 @@ adminProvidersRoutes.post("/sync/apply", async (c) => {
 	}
 	try {
 		const repos = c.get("repositories");
-		const data = await applyProviderSyncService(repos, body);
+		const data = await applyProviderSyncService(repos, body, c.env);
 		const parts = [`updated ${data.updated}`];
 		if (data.skipped) parts.push(`${data.skipped} skipped`);
 		if (data.failed.length) parts.push(`${data.failed.length} failed`);
@@ -249,7 +254,7 @@ adminProvidersRoutes.get("/:id", async (c) => {
 	const id = c.req.param("id");
 	try {
 		const repos = c.get("repositories");
-		const provider = await getProviderService(repos, id);
+		const provider = await getProviderService(repos, id, c.env);
 		return c.json(normalizeApiTimeFields({ success: true, data: provider }));
 	} catch (error) {
 		return handleAdminRouteError(c, error, "Failed to get provider");
@@ -267,7 +272,7 @@ adminProvidersRoutes.patch("/:id", async (c) => {
 	}
 	try {
 		const repos = c.get("repositories");
-		await updateProviderService(repos, id, body);
+		await updateProviderService(repos, id, body, c.env);
 		return c.json({ success: true, message: "Provider updated successfully" });
 	} catch (error) {
 		return handleAdminRouteError(c, error, "Failed to update provider");

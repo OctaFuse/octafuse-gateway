@@ -229,6 +229,8 @@ function ModelsContent() {
 				filteredCatalogRows={state.filteredImportCatalogRows}
 				catalogSearch={state.importCatalogSearch}
 				catalogKind={state.importCatalogKind}
+				catalogVendor={state.importCatalogVendor}
+				catalogVendors={state.importCatalogVendors}
 				kindCounts={state.importCatalogKindCounts}
 				catalogLifecycle={state.importCatalogLifecycle}
 				lifecycleCounts={state.importCatalogLifecycleCounts}
@@ -241,12 +243,13 @@ function ModelsContent() {
 				submitting={state.importSubmitting}
 				billingCurrency={state.billingCurrency}
 				existingModelIds={state.existingModelIds}
-				onClose={() => state.setShowImportCatalogModal(false)}
+				onClose={state.closeImportCatalogModal}
 				onCatalogSearchChange={state.setImportCatalogSearch}
 				onCatalogKindChange={state.setImportCatalogKind}
+				onCatalogVendorChange={state.changeImportCatalogVendor}
 				onSelectAll={state.selectAllImportPresets}
 				onClearSelection={state.clearImportPresetSelection}
-				onReload={() => void state.loadImportCatalog()}
+				onReload={() => void state.loadImportCatalog(state.importCatalogVendor)}
 				onTogglePreset={state.toggleImportPreset}
 				onImport={() => void state.runImportSelectedPresets()}
 			/>

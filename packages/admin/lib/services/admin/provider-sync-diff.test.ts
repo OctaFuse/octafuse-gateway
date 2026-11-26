@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { GeminiUpstreamAuthScheme } from '@octafuse/core/gemini-upstream-url';
-import { listStaticProviderImportPresets } from '@/lib/provider-import-preset';
+import { listStaticProviderImportPresets } from '@/lib/catalog/provider-catalog-fixture';
 import { buildProviderSyncPatch, diffProviderAgainstPreset } from '@/lib/provider-sync-diff';
 
 const preset = {

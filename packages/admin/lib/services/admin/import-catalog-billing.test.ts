@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { parsePricingProfile } from '@octafuse/core/db/pricing-profile';
-import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/model-preset';
+import { listStaticModelPresets, pickPresetPricingRawForBillingCurrency } from '@/lib/catalog/model-catalog-fixture';
 import { coerceModelPricingProfileInput } from './pricing-input';
-import { listStaticModelPresetCatalogForAdmin } from './models-service';
+import { listStaticModelPresetCatalogForAdmin } from '@/lib/catalog/model-catalog-fixture';
 import type { AdminStaticModelPresetCatalogItem } from './types';
 
 describe('import catalog pricing preview follows billing currency', () => {
